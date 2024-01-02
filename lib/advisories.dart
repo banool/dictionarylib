@@ -33,7 +33,7 @@ class AdvisoriesResponse {
 // Returns the advisories and whether there is a new advisory. It returns them
 // in order from old to new. If we failed to lookup the advisories we return
 // null.
-Future<AdvisoriesResponse?> getAdvisories(Uri advisories_file_uri) async {
+Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   printAndLog("Fetching advisories");
 
   // Pull the number of advisories we've seen in the past from storage.
@@ -43,7 +43,7 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisories_file_uri) async {
   String? rawData;
   try {
     var result =
-        await http.get(advisories_file_uri).timeout(Duration(seconds: 3));
+        await http.get(advisoriesFileUri).timeout(Duration(seconds: 3));
     rawData = result.body;
   } catch (e) {
     printAndLog("Failed to get advisory: $e");
@@ -124,7 +124,7 @@ Widget getAdvisoriesInner() {
         padding: EdgeInsets.only(left: 0)));
     children.add(advisory.asMarkdown());
     // Add padding between after each item. We remove the last padding later.
-    children.add(SizedBox(height: 50));
+    children.add(SizedBox(height: 40));
   }
 
   return Column(

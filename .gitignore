@@ -1,3 +1,8 @@
+# Mine
+.flutter-plugins
+.flutter-plugins-dependencies
+*.swp
+
 # Miscellaneous
 *.class
 *.log
@@ -9,6 +14,7 @@
 .history
 .svn/
 migrate_working_dir/
+
 
 # IntelliJ related
 *.iml
