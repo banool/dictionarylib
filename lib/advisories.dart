@@ -43,7 +43,7 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   String? rawData;
   try {
     var result =
-        await http.get(advisoriesFileUri).timeout(Duration(seconds: 3));
+        await http.get(advisoriesFileUri).timeout(const Duration(seconds: 3));
     rawData = result.body;
   } catch (e) {
     printAndLog("Failed to get advisory: $e");
@@ -74,7 +74,7 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
 
     // Handle the end of a section.
     if (line.startsWith("END===")) {
-      advisories.add(new Advisory(date: currentDate!, lines: currentLines));
+      advisories.add(Advisory(date: currentDate!, lines: currentLines));
       currentLines = [];
       currentDate = null;
       inSection = false;
@@ -99,7 +99,7 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
 
   printAndLog("Fetched ${advisories.length} advisories");
 
-  return new AdvisoriesResponse(
+  return AdvisoriesResponse(
       advisories: advisories, newAdvisories: newAdvisories);
 }
 
@@ -117,14 +117,14 @@ Widget getAdvisoriesInner() {
   List<Widget> children = [];
   for (var advisory in advisories) {
     children.add(Padding(
+        padding: const EdgeInsets.only(left: 0),
         child: Text(
           advisory.date,
           textAlign: TextAlign.start,
-        ),
-        padding: EdgeInsets.only(left: 0)));
+        )));
     children.add(advisory.asMarkdown());
     // Add padding between after each item. We remove the last padding later.
-    children.add(SizedBox(height: 40));
+    children.add(const SizedBox(height: 40));
   }
 
   return Column(

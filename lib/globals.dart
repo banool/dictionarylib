@@ -98,8 +98,7 @@ Future<void> setupPhaseOne() async {
   // Set the HTTP proxy if necessary.
   if (!kIsWeb) {
     Map<String, String> proxy = await SystemProxy.getProxySettings() ?? {};
-    HttpOverrides.global =
-        new ProxiedHttpOverrides(proxy["host"], proxy["port"]);
+    HttpOverrides.global = ProxiedHttpOverrides(proxy["host"], proxy["port"]);
     printAndLog("Set HTTP proxy overrides to $proxy");
   }
 
@@ -113,13 +112,13 @@ Future<void> setupPhaseOne() async {
 
   // Get background color of settings pages.
   if (kIsWeb) {
-    settingsBackgroundColor = Color.fromRGBO(240, 240, 240, 1);
+    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
   } else if (Platform.isAndroid) {
-    settingsBackgroundColor = Color.fromRGBO(240, 240, 240, 1);
+    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
   } else if (Platform.isIOS) {
-    settingsBackgroundColor = Color.fromRGBO(242, 242, 247, 1);
+    settingsBackgroundColor = const Color.fromRGBO(242, 242, 247, 1);
   } else {
-    settingsBackgroundColor = Color.fromRGBO(240, 240, 240, 1);
+    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
   }
 }
 
@@ -169,8 +168,8 @@ Future<void> setupPhaseTwo(
 }
 
 class ProxiedHttpOverrides extends HttpOverrides {
-  String? _port;
-  String? _host;
+  final String? _port;
+  final String? _host;
   ProxiedHttpOverrides(this._host, this._port);
 
   @override

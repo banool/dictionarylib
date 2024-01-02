@@ -22,7 +22,7 @@ class EntryList {
 
   @override
   String toString() {
-    return this.getName();
+    return getName();
   }
 
   // This takes in the raw string key, pulls the list of raw strings from
@@ -58,14 +58,14 @@ class EntryList {
 
   Widget getLeadingIcon({bool inEditMode = false}) {
     if (key == KEY_FAVOURITES_ENTRIES) {
-      return Icon(
+      return const Icon(
         Icons.star,
       );
     }
     if (inEditMode) {
-      return Icon(Icons.drag_handle);
+      return const Icon(Icons.drag_handle);
     } else {
-      return Icon(Icons.list_alt);
+      return const Icon(Icons.list_alt);
     }
   }
 
@@ -86,7 +86,7 @@ class EntryList {
   }
 
   static String getKeyFromName(String name) {
-    if (name.length == 0) {
+    if (name.isEmpty) {
       throw "List name cannot be empty";
     }
     if (!validNameCharacters.hasMatch(name)) {

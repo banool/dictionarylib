@@ -30,7 +30,7 @@ Set<Entry> getEntriesFromLists(List<String> listsToUse) {
 }
 
 Map<Entry, List<SubEntry>> getSubEntriesFromEntries(Set<Entry> favourites) {
-  Map<Entry, List<SubEntry>> subEntries = Map();
+  Map<Entry, List<SubEntry>> subEntries = {};
   for (Entry e in favourites) {
     subEntries[e] = [];
     for (SubEntry sw in e.getSubEntries()) {
@@ -41,7 +41,7 @@ Map<Entry, List<SubEntry>> getSubEntriesFromEntries(Set<Entry> favourites) {
 }
 
 int getNumSubEntries(Map<String, List<SubEntry>> subEntries) {
-  if (subEntries.values.length == 0) {
+  if (subEntries.values.isEmpty) {
     return 0;
   }
   if (subEntries.values.length == 1) {
@@ -69,10 +69,10 @@ List<Master> getMasters(Locale revisionLocale,
     for (SubEntry se in e.value) {
       List<Combination> combinations = [];
       if (entryToSign) {
-        combinations.add(Combination(front: [0], back: [1]));
+        combinations.add(const Combination(front: [0], back: [1]));
       }
       if (signToEntry) {
-        combinations.add(Combination(front: [1], back: [0]));
+        combinations.add(const Combination(front: [1], back: [0]));
       }
       var masterKey = se.getKey(entry);
       var m = Master(
@@ -101,7 +101,7 @@ DolphinInformation getDolphinInformation(
     Map<Entry, List<SubEntry>> subEntries, List<Master> masters,
     {List<Review>? reviews}) {
   reviews = reviews ?? [];
-  Map<String, SubEntry> keyToSubEntryMap = Map();
+  Map<String, SubEntry> keyToSubEntryMap = {};
   for (MapEntry<Entry, List<SubEntry>> e in subEntries.entries) {
     for (SubEntry se in e.value) {
       // TODO: Make sure this is okay vs the key needing to have entry.key in it.

@@ -4,7 +4,7 @@ import 'app_localizations.dart';
 
 /// The translations for English (`en`).
 class AppLocalizationsEn extends AppLocalizations {
-  AppLocalizationsEn([String locale = 'en']) : super(locale);
+  AppLocalizationsEn([super.locale = 'en']);
 
   @override
   String get appTitle => 'SLSL Dictionary';
@@ -35,14 +35,14 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     final String countString = countNumberFormat.format(count);
 
-    String _temp0 = intl.Intl.pluralLogic(
+    String temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'cards',
       one: 'cards',
       zero: 'cards',
     );
-    return '$_temp0';
+    return temp0;
   }
 
   @override
@@ -53,14 +53,14 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     final String countString = countNumberFormat.format(count);
 
-    String _temp0 = intl.Intl.pluralLogic(
+    String temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'cards',
       one: 'cards',
       zero: 'cards',
     );
-    return '$_temp0';
+    return temp0;
   }
 
   @override

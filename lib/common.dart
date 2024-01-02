@@ -52,7 +52,7 @@ Future<bool> readKnob(String urlBase, String key, bool fallback) async {
   String sharedPrefsKey = "knob_$key";
   try {
     String url = '$urlBase$key';
-    var result = await http.get(Uri.parse(url)).timeout(Duration(seconds: 4));
+    var result = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 4));
     String raw = result.body.replaceAll("\n", "");
     bool out;
     if (raw == "true") {
@@ -89,8 +89,8 @@ List<Entry> searchList(BuildContext context, String searchTerm,
     return List.from(fallback);
   }
   searchTerm = searchTerm.toLowerCase();
-  JaroWinkler d = new JaroWinkler();
-  RegExp noParenthesesRegExp = new RegExp(
+  JaroWinkler d = JaroWinkler();
+  RegExp noParenthesesRegExp = RegExp(
     r"^[^ (]*",
     caseSensitive: false,
     multiLine: false,
@@ -132,13 +132,13 @@ Future<bool> confirmAlert(BuildContext context, Widget content,
     String confirmText = "Confirm"}) async {
   bool confirmed = false;
   Widget cancelButton = TextButton(
-    child: Text(cancelText, style: TextStyle(color: Colors.black)),
+    child: Text(cancelText, style: const TextStyle(color: Colors.black)),
     onPressed: () {
       Navigator.of(context).pop();
     },
   );
   Widget continueButton = TextButton(
-    child: Text(confirmText, style: TextStyle(color: Colors.black)),
+    child: Text(confirmText, style: const TextStyle(color: Colors.black)),
     onPressed: () {
       confirmed = true;
       Navigator.of(context).pop();
@@ -150,7 +150,7 @@ Future<bool> confirmAlert(BuildContext context, Widget content,
     actions: [
       cancelButton,
       continueButton,
-      Padding(padding: EdgeInsets.only(right: 0))
+      const Padding(padding: EdgeInsets.only(right: 0))
     ],
   );
   await showDialog(
@@ -171,16 +171,15 @@ Widget buildActionButton(
   if (!enabled) {
     onPressedFunc = null;
   }
-  return Container(
+  return SizedBox(
       width: 45,
       child: TextButton(
           onPressed: onPressedFunc,
-          child: icon,
           style: ButtonStyle(
               padding: MaterialStateProperty.all(EdgeInsets.zero),
               shape: MaterialStateProperty.all(
-                  CircleBorder(side: BorderSide(color: Colors.transparent))),
-              fixedSize: MaterialStateProperty.all(Size.fromWidth(10)),
+                  const CircleBorder(side: BorderSide(color: Colors.transparent))),
+              fixedSize: MaterialStateProperty.all(const Size.fromWidth(10)),
               foregroundColor: MaterialStateProperty.resolveWith(
                 (states) {
                   if (states.contains(MaterialState.disabled)) {
@@ -189,21 +188,22 @@ Widget buildActionButton(
                     return enabledColor;
                   }
                 },
-              ))));
+              )),
+          child: icon));
 }
 
 List<Widget> buildActionButtons(List<Widget> actions) {
-  actions = actions + <Widget>[Padding(padding: EdgeInsets.only(right: 5))];
+  actions = actions + <Widget>[const Padding(padding: EdgeInsets.only(right: 5))];
   return actions;
 }
 
 extension StripString on String {
   String lstrip(String pattern) {
-    return this.replaceFirst(new RegExp('^' + pattern + '*'), '');
+    return replaceFirst(RegExp('^$pattern*'), '');
   }
 
   String rstrip(String pattern) {
-    return this.replaceFirst(new RegExp(pattern + r'*$'), '');
+    return replaceFirst(RegExp(pattern + r'*$'), '');
   }
 }
 

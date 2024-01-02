@@ -4,7 +4,7 @@ import 'app_localizations.dart';
 
 /// The translations for Sinhala Sinhalese (`si`).
 class AppLocalizationsSi extends AppLocalizations {
-  AppLocalizationsSi([String locale = 'si']) : super(locale);
+  AppLocalizationsSi([super.locale = 'si']);
 
   @override
   String get appTitle => 'ශ්‍රී ලංකා සංඥා භාෂා ශබ්දකෝෂය';
@@ -35,14 +35,14 @@ class AppLocalizationsSi extends AppLocalizations {
     );
     final String countString = countNumberFormat.format(count);
 
-    String _temp0 = intl.Intl.pluralLogic(
+    String temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'cards',
       one: 'cards',
       zero: 'cards',
     );
-    return '$_temp0';
+    return temp0;
   }
 
   @override
@@ -53,14 +53,14 @@ class AppLocalizationsSi extends AppLocalizations {
     );
     final String countString = countNumberFormat.format(count);
 
-    String _temp0 = intl.Intl.pluralLogic(
+    String temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'cards',
       one: 'cards',
       zero: 'cards',
     );
-    return '$_temp0';
+    return temp0;
   }
 
   @override
