@@ -1,0 +1,1 @@
+For simplicity, I keep all the localization stuff in this library. If there is something specific to one of the apps built on top of this library, I prefix it with the app name, e.g. auslanSettingsButton.

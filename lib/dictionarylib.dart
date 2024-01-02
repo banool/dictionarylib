@@ -1,7 +1,10 @@
 library dictionarylib;
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export 'advisories.dart';
+export 'common.dart';
+export 'entry_list.dart';
+export 'entry_types.dart';
+export 'globals.dart';
+export 'revision.dart';
+
+export 'l10n/app_localizations.dart';
