@@ -44,7 +44,6 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   try {
     var result =
         await http.get(advisoriesFileUri).timeout(const Duration(seconds: 3));
-    print("yo ${result.body}");
     rawData = result.body;
   } catch (e) {
     printAndLog("Failed to get advisory: $e");

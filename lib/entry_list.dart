@@ -5,7 +5,7 @@ import 'common.dart';
 import 'entry_types.dart';
 import 'globals.dart';
 
-const String KEY_ENTRY_LIST_KEYS = "entry_list_keys";
+const String KEY_ENTRY_LIST_KEYS = "word_list_keys";
 
 // A user created list of entries.
 class EntryList {
@@ -50,7 +50,7 @@ class EntryList {
         // entries will be removed from storage permanently. Otherwise we'll
         // keep filtering them out, which is no big deal.
         printAndLog(
-            'Entry "$s" in entry list $key is no longer in the dictionary');
+            'Entry "$s" in entry list $key is no longer in the dictionary, removing from list (only in memory, not on disk until the list is modified)');
       }
     }
     return entries;
@@ -77,8 +77,8 @@ class EntryList {
     if (key == KEY_FAVOURITES_ENTRIES) {
       return "Favourites";
     }
-    // This - 8 comes from the length of _entries
-    return key.substring(0, key.length - 8).replaceAll("_", " ");
+    // This - 6 comes from the length of _words
+    return key.substring(0, key.length - 6).replaceAll("_", " ");
   }
 
   String getName() {
@@ -92,7 +92,7 @@ class EntryList {
     if (!validNameCharacters.hasMatch(name)) {
       throw "Invalid name, this should have been caught already";
     }
-    return "${name}_entries".replaceAll(" ", "_");
+    return "${name}_words".replaceAll(" ", "_");
   }
 
   // No matter what locale they use we use the key of the entry for storage.

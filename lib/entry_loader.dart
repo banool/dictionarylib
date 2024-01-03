@@ -12,7 +12,7 @@ abstract class EntryLoader {
   /// Returns the local path where we store the dictionary data we download.
   Future<File> get _dictionaryDataFilePath async {
     final path = (await getApplicationDocumentsDirectory()).path;
-    return File('$path/downloaded_entries.json');
+    return File('$path/word_dictionary.json');
   }
 
   /// Try to load data from the local cache.
@@ -71,7 +71,7 @@ abstract class EntryLoader {
     // Update the list manager.
     entryListManager = EntryListManager.fromStartup();
 
-    printAndLog("Updated entriesGlobal and all its downstream variables!");
+    printAndLog("Updated entriesGlobal and all its downstream variables");
   }
 
   Future<void> writeEntries(String newData) async {
