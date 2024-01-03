@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:json_annotation/json_annotation.dart';
 
 import 'l10n/app_localizations.dart';
-
-part 'entry_types.g.dart';
 
 enum EntryType {
   WORD,
@@ -36,8 +33,8 @@ abstract class Entry implements Comparable<Entry> {
   List<SubEntry> getSubEntries();
 }
 
-// Takes a generic R for region.
-abstract class SubEntry<R> {
+// Takes a generic R for region and D for definition.
+abstract class SubEntry<R, D> {
   // Used for comparing sub-entries.
   String getKey(Entry parentEntry);
 
@@ -48,53 +45,29 @@ abstract class SubEntry<R> {
 
   // Gets definitions.
   // todo define return type
-  List<Definition> getDefinitions(Locale locale);
+  List<D> getDefinitions(Locale locale);
 
   // Return what regions this entry is appropriate for.
   List<R> getRegions();
 }
 
-@JsonSerializable()
-class Definition {
-  final String language;
-  final String category;
-  final String definition;
+const LANGUAGE_CODE_ENGLISH = "en";
+const LANGUAGE_CODE_SINHALA = "si";
+const LANGUAGE_CODE_TAMIL = "ta";
 
-  String get categoryPretty {
-    return getCategoryPretty(category);
-  }
+const LANGUAGE_ENGLISH = "English";
+const LANGUAGE_SINHALA = "සිංහල";
+const LANGUAGE_TAMIL = "தமிழ்";
 
-  Definition(
-      {required this.language,
-      required this.category,
-      required this.definition});
-  factory Definition.fromJson(Map<String, dynamic> json) =>
-      _$DefinitionFromJson(json);
+const Map<String, String> LANGUAGE_CODE_TO_PRETTY = {
+  LANGUAGE_CODE_ENGLISH: LANGUAGE_ENGLISH,
+  LANGUAGE_CODE_SINHALA: LANGUAGE_SINHALA,
+  LANGUAGE_CODE_TAMIL: LANGUAGE_TAMIL,
+};
 
-  Map<String, dynamic> toJson() => _$DefinitionToJson(this);
-}
+Map<String, Locale> LANGUAGE_CODE_TO_LOCALE = Map.fromEntries(
+    LANGUAGE_CODE_TO_PRETTY.keys.map((e) => MapEntry(e, Locale(e))));
 
-String getCategoryPretty(String s) {
-  switch (s) {
-    case "AS_A_NOUN":
-      return "As a noun";
-    case "AS_A_VERB_OR_ADJECTIVE":
-      return "As a verb or adjective";
-    case "AS_MODIFIER":
-      return "As modifier";
-    case "AS_QUESTION":
-      return "As question";
-    case "INTERACTIVE":
-      return "Interactive";
-    case "GENERAL_DEFINITION":
-      return "General definition";
-    case "NOTE":
-      return "Note";
-    case "AUGMENTED_MEANING":
-      return "Augmented meaning";
-    case "AS_A_POINTING_SIGN":
-      return "As a pointing sign";
-    default:
-      return s;
-  }
-}
+Locale LOCALE_ENGLISH = LANGUAGE_CODE_TO_LOCALE[LANGUAGE_CODE_ENGLISH]!;
+Locale LOCALE_SINHALA = LANGUAGE_CODE_TO_LOCALE[LANGUAGE_CODE_SINHALA]!;
+Locale LOCALE_TAMIL = LANGUAGE_CODE_TO_LOCALE[LANGUAGE_CODE_TAMIL]!;

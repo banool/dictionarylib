@@ -7,9 +7,6 @@ import 'package:flutter/material.dart';
 
 import 'entry_types.dart';
 import 'globals.dart';
-import 'revision.dart';
-
-const Color DEFAULT_APP_BAR_DISABLED_COLOR = Color.fromARGB(35, 35, 35, 0);
 
 const String KEY_LOCALE_OVERRIDE = "locale_override";
 
@@ -23,7 +20,7 @@ const String KEY_SEARCH_FOR_WORDS = "search_for_words";
 const String KEY_SEARCH_FOR_PHRASES = "search_for_phrases";
 const String KEY_SEARCH_FOR_FINGERSPELLING = "search_for_fingerspelling";
 
-const String KEY_FAVOURITES_ENTRIES = "favourites_entries";
+const String KEY_FAVOURITES_ENTRIES = "favourites_words";
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME = "last_data_check_time";
 const String KEY_DICTIONARY_DATA_CURRENT_VERSION = "current_data_version";
 const String KEY_HIDE_FLASHCARDS_FEATURE = "hide_flashcards_feature";
@@ -31,7 +28,7 @@ const String KEY_FLASHCARD_REGIONS = "flashcard_regions";
 const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
 
-const int DATA_CHECK_INTERVAL = 60 * 60 * 1; // 1 hour.
+const int DATA_CHECK_INTERVAL = 62 * 60 * 1; // 1 hour.
 
 const int NUM_DAYS_TO_CACHE = 14;
 
@@ -52,7 +49,8 @@ Future<bool> readKnob(String urlBase, String key, bool fallback) async {
   String sharedPrefsKey = "knob_$key";
   try {
     String url = '$urlBase$key';
-    var result = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 4));
+    var result =
+        await http.get(Uri.parse(url)).timeout(const Duration(seconds: 4));
     String raw = result.body.replaceAll("\n", "");
     bool out;
     if (raw == "true") {
@@ -162,11 +160,9 @@ Future<bool> confirmAlert(BuildContext context, Widget content,
   return confirmed;
 }
 
-Widget buildActionButton(
-    BuildContext context, Icon icon, void Function() onPressed,
-    {bool enabled = true,
-    Color enabledColor = Colors.white,
-    Color disabledColor = DEFAULT_APP_BAR_DISABLED_COLOR}) {
+Widget buildActionButton(BuildContext context, Icon icon,
+    void Function() onPressed, Color disabledColor,
+    {bool enabled = true, Color enabledColor = Colors.white}) {
   void Function()? onPressedFunc = onPressed;
   if (!enabled) {
     onPressedFunc = null;
@@ -177,8 +173,8 @@ Widget buildActionButton(
           onPressed: onPressedFunc,
           style: ButtonStyle(
               padding: MaterialStateProperty.all(EdgeInsets.zero),
-              shape: MaterialStateProperty.all(
-                  const CircleBorder(side: BorderSide(color: Colors.transparent))),
+              shape: MaterialStateProperty.all(const CircleBorder(
+                  side: BorderSide(color: Colors.transparent))),
               fixedSize: MaterialStateProperty.all(const Size.fromWidth(10)),
               foregroundColor: MaterialStateProperty.resolveWith(
                 (states) {
@@ -193,7 +189,8 @@ Widget buildActionButton(
 }
 
 List<Widget> buildActionButtons(List<Widget> actions) {
-  actions = actions + <Widget>[const Padding(padding: EdgeInsets.only(right: 5))];
+  actions =
+      actions + <Widget>[const Padding(padding: EdgeInsets.only(right: 5))];
   return actions;
 }
 
@@ -252,10 +249,14 @@ String convertUnixTimeToHttpDate(int unixTime) {
   return httpDate;
 }
 
-RevisionStrategy loadRevisionStrategy() {
-  int revisionStrategyIndex = sharedPreferences.getInt(KEY_REVISION_STRATEGY) ??
-      RevisionStrategy.SpacedRepetition.index;
-  RevisionStrategy revisionStrategy =
-      RevisionStrategy.values[revisionStrategyIndex];
-  return revisionStrategy;
+Text getText(String s, {bool larger = false, Color? color}) {
+  double size = 15;
+  if (larger) {
+    size = 18;
+  }
+  return Text(
+    s,
+    textAlign: TextAlign.center,
+    style: TextStyle(fontSize: size, color: color),
+  );
 }

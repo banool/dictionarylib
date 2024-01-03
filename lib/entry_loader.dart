@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dictionarylib/entry_list.dart';
@@ -10,11 +9,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'common.dart';
 
 abstract class EntryLoader {
-  /// The URL from which we download the dump file.
-  Uri dumpFileUrl;
-
-  EntryLoader({required this.dumpFileUrl});
-
   /// Returns the local path where we store the dictionary data we download.
   Future<File> get _dictionaryDataFilePath async {
     final path = (await getApplicationDocumentsDirectory()).path;
@@ -92,18 +86,9 @@ abstract class EntryLoader {
     }
   }
 
-  /// A function that builds an Entry from the input data.
-  Entry entryFromDataFn(dynamic data);
-
-  Set<Entry> loadEntriesInner(String data) {
-    dynamic entriesJson = json.decode(data);
-    Set<Entry> entries = {};
-    for (dynamic entryData in entriesJson["data"]) {
-      entries.add(entryFromDataFn(entryData));
-    }
-    printAndLog("Loaded ${entries.length} entries");
-    return entries;
-  }
+  /// This function should parse the data (probably JSON) and return a set of
+  /// entries.
+  Set<Entry> loadEntriesInner(String data);
 
   /// The implementor must define this. This downloads new data and returns it
   /// as a string. Likely this string is JSON. This will return None if there
@@ -133,8 +118,6 @@ abstract class EntryLoader {
     if (forceCheck) {
       printAndLog("Forcing a check for new dictionary data");
     }
-
-    printAndLog("Fetching dump file at $dumpFileUrl");
 
     int currentVersion =
         sharedPreferences.getInt(KEY_DICTIONARY_DATA_CURRENT_VERSION) ?? 0;

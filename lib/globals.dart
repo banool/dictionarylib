@@ -24,7 +24,6 @@ late MyCacheManager myCacheManager;
 
 // Values of the knobs.
 late bool enableFlashcardsKnob;
-bool downloadWordsDataKnob = true;
 
 // This is whether to show the flashcard stuff as a result of the knob + switch.
 late bool showFlashcards;
@@ -67,7 +66,7 @@ class MyCacheManager extends CacheManager with ImageCacheManager {
 
 // Set up up until we fetch knobs. This includes shared device / package info,
 // shared prefs, proxy stuff, advisories, and the cache manager.
-Future<void> setupPhaseOne() async {
+Future<void> setupPhaseOne(Uri advisoriesFileUri) async {
   // Load device info once at startup.
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   try {
@@ -104,8 +103,7 @@ Future<void> setupPhaseOne() async {
 
   // Load up the advisories before doing anything else so it can be displayed
   // in the error page.
-  advisoriesResponse = await getAdvisories(Uri.parse(
-      "https://raw.githubusercontent.com/banool/slsl_dictionary/main/frontend/assets/advisories.md"));
+  advisoriesResponse = await getAdvisories(advisoriesFileUri);
 
   // Build the cache manager.
   myCacheManager = MyCacheManager();
@@ -128,6 +126,7 @@ Future<void> setupPhaseOne() async {
 Future<void> setupPhaseTwo(
     {required EntryLoader paramEntryLoader,
     required String knobUrlBase,
+    required bool downloadWordsData,
     Set<Entry>? entriesGlobalReplacement}) async {
   await Future.wait<void>([
     // Load up the words information once at startup from disk.
@@ -149,7 +148,7 @@ Future<void> setupPhaseTwo(
   // This depends on the knob values above being set so it is important that
   // this appears after that block above and after any knobs set between phases
   // one and two.
-  if (downloadWordsDataKnob && entriesGlobalReplacement == null) {
+  if (downloadWordsData && entriesGlobalReplacement == null) {
     if (entriesGlobal.isEmpty) {
       printAndLog(
           "No local entry data cache found, fetching updates from the internet and waiting for them before proceeeding...");

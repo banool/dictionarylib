@@ -4,7 +4,7 @@ import 'app_localizations.dart';
 
 /// The translations for Tamil (`ta`).
 class AppLocalizationsTa extends AppLocalizations {
-  AppLocalizationsTa([super.locale = 'ta']);
+  AppLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
   String get appTitle => ' இலங்கை சைகை மொழி அகராதி ';
@@ -35,14 +35,14 @@ class AppLocalizationsTa extends AppLocalizations {
     );
     final String countString = countNumberFormat.format(count);
 
-    String temp0 = intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'cards',
       one: 'cards',
       zero: 'cards',
     );
-    return temp0;
+    return '$_temp0';
   }
 
   @override
@@ -53,14 +53,14 @@ class AppLocalizationsTa extends AppLocalizations {
     );
     final String countString = countNumberFormat.format(count);
 
-    String temp0 = intl.Intl.pluralLogic(
+    String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'cards',
       one: 'cards',
       zero: 'cards',
     );
-    return temp0;
+    return '$_temp0';
   }
 
   @override
@@ -239,6 +239,9 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get settingsReportAppIssueEmail => 'பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (மின்னஞ்சல்)';
+
+  @override
+  String get settingsShowBuildInformation => 'உருவாக்க தகவலைக் காட்டு';
 
   @override
   String get listFavourites => 'பிடித்த';

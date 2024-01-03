@@ -96,6 +96,7 @@
     "settingsReportDictionaryDataIssue": "Report issue with dictionary data",
     "settingsReportAppIssueGithub": "Report issue with app (GitHub)",
     "settingsReportAppIssueEmail": "Report issue with app (Email)",
+    "settingsShowBuildInformation": "Show build information",
 
     "listFavourites": "Favourites",
     "listNameCannotBeEmpty": "List name cannot be empty",

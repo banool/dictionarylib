@@ -503,6 +503,12 @@ abstract class AppLocalizations {
   /// **'Report issue with app (Email)'**
   String get settingsReportAppIssueEmail;
 
+  /// No description provided for @settingsShowBuildInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show build information'**
+  String get settingsShowBuildInformation;
+
   /// No description provided for @listFavourites.
   ///
   /// In en, this message translates to:

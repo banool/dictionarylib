@@ -96,6 +96,7 @@
     "settingsReportDictionaryDataIssue": "ශබ්දකෝෂ දත්ත ගැටළුව වාර්තා කරන්න",
     "settingsReportAppIssueGithub": "යෙදුමේ ගැටළුව (Github) වාර්තා කරන්න",
     "settingsReportAppIssueEmail": "යෙදුමේ ගැටළුව (Email) වාර්තා කරන්න",
+    "settingsShowBuildInformation": "ගොඩනැගීමේ තොරතුරු පෙන්වන්න",
 
     "listFavourites": "ප්‍රියතම",
     "listNameCannotBeEmpty": "ලැයිස්තු නම හිස් විය නොහැක",
