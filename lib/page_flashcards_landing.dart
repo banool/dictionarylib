@@ -21,7 +21,8 @@ abstract class FlashcardsLandingPageController {
       Map<Entry, List<SubEntry>> subEntries);
 
   DolphinInformation getDolphin(Map<Entry, List<SubEntry>> filteredSubEntries,
-      {List<Review>? existingReviews, RevisionStrategy? revisionStrategy}) {
+      List<Review>? existingReviews,
+      {RevisionStrategy? revisionStrategy}) {
     revisionStrategy = revisionStrategy ?? loadRevisionStrategy();
     var wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
     var signToEntry = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
@@ -35,15 +36,12 @@ abstract class FlashcardsLandingPageController {
         getMasters(revisionLocale, filteredSubEntries, wordToSign, signToEntry);
     switch (revisionStrategy) {
       case RevisionStrategy.Random:
-        return getDolphinInformation(filteredSubEntries, masters);
-      case RevisionStrategy.SpacedRepetition:
-        if (existingReviews == null) {
-          existingReviews = readReviews();
-          printAndLog(
-              "Start: Read ${existingReviews.length} reviews from storage");
-        }
         return getDolphinInformation(filteredSubEntries, masters,
             reviews: existingReviews);
+      case RevisionStrategy.SpacedRepetition:
+        // existingReviews must be non-null for the SpacedRepetition case.
+        return getDolphinInformation(filteredSubEntries, masters,
+            reviews: existingReviews!);
     }
   }
 
@@ -191,10 +189,14 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         validBasedOnRevisionStrategy;
   }
 
+  // Call this within setState.
   void updateDolphin() {
-    setState(() {
-      dolphinInformation = widget.controller.getDolphin(filteredSubEntries);
-    });
+    if (existingReviews == null) {
+      existingReviews = readReviews();
+      print("Start: Read ${existingReviews!.length} reviews from storage");
+    }
+    dolphinInformation =
+        widget.controller.getDolphin(filteredSubEntries, existingReviews);
   }
 
   void updateRevisionSettings() {
