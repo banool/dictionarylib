@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:settings_ui/settings_ui.dart';
-import 'package:dictionarylib/dictionarylib.dart' show AppLocalizations;
+import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 import 'top_level_scaffold.dart';
 
@@ -219,11 +219,11 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     switch (revisionStrategy) {
       case RevisionStrategy.Random:
         cardNumberString =
-            AppLocalizations.of(context)!.nFlashcardsSelected(cardsToDo);
+            DictLibLocalizations.of(context)!.nFlashcardsSelected(cardsToDo);
         break;
       case RevisionStrategy.SpacedRepetition:
         cardNumberString =
-            AppLocalizations.of(context)!.nFlashcardsDue(cardsToDo);
+            DictLibLocalizations.of(context)!.nFlashcardsDue(cardsToDo);
         break;
     }
     cardNumberString = "$cardsToDo $cardNumberString";
@@ -233,13 +233,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         title: Padding(
             padding: const EdgeInsets.only(bottom: 5),
             child: Text(
-              AppLocalizations.of(context)!.flashcardsRevisionSources,
+              DictLibLocalizations.of(context)!.flashcardsRevisionSources,
               style: const TextStyle(fontSize: 16),
             )),
         tiles: [
           SettingsTile.navigation(
-            title: getText(
-                AppLocalizations.of(context)!.flashcardsSelectListsToRevise),
+            title: getText(DictLibLocalizations.of(context)!
+                .flashcardsSelectListsToRevise),
             trailing: Container(),
             onPressed: (BuildContext context) async {
               await showDialog(
@@ -252,8 +252,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                   }
                   return MultiSelectDialog<String>(
                     listType: MultiSelectListType.CHIP,
-                    title: Text(
-                        AppLocalizations.of(context)!.flashcardsSelectLists),
+                    title: Text(DictLibLocalizations.of(context)!
+                        .flashcardsSelectLists),
                     items: items,
                     initialValue: listsToReview,
                     onConfirm: (List<String> values) async {
@@ -283,13 +283,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
           title: Padding(
               padding: const EdgeInsets.only(bottom: 5),
               child: Text(
-                AppLocalizations.of(context)!.flashcardsTypes,
+                DictLibLocalizations.of(context)!.flashcardsTypes,
                 style: const TextStyle(fontSize: 16),
               )),
           tiles: [
             SettingsTile.switchTile(
                 title: Text(
-                  AppLocalizations.of(context)!.flashcardsSignToWord,
+                  DictLibLocalizations.of(context)!.flashcardsSignToWord,
                   style: const TextStyle(fontSize: 15),
                 ),
                 initialValue:
@@ -300,7 +300,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 }),
             SettingsTile.switchTile(
                 title: Text(
-                  AppLocalizations.of(context)!.flashcardsWordToSign,
+                  DictLibLocalizations.of(context)!.flashcardsWordToSign,
                   style: const TextStyle(fontSize: 15),
                 ),
                 initialValue:
@@ -314,13 +314,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         title: Padding(
             padding: const EdgeInsets.only(bottom: 5),
             child: Text(
-              AppLocalizations.of(context)!.flashcardsRevisionSettings,
+              DictLibLocalizations.of(context)!.flashcardsRevisionSettings,
               style: const TextStyle(fontSize: 16),
             )),
         tiles: [
           SettingsTile.navigation(
-            title: getText(
-                AppLocalizations.of(context)!.flashcardsSelectRevisionStrategy),
+            title: getText(DictLibLocalizations.of(context)!
+                .flashcardsSelectRevisionStrategy),
             trailing: Container(),
             onPressed: (BuildContext context) async {
               await showDialog(
@@ -328,7 +328,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                   builder: (BuildContext context) {
                     SimpleDialog dialog = SimpleDialog(
                       title: Text(
-                          AppLocalizations.of(context)!.flashcardsStrategy),
+                          DictLibLocalizations.of(context)!.flashcardsStrategy),
                       children: RevisionStrategy.values
                           .map((e) => SimpleDialogOption(
                                 child: Container(
@@ -367,7 +367,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               context, setState, onPrefSwitch, updateRevisionSettings),
           SettingsTile.switchTile(
             title: Text(
-              AppLocalizations.of(context)!.flashcardsOnlyOneCard,
+              DictLibLocalizations.of(context)!.flashcardsOnlyOneCard,
               style: const TextStyle(fontSize: 15),
             ),
             initialValue:
@@ -436,7 +436,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 ),
                 onPressed: onPressedStart,
                 child: Text(
-                  AppLocalizations.of(context)!.flashcardsStart,
+                  DictLibLocalizations.of(context)!.flashcardsStart,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 20),
                 ),
@@ -491,7 +491,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     return TopLevelScaffold(
         body: body,
         mainColor: widget.mainColor,
-        title: AppLocalizations.of(context)!.revisionTitle,
+        title: DictLibLocalizations.of(context)!.revisionTitle,
         actions: actions);
   }
 }

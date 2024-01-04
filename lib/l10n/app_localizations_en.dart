@@ -3,11 +3,8 @@ import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 /// The translations for English (`en`).
-class AppLocalizationsEn extends AppLocalizations {
-  AppLocalizationsEn([String locale = 'en']) : super(locale);
-
-  @override
-  String get appTitle => 'SLSL Dictionary';
+class DictLibLocalizationsEn extends DictLibLocalizations {
+  DictLibLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
   String get newsTitle => 'News';

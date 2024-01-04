@@ -7,7 +7,7 @@ import 'package:dictionarylib/page_flashcards_landing.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:dictionarylib/dictionarylib.dart' show AppLocalizations;
+import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 class RevisionHistoryPage extends StatefulWidget {
   const RevisionHistoryPage({super.key, required this.mainColor});
@@ -151,18 +151,21 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
         String days = longestStreakDays == 1 ? "day" : "days";
 
         leftColumn = [
-          getText("${AppLocalizations.of(context)!.flashcardsTotalReviews}:",
+          getText(
+              "${DictLibLocalizations.of(context)!.flashcardsTotalReviews}:",
               bold: true),
-          getText("${AppLocalizations.of(context)!.flashcardsSuccessRate}:",
-              bold: true),
-          getText("${AppLocalizations.of(context)!.flashcardsSuccessfulCards}:",
+          getText("${DictLibLocalizations.of(context)!.flashcardsSuccessRate}:",
               bold: true),
           getText(
-              "${AppLocalizations.of(context)!.flashcardsUnsuccessfulCards}:",
+              "${DictLibLocalizations.of(context)!.flashcardsSuccessfulCards}:",
               bold: true),
-          getText("${AppLocalizations.of(context)!.flashcardsUniqueWords}:",
+          getText(
+              "${DictLibLocalizations.of(context)!.flashcardsUnsuccessfulCards}:",
               bold: true),
-          getText("${AppLocalizations.of(context)!.flashcardsLongestStreak}:",
+          getText("${DictLibLocalizations.of(context)!.flashcardsUniqueWords}:",
+              bold: true),
+          getText(
+              "${DictLibLocalizations.of(context)!.flashcardsLongestStreak}:",
               bold: true),
         ];
         rightColumn = [
@@ -178,7 +181,8 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
         int totalRandomReviews =
             sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
         leftColumn = [
-          getText("${AppLocalizations.of(context)!.flashcardsTotalReviews}:",
+          getText(
+              "${DictLibLocalizations.of(context)!.flashcardsTotalReviews}:",
               bold: true),
         ];
         rightColumn = [getText("$totalRandomReviews")];
@@ -191,15 +195,15 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
           String dateString = getDatetimeString(dt);
           // TODO Localize this date string if this isn't happening already.
           disclaimer = Text(
-              "${AppLocalizations.of(context)!.flashcardsStatsCollectedSince} $dateString");
+              "${DictLibLocalizations.of(context)!.flashcardsStatsCollectedSince} $dateString");
         }
         break;
     }
 
     return Scaffold(
         appBar: AppBar(
-          title: Text(
-              AppLocalizations.of(context)!.flashcardsRevisionProgressTitle),
+          title: Text(DictLibLocalizations.of(context)!
+              .flashcardsRevisionProgressTitle),
           centerTitle: true,
         ),
         body: CustomScrollView(slivers: [
@@ -211,7 +215,7 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
                   const Padding(
                     padding: EdgeInsets.only(top: 50),
                   ),
-                  Text(AppLocalizations.of(context)!
+                  Text(DictLibLocalizations.of(context)!
                       .flashcardsRevisionStategyToShow),
                   const Padding(
                     padding: EdgeInsets.only(top: 15),

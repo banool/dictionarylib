@@ -11,11 +11,11 @@ enum EntryType {
 String getEntryTypePretty(BuildContext context, EntryType entryType) {
   switch (entryType) {
     case EntryType.WORD:
-      return AppLocalizations.of(context)!.entryTypeWords;
+      return DictLibLocalizations.of(context)!.entryTypeWords;
     case EntryType.PHRASE:
-      return AppLocalizations.of(context)!.entryTypePhrases;
+      return DictLibLocalizations.of(context)!.entryTypePhrases;
     case EntryType.FINGERSPELLING:
-      return AppLocalizations.of(context)!.entryTypeFingerspelling;
+      return DictLibLocalizations.of(context)!.entryTypeFingerspelling;
   }
 }
 

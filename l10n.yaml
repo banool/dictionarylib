@@ -3,3 +3,5 @@ template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 # Necessary to make the package real so it can be exported.
 synthetic-package: false
+# The default is AppLocalizations. We rename this so the app using this library can have its own localizations.
+output-class: DictLibLocalizations

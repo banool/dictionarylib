@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dictionarylib/dictionarylib.dart' show AppLocalizations;
+import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 import 'advisories.dart';
 import 'common.dart';
@@ -112,8 +112,8 @@ class SearchPageState extends State<SearchPage> {
                         child: TextField(
                           controller: _searchFieldController,
                           decoration: InputDecoration(
-                            hintText:
-                                AppLocalizations.of(context)!.searchHintText,
+                            hintText: DictLibLocalizations.of(context)!
+                                .searchHintText,
                             suffixIcon: IconButton(
                               onPressed: () {
                                 clearSearch();
@@ -201,7 +201,7 @@ class SearchPageState extends State<SearchPage> {
     return TopLevelScaffold(
         body: body,
         mainColor: widget.mainColor,
-        title: AppLocalizations.of(context)!.searchTitle,
+        title: DictLibLocalizations.of(context)!.searchTitle,
         actions: actions);
   }
 
@@ -252,7 +252,8 @@ class EntryTypeMultiPopUpMenuState extends State<EntryTypeMultiPopUpMenu> {
           return StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: Text(AppLocalizations.of(context)!.entrySelectEntryTypes),
+              title:
+                  Text(DictLibLocalizations.of(context)!.entrySelectEntryTypes),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: EntryType.values

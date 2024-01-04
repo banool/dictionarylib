@@ -3,11 +3,8 @@ import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
 
 /// The translations for Tamil (`ta`).
-class AppLocalizationsTa extends AppLocalizations {
-  AppLocalizationsTa([String locale = 'ta']) : super(locale);
-
-  @override
-  String get appTitle => ' இலங்கை சைகை மொழி அகராதி ';
+class DictLibLocalizationsTa extends DictLibLocalizations {
+  DictLibLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
   String get newsTitle => 'செய்தி';

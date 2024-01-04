@@ -4,7 +4,7 @@ import 'package:dictionarylib/globals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dictionarylib/dictionarylib.dart'
-    show AppLocalizations, getEntryListOverviewHelpPageEn;
+    show DictLibLocalizations, getEntryListOverviewHelpPageEn;
 
 import 'top_level_scaffold.dart';
 
@@ -148,7 +148,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage> {
     return TopLevelScaffold(
         body: body,
         mainColor: widget.mainColor,
-        title: AppLocalizations.of(context)!.listsTitle,
+        title: DictLibLocalizations.of(context)!.listsTitle,
         actions: actions,
         floatingActionButton: floatingActionButton);
   }
@@ -166,7 +166,7 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
     TextField(
       controller: controller,
       decoration: InputDecoration(
-        hintText: AppLocalizations.of(context)!.listEnterNewName,
+        hintText: DictLibLocalizations.of(context)!.listEnterNewName,
       ),
       autofocus: true,
       inputFormatters: [
@@ -183,7 +183,7 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
     children: children,
   );
   bool confirmed = await confirmAlert(context, body,
-      title: AppLocalizations.of(context)!.listNewList);
+      title: DictLibLocalizations.of(context)!.listNewList);
   if (confirmed) {
     String name = controller.text;
     try {
@@ -191,8 +191,8 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
       await entryListManager.createEntryList(key);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text("${AppLocalizations.of(context)!.listFailedToMake}: $e."),
+          content: Text(
+              "${DictLibLocalizations.of(context)!.listFailedToMake}: $e."),
           backgroundColor: Colors.red));
       confirmed = false;
     }

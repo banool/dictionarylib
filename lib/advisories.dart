@@ -107,7 +107,7 @@ void showAdvisoryDialog() {
   showDialog(
       context: rootNavigatorKey.currentContext!,
       builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.of(context)!.newsTitle),
+          title: Text(DictLibLocalizations.of(context)!.newsTitle),
           content: SingleChildScrollView(child: getAdvisoriesInner())));
 }
 

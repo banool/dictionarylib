@@ -1,1 +1,1 @@
-For simplicity, I keep all the localization stuff in this library. If there is something specific to one of the apps built on top of this library, I prefix it with the app name, e.g. auslanSettingsButton.
+For simplicity, I keep all localization data where the values are the same across all apps in this library. If there is something that differs between apps (e.g. appTitle) I use a localization file (or just a constant) in the app itself.

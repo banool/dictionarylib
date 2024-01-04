@@ -65,10 +65,10 @@ class SettingsPageState extends State<SettingsPage> {
       appStoreTileString = null;
     } else if (Platform.isAndroid) {
       appStoreTileString =
-          AppLocalizations.of(context)!.settingsPlayStoreFeedback;
+          DictLibLocalizations.of(context)!.settingsPlayStoreFeedback;
     } else if (Platform.isIOS) {
       appStoreTileString =
-          AppLocalizations.of(context)!.settingsAppStoreFeedback;
+          DictLibLocalizations.of(context)!.settingsAppStoreFeedback;
     }
 
     EdgeInsetsDirectional margin = const EdgeInsetsDirectional.only(
@@ -77,11 +77,11 @@ class SettingsPageState extends State<SettingsPage> {
     SettingsSection? featuresSection;
     if (enableFlashcardsKnob && !getShouldUseHorizontalLayout(context)) {
       featuresSection = SettingsSection(
-        title: Text(AppLocalizations.of(context)!.settingsRevision),
+        title: Text(DictLibLocalizations.of(context)!.settingsRevision),
         tiles: [
           SettingsTile.switchTile(
             title: Text(
-              AppLocalizations.of(context)!.settingsHideRevision,
+              DictLibLocalizations.of(context)!.settingsHideRevision,
               style: const TextStyle(fontSize: 15),
             ),
             initialValue:
@@ -90,21 +90,22 @@ class SettingsPageState extends State<SettingsPage> {
           ),
           SettingsTile.navigation(
               title: getText(
-                AppLocalizations.of(context)!.settingsDeleteRevisionProgress,
+                DictLibLocalizations.of(context)!
+                    .settingsDeleteRevisionProgress,
               ),
               trailing: Container(),
               onPressed: (BuildContext context) async {
                 bool confirmed = await confirmAlert(
                     context,
-                    Text(AppLocalizations.of(context)!
+                    Text(DictLibLocalizations.of(context)!
                         .settingsDeleteRevisionProgressExplanation));
                 if (confirmed) {
                   await writeReviews([], [], force: true);
                   await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
                   await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(
-                        AppLocalizations.of(context)!.settingsProgressDeleted),
+                    content: Text(DictLibLocalizations.of(context)!
+                        .settingsProgressDeleted),
                     backgroundColor: widget.mainColor,
                   ));
                 }
@@ -116,24 +117,25 @@ class SettingsPageState extends State<SettingsPage> {
 
     List<AbstractSettingsSection?> sections = [
       SettingsSection(
-        title: Text(AppLocalizations.of(context)!.settingsCache),
+        title: Text(DictLibLocalizations.of(context)!.settingsCache),
         tiles: [
           SettingsTile.switchTile(
             title: Text(
-              AppLocalizations.of(context)!.settingsCacheVideos,
+              DictLibLocalizations.of(context)!.settingsCacheVideos,
               style: const TextStyle(fontSize: 15),
             ),
             initialValue: sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true,
             onToggle: onChangeShouldCache,
           ),
           SettingsTile.navigation(
-              title: getText(AppLocalizations.of(context)!.settingsDropCache),
+              title:
+                  getText(DictLibLocalizations.of(context)!.settingsDropCache),
               trailing: Container(),
               onPressed: (BuildContext context) async {
                 await myCacheManager.emptyCache();
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content:
-                      Text(AppLocalizations.of(context)!.settingsCacheDropped),
+                  content: Text(
+                      DictLibLocalizations.of(context)!.settingsCacheDropped),
                   backgroundColor: widget.mainColor,
                 ));
               }),
@@ -141,14 +143,15 @@ class SettingsPageState extends State<SettingsPage> {
         margin: margin,
       ),
       SettingsSection(
-        title: Text(AppLocalizations.of(context)!.settingsData),
+        title: Text(DictLibLocalizations.of(context)!.settingsData),
         tiles: [
           SettingsTile.navigation(
             title: checkingForNewData
                 ? const Center(
                     child: CircularProgressIndicator(),
                   )
-                : getText(AppLocalizations.of(context)!.settingsCheckNewData),
+                : getText(
+                    DictLibLocalizations.of(context)!.settingsCheckNewData),
             trailing: Container(),
             onPressed: (BuildContext context) async {
               setState(() {
@@ -160,9 +163,10 @@ class SettingsPageState extends State<SettingsPage> {
               });
               String message;
               if (thereWasNewData) {
-                message = AppLocalizations.of(context)!.settingsDataUpdated;
+                message = DictLibLocalizations.of(context)!.settingsDataUpdated;
               } else {
-                message = AppLocalizations.of(context)!.settingsDataUpToDate;
+                message =
+                    DictLibLocalizations.of(context)!.settingsDataUpToDate;
               }
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text(message), backgroundColor: widget.mainColor));
@@ -173,10 +177,10 @@ class SettingsPageState extends State<SettingsPage> {
       ),
       featuresSection,
       SettingsSection(
-        title: Text(AppLocalizations.of(context)!.settingsLegal),
+        title: Text(DictLibLocalizations.of(context)!.settingsLegal),
         tiles: [
           SettingsTile.navigation(
-            title: getText(AppLocalizations.of(context)!.settingsSeeLegal),
+            title: getText(DictLibLocalizations.of(context)!.settingsSeeLegal),
             trailing: Container(),
             onPressed: (BuildContext context) async {
               return await Navigator.push(
@@ -193,10 +197,10 @@ class SettingsPageState extends State<SettingsPage> {
         margin: margin,
       ),
       SettingsSection(
-          title: Text(AppLocalizations.of(context)!.settingsHelp),
+          title: Text(DictLibLocalizations.of(context)!.settingsHelp),
           tiles: [
             SettingsTile.navigation(
-              title: getText(AppLocalizations.of(context)!
+              title: getText(DictLibLocalizations.of(context)!
                   .settingsReportDictionaryDataIssue),
               trailing: Container(),
               onPressed: (BuildContext context) async {
@@ -204,16 +208,16 @@ class SettingsPageState extends State<SettingsPage> {
               },
             ),
             SettingsTile.navigation(
-              title: getText(
-                  AppLocalizations.of(context)!.settingsReportAppIssueGithub),
+              title: getText(DictLibLocalizations.of(context)!
+                  .settingsReportAppIssueGithub),
               trailing: Container(),
               onPressed: (BuildContext context) async {
                 await launch(widget.reportAppProblemUrl, forceSafariVC: false);
               },
             ),
             SettingsTile.navigation(
-              title: getText(
-                  AppLocalizations.of(context)!.settingsReportAppIssueEmail),
+              title: getText(DictLibLocalizations.of(context)!
+                  .settingsReportAppIssueEmail),
               trailing: Container(),
               onPressed: (BuildContext context) async {
                 var mailto = Mailto(
@@ -243,7 +247,7 @@ class SettingsPageState extends State<SettingsPage> {
                 : null,
             SettingsTile.navigation(
               title: getText(
-                AppLocalizations.of(context)!.settingsShowBuildInformation,
+                DictLibLocalizations.of(context)!.settingsShowBuildInformation,
               ),
               trailing: Container(),
               onPressed: (BuildContext context) async {
@@ -256,7 +260,7 @@ class SettingsPageState extends State<SettingsPage> {
             ),
             SettingsTile.navigation(
                 title: getText(
-                    AppLocalizations.of(context)!.settingsBackgroundLogs),
+                    DictLibLocalizations.of(context)!.settingsBackgroundLogs),
                 trailing: Container(),
                 onPressed: (BuildContext context) async {
                   return await Navigator.push(
@@ -299,7 +303,7 @@ class SettingsPageState extends State<SettingsPage> {
 
     return TopLevelScaffold(
         body: body,
-        title: AppLocalizations.of(context)!.settingsTitle,
+        title: DictLibLocalizations.of(context)!.settingsTitle,
         mainColor: widget.mainColor,
         actions: actions);
   }
