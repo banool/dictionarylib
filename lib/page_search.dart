@@ -94,6 +94,7 @@ class SearchPageState extends State<SearchPage> {
       }
     }
 
+    var rightPadding = widget.includeEntryTypeButton ? 10.0 : 30.0;
     Widget body = Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
@@ -102,8 +103,8 @@ class SearchPageState extends State<SearchPage> {
           mainAxisSize: MainAxisSize.max,
           children: [
             Padding(
-                padding: const EdgeInsets.only(
-                    bottom: 10, left: 32, right: 10, top: 0),
+                padding: EdgeInsets.only(
+                    bottom: 10, left: 30, right: rightPadding, top: 0),
                 child: Row(
                   children: [
                     Expanded(
