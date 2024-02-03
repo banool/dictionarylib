@@ -260,3 +260,9 @@ Text getText(String s, {bool larger = false, Color? color}) {
     style: TextStyle(fontSize: size, color: color),
   );
 }
+
+typedef NavigateToEntryPageFn = Future<void> Function(
+  BuildContext context,
+  Entry entry,
+  bool showFavouritesButton,
+);

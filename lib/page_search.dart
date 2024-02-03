@@ -17,11 +17,7 @@ class SearchPage extends StatefulWidget {
   final Color mainColor;
   final Color appBarDisabledColor;
 
-  final Future<void> Function(
-    BuildContext context,
-    Entry entry,
-    bool showFavouritesButton,
-  ) navigateToEntryPage;
+  final NavigateToEntryPageFn navigateToEntryPage;
 
   final bool includeEntryTypeButton;
 

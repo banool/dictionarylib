@@ -14,6 +14,8 @@ import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 import 'top_level_scaffold.dart';
 
+// TODO deal with NaN
+
 abstract class FlashcardsLandingPageController {
   /// This function should read in whatever configuration necessary to figure
   /// out what subentries to finally review.

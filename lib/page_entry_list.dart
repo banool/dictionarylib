@@ -11,11 +11,15 @@ class EntryListPage extends StatefulWidget {
   final Color mainColor;
   final Color appBarDisabledColor;
 
-  const EntryListPage(
-      {super.key,
-      required this.entryList,
-      required this.mainColor,
-      required this.appBarDisabledColor});
+  final NavigateToEntryPageFn navigateToEntryPage;
+
+  const EntryListPage({
+    super.key,
+    required this.entryList,
+    required this.mainColor,
+    required this.appBarDisabledColor,
+    required this.navigateToEntryPage,
+  });
 
   @override
   EntryListPageState createState() => EntryListPageState();
@@ -219,6 +223,7 @@ class EntryListPageState extends State<EntryListPage> {
                 child: Padding(
               padding: const EdgeInsets.only(left: 8),
               child: listWidget(context, entriesSearched, refreshEntries,
+                  widget.navigateToEntryPage,
                   showFavouritesButton:
                       widget.entryList.key == KEY_FAVOURITES_ENTRIES,
                   deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
@@ -238,7 +243,8 @@ class EntryListPageState extends State<EntryListPage> {
 Widget listWidget(
   BuildContext context,
   List<Entry?> entriesSearched,
-  Function refreshEntriesFn, {
+  Function refreshEntriesFn,
+  NavigateToEntryPageFn navigateToEntryPage, {
   bool showFavouritesButton = true,
   Future<void> Function(Entry)? deleteEntryFn,
   Future<void> Function(Entry)? addEntryFn,
@@ -270,7 +276,7 @@ Widget listWidget(
       }
       return ListTile(
         key: ValueKey(entry.getKey()),
-        title: listItem(context, entry, refreshEntriesFn,
+        title: listItem(context, entry, refreshEntriesFn, navigateToEntryPage,
             showFavouritesButton: showFavouritesButton),
         trailing: trailing,
       );
@@ -283,6 +289,7 @@ Widget listWidget(
 // and lead people to beleive they're interacting with the non-favourites
 // list they just came from.
 Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
+    NavigateToEntryPageFn navigateToEntryPage,
     {bool showFavouritesButton = true}) {
   // Try to show the text in the selected locale but if not possible,
   // fallback to the key, which in this case is the word in English.
@@ -296,8 +303,7 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
           style: const TextStyle(color: Colors.black),
         )),
     onPressed: () async => {
-      //await navigateToEntryPage(context, entry,
-      //    showFavouritesButton: showFavouritesButton),
+      await navigateToEntryPage(context, entry, showFavouritesButton),
       await refreshEntriesFn(),
     },
   );
