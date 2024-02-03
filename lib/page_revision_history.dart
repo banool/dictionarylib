@@ -142,7 +142,8 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
             i += 1;
           }
 
-          rememberRate = numCardsRemembered / totalAnswers;
+          rememberRate =
+              totalAnswers == 0 ? 0 : numCardsRemembered / totalAnswers;
 
           String dateString = getDatetimeString(earliestDateTime);
           disclaimer = Text("Stats collected since $dateString");
