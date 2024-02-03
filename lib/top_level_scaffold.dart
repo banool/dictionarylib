@@ -80,50 +80,27 @@ class TopLevelScaffold extends StatelessWidget {
     );
   }
 
+  static List<String> getRoutes() {
+    var routes = [SEARCH_ROUTE];
+    if (getShowLists()) {
+      routes.add(LISTS_ROUTE);
+    }
+    if (getShowFlashcards()) {
+      routes.add(REVISION_ROUTE);
+    }
+    routes.add(SETTINGS_ROUTE);
+    return routes;
+  }
+
   static int calculateSelectedIndex(BuildContext context) {
     final GoRouter route = GoRouter.of(context);
     final String location = route.location;
-    final int showFlashcardsOffset = getShowFlashcards() ? 0 : 1;
-    if (location.startsWith(SEARCH_ROUTE)) {
-      return 0;
-    }
-    if (location.startsWith(LISTS_ROUTE)) {
-      return 1;
-    }
-    if (location.startsWith(REVISION_ROUTE)) {
-      return 2 - showFlashcardsOffset;
-    }
-    if (location.startsWith(SETTINGS_ROUTE)) {
-      return 3 - showFlashcardsOffset;
-    }
-    return 0;
+    var routes = getRoutes();
+    return routes.indexOf(location);
   }
 
   void onItemTapped(int index, BuildContext context) {
-    final bool showFlashcards = getShowFlashcards();
-    switch (index) {
-      case 0:
-        GoRouter.of(context).go(SEARCH_ROUTE);
-        break;
-      case 1:
-        GoRouter.of(context).go(LISTS_ROUTE);
-        break;
-      case 2:
-        if (showFlashcards) {
-          GoRouter.of(context).go(REVISION_ROUTE);
-        } else {
-          GoRouter.of(context).go(SETTINGS_ROUTE);
-        }
-        break;
-      case 3:
-        if (showFlashcards) {
-          GoRouter.of(context).go(SETTINGS_ROUTE);
-        } else {
-          // Also just go to the settings route, though we shouldn't get to
-          // this point.
-          GoRouter.of(context).go(SETTINGS_ROUTE);
-        }
-        break;
-    }
+    var routes = getRoutes();
+    GoRouter.of(context).go(routes[index]);
   }
 }

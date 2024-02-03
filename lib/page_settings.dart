@@ -75,7 +75,7 @@ class SettingsPageState extends State<SettingsPage> {
         start: 15, end: 15, top: 10, bottom: 10);
 
     SettingsSection? featuresSection;
-    if (enableFlashcardsKnob) {
+    if (enableFlashcardsKnob && !kIsWeb) {
       featuresSection = SettingsSection(
         title: Text(DictLibLocalizations.of(context)!.settingsRevision),
         tiles: [
