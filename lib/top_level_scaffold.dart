@@ -39,11 +39,14 @@ class TopLevelScaffold extends StatelessWidget {
         icon: const Icon(Icons.search),
         label: DictLibLocalizations.of(context)!.searchTitle,
       ),
-      BottomNavigationBarItem(
+    ];
+
+    if (getShowLists()) {
+      items.add(BottomNavigationBarItem(
         icon: const Icon(Icons.view_list),
         label: DictLibLocalizations.of(context)!.listsTitle,
-      ),
-    ];
+      ));
+    }
 
     if (getShowFlashcards()) {
       items.add(

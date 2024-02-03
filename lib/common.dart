@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:edit_distance/edit_distance.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
@@ -72,10 +73,18 @@ Future<bool> readKnob(String urlBase, String key, bool fallback) async {
 }
 
 bool getShowFlashcards() {
+  // Don't show flashcards on web.
+  if (kIsWeb) {
+    return false;
+  }
   if (!enableFlashcardsKnob) {
     return false;
   }
   return !(sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false);
+}
+
+bool getShowLists() {
+  return !kIsWeb;
 }
 
 // Search a list of entries and return top matching items.
