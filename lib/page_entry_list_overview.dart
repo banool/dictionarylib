@@ -15,14 +15,12 @@ class EntryListsOverviewPage extends StatefulWidget {
   final Color mainColor;
   final Color appBarDisabledColor;
   final BuildEntryListWidgetCallback buildEntryListWidgetCallback;
-  final bool appHasCommunityLists;
 
   const EntryListsOverviewPage(
       {super.key,
       required this.mainColor,
       required this.appBarDisabledColor,
-      required this.buildEntryListWidgetCallback,
-      required this.appHasCommunityLists});
+      required this.buildEntryListWidgetCallback});
 
   @override
   EntryListsOverviewPageState createState() => EntryListsOverviewPageState();
@@ -47,10 +45,14 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     });
   }
 
+  // We only show community lists and therefore the tab view if there are
+  // actually any community entry lists to show and user hasn't disabled it.
   bool showCommunityLists() {
     var prefHideCommunityLists =
         sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false;
-    return widget.appHasCommunityLists && !prefHideCommunityLists;
+    var communityLimitsPopulated =
+        communityEntryListManager.getEntryLists().isNotEmpty;
+    return communityLimitsPopulated && !prefHideCommunityLists;
   }
 
   @override

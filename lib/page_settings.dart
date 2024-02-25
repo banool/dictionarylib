@@ -27,7 +27,6 @@ class SettingsPage extends StatefulWidget {
     required this.appName,
     required this.iOSAppId,
     required this.androidAppId,
-    required this.appHasCommunityLists,
   });
 
   final String appName;
@@ -39,7 +38,6 @@ class SettingsPage extends StatefulWidget {
   final String reportAppProblemUrl;
   final String iOSAppId;
   final String androidAppId;
-  final bool appHasCommunityLists;
 
   @override
   SettingsPageState createState() => SettingsPageState();
@@ -138,7 +136,7 @@ class SettingsPageState extends State<SettingsPage> {
       )
     ];
 
-    if (widget.appHasCommunityLists) {
+    if (communityEntryListManager.getEntryLists().isNotEmpty) {
       dataTiles.add(SettingsTile.switchTile(
           title: Text(
             DictLibLocalizations.of(context)!.settingsHideCommunityLists,
