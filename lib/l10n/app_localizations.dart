@@ -389,6 +389,12 @@ abstract class DictLibLocalizations {
   /// **'Hide revision feature'**
   String get settingsHideRevision;
 
+  /// No description provided for @settingsHideCommunityLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide community lists'**
+  String get settingsHideCommunityLists;
+
   /// No description provided for @settingsDeleteRevisionProgress.
   ///
   /// In en, this message translates to:
@@ -539,6 +545,24 @@ abstract class DictLibLocalizations {
   /// **'New List'**
   String get listNewList;
 
+  /// No description provided for @listMyLists.
+  ///
+  /// In en, this message translates to:
+  /// **'My Lists'**
+  String get listMyLists;
+
+  /// No description provided for @listCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get listCommunity;
+
+  /// No description provided for @listConfirmListDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this list?'**
+  String get listConfirmListDelete;
+
   /// No description provided for @listSearchAdd.
   ///
   /// In en, this message translates to:
@@ -604,6 +628,24 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Related words'**
   String get relatedWords;
+
+  /// No description provided for @alertCareful.
+  ///
+  /// In en, this message translates to:
+  /// **'Careful!'**
+  String get alertCareful;
+
+  /// No description provided for @alertCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get alertCancel;
+
+  /// No description provided for @alertConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get alertConfirm;
 
   /// No description provided for @startupFailureMessage.
   ///

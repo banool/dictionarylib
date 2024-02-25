@@ -151,9 +151,6 @@ class SearchPageState extends State<SearchPage> {
                                       throw Exception(
                                           "Unknown entry type: $type");
                                     }
-                                    // It would be best to wait for this to complete but
-                                    // given this generally happens lightning fast I'll
-                                    // leave it as a todo.
                                     if (entryTypes.contains(type)) {
                                       await sharedPreferences.setBool(
                                           key, true);
@@ -299,10 +296,10 @@ List<EntryType> getEntryTypes() {
   if (sharedPreferences.getBool(KEY_SEARCH_FOR_WORDS) ?? true) {
     entryTypes.add(EntryType.WORD);
   }
-  if (sharedPreferences.getBool(KEY_SEARCH_FOR_PHRASES) ?? false) {
+  if (sharedPreferences.getBool(KEY_SEARCH_FOR_PHRASES) ?? true) {
     entryTypes.add(EntryType.PHRASE);
   }
-  if (sharedPreferences.getBool(KEY_SEARCH_FOR_FINGERSPELLING) ?? false) {
+  if (sharedPreferences.getBool(KEY_SEARCH_FOR_FINGERSPELLING) ?? true) {
     entryTypes.add(EntryType.FINGERSPELLING);
   }
   return entryTypes;

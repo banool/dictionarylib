@@ -1,3 +1,4 @@
+import 'package:dictionarylib/entry_list.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 
@@ -29,8 +30,12 @@ class DolphinInformation {
 
 Set<Entry> getEntriesFromLists(List<String> listsToUse) {
   Set<Entry> out = {};
+  var entryLists = getAllEntryLists();
   for (String key in listsToUse) {
-    out.addAll(entryListManager.entryLists[key]!.entries);
+    var entryList = entryLists[key];
+    if (entryList != null) {
+      out.addAll(entryList.entries);
+    }
   }
   return out;
 }

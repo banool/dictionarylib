@@ -184,6 +184,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsHideRevision => 'සංශෝධන විශේෂාංග සඟවන්න';
 
   @override
+  String get settingsHideCommunityLists => 'Hide community lists';
+
+  @override
   String get settingsDeleteRevisionProgress => 'සියලුම සංශෝධන ප්‍රගතිය මකන්න';
 
   @override
@@ -259,6 +262,15 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listNewList => 'නව ලැයිස්තු';
 
   @override
+  String get listMyLists => 'මගේ ලැයිස්තු';
+
+  @override
+  String get listCommunity => 'ප්රජාව';
+
+  @override
+  String get listConfirmListDelete => 'ඔබට මෙම ලැයිස්තුව මැකීමට අවශ්‍ය බව විශ්වාසද?';
+
+  @override
   String get listSearchAdd => 'එක් කිරීම සඳහා වචන සොයන්න';
 
   @override
@@ -290,6 +302,15 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get relatedWords => 'අදාළ වචන';
+
+  @override
+  String get alertCareful => 'පරිස්සමෙන්!';
+
+  @override
+  String get alertCancel => 'අවලංගු කරන්න';
+
+  @override
+  String get alertConfirm => 'තහවුරු කරන්න';
 
   @override
   String get startupFailureMessage => 'යෙදුම නිවැරදිව ආරම්භ කිරීමට අසමත් විය. කරුණාකර, පළමුව, ඔබ යෙදුමේ නවතම අනුවාදය භාවිතා කරන බව සහතික කරන්න. ඔබ එසේ නම්, කරුණාකර මෙම දෝෂය පෙන්වන පුනරුපුවරුවක් සමග daniel@dport.me වෙත ඊමේල් කරන්න.';

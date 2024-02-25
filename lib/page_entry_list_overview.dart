@@ -10,101 +10,58 @@ import 'top_level_scaffold.dart';
 
 typedef BuildEntryListWidgetCallback = Widget Function(EntryList entryList);
 
+// If showCommunityLists is true, keyedByCategoryEntriesGlobal must be populated.
 class EntryListsOverviewPage extends StatefulWidget {
   final Color mainColor;
   final Color appBarDisabledColor;
   final BuildEntryListWidgetCallback buildEntryListWidgetCallback;
+  final bool appHasCommunityLists;
 
   const EntryListsOverviewPage(
       {super.key,
       required this.mainColor,
       required this.appBarDisabledColor,
-      required this.buildEntryListWidgetCallback});
+      required this.buildEntryListWidgetCallback,
+      required this.appHasCommunityLists});
 
   @override
   EntryListsOverviewPageState createState() => EntryListsOverviewPageState();
 }
 
-class EntryListsOverviewPageState extends State<EntryListsOverviewPage> {
+class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
+    with SingleTickerProviderStateMixin {
+  late TabController tabController;
+
+  int tabIndex = 0;
   bool inEditMode = false;
 
   @override
-  Widget build(BuildContext context) {
-    List<Widget> tiles = [];
-    int i = 0;
-    for (MapEntry<String, EntryList> e in entryListManager.entryLists.entries) {
-      String key = e.key;
-      EntryList el = e.value;
-      String name = el.getName();
-      Widget? trailing;
-      if (inEditMode && el.canBeDeleted()) {
-        trailing = IconButton(
-            icon: const Icon(
-              Icons.remove_circle,
-              color: Colors.red,
-            ),
-            onPressed: () async {
-              bool confirmed = await confirmAlert(context,
-                  const Text("Are you sure you want to delete this list?"));
-              if (confirmed) {
-                await entryListManager.deleteEntryList(key);
-                setState(() {
-                  inEditMode = false;
-                });
-              }
-            });
-      }
-      Card card = Card(
-        key: ValueKey(name),
-        child: ListTile(
-          leading: el.getLeadingIcon(inEditMode: inEditMode),
-          trailing: trailing,
-          minLeadingWidth: 10,
-          title: Text(
-            name,
-            textAlign: TextAlign.start,
-            style: const TextStyle(fontSize: 16),
-          ),
-          onTap: () async {
-            await Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => widget.buildEntryListWidgetCallback(
-                          el,
-                        )));
-          },
-        ),
-      );
-      Widget toAdd = card;
-      if (el.key == KEY_FAVOURITES_ENTRIES && inEditMode) {
-        toAdd = IgnorePointer(
-          key: ValueKey(name),
-          child: toAdd,
-        );
-      }
-      if (inEditMode) {
-        toAdd = ReorderableDragStartListener(
-            key: ValueKey(name), index: i, child: toAdd);
-      }
-      tiles.add(toAdd);
-      i += 1;
-    }
-    Widget body;
-    if (inEditMode) {
-      body = ReorderableListView(
-          children: tiles,
-          onReorder: (prev, updated) async {
-            setState(() {
-              entryListManager.reorder(prev, updated);
-            });
-            await entryListManager.writeEntryListKeys();
-          });
-    } else {
-      body = ListView(
-        children: tiles,
-      );
-    }
+  void initState() {
+    super.initState();
+    var length = showCommunityLists() ? 2 : 1;
+    tabController = TabController(length: length, vsync: this);
+    tabController.addListener(() {
+      setState(() {
+        tabIndex = tabController.index;
+      });
+    });
+  }
 
+  bool showCommunityLists() {
+    var prefHideCommunityLists =
+        sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false;
+    return widget.appHasCommunityLists && !prefHideCommunityLists;
+  }
+
+  @override
+  void dispose() {
+    // Dispose of the TabController to avoid memory leaks
+    tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     FloatingActionButton? floatingActionButton;
     if (inEditMode) {
       floatingActionButton = FloatingActionButton(
@@ -120,38 +77,197 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage> {
           child: const Icon(Icons.add));
     }
 
-    List<Widget> actions = [
-      buildActionButton(
+    List<Widget> actions = [];
+
+    // Only show the edit action for user lists.
+    if (tabIndex == 0) {
+      actions.add(buildActionButton(
         context,
-        inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
+        inEditMode
+            ? const Icon(Icons.minor_crash_outlined)
+            : const Icon(Icons.edit_outlined),
         () async {
           setState(() {
             inEditMode = !inEditMode;
           });
         },
         widget.appBarDisabledColor,
-      ),
-      buildActionButton(
-        context,
-        const Icon(Icons.help),
-        () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => getEntryListOverviewHelpPageEn()),
-          );
-        },
-        widget.appBarDisabledColor,
-      )
+      ));
+    }
+
+    actions.add(buildActionButton(
+      context,
+      const Icon(Icons.help),
+      () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => getEntryListOverviewHelpPageEn()),
+        );
+      },
+      widget.appBarDisabledColor,
+    ));
+
+    List<Widget> tabs = [
+      Tab(text: DictLibLocalizations.of(context)!.listMyLists),
+    ];
+    List<Widget> children = [
+      getUserLists(
+          context, setState, widget.buildEntryListWidgetCallback, inEditMode),
     ];
 
+    if (showCommunityLists()) {
+      tabs.add(Tab(text: DictLibLocalizations.of(context)!.listCommunity));
+      children
+          .add(getCommunityLists(context, widget.buildEntryListWidgetCallback));
+    }
+
+    bool showTabs = tabs.length > 1;
+
+    Widget body;
+    if (showTabs) {
+      body = TabBarView(controller: tabController, children: children);
+    } else {
+      body = children[0];
+    }
+
     return TopLevelScaffold(
+        underAppBar: showTabs
+            ? TabBar(
+                controller: tabController,
+                labelStyle: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 16, color: Colors.white),
+                tabs: tabs,
+              )
+            : null,
         body: body,
         mainColor: widget.mainColor,
         title: DictLibLocalizations.of(context)!.listsTitle,
         actions: actions,
         floatingActionButton: floatingActionButton);
   }
+}
+
+Widget getUserLists(
+    BuildContext context,
+    void Function(void Function() fn) setState,
+    BuildEntryListWidgetCallback buildEntryListWidgetCallback,
+    bool inEditMode) {
+  List<Widget> tiles = [];
+  int i = 0;
+  for (MapEntry<String, EntryList> e
+      in userEntryListManager.getEntryLists().entries) {
+    String key = e.key;
+    EntryList el = e.value;
+    String name = el.getName();
+    Widget? trailing;
+    if (inEditMode && el.canBeDeleted()) {
+      trailing = IconButton(
+          icon: const Icon(
+            Icons.remove_circle,
+            color: Colors.red,
+          ),
+          onPressed: () async {
+            bool confirmed = await confirmAlert(context,
+                Text(DictLibLocalizations.of(context)!.listConfirmListDelete));
+            if (confirmed) {
+              await userEntryListManager.deleteEntryList(key);
+              setState(() {
+                inEditMode = false;
+              });
+            }
+          });
+    }
+    Card card = Card(
+      key: ValueKey(name),
+      child: ListTile(
+        leading: el.getLeadingIcon(inEditMode: inEditMode),
+        trailing: trailing,
+        minLeadingWidth: 10,
+        title: Text(
+          name,
+          textAlign: TextAlign.start,
+          style: const TextStyle(fontSize: 16),
+        ),
+        onTap: () async {
+          await Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => buildEntryListWidgetCallback(
+                        el,
+                      )));
+        },
+      ),
+    );
+    Widget toAdd = card;
+    if (el.key == KEY_FAVOURITES_ENTRIES && inEditMode) {
+      toAdd = IgnorePointer(
+        key: ValueKey(name),
+        child: toAdd,
+      );
+    }
+    if (inEditMode) {
+      toAdd = ReorderableDragStartListener(
+          key: ValueKey(name), index: i, child: toAdd);
+    }
+    tiles.add(toAdd);
+    i += 1;
+  }
+
+  if (inEditMode) {
+    return ReorderableListView(
+        children: tiles,
+        onReorder: (prev, updated) async {
+          setState(() {
+            userEntryListManager.reorder(prev, updated);
+          });
+          await userEntryListManager.writeEntryListKeys();
+        });
+  } else {
+    return ListView(
+      children: tiles,
+    );
+  }
+}
+
+Widget getCommunityLists(BuildContext context,
+    BuildEntryListWidgetCallback buildEntryListWidgetCallback) {
+  List<Widget> tiles = [];
+  for (MapEntry<String, EntryList> e
+      in communityEntryListManager.getEntryLists().entries) {
+    EntryList el = e.value;
+    String name = el.getName();
+    Card card = Card(
+      key: ValueKey(name),
+      child: ListTile(
+        leading: el.getLeadingIcon(inEditMode: false),
+        minLeadingWidth: 10,
+        title: Text(
+          name,
+          textAlign: TextAlign.start,
+          style: const TextStyle(fontSize: 16),
+        ),
+        onTap: () async {
+          await Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => buildEntryListWidgetCallback(
+                        el,
+                      )));
+        },
+      ),
+    );
+    Widget toAdd = card;
+    tiles.add(toAdd);
+  }
+
+  return ListView(
+    children: tiles,
+  );
 }
 
 // Returns true if a new list was created.
@@ -188,7 +304,7 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
     String name = controller.text;
     try {
       String key = EntryList.getKeyFromName(name);
-      await entryListManager.createEntryList(key);
+      await userEntryListManager.createEntryList(key);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(

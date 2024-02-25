@@ -184,6 +184,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsHideRevision => 'எடிட்டிங் அம்சங்களை மறை';
 
   @override
+  String get settingsHideCommunityLists => 'Hide community lists';
+
+  @override
   String get settingsDeleteRevisionProgress => 'அனைத்து மீள்திருத்த முன்னேற்றத்தையும் நீக்கு';
 
   @override
@@ -259,6 +262,15 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get listNewList => 'புதிய பட்டியல்கள்';
 
   @override
+  String get listMyLists => 'எனது பட்டியல்கள்';
+
+  @override
+  String get listCommunity => 'சமூக';
+
+  @override
+  String get listConfirmListDelete => 'இந்தப் பட்டியலை நிச்சயமாக நீக்க விரும்புகிறீர்களா?';
+
+  @override
   String get listSearchAdd => 'சேர்க்க வார்த்தைகளைக் கண்டுபிடி';
 
   @override
@@ -290,6 +302,15 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get relatedWords => 'சம்பந்தமான வார்த்தைகள்';
+
+  @override
+  String get alertCareful => 'கவனமாக!';
+
+  @override
+  String get alertCancel => 'ரத்து செய்';
+
+  @override
+  String get alertConfirm => 'உறுதிப்படுத்தவும்';
 
   @override
   String get startupFailureMessage => 'பயன்பாடு சரியாகத் தொடங்குவதில் தோல்வி. தயவுசெய்து, முதலில், நீங்கள் பயன்பாட்டின் சமீபத்திய பதிப்பைப் பயன்படுத்துகிறீர்கள் என்பதை உறுதிப்படுத்திக் கொள்ளுங்கள். நீங்கள் இருந்தால், இந்தப் பிழையின் நகலுடன் daniel@dport.me ஐ மின்னஞ்சல் செய்யவும்.';

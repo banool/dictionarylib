@@ -50,26 +50,27 @@ abstract class EntryLoader {
     }
   }
 
-  updateKeyedEntriesGlobal() {
+  updateEnglishKeyedEntriesGlobal() {
     printAndLog("Updating keyed entriesGlobal variants");
     for (Entry e in entriesGlobal) {
       // The key is the word in English, which is always present.
-      keyedByEnglishEntriesGlobal[e.getKey()] = e;
+      keyedByEnglishEntriesGlobal[e.getPhrase(LOCALE_ENGLISH)!] = e;
     }
     printAndLog("Updated keyed entriesGlobal variants");
   }
 
   /// Set entriesGlobal and all the stuff that depends on it. Subclasses may
   /// want to override this to first call super and then update additional
-  /// keyed entries globals.
+  /// keyed entries globals. They might want to set the communityListManager
+  /// too if relevant.
   setEntriesGlobal(Set<Entry> entries) {
     entriesGlobal = entries;
 
     // Update the global entries variants keyed by each language.
-    updateKeyedEntriesGlobal();
+    updateEnglishKeyedEntriesGlobal();
 
     // Update the list manager.
-    entryListManager = EntryListManager.fromStartup();
+    userEntryListManager = UserEntryListManager.fromStartup();
 
     printAndLog("Updated entriesGlobal and all its downstream variables");
   }

@@ -31,5 +31,10 @@ Widget getEntryListOverviewHelpPageEn() {
           "Favourites), click the help icon in the top right, and read the information "
           "under \"How do I add words to a list?\"",
     ],
+    "What are community lists?": [
+      "Community lists are predefined collections of entries centered around a "
+          "particular topic, such as \"Animals\" or \"Colors\".",
+      "These lists and the entries within them cannot be deleted or reordered.",
+    ],
   });
 }

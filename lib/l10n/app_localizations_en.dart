@@ -184,6 +184,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsHideRevision => 'Hide revision feature';
 
   @override
+  String get settingsHideCommunityLists => 'Hide community lists';
+
+  @override
   String get settingsDeleteRevisionProgress => 'Delete all revision progress';
 
   @override
@@ -259,6 +262,15 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get listNewList => 'New List';
 
   @override
+  String get listMyLists => 'My Lists';
+
+  @override
+  String get listCommunity => 'Community';
+
+  @override
+  String get listConfirmListDelete => 'Are you sure you want to delete this list?';
+
+  @override
   String get listSearchAdd => 'Search for words to add';
 
   @override
@@ -290,6 +302,15 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get relatedWords => 'Related words';
+
+  @override
+  String get alertCareful => 'Careful!';
+
+  @override
+  String get alertCancel => 'Cancel';
+
+  @override
+  String get alertConfirm => 'Confirm';
 
   @override
   String get startupFailureMessage => 'Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.';

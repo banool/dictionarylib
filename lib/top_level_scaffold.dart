@@ -15,6 +15,7 @@ class TopLevelScaffold extends StatelessWidget {
     required this.mainColor,
     this.actions,
     this.floatingActionButton,
+    this.underAppBar,
     super.key,
   });
 
@@ -31,6 +32,9 @@ class TopLevelScaffold extends StatelessWidget {
 
   /// Floating action button to show, if any.
   final Widget? floatingActionButton;
+
+  /// What goes under the app bar, if anything.
+  final PreferredSizeWidget? underAppBar;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +71,7 @@ class TopLevelScaffold extends StatelessWidget {
         title: Text(title),
         actions: buildActionButtons(actions ?? []),
         centerTitle: true,
+        bottom: underAppBar,
       ),
       body: body,
       floatingActionButton: floatingActionButton,

@@ -16,17 +16,19 @@ import 'page_settings_help_en.dart';
 import 'top_level_scaffold.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage(
-      {super.key,
-      required this.mainColor,
-      required this.appBarDisabledColor,
-      required this.additionalTopWidgets,
-      required this.buildLegalInformationChildren,
-      required this.reportDataProblemUrl,
-      required this.reportAppProblemUrl,
-      required this.appName,
-      required this.iOSAppId,
-      required this.androidAppId});
+  const SettingsPage({
+    super.key,
+    required this.mainColor,
+    required this.appBarDisabledColor,
+    required this.additionalTopWidgets,
+    required this.buildLegalInformationChildren,
+    required this.reportDataProblemUrl,
+    required this.reportAppProblemUrl,
+    required this.appName,
+    required this.iOSAppId,
+    required this.androidAppId,
+    required this.appHasCommunityLists,
+  });
 
   final String appName;
   final Color mainColor;
@@ -37,6 +39,7 @@ class SettingsPage extends StatefulWidget {
   final String reportAppProblemUrl;
   final String iOSAppId;
   final String androidAppId;
+  final bool appHasCommunityLists;
 
   @override
   SettingsPageState createState() => SettingsPageState();
@@ -44,19 +47,6 @@ class SettingsPage extends StatefulWidget {
 
 class SettingsPageState extends State<SettingsPage> {
   bool checkingForNewData = false;
-
-  void onChangeShouldCache(bool newValue) {
-    setState(() {
-      sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue);
-    });
-  }
-
-  void onChangeHideFlashcardsFeature(bool newValue) {
-    setState(() {
-      sharedPreferences.setBool(KEY_HIDE_FLASHCARDS_FEATURE, newValue);
-      //myHomePageController.toggleFlashcards(newValue);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +76,12 @@ class SettingsPageState extends State<SettingsPage> {
             ),
             initialValue:
                 sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false,
-            onToggle: onChangeHideFlashcardsFeature,
+            onToggle: (bool newValue) {
+              setState(() {
+                sharedPreferences.setBool(
+                    KEY_HIDE_FLASHCARDS_FEATURE, newValue);
+              });
+            },
           ),
           SettingsTile.navigation(
               title: getText(
@@ -115,6 +110,49 @@ class SettingsPageState extends State<SettingsPage> {
       );
     }
 
+    List<AbstractSettingsTile> dataTiles = [
+      SettingsTile.navigation(
+        title: checkingForNewData
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : getText(DictLibLocalizations.of(context)!.settingsCheckNewData),
+        trailing: Container(),
+        onPressed: (BuildContext context) async {
+          setState(() {
+            checkingForNewData = true;
+          });
+          bool thereWasNewData = await entryLoader.updateWordsData(true);
+          setState(() {
+            checkingForNewData = false;
+          });
+          String message;
+          if (thereWasNewData) {
+            message = DictLibLocalizations.of(context)!.settingsDataUpdated;
+          } else {
+            message = DictLibLocalizations.of(context)!.settingsDataUpToDate;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(message), backgroundColor: widget.mainColor));
+        },
+      )
+    ];
+
+    if (widget.appHasCommunityLists) {
+      dataTiles.add(SettingsTile.switchTile(
+          title: Text(
+            DictLibLocalizations.of(context)!.settingsHideCommunityLists,
+            style: const TextStyle(fontSize: 15),
+          ),
+          initialValue:
+              sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false,
+          onToggle: (bool newValue) {
+            setState(() {
+              sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue);
+            });
+          }));
+    }
+
     List<AbstractSettingsSection?> sections = [
       SettingsSection(
         title: Text(DictLibLocalizations.of(context)!.settingsCache),
@@ -125,7 +163,11 @@ class SettingsPageState extends State<SettingsPage> {
               style: const TextStyle(fontSize: 15),
             ),
             initialValue: sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true,
-            onToggle: onChangeShouldCache,
+            onToggle: (bool newValue) {
+              setState(() {
+                sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue);
+              });
+            },
           ),
           SettingsTile.navigation(
               title:
@@ -144,35 +186,7 @@ class SettingsPageState extends State<SettingsPage> {
       ),
       SettingsSection(
         title: Text(DictLibLocalizations.of(context)!.settingsData),
-        tiles: [
-          SettingsTile.navigation(
-            title: checkingForNewData
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : getText(
-                    DictLibLocalizations.of(context)!.settingsCheckNewData),
-            trailing: Container(),
-            onPressed: (BuildContext context) async {
-              setState(() {
-                checkingForNewData = true;
-              });
-              bool thereWasNewData = await entryLoader.updateWordsData(true);
-              setState(() {
-                checkingForNewData = false;
-              });
-              String message;
-              if (thereWasNewData) {
-                message = DictLibLocalizations.of(context)!.settingsDataUpdated;
-              } else {
-                message =
-                    DictLibLocalizations.of(context)!.settingsDataUpToDate;
-              }
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(message), backgroundColor: widget.mainColor));
-            },
-          )
-        ],
+        tiles: dataTiles,
         margin: margin,
       ),
       featuresSection,

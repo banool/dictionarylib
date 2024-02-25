@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,8 +37,27 @@ late Color settingsBackgroundColor;
 AdvisoriesResponse? advisoriesResponse;
 bool advisoryShownOnce = false;
 
-// Manager for lists of entries.
-late EntryListManager entryListManager;
+// Manager for lists of entries defined by the user.
+late UserEntryListManager userEntryListManager;
+
+// In dictionarylib we set this to a dummy with no lists. Apps can replace this
+// with an implementation that makes sense for them, e.g. for SLSL an entry list
+// manager where the lists are derived from the category of the entries.
+EntryListManager communityEntryListManager = DummyEntryListManager();
+
+// Get the entry lists from all the entry list managers combined.
+LinkedHashMap<String, EntryList> getAllEntryLists() {
+  List<EntryListManager> allEntryListManagers = [
+    userEntryListManager,
+    communityEntryListManager,
+  ];
+
+  LinkedHashMap<String, EntryList> out = LinkedHashMap();
+  for (EntryListManager em in allEntryListManagers) {
+    out.addAll(em.getEntryLists());
+  }
+  return out;
+}
 
 // Device info.
 AndroidDeviceInfo? androidDeviceInfo;

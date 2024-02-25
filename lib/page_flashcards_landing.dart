@@ -136,8 +136,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         [KEY_FAVOURITES_ENTRIES];
 
     // Filter out lists that no longer exist.
-    listsToReview.removeWhere(
-        (element) => !entryListManager.entryLists.containsKey(element));
+    listsToReview
+        .removeWhere((element) => !getAllEntryLists().containsKey(element));
 
     // Get the entries from all these lists.
     entriesFromLists = getEntriesFromLists(listsToReview);
@@ -249,10 +249,11 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 builder: (ctx) {
                   List<MultiSelectItem<String>> items = [];
                   for (MapEntry<String, EntryList> e
-                      in entryListManager.entryLists.entries) {
+                      in getAllEntryLists().entries) {
                     items.add(MultiSelectItem(e.key, e.value.getName()));
                   }
                   return MultiSelectDialog<String>(
+                    searchable: true,
                     listType: MultiSelectListType.CHIP,
                     title: Text(DictLibLocalizations.of(context)!
                         .flashcardsSelectLists),

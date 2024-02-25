@@ -118,8 +118,9 @@ class EntryListPageState extends State<EntryListPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> actions = [
-      buildActionButton(
+    List<Widget> actions = [];
+    if (widget.entryList.canBeEdited()) {
+      actions.add(buildActionButton(
         context,
         inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
         () async {
@@ -132,7 +133,9 @@ class EntryListPageState extends State<EntryListPage> {
           });
         },
         widget.appBarDisabledColor,
-      ),
+      ));
+    }
+    actions.add(
       buildActionButton(
         context,
         const Icon(Icons.help),
@@ -144,7 +147,7 @@ class EntryListPageState extends State<EntryListPage> {
         },
         widget.appBarDisabledColor,
       ),
-    ];
+    );
 
     String listName = widget.entryList.getName();
 

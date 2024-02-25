@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'entry_types.dart';
 import 'globals.dart';
+import 'l10n/app_localizations.dart';
 
 const String KEY_LOCALE_OVERRIDE = "locale_override";
 
@@ -25,6 +26,7 @@ const String KEY_FAVOURITES_ENTRIES = "favourites_words";
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME = "last_data_check_time";
 const String KEY_DICTIONARY_DATA_CURRENT_VERSION = "current_data_version";
 const String KEY_HIDE_FLASHCARDS_FEATURE = "hide_flashcards_feature";
+const String KEY_HIDE_COMMUNITY_LISTS = "hide_community_lists";
 const String KEY_FLASHCARD_REGIONS = "flashcard_regions";
 const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
@@ -32,6 +34,8 @@ const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
 const int DATA_CHECK_INTERVAL = 62 * 60 * 1; // 1 hour.
 
 const int NUM_DAYS_TO_CACHE = 14;
+
+const int SEARCH_FOR_NUM_ITEMS = 25;
 
 final GlobalKey<NavigatorState> rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -125,18 +129,18 @@ List<Entry> searchList(BuildContext context, String searchTerm,
   List<Entry> out = [];
   for (List<Entry> entries in st.values) {
     out.addAll(entries);
-    if (out.length > 10) {
+    if (out.length > SEARCH_FOR_NUM_ITEMS) {
       break;
     }
   }
   return out;
 }
 
-// TODO: Internationalise the text here.
 Future<bool> confirmAlert(BuildContext context, Widget content,
-    {String title = "Careful!",
-    String cancelText = "Cancel",
-    String confirmText = "Confirm"}) async {
+    {String? title, String? cancelText, String? confirmText}) async {
+  title = title ?? DictLibLocalizations.of(context)!.alertCareful;
+  cancelText = cancelText ?? DictLibLocalizations.of(context)!.alertCancel;
+  confirmText = confirmText ?? DictLibLocalizations.of(context)!.alertConfirm;
   bool confirmed = false;
   Widget cancelButton = TextButton(
     child: Text(cancelText, style: const TextStyle(color: Colors.black)),

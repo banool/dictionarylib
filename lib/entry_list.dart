@@ -6,6 +6,7 @@ import 'entry_types.dart';
 import 'globals.dart';
 
 const String KEY_ENTRY_LIST_KEYS = "word_list_keys";
+const int SUFFIX_LENGTH = 6;
 
 // A user created list of entries.
 class EntryList {
@@ -17,8 +18,9 @@ class EntryList {
 
   String key;
   LinkedHashSet<Entry> entries; // Ordered by insertion order.
+  bool _canBeEdited;
 
-  EntryList(this.key, this.entries);
+  EntryList(this.key, this.entries, this._canBeEdited);
 
   @override
   String toString() {
@@ -27,13 +29,15 @@ class EntryList {
 
   // This takes in the raw string key, pulls the list of raw strings from
   // storage, and converts them into a name and a list of entries respectively.
+  // This is specific to user entry lists.
   factory EntryList.fromRaw(String key) {
     LinkedHashSet<Entry> entries = loadEntryList(key);
-    return EntryList(key, entries);
+    return EntryList(key, entries, true);
   }
 
   // Load up a list of entries. If the key doesn't exist, it'll just return an
-  // empty list.
+  // empty list. This is specific to user entry lists, which are in local
+  // storage.
   static LinkedHashSet<Entry> loadEntryList(String key) {
     LinkedHashSet<Entry> entries = LinkedHashSet();
     List<String> entriesRaw = sharedPreferences.getStringList(key) ?? [];
@@ -73,26 +77,33 @@ class EntryList {
     return !(key == KEY_FAVOURITES_ENTRIES);
   }
 
+  bool canBeEdited() {
+    return _canBeEdited;
+  }
+
   static String getNameFromKey(String key) {
     if (key == KEY_FAVOURITES_ENTRIES) {
       return "Favourites";
     }
     // This - 6 comes from the length of _words
-    return key.substring(0, key.length - 6).replaceAll("_", " ");
+    return key.substring(0, key.length - SUFFIX_LENGTH).replaceAll("_", " ");
   }
 
   String getName() {
     return EntryList.getNameFromKey(key);
   }
 
-  static String getKeyFromName(String name) {
+  static String getKeyFromName(String name, {String suffix = "_words"}) {
+    if (suffix.length != SUFFIX_LENGTH) {
+      throw "Suffix length must be $SUFFIX_LENGTH";
+    }
     if (name.isEmpty) {
       throw "List name cannot be empty";
     }
     if (!validNameCharacters.hasMatch(name)) {
       throw "Invalid name, this should have been caught already";
     }
-    return "${name}_words".replaceAll(" ", "_");
+    return "$name$suffix".replaceAll(" ", "_");
   }
 
   // No matter what locale they use we use the key of the entry for storage.
@@ -112,13 +123,25 @@ class EntryList {
   }
 }
 
+// Note: If you have multiple entry list managers, make sure the keys between
+// their entry lists are globally unique. Each entry list manager entry list key
+// should have a prefix unique to that entry list manager for example.
+abstract class EntryListManager {
+  LinkedHashMap<String, EntryList> getEntryLists();
+}
+
 // This class does not deal with list names at all, only with keys.
-class EntryListManager {
-  LinkedHashMap<String, EntryList> entryLists; // Maintains insertion order.
+class UserEntryListManager implements EntryListManager {
+  LinkedHashMap<String, EntryList> _entryLists; // Maintains insertion order.
 
-  EntryListManager(this.entryLists);
+  UserEntryListManager(this._entryLists);
 
-  factory EntryListManager.fromStartup() {
+  @override
+  LinkedHashMap<String, EntryList> getEntryLists() {
+    return _entryLists;
+  }
+
+  factory UserEntryListManager.fromStartup() {
     printAndLog("Loading entry lists...");
     List<String> entryListKeys =
         sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS) ??
@@ -128,27 +151,27 @@ class EntryListManager {
       entryLists[key] = EntryList.fromRaw(key);
     }
     printAndLog("Loaded ${entryLists.length} lists");
-    return EntryListManager(entryLists);
+    return UserEntryListManager(entryLists);
   }
 
   Future<void> createEntryList(String key) async {
-    if (entryLists.containsKey(key)) {
+    if (_entryLists.containsKey(key)) {
       throw "List already exists";
     }
-    entryLists[key] = EntryList.fromRaw(key);
-    await entryLists[key]!.write();
+    _entryLists[key] = EntryList.fromRaw(key);
+    await _entryLists[key]!.write();
     await writeEntryListKeys();
   }
 
   Future<void> deleteEntryList(String key) async {
-    entryLists.remove(key);
+    _entryLists.remove(key);
     await sharedPreferences.remove(key);
     await writeEntryListKeys();
   }
 
   Future<void> writeEntryListKeys() async {
     await sharedPreferences.setStringList(
-        KEY_ENTRY_LIST_KEYS, entryLists.keys.toList());
+        KEY_ENTRY_LIST_KEYS, _entryLists.keys.toList());
   }
 
   // Given an item that moved from index prev to index current,
@@ -161,11 +184,11 @@ class EntryListManager {
     }
     printAndLog("Moving item from $prev to $updated");
 
-    MapEntry<String, EntryList> toMove = entryLists.entries.toList()[prev];
+    MapEntry<String, EntryList> toMove = _entryLists.entries.toList()[prev];
 
     LinkedHashMap<String, EntryList> modifiedList = LinkedHashMap();
     int i = 0;
-    for (MapEntry<String, EntryList> e in entryLists.entries) {
+    for (MapEntry<String, EntryList> e in _entryLists.entries) {
       if (i == prev) {
         i += 1;
         continue;
@@ -181,6 +204,13 @@ class EntryListManager {
       modifiedList[toMove.key] = toMove.value;
     }
 
-    entryLists = modifiedList;
+    _entryLists = modifiedList;
+  }
+}
+
+class DummyEntryListManager implements EntryListManager {
+  @override
+  LinkedHashMap<String, EntryList> getEntryLists() {
+    return LinkedHashMap();
   }
 }
