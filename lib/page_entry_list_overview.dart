@@ -83,9 +83,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     if (tabIndex == 0) {
       actions.add(buildActionButton(
         context,
-        inEditMode
-            ? const Icon(Icons.minor_crash_outlined)
-            : const Icon(Icons.edit_outlined),
+        inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
         () async {
           setState(() {
             inEditMode = !inEditMode;
