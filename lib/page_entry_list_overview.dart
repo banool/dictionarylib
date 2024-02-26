@@ -29,17 +29,20 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
 
-  int tabIndex = 0;
+  bool onFirstTab = true;
   bool inEditMode = false;
 
   @override
   void initState() {
     super.initState();
     var length = showCommunityLists() ? 2 : 1;
-    tabController = TabController(length: length, vsync: this);
-    tabController.addListener(() {
+    tabController = TabController(initialIndex: 0, length: length, vsync: this);
+    tabController.animation!.addListener(() {
+      final double value = tabController.animation!.value;
       setState(() {
-        tabIndex = tabController.index;
+        onFirstTab = value < 0.5;
+        inEditMode = false;
+        //
       });
     });
   }
@@ -81,7 +84,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     List<Widget> actions = [];
 
     // Only show the edit action for user lists.
-    if (tabIndex == 0) {
+    if (onFirstTab) {
       actions.add(buildActionButton(
         context,
         inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
