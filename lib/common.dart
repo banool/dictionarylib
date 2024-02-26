@@ -31,9 +31,9 @@ const String KEY_FLASHCARD_REGIONS = "flashcard_regions";
 const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
 
-const int DATA_CHECK_INTERVAL = 62 * 60 * 1; // 1 hour.
+const int DATA_CHECK_INTERVAL = 30 * 60 * 1; // 30 minutes.
 
-const int NUM_DAYS_TO_CACHE = 14;
+const int NUM_DAYS_TO_CACHE = 21;
 
 const int SEARCH_FOR_NUM_ITEMS = 25;
 
