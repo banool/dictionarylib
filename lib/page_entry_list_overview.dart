@@ -10,7 +10,6 @@ import 'top_level_scaffold.dart';
 
 typedef BuildEntryListWidgetCallback = Widget Function(EntryList entryList);
 
-// If showCommunityLists is true, keyedByCategoryEntriesGlobal must be populated.
 class EntryListsOverviewPage extends StatefulWidget {
   final Color mainColor;
   final Color appBarDisabledColor;

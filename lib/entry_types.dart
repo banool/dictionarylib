@@ -27,6 +27,9 @@ abstract class Entry implements Comparable<Entry> {
   // available for the given locale.
   String? getPhrase(Locale locale);
 
+  // Get categories that this entry corresponds to, e.g. ["Animals", "Birds"].
+  List<String> getCategories();
+
   // Get the type of this entry.
   EntryType getEntryType();
 
