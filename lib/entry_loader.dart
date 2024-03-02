@@ -45,7 +45,8 @@ abstract class EntryLoader {
           "Loaded entries from local storage (the data cached locally after downloading it from from the internet)");
       return loadEntriesInner(data);
     } catch (e) {
-      printAndLog("Failed to deserialize data from local storage: $e");
+      printAndLog(
+          "Failed to deserialize data from local storage, we'll try to download from the remote again: $e");
       return {};
     }
   }
