@@ -181,6 +181,11 @@ Future<void> setupPhaseTwo(
     }
   }
 
+  if (entriesGlobal.isEmpty) {
+    printAndLog("entriesGlobal is after the loading phase, throwing...");
+    throw "Global entries data is empty after the data loading phase. This is a bug, please report it.";
+  }
+
   entryLoader = paramEntryLoader;
 
   // Resolve values based on knobs.
