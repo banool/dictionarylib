@@ -1,4 +1,3 @@
-import 'package:dictionarylib/entry_list.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 
@@ -30,7 +29,12 @@ class DolphinInformation {
 
 Set<Entry> getEntriesFromLists(List<String> listsToUse) {
   Set<Entry> out = {};
-  var entryLists = getAllEntryLists();
+  // Start with the user's lists.
+  var entryLists = userEntryListManager.getEntryLists();
+  // If the user hasn't chosen to hide community lists, use those lists too.
+  if (!(sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)) {
+    entryLists.addAll(communityEntryListManager.getEntryLists());
+  }
   for (String key in listsToUse) {
     var entryList = entryLists[key];
     if (entryList != null) {
