@@ -1,7 +1,10 @@
+import 'dart:collection';
+
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 
 import 'common.dart';
+import 'entry_list.dart';
 import 'entry_types.dart';
 import 'globals.dart';
 import 'revision.dart';
@@ -29,8 +32,9 @@ class DolphinInformation {
 
 Set<Entry> getEntriesFromLists(List<String> listsToUse) {
   Set<Entry> out = {};
+  LinkedHashMap<String, EntryList> entryLists = LinkedHashMap();
   // Start with the user's lists.
-  var entryLists = userEntryListManager.getEntryLists();
+  entryLists.addAll(userEntryListManager.getEntryLists());
   // If the user hasn't chosen to hide community lists, use those lists too.
   if (!(sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)) {
     entryLists.addAll(communityEntryListManager.getEntryLists());
