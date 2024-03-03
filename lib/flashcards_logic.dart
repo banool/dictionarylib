@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 
@@ -30,22 +31,33 @@ class DolphinInformation {
   Map<String, SubEntry> keyToSubEntryMap;
 }
 
-Set<Entry> getEntriesFromLists(List<String> listsToUse) {
-  Set<Entry> out = {};
-  LinkedHashMap<String, EntryList> entryLists = LinkedHashMap();
-  // Start with the user's lists.
-  entryLists.addAll(userEntryListManager.getEntryLists());
-  // If the user hasn't chosen to hide community lists, use those lists too.
+// Load up the entry list managers we'll consider. Start with the user's
+// lists. Include the community lists if the user hasn't chosen to hdie them.
+LinkedHashMap<String, EntryList> getCandidateEntryLists() {
+  LinkedHashMap<String, EntryList> candidateEntryLists = LinkedHashMap();
+  candidateEntryLists.addAll(userEntryListManager.getEntryLists());
   if (!(sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)) {
-    entryLists.addAll(communityEntryListManager.getEntryLists());
+    candidateEntryLists.addAll(communityEntryListManager.getEntryLists());
   }
+  return candidateEntryLists;
+}
+
+LinkedHashMap<String, EntryList> getEntryListsToRevise(
+    LinkedHashMap<String, EntryList> candidateEntryLists,
+    List<String> listsToUse) {
+  LinkedHashMap<String, EntryList> entryLists = LinkedHashMap();
   for (String key in listsToUse) {
-    var entryList = entryLists[key];
+    var entryList = candidateEntryLists[key];
     if (entryList != null) {
-      out.addAll(entryList.entries);
+      entryLists[key] = entryList;
     }
   }
-  return out;
+  return entryLists;
+}
+
+Set<Entry> getEntriesFromEntryLists(
+    LinkedHashMap<String, EntryList> entryLists) {
+  return entryLists.values.map((e) => e.entries).flattened.toSet();
 }
 
 Map<Entry, List<SubEntry>> getSubEntriesFromEntries(Set<Entry> favourites) {

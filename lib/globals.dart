@@ -45,20 +45,6 @@ late UserEntryListManager userEntryListManager;
 // manager where the lists are derived from the category of the entries.
 EntryListManager communityEntryListManager = DummyEntryListManager();
 
-// Get the entry lists from all the entry list managers combined.
-LinkedHashMap<String, EntryList> getAllEntryLists() {
-  List<EntryListManager> allEntryListManagers = [
-    userEntryListManager,
-    communityEntryListManager,
-  ];
-
-  LinkedHashMap<String, EntryList> out = LinkedHashMap();
-  for (EntryListManager em in allEntryListManagers) {
-    out.addAll(em.getEntryLists());
-  }
-  return out;
-}
-
 // Device info.
 AndroidDeviceInfo? androidDeviceInfo;
 IosDeviceInfo? iosDeviceInfo;

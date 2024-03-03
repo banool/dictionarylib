@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/entry_types.dart';
@@ -98,8 +100,11 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   late final bool initialValueSignToEntry;
   late final bool initialValueEntryToSign;
 
-  late List<String> listsToReview;
-  late Set<Entry> entriesFromLists;
+  // Loaded only once per page load.
+  late LinkedHashMap<String, EntryList> candidateEntryLists;
+
+  // Updated on updateFilteredSubentries.
+  late LinkedHashMap<String, EntryList> entryListsToRevise;
 
   Map<Entry, List<SubEntry>> filteredSubEntries = {};
 
@@ -109,6 +114,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   @override
   void initState() {
     super.initState();
+    candidateEntryLists = getCandidateEntryLists();
     WidgetsBinding.instance
         .addObserver(LifecycleEventHandler(resumeCallBack: () async {
       updateRevisionSettings();
@@ -129,16 +135,18 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   }
 
   void updateFilteredSubentries() {
-    // Get lists we intend to review.
-    listsToReview = sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+    // Get lists the user has previously said they want to review.
+    var listsToReview = sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
         [KEY_FAVOURITES_ENTRIES];
 
-    // Filter out lists that no longer exist.
-    listsToReview
-        .removeWhere((element) => !getAllEntryLists().containsKey(element));
+    // Get all the entry lists from the different entry list managers, filtering
+    // out certain managers if the user has opted out of them, e.g. if the user
+    // has chosen to hide community lists.
+    entryListsToRevise =
+        getEntryListsToRevise(candidateEntryLists, listsToReview);
 
     // Get the entries from all these lists.
-    entriesFromLists = getEntriesFromLists(listsToReview);
+    var entriesFromLists = getEntriesFromEntryLists(entryListsToRevise);
 
     // Get the subentries from all these entries.
     Map<Entry, List<SubEntry>> subEntriesToReview =
@@ -228,6 +236,12 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     }
     cardNumberString = "$cardsToDo $cardNumberString";
 
+    var description = entryListsToRevise.keys
+        .toList()
+        .map((key) => EntryList.getNameFromKey(key))
+        .toList()
+        .join(", ");
+
     SettingsSection? sourceListSection;
     sourceListSection = SettingsSection(
         title: Padding(
@@ -247,7 +261,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 builder: (ctx) {
                   List<MultiSelectItem<String>> items = [];
                   for (MapEntry<String, EntryList> e
-                      in getAllEntryLists().entries) {
+                      in candidateEntryLists.entries) {
                     items.add(MultiSelectItem(e.key, e.value.getName()));
                   }
                   return MultiSelectDialog<String>(
@@ -256,7 +270,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                     title: Text(DictLibLocalizations.of(context)!
                         .flashcardsSelectLists),
                     items: items,
-                    initialValue: listsToReview,
+                    initialValue: entryListsToRevise.keys.toList(),
                     onConfirm: (List<String> values) async {
                       await sharedPreferences.setStringList(
                           KEY_LISTS_TO_REVIEW, values);
@@ -269,10 +283,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               );
             },
             description: Text(
-              listsToReview
-                  .map((key) => EntryList.getNameFromKey(key))
-                  .toList()
-                  .join(", "),
+              description,
               textAlign: TextAlign.center,
             ),
           ),
