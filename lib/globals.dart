@@ -160,16 +160,16 @@ Future<void> setupPhaseTwo(
       printAndLog(
           "No local entry data cache found, fetching updates from the internet and waiting for them before proceeeding...");
       await paramEntryLoader.updateWordsData(true);
+      if (entriesGlobal.isEmpty) {
+        printAndLog(
+            "entriesGlobal is after the loading phase where no local data was found, throwing...");
+        throw "Global entries data is empty after the data loading phase where no local data was found. This is a bug, please report it.";
+      }
     } else {
       printAndLog(
           "Local entry data cache found, fetching updates from the internet in the background...");
       paramEntryLoader.updateWordsData(false);
     }
-  }
-
-  if (entriesGlobal.isEmpty) {
-    printAndLog("entriesGlobal is after the loading phase, throwing...");
-    throw "Global entries data is empty after the data loading phase. This is a bug, please report it.";
   }
 
   entryLoader = paramEntryLoader;

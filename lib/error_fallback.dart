@@ -30,13 +30,23 @@ class ErrorFallback extends StatelessWidget {
     List<Widget> children = [
       const Padding(padding: EdgeInsets.only(top: 50)),
       const Text(
-        // AppLocalizations.of(context).startupFailureMessage,
         "Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.",
         textAlign: TextAlign.center,
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
-      const Padding(padding: EdgeInsets.only(top: 20)),
+      const Padding(padding: EdgeInsets.only(top: 30)),
+      const Text(
+        "Advisories",
+        textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       advisoryWidget,
+      const Padding(padding: EdgeInsets.only(top: 30)),
+      const Text(
+        "Error",
+        textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       Text(
         "$error",
         textAlign: TextAlign.center,
