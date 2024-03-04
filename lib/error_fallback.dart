@@ -3,6 +3,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'advisories.dart';
 import 'globals.dart';
+import 'page_settings.dart';
 
 // When the app fails to load we show this widget instead.
 class ErrorFallback extends StatelessWidget {
@@ -81,6 +82,16 @@ class ErrorFallback extends StatelessWidget {
     } catch (e) {
       children.add(Text("Failed to get shared prefs: $e"));
     }
+
+    var packageDeviceInfo = getPackageDeviceInfo();
+    children.add(const Padding(padding: EdgeInsets.only(top: 20)));
+    children.add(const Text(
+      "Package and device info",
+      textAlign: TextAlign.center,
+      style: TextStyle(fontWeight: FontWeight.bold),
+    ));
+    children.addAll(packageDeviceInfo);
+
     return MaterialApp(
         title: appName,
         debugShowCheckedModeBanner: false,

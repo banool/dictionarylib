@@ -367,30 +367,33 @@ class LegalInformationPage extends StatelessWidget {
   }
 }
 
+List<Widget> getPackageDeviceInfo() {
+  List<Widget> children = [];
+  if (packageInfo != null) {
+    children.add(getText("App version: ${packageInfo!.version}"));
+    children.add(getText("Build number: ${packageInfo!.buildNumber}"));
+  }
+  if (iosDeviceInfo != null) {
+    children.add(getText("Device: ${iosDeviceInfo!.name}"));
+    children.add(getText("Model: ${iosDeviceInfo!.model}"));
+    children.add(getText("System name: ${iosDeviceInfo!.systemName}"));
+    children.add(getText("System version: ${iosDeviceInfo!.systemVersion}"));
+  }
+  if (androidDeviceInfo != null) {
+    children.add(getText("Device: ${androidDeviceInfo!.device}"));
+    children.add(getText("Model: ${androidDeviceInfo!.model}"));
+    children.add(getText("System name: ${androidDeviceInfo!.version.release}"));
+    children
+        .add(getText("System version: ${androidDeviceInfo!.version.sdkInt}"));
+  }
+  return children;
+}
+
 class BuildInformationPage extends StatelessWidget {
   const BuildInformationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> children = [];
-    if (packageInfo != null) {
-      children.add(getText("App version: ${packageInfo!.version}"));
-      children.add(getText("Build number: ${packageInfo!.buildNumber}"));
-    }
-    if (iosDeviceInfo != null) {
-      children.add(getText("Device: ${iosDeviceInfo!.name}"));
-      children.add(getText("Model: ${iosDeviceInfo!.model}"));
-      children.add(getText("System name: ${iosDeviceInfo!.systemName}"));
-      children.add(getText("System version: ${iosDeviceInfo!.systemVersion}"));
-    }
-    if (androidDeviceInfo != null) {
-      children.add(getText("Device: ${androidDeviceInfo!.device}"));
-      children.add(getText("Model: ${androidDeviceInfo!.model}"));
-      children
-          .add(getText("System name: ${androidDeviceInfo!.version.release}"));
-      children
-          .add(getText("System version: ${androidDeviceInfo!.version.sdkInt}"));
-    }
     return Scaffold(
         appBar: AppBar(
           title: const Text("Build Information"),
@@ -402,7 +405,7 @@ class BuildInformationPage extends StatelessWidget {
                 child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: children,
+              children: getPackageDeviceInfo(),
             ))));
   }
 }
