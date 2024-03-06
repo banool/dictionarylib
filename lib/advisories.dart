@@ -97,7 +97,8 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   // Write back the new latest advisories version we'v seen.
   await sharedPreferences.setInt(KEY_ADVISORY_VERSION, advisories.length);
 
-  printAndLog("Fetched ${advisories.length} advisories");
+  printAndLog(
+      "Fetched ${advisories.length} advisories. There are new advisories: $newAdvisories");
 
   return AdvisoriesResponse(
       advisories: advisories, newAdvisories: newAdvisories);

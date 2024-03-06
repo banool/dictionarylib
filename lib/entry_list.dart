@@ -150,7 +150,7 @@ class UserEntryListManager implements EntryListManager {
     for (String key in entryListKeys) {
       entryLists[key] = EntryList.fromRaw(key);
     }
-    printAndLog("Loaded ${entryLists.length} lists");
+    printAndLog("Loaded ${entryLists.length} entry lists");
     return UserEntryListManager(entryLists);
   }
 

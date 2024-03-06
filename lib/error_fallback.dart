@@ -31,9 +31,14 @@ class ErrorFallback extends StatelessWidget {
     List<Widget> children = [
       const Padding(padding: EdgeInsets.only(top: 50)),
       const Text(
-        "Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.",
+        "Failed to start the app correctly. First, please confirm you are using the latest version of the app. Go to the App Store / Play Store and look for an update. If you are using the latest version, please email daniel@dport.me with a screenshot showing this error. You might need to take multiple screenshots to capture it all. Apologies for the issue and thanks in advance for reporting it!",
         textAlign: TextAlign.center,
         style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const Padding(padding: EdgeInsets.only(top: 20)),
+      const Text(
+        "If this is your first time using the app, make sure you are connected to the internet so we can download the data!",
+        textAlign: TextAlign.center,
       ),
       const Padding(padding: EdgeInsets.only(top: 30)),
       const Text(
@@ -96,17 +101,19 @@ class ErrorFallback extends StatelessWidget {
         title: appName,
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-            body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
+            body: Padding(
+                padding: const EdgeInsets.all(15),
                 child: Column(
-                  children: children,
-                ),
-              ),
-            ),
-          ],
-        )));
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: children,
+                        ),
+                      ),
+                    ),
+                  ],
+                ))));
   }
 }

@@ -131,17 +131,23 @@ Future<void> setupPhaseOne(Uri advisoriesFileUri) async {
 Future<void> setupPhaseTwo(
     {required EntryLoader paramEntryLoader,
     required String knobUrlBase,
-    required bool downloadWordsData,
     Set<Entry>? entriesGlobalReplacement}) async {
+  if (entriesGlobalReplacement != null && entriesGlobalReplacement.isEmpty) {
+    throw "If given, entriesGlobalReplacement must not be empty";
+  }
+
   await Future.wait<void>([
     // Load up the words information once at startup from disk.
     // We do this first because loadFavourites depends on it later.
     (() async {
-      if (entriesGlobalReplacement == null) {
-        paramEntryLoader.setEntriesGlobal(
-            await paramEntryLoader.loadEntriesFromLocalStorage());
-      } else {
+      if (entriesGlobalReplacement != null) {
         paramEntryLoader.setEntriesGlobal(entriesGlobalReplacement);
+      } else {
+        var entriesFromLocalStorage =
+            await paramEntryLoader.loadEntriesFromLocalStorage();
+        if (entriesFromLocalStorage.isNotEmpty) {
+          paramEntryLoader.setEntriesGlobal(entriesFromLocalStorage);
+        }
       }
     })(),
 
@@ -150,33 +156,40 @@ Future<void> setupPhaseTwo(
         await readKnob(knobUrlBase, "enable_flashcards", true))(),
   ]);
 
-  // This depends on the knob values above being set so it is important that
-  // this appears after that block above and after any knobs set between phases
-  // one and two.
-  // TODO: entriesGlobalReplacement doesn't work well here, all the vars that
-  // depend on it won't get populated.
-  if (downloadWordsData && entriesGlobalReplacement == null) {
-    if (entriesGlobal.isEmpty) {
-      printAndLog(
-          "No local entry data cache found, fetching updates from the internet and waiting for them before proceeeding...");
-      await paramEntryLoader.updateWordsData(true);
-    } else {
-      printAndLog(
-          "Local entry data cache found, fetching updates from the internet in the background...");
-      paramEntryLoader.updateWordsData(false);
-    }
+  // Resolve values based on knobs.
+  showFlashcards = getShowFlashcards();
+
+  // If entriesGlobalReplacement was set, entriesGlobal should have something
+  // in it at this point.
+  if (entriesGlobalReplacement != null && entriesGlobal.isEmpty) {
+    throw "entriesGlobal is empty after the loading phase despite entriesGlobalReplacement being set.";
   }
 
+  // At this point if entriesGlobal is empty it means either there was no data
+  // in local storage or the data there was invalid. If so, we must download
+  // new data before proceeding, since the app depends on entriesGlobal and
+  // friends being set.
   if (entriesGlobal.isEmpty) {
-    // TODO: Make this throw later.
     printAndLog(
-        "entriesGlobal is after the loading phase where no local data was found. This should be a bug but we are continuing for now...");
+        "No entry data found in local storage, fetching data from the internet and waiting for it before proceeeding...");
+    NewData? newData = await paramEntryLoader.downloadAndApplyNewData(true);
+    if (newData == null) {
+      // This implies that there is some incompatibility between the data upstream
+      // and how the app interprets it.
+      throw "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...";
+    }
+  } else {
+    printAndLog(
+        "Entry data was found in local storage, fetching new data from the internet in the background...");
+    paramEntryLoader.downloadAndApplyNewData(false);
+  }
+
+  // A final sanity check to ensure that we have entries data.
+  if (entriesGlobal.isEmpty) {
+    throw "entriesGlobal is empty even after the loading phase. The app cannot operate without entries data, throwing...";
   }
 
   entryLoader = paramEntryLoader;
-
-  // Resolve values based on knobs.
-  showFlashcards = getShowFlashcards();
 }
 
 class ProxiedHttpOverrides extends HttpOverrides {

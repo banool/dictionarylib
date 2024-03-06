@@ -9,6 +9,7 @@ import 'package:settings_ui/settings_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'common.dart';
+import 'entry_loader.dart';
 import 'flashcards_logic.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
@@ -120,12 +121,12 @@ class SettingsPageState extends State<SettingsPage> {
           setState(() {
             checkingForNewData = true;
           });
-          bool thereWasNewData = await entryLoader.updateWordsData(true);
+          NewData? newData = await entryLoader.downloadAndApplyNewData(true);
           setState(() {
             checkingForNewData = false;
           });
           String message;
-          if (thereWasNewData) {
+          if (newData != null && newData.newDataIsActuallyNew()) {
             message = DictLibLocalizations.of(context)!.settingsDataUpdated;
           } else {
             message = DictLibLocalizations.of(context)!.settingsDataUpToDate;

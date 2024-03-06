@@ -47,7 +47,7 @@ class CategoryEntryListManager implements EntryListManager {
     }
 
     printAndLog(
-        "Loaded ${entryLists.length} lists for the category entry list manager");
+        "Loaded ${entryLists.length} lists for the community entry list manager");
     return CategoryEntryListManager(entryLists);
   }
 

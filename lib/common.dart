@@ -23,7 +23,7 @@ const String KEY_SEARCH_FOR_PHRASES = "search_for_phrases";
 const String KEY_SEARCH_FOR_FINGERSPELLING = "search_for_fingerspelling";
 
 const String KEY_FAVOURITES_ENTRIES = "favourites_words";
-const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME = "last_data_check_time";
+const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS = "last_data_check_time";
 const String KEY_DICTIONARY_DATA_CURRENT_VERSION = "current_data_version";
 const String KEY_HIDE_FLASHCARDS_FEATURE = "hide_flashcards_feature";
 const String KEY_HIDE_COMMUNITY_LISTS = "hide_community_lists";
