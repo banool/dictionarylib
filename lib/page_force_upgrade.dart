@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:launch_review/launch_review.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:http/http.dart' as http;
 
 import 'common.dart';
 import 'globals.dart';
@@ -36,6 +37,34 @@ class YankedVersionError extends Error {
   final List<String> yankedVersions;
 
   YankedVersionError(this.version, this.yankedVersions);
+}
+
+// We set a short timeout because if we fail to get the yanked versions and it
+// turns out they're running a yanked version, the worst case is just that
+// they'll go to the error fallback page instead, which is just more confusing.
+// Given most people will not be on yanked versions we don't want to make this
+// add too much startup latency.
+class GitHubYankedVersionChecker extends YankedVersionChecker {
+  final String uri;
+
+  GitHubYankedVersionChecker(this.uri);
+
+  @override
+  Future<List<String>> getYankedVersions() async {
+    try {
+      var response = await http
+          .get(Uri.parse(uri))
+          .timeout(const Duration(milliseconds: 2250));
+      if (response.statusCode != 200) {
+        throw "HTTP response for getting yanked versions was non 200: ${response.statusCode}";
+      }
+      return response.body.split("\n");
+    } catch (e) {
+      printAndLog(
+          "Failed to get yanked versions, continuing without raising an error: $e");
+      return [];
+    }
+  }
 }
 
 // If we see that the app is using a yanked version, we show this page.
