@@ -42,8 +42,9 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   // Get the advisories file.
   String? rawData;
   try {
-    var result =
-        await http.get(advisoriesFileUri).timeout(const Duration(seconds: 3));
+    var result = await http
+        .get(advisoriesFileUri)
+        .timeout(const Duration(milliseconds: 2250));
     rawData = result.body;
   } catch (e) {
     printAndLog("Failed to get advisory: $e");
@@ -104,11 +105,12 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
       advisories: advisories, newAdvisories: newAdvisories);
 }
 
-void showAdvisoryDialog() {
+void showAdvisoryDialog({BuildContext? context}) {
   showDialog(
-      context: rootNavigatorKey.currentContext!,
+      context: context ?? rootNavigatorKey.currentContext!,
       builder: (context) => AlertDialog(
-          title: Text(DictLibLocalizations.of(context)!.newsTitle),
+          title:
+              Text(DictLibLocalizations.of(context)?.newsTitle ?? "Advisories"),
           content: SingleChildScrollView(child: getAdvisoriesInner())));
 }
 

@@ -69,9 +69,21 @@ class MyCacheManager extends CacheManager with ImageCacheManager {
         ));
 }
 
+// Setup just enough that we can show the force upgrade page.
+Future<void> setupPhaseOne() async {
+  // Load package info once at startup.
+  try {
+    packageInfo = await PackageInfo.fromPlatform();
+    printAndLog("Successfully loaded package info");
+  } catch (e) {
+    printAndLog(
+        "Failed to get package info: $e (continuing without raising any error)");
+  }
+}
+
 // Set up up until we fetch knobs. This includes shared device / package info,
 // shared prefs, proxy stuff, advisories, and the cache manager.
-Future<void> setupPhaseOne(Uri advisoriesFileUri) async {
+Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
   // Load device info once at startup.
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   try {
@@ -84,15 +96,6 @@ Future<void> setupPhaseOne(Uri advisoriesFileUri) async {
   } catch (e) {
     printAndLog(
         "Failed to get device info: $e (continuing without raising any error)");
-  }
-
-  // Load package info once at startup.
-  try {
-    packageInfo = await PackageInfo.fromPlatform();
-    printAndLog("Successfully loaded package info");
-  } catch (e) {
-    printAndLog(
-        "Failed to get package info: $e (continuing without raising any error)");
   }
 
   // Load shared preferences. We do this first because the later futures,
@@ -128,7 +131,7 @@ Future<void> setupPhaseOne(Uri advisoriesFileUri) async {
 // Pull knobs, load up entry data. Make sure you have pulled other knobs you
 // might care about / done other stuff with the shared prefs before this.
 // This expects that some knobs (e.g. enable_flashcards) exist upstream.
-Future<void> setupPhaseTwo(
+Future<void> setupPhaseThree(
     {required EntryLoader paramEntryLoader,
     required String knobUrlBase,
     Set<Entry>? entriesGlobalReplacement}) async {
