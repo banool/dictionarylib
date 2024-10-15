@@ -143,13 +143,13 @@ Future<bool> confirmAlert(BuildContext context, Widget content,
   confirmText = confirmText ?? DictLibLocalizations.of(context)!.alertConfirm;
   bool confirmed = false;
   Widget cancelButton = TextButton(
-    child: Text(cancelText, style: const TextStyle(color: Colors.black)),
+    child: Text(cancelText, style: const TextStyle()),
     onPressed: () {
       Navigator.of(context).pop();
     },
   );
   Widget continueButton = TextButton(
-    child: Text(confirmText, style: const TextStyle(color: Colors.black)),
+    child: Text(confirmText, style: const TextStyle()),
     onPressed: () {
       confirmed = true;
       Navigator.of(context).pop();

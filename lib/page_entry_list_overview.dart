@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
@@ -11,14 +13,10 @@ import 'top_level_scaffold.dart';
 typedef BuildEntryListWidgetCallback = Widget Function(EntryList entryList);
 
 class EntryListsOverviewPage extends StatefulWidget {
-  final Color mainColor;
-  final Color appBarDisabledColor;
   final BuildEntryListWidgetCallback buildEntryListWidgetCallback;
 
   const EntryListsOverviewPage(
       {super.key,
-      required this.mainColor,
-      required this.appBarDisabledColor,
       required this.buildEntryListWidgetCallback});
 
   @override
@@ -66,10 +64,11 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     FloatingActionButton? floatingActionButton;
     if (inEditMode) {
       floatingActionButton = FloatingActionButton(
-          backgroundColor: Colors.green,
+          backgroundColor: currentTheme.onPrimary,
           onPressed: () async {
             bool confirmed = await applyCreateListDialog(context);
             if (confirmed) {
@@ -93,7 +92,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
             inEditMode = !inEditMode;
           });
         },
-        widget.appBarDisabledColor,
+        currentTheme.error,
       ));
     }
 
@@ -107,7 +106,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
               builder: (context) => getEntryListOverviewHelpPageEn()),
         );
       },
-      widget.appBarDisabledColor,
+      currentTheme.error,
     ));
 
     List<Widget> tabs = [
@@ -137,17 +136,16 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
         underAppBar: showTabs
             ? TabBar(
                 controller: tabController,
-                labelStyle: const TextStyle(
+                labelStyle: TextStyle(
                     fontSize: 16,
-                    color: Colors.white,
+                    color: currentTheme.primary,
                     fontWeight: FontWeight.bold),
                 unselectedLabelStyle:
-                    const TextStyle(fontSize: 16, color: Colors.white),
+                    TextStyle(fontSize: 16, color: currentTheme.primary),
                 tabs: tabs,
               )
             : null,
         body: body,
-        mainColor: widget.mainColor,
         title: DictLibLocalizations.of(context)!.listsTitle,
         actions: actions,
         floatingActionButton: floatingActionButton);

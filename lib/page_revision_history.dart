@@ -10,9 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 class RevisionHistoryPage extends StatefulWidget {
-  const RevisionHistoryPage({super.key, required this.mainColor});
-
-  final Color mainColor;
+  const RevisionHistoryPage({super.key});
 
   @override
   RevisionHistoryPageState createState() => RevisionHistoryPageState();
@@ -29,6 +27,7 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     Widget getText(String s, {bool bold = false}) {
       FontWeight? weight;
       if (bold) {
@@ -48,14 +47,14 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
           });
         },
         style: ButtonStyle(
-            padding: MaterialStateProperty.all(const EdgeInsets.all(10)),
-            backgroundColor: MaterialStateProperty.all(settingsBackgroundColor),
-            foregroundColor: MaterialStateProperty.all(rs == revisionStrategy
-                ? widget.mainColor
+            padding: WidgetStateProperty.all(const EdgeInsets.all(10)),
+            backgroundColor: WidgetStateProperty.all(currentTheme.onPrimary),
+            foregroundColor: WidgetStateProperty.all(rs == revisionStrategy
+                ? currentTheme.primary
                 : const Color.fromARGB(255, 145, 145, 145)),
-            minimumSize: MaterialStateProperty.all<Size>(const Size(140, 35)),
-            side: MaterialStateProperty.all(const BorderSide(
-                color: Color.fromARGB(110, 185, 185, 185), width: 1.5))),
+            minimumSize: WidgetStateProperty.all<Size>(const Size(160, 45)),
+            side: WidgetStateProperty.all(const BorderSide(
+                /*color: Color.fromARGB(110, 185, 185, 185),*/ width: 1.5))),
         child: Text(rs.pretty),
       );
     }

@@ -12,7 +12,6 @@ class TopLevelScaffold extends StatelessWidget {
   const TopLevelScaffold({
     required this.title,
     required this.body,
-    required this.mainColor,
     this.actions,
     this.floatingActionButton,
     this.underAppBar,
@@ -25,8 +24,6 @@ class TopLevelScaffold extends StatelessWidget {
   /// The widget to display in the body of the Scaffold.
   final Widget body;
 
-  final Color mainColor;
-
   /// Actions to show in the top app bar, if any.
   final List<Widget>? actions;
 
@@ -38,6 +35,7 @@ class TopLevelScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     var items = <BottomNavigationBarItem>[
       BottomNavigationBarItem(
         icon: const Icon(Icons.search),
@@ -78,7 +76,7 @@ class TopLevelScaffold extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         items: items,
         currentIndex: calculateSelectedIndex(context),
-        selectedItemColor: mainColor,
+        selectedItemColor: currentTheme.primary,
         onTap: (index) => onItemTapped(index, context),
         type: BottomNavigationBarType.fixed,
       ),

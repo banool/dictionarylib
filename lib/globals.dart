@@ -28,9 +28,6 @@ late bool enableFlashcardsKnob;
 // This is whether to show the flashcard stuff as a result of the knob + switch.
 late bool showFlashcards;
 
-// The settings page background color.
-late Color settingsBackgroundColor;
-
 // Advisory if there is a new one.
 AdvisoriesResponse? advisoriesResponse;
 bool advisoryShownOnce = false;
@@ -115,17 +112,6 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
 
   // Build the cache manager.
   myCacheManager = MyCacheManager();
-
-  // Get background color of settings pages.
-  if (kIsWeb) {
-    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
-  } else if (Platform.isAndroid) {
-    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
-  } else if (Platform.isIOS) {
-    settingsBackgroundColor = const Color.fromRGBO(242, 242, 247, 1);
-  } else {
-    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
-  }
 }
 
 // Pull knobs, load up entry data. Make sure you have pulled other knobs you

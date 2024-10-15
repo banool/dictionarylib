@@ -8,16 +8,12 @@ import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 class EntryListPage extends StatefulWidget {
   final EntryList entryList;
-  final Color mainColor;
-  final Color appBarDisabledColor;
 
   final NavigateToEntryPageFn navigateToEntryPage;
 
   const EntryListPage({
     super.key,
     required this.entryList,
-    required this.mainColor,
-    required this.appBarDisabledColor,
     required this.navigateToEntryPage,
   });
 
@@ -51,8 +47,9 @@ class EntryListPageState extends State<EntryListPage> {
     });
   }
 
-  Color getFloatingActionButtonColor() {
-    return enableSortButton ? widget.mainColor : Colors.grey;
+  Color getFloatingActionButtonColor(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
+    return enableSortButton ? currentTheme.onPrimary : Colors.grey;
   }
 
   void updateCurrentSearchTerm(String term) {
@@ -118,6 +115,7 @@ class EntryListPageState extends State<EntryListPage> {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     List<Widget> actions = [];
     if (widget.entryList.canBeEdited()) {
       actions.add(buildActionButton(
@@ -132,7 +130,7 @@ class EntryListPageState extends State<EntryListPage> {
             search();
           });
         },
-        widget.appBarDisabledColor,
+        currentTheme.error,
       ));
     }
     actions.add(
@@ -145,14 +143,14 @@ class EntryListPageState extends State<EntryListPage> {
             MaterialPageRoute(builder: (context) => getEntryListHelpPageEn()),
           );
         },
-        widget.appBarDisabledColor,
+        currentTheme.error,
       ),
     );
 
     String listName = widget.entryList.getName();
 
     FloatingActionButton? floatingActionButton = FloatingActionButton(
-        backgroundColor: getFloatingActionButtonColor(),
+        backgroundColor: getFloatingActionButtonColor(context),
         onPressed: () {
           if (!enableSortButton) {
             return;
@@ -169,7 +167,7 @@ class EntryListPageState extends State<EntryListPage> {
         floatingActionButton = null;
       } else {
         floatingActionButton = FloatingActionButton(
-            backgroundColor: Colors.green,
+            backgroundColor: currentTheme.onPrimary,
             onPressed: () {
               textFieldFocus.requestFocus();
             },
@@ -252,6 +250,7 @@ Widget listWidget(
   Future<void> Function(Entry)? deleteEntryFn,
   Future<void> Function(Entry)? addEntryFn,
 }) {
+  ColorScheme currentTheme = Theme.of(context).colorScheme;
   return ListView.builder(
     itemCount: entriesSearched.length,
     itemBuilder: (context, index) {
@@ -270,9 +269,9 @@ Widget listWidget(
       if (addEntryFn != null) {
         trailing = IconButton(
           padding: const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
-          icon: const Icon(
+          icon: Icon(
             Icons.add_circle,
-            color: Colors.green,
+            color: currentTheme.primary,
           ),
           onPressed: () async => await addEntryFn(entry),
         );
@@ -297,13 +296,16 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
   // Try to show the text in the selected locale but if not possible,
   // fallback to the key, which in this case is the word in English.
   Locale currentLocale = Localizations.localeOf(context);
+  ColorScheme currentTheme = Theme.of(context).colorScheme;
   var text = entry.getPhrase(currentLocale) ?? entry.getKey();
+
+
   return TextButton(
     child: Align(
         alignment: Alignment.topLeft,
         child: Text(
           text,
-          style: const TextStyle(color: Colors.black),
+          style: TextStyle(color: currentTheme.primary),
         )),
     onPressed: () async => {
       await navigateToEntryPage(context, entry, showFavouritesButton),
