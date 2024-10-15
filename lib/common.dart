@@ -185,13 +185,13 @@ Widget buildActionButton(BuildContext context, Icon icon,
       child: TextButton(
           onPressed: onPressedFunc,
           style: ButtonStyle(
-              padding: MaterialStateProperty.all(EdgeInsets.zero),
-              shape: MaterialStateProperty.all(const CircleBorder(
+              padding: WidgetStateProperty.all(EdgeInsets.zero),
+              shape: WidgetStateProperty.all(const CircleBorder(
                   side: BorderSide(color: Colors.transparent))),
-              fixedSize: MaterialStateProperty.all(const Size.fromWidth(10)),
-              foregroundColor: MaterialStateProperty.resolveWith(
+              fixedSize: WidgetStateProperty.all(const Size.fromWidth(10)),
+              foregroundColor: WidgetStateProperty.resolveWith(
                 (states) {
-                  if (states.contains(MaterialState.disabled)) {
+                  if (states.contains(WidgetState.disabled)) {
                     return disabledColor;
                   } else {
                     return enabledColor;

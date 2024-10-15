@@ -1,4 +1,4 @@
-library dictionarylib;
+library;
 
 export 'advisories.dart';
 export 'common.dart';
