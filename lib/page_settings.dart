@@ -19,8 +19,6 @@ import 'top_level_scaffold.dart';
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
-    required this.mainColor,
-    required this.appBarDisabledColor,
     required this.additionalTopWidgets,
     required this.buildLegalInformationChildren,
     required this.reportDataProblemUrl,
@@ -31,10 +29,8 @@ class SettingsPage extends StatefulWidget {
   });
 
   final String appName;
-  final Color mainColor;
-  final Color appBarDisabledColor;
   final List<Widget> additionalTopWidgets;
-  final List<Widget> Function(Color mainColor) buildLegalInformationChildren;
+  final List<Widget> Function() buildLegalInformationChildren;
   final String reportDataProblemUrl;
   final String reportAppProblemUrl;
   final String iOSAppId;
@@ -49,6 +45,7 @@ class SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     String? appStoreTileString;
     if (kIsWeb) {
       appStoreTileString = null;
@@ -100,7 +97,7 @@ class SettingsPageState extends State<SettingsPage> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(DictLibLocalizations.of(context)!
                         .settingsProgressDeleted),
-                    backgroundColor: widget.mainColor,
+                    //backgroundColor: currentTheme.primary,
                   ));
                 }
               }),
@@ -132,7 +129,7 @@ class SettingsPageState extends State<SettingsPage> {
             message = DictLibLocalizations.of(context)!.settingsDataUpToDate;
           }
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(message), backgroundColor: widget.mainColor));
+              content: Text(message), backgroundColor: currentTheme.primary));
         },
       )
     ];
@@ -177,7 +174,7 @@ class SettingsPageState extends State<SettingsPage> {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text(
                       DictLibLocalizations.of(context)!.settingsCacheDropped),
-                  backgroundColor: widget.mainColor,
+                  //backgroundColor: currentTheme.primary,
                 ));
               }),
         ],
@@ -200,7 +197,6 @@ class SettingsPageState extends State<SettingsPage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => LegalInformationPage(
-                        mainColor: widget.mainColor,
                         buildLegalInformationChildren:
                             widget.buildLegalInformationChildren),
                   ));
@@ -280,7 +276,7 @@ class SettingsPageState extends State<SettingsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            BackgroundLogsPage(mainColor: widget.mainColor),
+                            BackgroundLogsPage(),
                       ));
                 }),
           ].where((element) => element != null).cast<SettingsTile>().toList(),
@@ -310,14 +306,13 @@ class SettingsPageState extends State<SettingsPage> {
             MaterialPageRoute(builder: (context) => getSettingsHelpPageEn()),
           );
         },
-        widget.appBarDisabledColor,
+        currentTheme.error,
       )
     ];
 
     return TopLevelScaffold(
         body: body,
         title: DictLibLocalizations.of(context)!.settingsTitle,
-        mainColor: widget.mainColor,
         actions: actions);
   }
 }
@@ -346,11 +341,9 @@ String getBugInfo() {
 class LegalInformationPage extends StatelessWidget {
   const LegalInformationPage(
       {super.key,
-      required this.mainColor,
       required this.buildLegalInformationChildren});
 
-  final Color mainColor;
-  final List<Widget> Function(Color mainColor) buildLegalInformationChildren;
+  final List<Widget> Function() buildLegalInformationChildren;
 
   @override
   Widget build(BuildContext context) {
@@ -364,7 +357,7 @@ class LegalInformationPage extends StatelessWidget {
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
-                children: buildLegalInformationChildren(mainColor))));
+                children: buildLegalInformationChildren())));
   }
 }
 
@@ -412,12 +405,12 @@ class BuildInformationPage extends StatelessWidget {
 }
 
 class BackgroundLogsPage extends StatelessWidget {
-  const BackgroundLogsPage({super.key, required this.mainColor});
-
-  final Color mainColor;
+  const BackgroundLogsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
+
     return Scaffold(
         appBar: AppBar(
           title: const Text("Background Logs"),
@@ -432,13 +425,14 @@ class BackgroundLogsPage extends StatelessWidget {
                   TextButton(
                     child: Text("Copy logs to clipboard",
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: mainColor)),
+                        style: TextStyle()),
                     onPressed: () async {
                       await Clipboard.setData(
                           ClipboardData(text: backgroundLogs.items.join("\n")));
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: const Text("Logs copied to clipboard"),
-                          backgroundColor: mainColor));
+                          //backgroundColor: currentTheme.primary
+                      ));
                     },
                   ),
                   Container(

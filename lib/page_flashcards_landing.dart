@@ -82,12 +82,8 @@ RevisionStrategy loadRevisionStrategy() {
 class FlashcardsLandingPage extends StatefulWidget {
   const FlashcardsLandingPage(
       {super.key,
-      required this.controller,
-      required this.mainColor,
-      required this.appBarDisabledColor});
+      required this.controller});
 
-  final Color mainColor;
-  final Color appBarDisabledColor;
   final FlashcardsLandingPageController controller;
 
   @override
@@ -216,6 +212,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     EdgeInsetsDirectional margin = const EdgeInsetsDirectional.only(
         start: 15, end: 15, top: 10, bottom: 10);
 
@@ -268,7 +265,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                     searchable: true,
                     listType: MultiSelectListType.CHIP,
                     title: Text(DictLibLocalizations.of(context)!
-                        .flashcardsSelectLists),
+                        .flashcardsSelectLists,
+                    ),
                     items: items,
                     initialValue: entryListsToRevise.keys.toList(),
                     onConfirm: (List<String> values) async {
@@ -278,6 +276,10 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                         updateRevisionSettings();
                       });
                     },
+                    selectedColor: currentTheme.primary,
+                    unselectedColor: currentTheme.surface,
+                    checkColor: currentTheme.surface,
+                    selectedItemsTextStyle: TextStyle(color: currentTheme.surface),
                   );
                 },
               );
@@ -347,8 +349,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                       border: Border.all(
-                                          color: settingsBackgroundColor),
-                                      color: settingsBackgroundColor,
+                                          color: currentTheme.primary),
+                                      //color: currentTheme.primary,
                                       borderRadius: BorderRadius.circular(20)),
                                   child: Text(
                                     e.pretty,
@@ -400,7 +402,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         nonNullSections.add(section);
       }
     }
-
     Widget settings = SettingsList(
       sections: nonNullSections,
     );
@@ -432,19 +433,19 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               child: TextButton(
                 key: const ValueKey("startButton"),
                 style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.resolveWith(
+                  backgroundColor: WidgetStateProperty.resolveWith(
                     (states) {
-                      if (states.contains(MaterialState.disabled)) {
+                      if (states.contains(WidgetState.disabled)) {
                         return Colors.grey;
                       } else {
-                        return widget.mainColor;
+                        return currentTheme.primary;
                       }
                     },
                   ),
                   foregroundColor:
-                      MaterialStateProperty.all<Color>(Colors.white),
+                      WidgetStateProperty.all<Color>(currentTheme.surface),
                   minimumSize:
-                      MaterialStateProperty.all<Size>(const Size(120, 50)),
+                      WidgetStateProperty.all<Size>(const Size(120, 50)),
                 ),
                 onPressed: onPressedStart,
                 child: Text(
@@ -463,7 +464,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
             .getExtraBottomWidgets(context, setState, updateRevisionSettings);
 
     Widget body = Container(
-      color: settingsBackgroundColor,
+      color: currentTheme.surface,
       child: Center(
           child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -481,10 +482,10 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
             context,
             MaterialPageRoute(
                 builder: (context) =>
-                    RevisionHistoryPage(mainColor: widget.mainColor)),
+                    RevisionHistoryPage()),
           );
         },
-        widget.appBarDisabledColor,
+        currentTheme.primary,
       ),
       buildActionButton(
         context,
@@ -496,13 +497,12 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 builder: (context) => widget.controller.buildHelpPage(context)),
           );
         },
-        widget.appBarDisabledColor,
+        currentTheme.primary,
       )
     ];
 
     return TopLevelScaffold(
         body: body,
-        mainColor: widget.mainColor,
         title: DictLibLocalizations.of(context)!.revisionTitle,
         actions: actions);
   }

@@ -14,9 +14,6 @@ class SearchPage extends StatefulWidget {
   // If this is set we'll navigate to the first match immediately upon load.
   final bool? navigateToFirstMatch;
 
-  final Color mainColor;
-  final Color appBarDisabledColor;
-
   final NavigateToEntryPageFn navigateToEntryPage;
 
   final bool includeEntryTypeButton;
@@ -25,8 +22,6 @@ class SearchPage extends StatefulWidget {
       {super.key,
       this.initialQuery,
       this.navigateToFirstMatch,
-      required this.mainColor,
-      required this.appBarDisabledColor,
       required this.navigateToEntryPage,
       required this.includeEntryTypeButton});
 
@@ -69,6 +64,8 @@ class SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
+
     if (advisoriesResponse != null &&
         advisoriesResponse!.newAdvisories &&
         advisoriesResponse!.advisories.isNotEmpty &&
@@ -188,13 +185,12 @@ class SearchPageState extends State<SearchPage> {
         () async {
           showAdvisoryDialog();
         },
-        widget.appBarDisabledColor,
+          currentTheme.primary
       ));
     }
 
     return TopLevelScaffold(
         body: body,
-        mainColor: widget.mainColor,
         title: DictLibLocalizations.of(context)!.searchTitle,
         actions: actions);
   }
@@ -210,11 +206,12 @@ class SearchPageState extends State<SearchPage> {
 
   Widget buildListItem(BuildContext context, Entry entry) {
     Locale currentLocale = Localizations.localeOf(context);
+    ColorScheme currentTheme = Theme.of(context).colorScheme;
     return TextButton(
       child: Align(
           alignment: Alignment.topLeft,
           child: Text("${entry.getPhrase(currentLocale)}",
-              style: const TextStyle(color: Colors.black))),
+              style: TextStyle(color: currentTheme.primary))),
       onPressed: () => widget.navigateToEntryPage(context, entry, true),
     );
   }
