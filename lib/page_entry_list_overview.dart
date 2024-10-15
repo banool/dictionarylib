@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';

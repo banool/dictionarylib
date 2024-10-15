@@ -2,6 +2,8 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for Sinhala Sinhalese (`si`).
 class DictLibLocalizationsSi extends DictLibLocalizations {
   DictLibLocalizationsSi([String locale = 'si']) : super(locale);
