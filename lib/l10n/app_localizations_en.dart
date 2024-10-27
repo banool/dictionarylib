@@ -198,6 +198,21 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsProgressDeleted => 'All review progress deleted';
 
   @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsColourMode => 'Colour mode';
+
+  @override
+  String get settingsColourModeLight => 'Light';
+
+  @override
+  String get settingsColourModeDark => 'Dark';
+
+  @override
+  String get settingsColourModeSystem => 'System';
+
+  @override
   String get settingsCache => 'Cache';
 
   @override

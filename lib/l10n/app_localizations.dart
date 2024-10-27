@@ -415,6 +415,36 @@ abstract class DictLibLocalizations {
   /// **'All review progress deleted'**
   String get settingsProgressDeleted;
 
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsColourMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour mode'**
+  String get settingsColourMode;
+
+  /// No description provided for @settingsColourModeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsColourModeLight;
+
+  /// No description provided for @settingsColourModeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settingsColourModeDark;
+
+  /// No description provided for @settingsColourModeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsColourModeSystem;
+
   /// No description provided for @settingsCache.
   ///
   /// In en, this message translates to:

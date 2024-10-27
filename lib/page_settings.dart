@@ -151,6 +151,72 @@ class SettingsPageState extends State<SettingsPage> {
 
     List<AbstractSettingsSection?> sections = [
       SettingsSection(
+        title: Text(DictLibLocalizations.of(context)!.settingsAppearance),
+        tiles: [
+          SettingsTile.navigation(
+            title: Text(
+              DictLibLocalizations.of(context)!.settingsColourMode,
+              style: const TextStyle(fontSize: 15),
+            ),
+            value: Text(_getThemeModeString(context)),
+            onPressed: (BuildContext context) async {
+              await showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  var currentMode =
+                      sharedPreferences.getInt(KEY_THEME_MODE) ?? 0;
+                  return AlertDialog(
+                    title: Text(
+                        DictLibLocalizations.of(context)!.settingsColourMode),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: Text(DictLibLocalizations.of(context)!
+                              .settingsColourModeSystem),
+                          trailing: currentMode == ThemeMode.system.index
+                              ? Icon(Icons.check)
+                              : null,
+                          onTap: () {
+                            _setThemeMode(ThemeMode.system);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        ListTile(
+                          title: Text(DictLibLocalizations.of(context)!
+                              .settingsColourModeLight),
+                          trailing: currentMode == ThemeMode.light.index
+                              ? Icon(Icons.check)
+                              : null,
+                          onTap: () {
+                            _setThemeMode(ThemeMode.light);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        ListTile(
+                          title: Text(DictLibLocalizations.of(context)!
+                              .settingsColourModeDark),
+                          trailing: currentMode == ThemeMode.dark.index
+                              ? Icon(Icons.check)
+                              : null,
+                          onTap: () {
+                            _setThemeMode(ThemeMode.dark);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+              // Refresh the UI to reflect the new color mode.
+              setState(() {});
+            },
+          ),
+        ],
+        margin: margin,
+      ),
+      SettingsSection(
         title: Text(DictLibLocalizations.of(context)!.settingsCache),
         tiles: [
           SettingsTile.switchTile(
@@ -275,8 +341,7 @@ class SettingsPageState extends State<SettingsPage> {
                   return await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            BackgroundLogsPage(),
+                        builder: (context) => BackgroundLogsPage(),
                       ));
                 }),
           ].where((element) => element != null).cast<SettingsTile>().toList(),
@@ -340,8 +405,7 @@ String getBugInfo() {
 
 class LegalInformationPage extends StatelessWidget {
   const LegalInformationPage(
-      {super.key,
-      required this.buildLegalInformationChildren});
+      {super.key, required this.buildLegalInformationChildren});
 
   final List<Widget> Function() buildLegalInformationChildren;
 
@@ -424,14 +488,13 @@ class BackgroundLogsPage extends StatelessWidget {
                 children: [
                   TextButton(
                     child: Text("Copy logs to clipboard",
-                        textAlign: TextAlign.center,
-                        style: TextStyle()),
+                        textAlign: TextAlign.center, style: TextStyle()),
                     onPressed: () async {
                       await Clipboard.setData(
                           ClipboardData(text: backgroundLogs.items.join("\n")));
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: const Text("Logs copied to clipboard"),
-                          //backgroundColor: currentTheme.primary
+                        content: const Text("Logs copied to clipboard"),
+                        //backgroundColor: currentTheme.primary
                       ));
                     },
                   ),
@@ -448,4 +511,27 @@ class BackgroundLogsPage extends StatelessWidget {
                                   )))),
                 ])));
   }
+}
+
+String _getThemeModeString(BuildContext context) {
+  // Default to light mode.
+  var themeMode =
+      sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE;
+  switch (themeMode) {
+    case 0:
+      return DictLibLocalizations.of(context)!.settingsColourModeSystem;
+    case 1:
+      return DictLibLocalizations.of(context)!.settingsColourModeLight;
+    case 2:
+      return DictLibLocalizations.of(context)!.settingsColourModeDark;
+    default:
+      throw "Impossible";
+  }
+}
+
+Future<void> _setThemeMode(ThemeMode themeMode) async {
+  // We set this to control which theme we load at startup.
+  await sharedPreferences.setInt(KEY_THEME_MODE, themeMode.index);
+  // We set this to affect the theme at runtime.
+  themeNotifier.value = themeMode;
 }

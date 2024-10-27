@@ -80,9 +80,7 @@ RevisionStrategy loadRevisionStrategy() {
 }
 
 class FlashcardsLandingPage extends StatefulWidget {
-  const FlashcardsLandingPage(
-      {super.key,
-      required this.controller});
+  const FlashcardsLandingPage({super.key, required this.controller});
 
   final FlashcardsLandingPageController controller;
 
@@ -212,6 +210,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
 
   @override
   Widget build(BuildContext context) {
+    Brightness brightness = Theme.of(context).brightness;
     ColorScheme currentTheme = Theme.of(context).colorScheme;
     EdgeInsetsDirectional margin = const EdgeInsetsDirectional.only(
         start: 15, end: 15, top: 10, bottom: 10);
@@ -264,8 +263,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                   return MultiSelectDialog<String>(
                     searchable: true,
                     listType: MultiSelectListType.CHIP,
-                    title: Text(DictLibLocalizations.of(context)!
-                        .flashcardsSelectLists,
+                    title: Text(
+                      DictLibLocalizations.of(context)!.flashcardsSelectLists,
                     ),
                     items: items,
                     initialValue: entryListsToRevise.keys.toList(),
@@ -279,7 +278,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                     selectedColor: currentTheme.primary,
                     unselectedColor: currentTheme.surface,
                     checkColor: currentTheme.surface,
-                    selectedItemsTextStyle: TextStyle(color: currentTheme.surface),
+                    selectedItemsTextStyle:
+                        TextStyle(color: currentTheme.surface),
                   );
                 },
               );
@@ -464,7 +464,9 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
             .getExtraBottomWidgets(context, setState, updateRevisionSettings);
 
     Widget body = Container(
-      color: currentTheme.surface,
+      color: brightness == Brightness.light
+          ? settingsBackgroundColor
+          : Colors.black,
       child: Center(
           child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -480,9 +482,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    RevisionHistoryPage()),
+            MaterialPageRoute(builder: (context) => RevisionHistoryPage()),
           );
         },
         currentTheme.primary,

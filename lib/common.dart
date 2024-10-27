@@ -30,6 +30,9 @@ const String KEY_HIDE_COMMUNITY_LISTS = "hide_community_lists";
 const String KEY_FLASHCARD_REGIONS = "flashcard_regions";
 const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
+const String KEY_THEME_MODE = "theme_mode";
+
+const int DEFAULT_THEME_MODE = 1; // Light.
 
 const int DATA_CHECK_INTERVAL = 30 * 60 * 1; // 30 minutes.
 

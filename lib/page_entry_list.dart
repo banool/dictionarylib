@@ -150,7 +150,6 @@ class EntryListPageState extends State<EntryListPage> {
     String listName = widget.entryList.getName();
 
     FloatingActionButton? floatingActionButton = FloatingActionButton(
-        backgroundColor: getFloatingActionButtonColor(context),
         onPressed: () {
           if (!enableSortButton) {
             return;
@@ -167,10 +166,10 @@ class EntryListPageState extends State<EntryListPage> {
         floatingActionButton = null;
       } else {
         floatingActionButton = FloatingActionButton(
-            backgroundColor: currentTheme.onPrimary,
             onPressed: () {
               textFieldFocus.requestFocus();
             },
+            backgroundColor: Colors.green,
             child: const Icon(Icons.add));
       }
     } else {
@@ -271,7 +270,7 @@ Widget listWidget(
           padding: const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
           icon: Icon(
             Icons.add_circle,
-            color: currentTheme.primary,
+            color: Colors.green,
           ),
           onPressed: () async => await addEntryFn(entry),
         );
@@ -299,13 +298,11 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
   ColorScheme currentTheme = Theme.of(context).colorScheme;
   var text = entry.getPhrase(currentLocale) ?? entry.getKey();
 
-
   return TextButton(
     child: Align(
         alignment: Alignment.topLeft,
         child: Text(
           text,
-          style: TextStyle(color: currentTheme.primary),
         )),
     onPressed: () async => {
       await navigateToEntryPage(context, entry, showFavouritesButton),

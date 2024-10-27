@@ -1,4 +1,3 @@
-
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
@@ -15,8 +14,7 @@ class EntryListsOverviewPage extends StatefulWidget {
   final BuildEntryListWidgetCallback buildEntryListWidgetCallback;
 
   const EntryListsOverviewPage(
-      {super.key,
-      required this.buildEntryListWidgetCallback});
+      {super.key, required this.buildEntryListWidgetCallback});
 
   @override
   EntryListsOverviewPageState createState() => EntryListsOverviewPageState();
@@ -64,10 +62,11 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   @override
   Widget build(BuildContext context) {
     ColorScheme currentTheme = Theme.of(context).colorScheme;
+    TextTheme currentTextTheme = Theme.of(context).textTheme;
     FloatingActionButton? floatingActionButton;
     if (inEditMode) {
       floatingActionButton = FloatingActionButton(
-          backgroundColor: currentTheme.onPrimary,
+          backgroundColor: Colors.green,
           onPressed: () async {
             bool confirmed = await applyCreateListDialog(context);
             if (confirmed) {
@@ -135,12 +134,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
         underAppBar: showTabs
             ? TabBar(
                 controller: tabController,
-                labelStyle: TextStyle(
-                    fontSize: 16,
-                    color: currentTheme.primary,
-                    fontWeight: FontWeight.bold),
-                unselectedLabelStyle:
-                    TextStyle(fontSize: 16, color: currentTheme.primary),
                 tabs: tabs,
               )
             : null,

@@ -186,7 +186,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsHideRevision => 'සංශෝධන විශේෂාංග සඟවන්න';
 
   @override
-  String get settingsHideCommunityLists => 'Hide community lists';
+  String get settingsHideCommunityLists => 'සමාජ ලැයිස්තු සඟවන්න';
 
   @override
   String get settingsDeleteRevisionProgress => 'සියලුම සංශෝධන ප්‍රගතිය මකන්න';
@@ -196,6 +196,21 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get settingsProgressDeleted => 'සියලුම සමාලෝචන ප්‍රගතිය මකාදමා ඇත';
+
+  @override
+  String get settingsAppearance => 'පෙනුම';
+
+  @override
+  String get settingsColourMode => 'වර්ණ මාදිලිය';
+
+  @override
+  String get settingsColourModeLight => 'ආලෝක';
+
+  @override
+  String get settingsColourModeDark => 'අඳුරු';
+
+  @override
+  String get settingsColourModeSystem => 'පද්ධතිය';
 
   @override
   String get settingsCache => 'තාවකාලික මතකයන්';

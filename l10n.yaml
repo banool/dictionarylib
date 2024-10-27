@@ -5,3 +5,4 @@ output-localization-file: app_localizations.dart
 synthetic-package: false
 # The default is AppLocalizations. We rename this so the app using this library can have its own localizations.
 output-class: DictLibLocalizations
+untranslated-messages-file: untranslated.txt

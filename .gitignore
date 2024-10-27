@@ -2,6 +2,7 @@
 .flutter-plugins
 .flutter-plugins-dependencies
 *.swp
+untranslated.txt
 
 # Miscellaneous
 *.class
