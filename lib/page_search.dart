@@ -179,14 +179,10 @@ class SearchPageState extends State<SearchPage> {
     List<Widget> actions = [];
     if (advisoriesResponse != null &&
         advisoriesResponse!.advisories.isNotEmpty) {
-      actions.add(buildActionButton(
-        context,
-        const Icon(Icons.article),
-        () async {
-          showAdvisoryDialog();
-        },
-          currentTheme.primary
-      ));
+      actions
+          .add(buildActionButton(context, const Icon(Icons.article), () async {
+        showAdvisoryDialog();
+      }, currentTheme.primary));
     }
 
     return TopLevelScaffold(
@@ -206,12 +202,12 @@ class SearchPageState extends State<SearchPage> {
 
   Widget buildListItem(BuildContext context, Entry entry) {
     Locale currentLocale = Localizations.localeOf(context);
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
     return TextButton(
       child: Align(
           alignment: Alignment.topLeft,
-          child: Text("${entry.getPhrase(currentLocale)}",
-              style: TextStyle(color: currentTheme.primary))),
+          child: Text(
+            "${entry.getPhrase(currentLocale)}",
+          )),
       onPressed: () => widget.navigateToEntryPage(context, entry, true),
     );
   }

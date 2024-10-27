@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -11,6 +12,11 @@ import 'common.dart';
 import 'entry_list.dart';
 import 'entry_loader.dart';
 import 'entry_types.dart';
+
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+
+// The settings page background color.
+late Color settingsBackgroundColor;
 
 Set<Entry> entriesGlobal = {};
 Map<String, Entry> keyedByEnglishEntriesGlobal = {};
@@ -74,6 +80,17 @@ Future<void> setupPhaseOne() async {
   } catch (e) {
     printAndLog(
         "Failed to get package info: $e (continuing without raising any error)");
+  }
+
+  // Get background color of settings pages.
+  if (kIsWeb) {
+    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
+  } else if (Platform.isAndroid) {
+    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
+  } else if (Platform.isIOS) {
+    settingsBackgroundColor = const Color.fromRGBO(242, 242, 247, 1);
+  } else {
+    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
   }
 }
 

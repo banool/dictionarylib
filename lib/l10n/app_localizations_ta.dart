@@ -186,7 +186,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsHideRevision => 'எடிட்டிங் அம்சங்களை மறை';
 
   @override
-  String get settingsHideCommunityLists => 'Hide community lists';
+  String get settingsHideCommunityLists => 'சமூகப்பட்டியல்களை மறைக்கவும்';
 
   @override
   String get settingsDeleteRevisionProgress => 'அனைத்து மீள்திருத்த முன்னேற்றத்தையும் நீக்கு';
@@ -196,6 +196,21 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get settingsProgressDeleted => 'அனைத்து மதிப்பாய்வு முன்னேற்றமும் நீக்கப்பட்டது';
+
+  @override
+  String get settingsAppearance => 'தோற்றம்';
+
+  @override
+  String get settingsColourMode => 'நிற முறை';
+
+  @override
+  String get settingsColourModeLight => 'ஒளி';
+
+  @override
+  String get settingsColourModeDark => 'இருள்';
+
+  @override
+  String get settingsColourModeSystem => 'கணினி அமைப்பு';
 
   @override
   String get settingsCache => 'தற்காலிக நினைவுகள்';
