@@ -61,8 +61,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
-    TextTheme currentTextTheme = Theme.of(context).textTheme;
     FloatingActionButton? floatingActionButton;
     if (inEditMode) {
       floatingActionButton = FloatingActionButton(
@@ -90,7 +88,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
             inEditMode = !inEditMode;
           });
         },
-        currentTheme.error,
       ));
     }
 
@@ -104,7 +101,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
               builder: (context) => getEntryListOverviewHelpPageEn()),
         );
       },
-      currentTheme.error,
     ));
 
     List<Widget> tabs = [

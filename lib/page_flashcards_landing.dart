@@ -485,7 +485,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
             MaterialPageRoute(builder: (context) => RevisionHistoryPage()),
           );
         },
-        currentTheme.primary,
       ),
       buildActionButton(
         context,
@@ -497,7 +496,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 builder: (context) => widget.controller.buildHelpPage(context)),
           );
         },
-        currentTheme.primary,
       )
     ];
 
