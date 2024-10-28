@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:edit_distance/edit_distance.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -300,4 +301,71 @@ Widget buildMultiSelectDialog<T>({
         : null,
     searchable: searchable,
   );
+}
+
+Widget? getInnerRelatedEntriesWidget(
+    {required BuildContext context,
+    required SubEntry subEntry,
+    required bool shouldUseHorizontalDisplay,
+    required Entry? Function(String) getRelatedEntry,
+    required Future<void> Function(
+            BuildContext context, Entry entry, bool showFavouritesButton)
+        navigateToEntryPage}) {
+  ColorScheme colorScheme = Theme.of(context).colorScheme;
+  int numRelatedWords = subEntry.getRelatedWords().length;
+  if (numRelatedWords == 0) {
+    return null;
+  }
+
+  List<TextSpan> textSpans = [];
+
+  int idx = 0;
+  for (String relatedWord in subEntry.getRelatedWords()) {
+    bool isRelated = false;
+    void Function()? navFunction;
+    Entry? relatedEntry = getRelatedEntry(relatedWord);
+
+    if (relatedEntry != null) {
+      navFunction = () => navigateToEntryPage(context, relatedEntry, true);
+      isRelated = true;
+    } else {
+      navFunction = null;
+    }
+    String suffix;
+    if (idx < numRelatedWords - 1) {
+      suffix = ", ";
+    } else {
+      suffix = "";
+    }
+    textSpans.add(TextSpan(
+      text: relatedWord,
+      style: TextStyle(
+          color: colorScheme.onSurface,
+          decoration: isRelated ? TextDecoration.underline : null),
+      recognizer: TapGestureRecognizer()..onTap = navFunction,
+    ));
+    textSpans.add(
+        TextSpan(text: suffix, style: TextStyle(color: colorScheme.onSurface)));
+    idx += 1;
+  }
+
+  var initial = TextSpan(
+      text: "Related words: ",
+      style:
+          TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold));
+  textSpans = [initial] + textSpans;
+  var richText = RichText(
+    text: TextSpan(children: textSpans),
+    textAlign: TextAlign.center,
+  );
+
+  if (shouldUseHorizontalDisplay) {
+    return Padding(
+        padding: const EdgeInsets.only(left: 10.0, right: 20.0, top: 5.0),
+        child: richText);
+  } else {
+    return Padding(
+        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 15.0),
+        child: richText);
+  }
 }
