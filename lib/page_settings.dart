@@ -371,7 +371,6 @@ class SettingsPageState extends State<SettingsPage> {
             MaterialPageRoute(builder: (context) => getSettingsHelpPageEn()),
           );
         },
-        currentTheme.error,
       )
     ];
 
@@ -473,8 +472,6 @@ class BackgroundLogsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
-
     return Scaffold(
         appBar: AppBar(
           title: const Text("Background Logs"),

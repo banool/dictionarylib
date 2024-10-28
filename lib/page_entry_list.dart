@@ -115,7 +115,6 @@ class EntryListPageState extends State<EntryListPage> {
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
     List<Widget> actions = [];
     if (widget.entryList.canBeEdited()) {
       actions.add(buildActionButton(
@@ -130,7 +129,6 @@ class EntryListPageState extends State<EntryListPage> {
             search();
           });
         },
-        currentTheme.error,
       ));
     }
     actions.add(
@@ -143,7 +141,6 @@ class EntryListPageState extends State<EntryListPage> {
             MaterialPageRoute(builder: (context) => getEntryListHelpPageEn()),
           );
         },
-        currentTheme.error,
       ),
     );
 
@@ -249,7 +246,6 @@ Widget listWidget(
   Future<void> Function(Entry)? deleteEntryFn,
   Future<void> Function(Entry)? addEntryFn,
 }) {
-  ColorScheme currentTheme = Theme.of(context).colorScheme;
   return ListView.builder(
     itemCount: entriesSearched.length,
     itemBuilder: (context, index) {
@@ -295,7 +291,6 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
   // Try to show the text in the selected locale but if not possible,
   // fallback to the key, which in this case is the word in English.
   Locale currentLocale = Localizations.localeOf(context);
-  ColorScheme currentTheme = Theme.of(context).colorScheme;
   var text = entry.getPhrase(currentLocale) ?? entry.getKey();
 
   return TextButton(

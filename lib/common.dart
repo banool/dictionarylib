@@ -176,32 +176,21 @@ Future<bool> confirmAlert(BuildContext context, Widget content,
   return confirmed;
 }
 
-Widget buildActionButton(BuildContext context, Icon icon,
-    void Function() onPressed, Color disabledColor,
-    {bool enabled = true, Color enabledColor = Colors.white}) {
+Widget buildActionButton(
+    BuildContext context, Icon icon, void Function() onPressed,
+    {bool enabled = true}) {
   void Function()? onPressedFunc = onPressed;
   if (!enabled) {
     onPressedFunc = null;
   }
-  return SizedBox(
-      width: 45,
-      child: TextButton(
-          onPressed: onPressedFunc,
-          style: ButtonStyle(
-              padding: WidgetStateProperty.all(EdgeInsets.zero),
-              shape: WidgetStateProperty.all(const CircleBorder(
-                  side: BorderSide(color: Colors.transparent))),
-              fixedSize: WidgetStateProperty.all(const Size.fromWidth(10)),
-              foregroundColor: WidgetStateProperty.resolveWith(
-                (states) {
-                  if (states.contains(WidgetState.disabled)) {
-                    return disabledColor;
-                  } else {
-                    return enabledColor;
-                  }
-                },
-              )),
-          child: icon));
+  return IconButton(
+      onPressed: onPressedFunc,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(
+        minWidth: 45,
+        maxWidth: 45,
+      ),
+      icon: icon);
 }
 
 List<Widget> buildActionButtons(List<Widget> actions) {

@@ -82,7 +82,7 @@ Future<void> setupPhaseOne() async {
         "Failed to get package info: $e (continuing without raising any error)");
   }
 
-  // Get background color of settings pages.
+  // Get background color of settings pages. Only needed for light mode.
   if (kIsWeb) {
     settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
   } else if (Platform.isAndroid) {

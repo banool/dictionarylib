@@ -64,8 +64,6 @@ class SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
-
     if (advisoriesResponse != null &&
         advisoriesResponse!.newAdvisories &&
         advisoriesResponse!.advisories.isNotEmpty &&
@@ -182,7 +180,7 @@ class SearchPageState extends State<SearchPage> {
       actions
           .add(buildActionButton(context, const Icon(Icons.article), () async {
         showAdvisoryDialog();
-      }, currentTheme.primary));
+      }));
     }
 
     return TopLevelScaffold(
