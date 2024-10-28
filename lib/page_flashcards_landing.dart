@@ -211,7 +211,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   @override
   Widget build(BuildContext context) {
     Brightness brightness = Theme.of(context).brightness;
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
     EdgeInsetsDirectional margin = const EdgeInsetsDirectional.only(
         start: 15, end: 15, top: 10, bottom: 10);
 
@@ -260,12 +260,10 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                       in candidateEntryLists.entries) {
                     items.add(MultiSelectItem(e.key, e.value.getName()));
                   }
-                  return MultiSelectDialog<String>(
-                    searchable: true,
-                    listType: MultiSelectListType.CHIP,
-                    title: Text(
-                      DictLibLocalizations.of(context)!.flashcardsSelectLists,
-                    ),
+                  return buildMultiSelectDialog(
+                    context: context,
+                    title:
+                        DictLibLocalizations.of(context)!.flashcardsSelectLists,
                     items: items,
                     initialValue: entryListsToRevise.keys.toList(),
                     onConfirm: (List<String> values) async {
@@ -275,11 +273,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                         updateRevisionSettings();
                       });
                     },
-                    selectedColor: currentTheme.primary,
-                    unselectedColor: currentTheme.surface,
-                    checkColor: currentTheme.surface,
-                    selectedItemsTextStyle:
-                        TextStyle(color: currentTheme.surface),
+                    searchable: true,
                   );
                 },
               );
@@ -349,7 +343,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                       border: Border.all(
-                                          color: currentTheme.primary),
+                                          color: colorScheme.primary),
                                       //color: currentTheme.primary,
                                       borderRadius: BorderRadius.circular(20)),
                                   child: Text(
@@ -438,12 +432,10 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                       if (states.contains(WidgetState.disabled)) {
                         return Colors.grey;
                       } else {
-                        return currentTheme.primary;
+                        return colorScheme.primaryContainer;
                       }
                     },
                   ),
-                  foregroundColor:
-                      WidgetStateProperty.all<Color>(currentTheme.surface),
                   minimumSize:
                       WidgetStateProperty.all<Size>(const Size(120, 50)),
                 ),

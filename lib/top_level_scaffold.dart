@@ -35,7 +35,7 @@ class TopLevelScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
     var items = <BottomNavigationBarItem>[
       BottomNavigationBarItem(
         icon: const Icon(Icons.search),
@@ -66,17 +66,16 @@ class TopLevelScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
-        actions: buildActionButtons(actions ?? []),
-        centerTitle: true,
-        bottom: underAppBar,
-      ),
+          title: Text(title),
+          actions: buildActionButtons(actions ?? []),
+          centerTitle: true,
+          bottom: underAppBar,
+          surfaceTintColor: Colors.transparent),
       body: body,
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: BottomNavigationBar(
         items: items,
         currentIndex: calculateSelectedIndex(context),
-        selectedItemColor: currentTheme.primary,
         onTap: (index) => onItemTapped(index, context),
         type: BottomNavigationBarType.fixed,
       ),

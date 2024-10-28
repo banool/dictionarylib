@@ -5,6 +5,7 @@ import 'package:edit_distance/edit_distance.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import 'entry_types.dart';
 import 'globals.dart';
@@ -271,3 +272,32 @@ typedef NavigateToEntryPageFn = Future<void> Function(
   Entry entry,
   bool showFavouritesButton,
 );
+
+/// The selected chips look weird in dark mode so we have to override the colors
+/// here based on the theme.
+Widget buildMultiSelectDialog<T>({
+  required BuildContext context,
+  required String title,
+  required List<MultiSelectItem<T>> items,
+  required List<T> initialValue,
+  required void Function(List<T>) onConfirm,
+  bool searchable = false,
+}) {
+  Brightness brightness = Theme.of(context).brightness;
+  ColorScheme colorScheme = Theme.of(context).colorScheme;
+  return MultiSelectDialog(
+    listType: MultiSelectListType.CHIP,
+    title: Text(title),
+    items: items,
+    initialValue: initialValue,
+    onConfirm: onConfirm,
+    selectedColor: brightness == Brightness.dark ? colorScheme.primary : null,
+    unselectedColor: brightness == Brightness.dark ? colorScheme.surface : null,
+    // It seems like checkColor doesn't do anything.
+    checkColor: brightness == Brightness.dark ? colorScheme.onPrimary : null,
+    selectedItemsTextStyle: brightness == Brightness.dark
+        ? TextStyle(color: colorScheme.onPrimary)
+        : null,
+    searchable: searchable,
+  );
+}
