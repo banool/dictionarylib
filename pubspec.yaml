@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.2.3
+version: 0.2.4
 
 publish_to: 'none'
 
@@ -29,6 +29,10 @@ dependencies:
   flutter_native_splash: 2.4.2
   go_router: ^14.3.0
   http:
+  http_proxy:
+    git:
+      url: https://github.com/emiliodallatorre/http_proxy
+      ref: master
   intl:
   json_annotation: ^4.8.1
   json_serializable: ^6.7.0
@@ -39,7 +43,6 @@ dependencies:
   path_provider:
   settings_ui:
   shared_preferences:
-  system_proxy:
   url_launcher:
   video_player:
 
