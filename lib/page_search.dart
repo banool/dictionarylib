@@ -272,12 +272,14 @@ class EntryTypeMultiPopUpMenuState extends State<EntryTypeMultiPopUpMenu> {
 
   @override
   Widget build(BuildContext context) {
+    Brightness brightness = Theme.of(context).brightness;
     return IconButton(
       icon: const Icon(Icons.filter_list),
       onPressed: () async {
         await _showDialog(context);
         await widget.onChanged(_selectedEntryTypes);
       },
+      color: brightness == Brightness.light ? Colors.black : Colors.white,
     );
   }
 }
