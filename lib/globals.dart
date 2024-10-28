@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:http_proxy/http_proxy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io' show HttpClient, HttpOverrides, SecurityContext, Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:system_proxy/system_proxy.dart';
 
 import 'advisories.dart';
 import 'common.dart';
@@ -117,9 +117,9 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
 
   // Set the HTTP proxy if necessary.
   if (!kIsWeb) {
-    Map<String, String> proxy = await SystemProxy.getProxySettings() ?? {};
-    HttpOverrides.global = ProxiedHttpOverrides(proxy["host"], proxy["port"]);
-    printAndLog("Set HTTP proxy overrides to $proxy");
+    HttpProxy httpProxy = await HttpProxy.createHttpProxy();
+    HttpOverrides.global = httpProxy;
+    printAndLog("Set HTTP proxy overrides to $httpProxy");
   }
 
   // Load up the advisories before doing anything else so it can be displayed
