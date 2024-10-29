@@ -101,6 +101,9 @@
     "settingsReportAppIssueGithub": "Report issue with app (GitHub)",
     "settingsReportAppIssueEmail": "Report issue with app (Email)",
     "settingsShowBuildInformation": "Show build information",
+    "settingsNetwork": "Network",
+    "settingsUseSystemHttpProxy": "Use system HTTP proxy",
+    "settingsRestartApp": "You need to restart the app for this change to take effect",
 
     "listFavourites": "Favourites",
     "listNameCannotBeEmpty": "List name cannot be empty",

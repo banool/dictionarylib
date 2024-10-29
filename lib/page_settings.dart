@@ -346,6 +346,27 @@ class SettingsPageState extends State<SettingsPage> {
                 }),
           ].where((element) => element != null).cast<SettingsTile>().toList(),
           margin: margin),
+      SettingsSection(
+          title: Text(DictLibLocalizations.of(context)!.settingsNetwork),
+          tiles: [
+            SettingsTile.switchTile(
+              title: Text(
+                  DictLibLocalizations.of(context)!.settingsUseSystemHttpProxy),
+              initialValue:
+                  sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false,
+              onToggle: (bool newValue) {
+                setState(() {
+                  sharedPreferences.setBool(
+                      KEY_USE_SYSTEM_HTTP_PROXY, newValue);
+                });
+                // Show a toast saying they need to restart the app.
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(
+                      DictLibLocalizations.of(context)!.settingsRestartApp),
+                ));
+              },
+            ),
+          ]),
     ];
 
     List<AbstractSettingsSection> nonNullSections = [];

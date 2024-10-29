@@ -116,7 +116,9 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
   sharedPreferences = await SharedPreferences.getInstance();
 
   // Set the HTTP proxy if necessary.
-  if (!kIsWeb) {
+  bool useSystemHttpProxy =
+      sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false;
+  if (useSystemHttpProxy && !kIsWeb) {
     HttpProxy httpProxy = await HttpProxy.createHttpProxy();
     HttpOverrides.global = httpProxy;
     printAndLog("Set HTTP proxy overrides to $httpProxy");

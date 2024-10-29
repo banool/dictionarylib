@@ -103,6 +103,9 @@
     "settingsReportAppIssueGithub": "பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (Github)",
     "settingsReportAppIssueEmail": "பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (மின்னஞ்சல்)",
     "settingsShowBuildInformation": "உருவாக்க தகவலைக் காட்டு",
+    "settingsNetwork": "நெட்வொர்க்",
+    "settingsUseSystemHttpProxy": "கணினியின் HTTP ப்ராக்ஸி பயன்படுத்தவும்",
+    "settingsRestartApp": "இந்த மாற்றம் செயல்பட பயன்பாட்டை மீண்டும் துவக்க வேண்டும்",
 
     "listFavourites": "பிடித்த",
     "listNameCannotBeEmpty": "பட்டியல் பெயர் காலியாக இருக்க முடியாது",

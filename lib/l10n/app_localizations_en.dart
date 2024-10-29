@@ -261,6 +261,15 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsShowBuildInformation => 'Show build information';
 
   @override
+  String get settingsNetwork => 'Network';
+
+  @override
+  String get settingsUseSystemHttpProxy => 'Use system HTTP proxy';
+
+  @override
+  String get settingsRestartApp => 'You need to restart the app for this change to take effect';
+
+  @override
   String get listFavourites => 'Favourites';
 
   @override
