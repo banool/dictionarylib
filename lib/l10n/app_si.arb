@@ -101,6 +101,9 @@
     "settingsReportAppIssueGithub": "යෙදුමේ ගැටළුව (Github) වාර්තා කරන්න",
     "settingsReportAppIssueEmail": "යෙදුමේ ගැටළුව (Email) වාර්තා කරන්න",
     "settingsShowBuildInformation": "ගොඩනැගීමේ තොරතුරු පෙන්වන්න",
+    "settingsNetwork": "ජාලය",
+    "settingsUseSystemHttpProxy": "පද්ධති HTTP ප්‍රොක්සි භාවිතා කරන්න",
+    "settingsRestartApp": "මෙම වෙනස ක්‍රියාත්මක වීමට යෙදුම නැවත ආරම්භ කළ යුතුය",
 
     "listFavourites": "ප්‍රියතම",
     "listNameCannotBeEmpty": "ලැයිස්තු නම හිස් විය නොහැක",

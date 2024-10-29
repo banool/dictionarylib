@@ -261,6 +261,15 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsShowBuildInformation => 'உருவாக்க தகவலைக் காட்டு';
 
   @override
+  String get settingsNetwork => 'நெட்வொர்க்';
+
+  @override
+  String get settingsUseSystemHttpProxy => 'கணினியின் HTTP ப்ராக்ஸி பயன்படுத்தவும்';
+
+  @override
+  String get settingsRestartApp => 'இந்த மாற்றம் செயல்பட பயன்பாட்டை மீண்டும் துவக்க வேண்டும்';
+
+  @override
   String get listFavourites => 'பிடித்த';
 
   @override

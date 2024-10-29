@@ -261,6 +261,15 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsShowBuildInformation => 'ගොඩනැගීමේ තොරතුරු පෙන්වන්න';
 
   @override
+  String get settingsNetwork => 'ජාලය';
+
+  @override
+  String get settingsUseSystemHttpProxy => 'පද්ධති HTTP ප්‍රොක්සි භාවිතා කරන්න';
+
+  @override
+  String get settingsRestartApp => 'මෙම වෙනස ක්‍රියාත්මක වීමට යෙදුම නැවත ආරම්භ කළ යුතුය';
+
+  @override
   String get listFavourites => 'ප්‍රියතම';
 
   @override

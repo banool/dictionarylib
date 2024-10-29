@@ -541,6 +541,24 @@ abstract class DictLibLocalizations {
   /// **'Show build information'**
   String get settingsShowBuildInformation;
 
+  /// No description provided for @settingsNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get settingsNetwork;
+
+  /// No description provided for @settingsUseSystemHttpProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Use system HTTP proxy'**
+  String get settingsUseSystemHttpProxy;
+
+  /// No description provided for @settingsRestartApp.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to restart the app for this change to take effect'**
+  String get settingsRestartApp;
+
   /// No description provided for @listFavourites.
   ///
   /// In en, this message translates to:

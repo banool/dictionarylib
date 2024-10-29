@@ -33,6 +33,7 @@ const String KEY_FLASHCARD_REGIONS = "flashcard_regions";
 const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
 const String KEY_THEME_MODE = "theme_mode";
+const String KEY_USE_SYSTEM_HTTP_PROXY = "use_system_http_proxy";
 
 const int DEFAULT_THEME_MODE = 1; // Light.
 

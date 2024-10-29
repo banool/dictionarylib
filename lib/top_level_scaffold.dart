@@ -35,7 +35,6 @@ class TopLevelScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme colorScheme = Theme.of(context).colorScheme;
     var items = <BottomNavigationBarItem>[
       BottomNavigationBarItem(
         icon: const Icon(Icons.search),
