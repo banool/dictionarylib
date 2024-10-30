@@ -95,9 +95,9 @@ class TopLevelScaffold extends StatelessWidget {
 
   static int calculateSelectedIndex(BuildContext context) {
     final GoRouter route = GoRouter.of(context);
-    final String location = route.routeInformationProvider.value.location;
+    final String path = route.routeInformationProvider.value.uri.path;
     var routes = getRoutes();
-    return routes.indexOf(location);
+    return routes.indexOf(path);
   }
 
   void onItemTapped(int index, BuildContext context) {

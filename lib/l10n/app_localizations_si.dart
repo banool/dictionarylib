@@ -243,6 +243,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsSeeLegal => 'නීතික තොරතුරු බලන්න';
 
   @override
+  String get settingsSeePrivacyPolicy => 'පෞද්ගලිකත්ව ප්රතිපත්තිය බලන්න';
+
+  @override
   String get settingsBackgroundLogs => 'පසුබිම් ලොග';
 
   @override
