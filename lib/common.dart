@@ -37,6 +37,8 @@ const String KEY_USE_SYSTEM_HTTP_PROXY = "use_system_http_proxy";
 
 const int DEFAULT_THEME_MODE = 1; // Light.
 
+const String PRIVACY_POLICY_EMAIL = 'srilankansignlanguage1@gmail.com';
+
 const int DATA_CHECK_INTERVAL = 30 * 60 * 1; // 30 minutes.
 
 const int NUM_DAYS_TO_CACHE = 21;

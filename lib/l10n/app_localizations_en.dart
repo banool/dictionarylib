@@ -243,6 +243,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsSeeLegal => 'See legal information';
 
   @override
+  String get settingsSeePrivacyPolicy => 'See privacy policy';
+
+  @override
   String get settingsBackgroundLogs => 'Background logs';
 
   @override

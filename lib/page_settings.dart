@@ -13,6 +13,7 @@ import 'entry_loader.dart';
 import 'flashcards_logic.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'page_privacy_policy.dart';
 import 'page_settings_help_en.dart';
 import 'top_level_scaffold.dart';
 
@@ -26,6 +27,7 @@ class SettingsPage extends StatefulWidget {
     required this.appName,
     required this.iOSAppId,
     required this.androidAppId,
+    required this.showPrivacyPolicy,
   });
 
   final String appName;
@@ -35,6 +37,7 @@ class SettingsPage extends StatefulWidget {
   final String reportAppProblemUrl;
   final String iOSAppId;
   final String androidAppId;
+  final bool showPrivacyPolicy;
 
   @override
   SettingsPageState createState() => SettingsPageState();
@@ -42,6 +45,20 @@ class SettingsPage extends StatefulWidget {
 
 class SettingsPageState extends State<SettingsPage> {
   bool checkingForNewData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showPrivacyPolicy) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PrivacyPolicyPage(
+                    appName: widget.appName, email: PRIVACY_POLICY_EMAIL)));
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -267,6 +284,19 @@ class SettingsPageState extends State<SettingsPage> {
                             widget.buildLegalInformationChildren),
                   ));
             },
+          ),
+          SettingsTile.navigation(
+            title: getText(
+                DictLibLocalizations.of(context)!.settingsSeePrivacyPolicy),
+            trailing: Container(),
+            onPressed: (BuildContext context) async {
+              return await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PrivacyPolicyPage(
+                        appName: widget.appName, email: PRIVACY_POLICY_EMAIL),
+                  ));
+            },
           )
         ],
         margin: margin,
@@ -437,7 +467,7 @@ class LegalInformationPage extends StatelessWidget {
         ),
         body: Padding(
             padding:
-                const EdgeInsets.only(bottom: 10, left: 20, right: 32, top: 20),
+                const EdgeInsets.only(bottom: 10, left: 20, right: 20, top: 20),
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,

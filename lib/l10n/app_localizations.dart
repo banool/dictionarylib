@@ -505,6 +505,12 @@ abstract class DictLibLocalizations {
   /// **'See legal information'**
   String get settingsSeeLegal;
 
+  /// No description provided for @settingsSeePrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'See privacy policy'**
+  String get settingsSeePrivacyPolicy;
+
   /// No description provided for @settingsBackgroundLogs.
   ///
   /// In en, this message translates to:
