@@ -712,7 +712,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @unexpectedErrorLoadingVideo.
   ///
   /// In en, this message translates to:
-  /// **'Unexpected error loading'**
+  /// **'Unexpected error loading media'**
   String get unexpectedErrorLoadingVideo;
 
   /// No description provided for @deviceDefault.
