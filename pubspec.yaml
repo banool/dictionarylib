@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.2.15
+version: 0.2.16
 
 publish_to: 'none'
 
@@ -9,6 +9,8 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  cached_network_image: ^3.4.1
+  carousel_slider:
   collection:
   device_info_plus:
   dolphinsr_dart:
@@ -43,6 +45,7 @@ dependencies:
   shared_preferences:
   store_redirect:
   url_launcher:
+  video_player:
 
 dev_dependencies:
   build_runner: ^2.3.3

@@ -345,7 +345,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get startupFailureMessage => 'Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.';
 
   @override
-  String get unexpectedErrorLoadingVideo => 'Unexpected error loading';
+  String get unexpectedErrorLoadingVideo => 'Unexpected error loading media';
 
   @override
   String get deviceDefault => 'Device Default';
