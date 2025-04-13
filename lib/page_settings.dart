@@ -3,7 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:launch_review/launch_review.dart';
+import 'package:store_redirect/store_redirect.dart';
 import 'package:mailto/mailto.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -343,10 +343,9 @@ class SettingsPageState extends State<SettingsPage> {
                     title: getText(appStoreTileString),
                     trailing: Container(),
                     onPressed: (BuildContext context) async {
-                      await LaunchReview.launch(
+                      await StoreRedirect.redirect(
                           iOSAppId: widget.iOSAppId,
-                          androidAppId: widget.androidAppId,
-                          writeReview: true);
+                          androidAppId: widget.androidAppId);
                     },
                   )
                 : null,
