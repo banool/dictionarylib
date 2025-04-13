@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:launch_review/launch_review.dart';
+import 'package:store_redirect/store_redirect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:http/http.dart' as http;
@@ -88,10 +88,8 @@ class ForceUpgradePage extends StatelessWidget {
     if (Platform.isIOS || Platform.isAndroid) {
       updateButton = OutlinedButton(
           onPressed: () async {
-            await LaunchReview.launch(
-                iOSAppId: iOSAppId,
-                androidAppId: androidAppId,
-                writeReview: true);
+            await StoreRedirect.redirect(
+                iOSAppId: iOSAppId, androidAppId: androidAppId);
           },
           child: const Text("Update"));
     }
