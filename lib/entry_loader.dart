@@ -57,7 +57,7 @@ abstract class EntryLoader {
   /// want to override this to first call super and then update additional
   /// keyed entries globals. They might want to set the communityListManager
   /// too if relevant.
-  setEntriesGlobal(Set<Entry> entries) {
+  void setEntriesGlobal(Set<Entry> entries) {
     entriesGlobal = entries;
 
     // Update the global entries variant keyed by English.

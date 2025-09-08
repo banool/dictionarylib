@@ -30,7 +30,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String nFlashcardsSelected(num count) {
     final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
-      
     );
     final String countString = countNumberFormat.format(count);
 
@@ -48,7 +47,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String nFlashcardsDue(num count) {
     final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
-      
     );
     final String countString = countNumberFormat.format(count);
 
@@ -162,7 +160,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get flashcardsRevisionProgressTitle => 'Revision Progress';
 
   @override
-  String get flashcardsRevisionStategyToShow => 'Revision strategy to show stats for';
+  String get flashcardsRevisionStategyToShow =>
+      'Revision strategy to show stats for';
 
   @override
   String get setPlaybackSpeedTo => 'Set playback speed to';
@@ -192,7 +191,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsDeleteRevisionProgress => 'Delete all revision progress';
 
   @override
-  String get settingsDeleteRevisionProgressExplanation => 'This will delete all your review progress from all time for both the spaced repetition and random review strategies. Your lists (including favourites) will not be affected. Are you 100% sure you want to do this?';
+  String get settingsDeleteRevisionProgressExplanation =>
+      'This will delete all your review progress from all time for both the spaced repetition and random review strategies. Your lists (including favourites) will not be affected. Are you 100% sure you want to do this?';
 
   @override
   String get settingsProgressDeleted => 'All review progress deleted';
@@ -252,7 +252,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsHelp => 'Help';
 
   @override
-  String get settingsReportDictionaryDataIssue => 'Report issue with dictionary data';
+  String get settingsReportDictionaryDataIssue =>
+      'Report issue with dictionary data';
 
   @override
   String get settingsReportAppIssueGithub => 'Report issue with app (GitHub)';
@@ -270,7 +271,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsUseSystemHttpProxy => 'Use system HTTP proxy';
 
   @override
-  String get settingsRestartApp => 'You need to restart the app for this change to take effect';
+  String get settingsRestartApp =>
+      'You need to restart the app for this change to take effect';
 
   @override
   String get listFavourites => 'Favourites';
@@ -279,7 +281,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get listNameCannotBeEmpty => 'List name cannot be empty';
 
   @override
-  String get listNameInvalid => 'Invalid name, this should have been caught already';
+  String get listNameInvalid =>
+      'Invalid name, this should have been caught already';
 
   @override
   String get listEnterNewName => 'Enter new list name';
@@ -297,7 +300,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get listCommunity => 'Community';
 
   @override
-  String get listConfirmListDelete => 'Are you sure you want to delete this list?';
+  String get listConfirmListDelete =>
+      'Are you sure you want to delete this list?';
 
   @override
   String get listSearchAdd => 'Search for words to add';
@@ -312,7 +316,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get wordFavouriteThisWord => 'Favourite this word';
 
   @override
-  String get wordNoDefinitions => 'No definitions data available for this word / phrase';
+  String get wordNoDefinitions =>
+      'No definitions data available for this word / phrase';
 
   @override
   String get wordDataMissing => 'Data missing';
@@ -342,7 +347,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get alertConfirm => 'Confirm';
 
   @override
-  String get startupFailureMessage => 'Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.';
+  String get startupFailureMessage =>
+      'Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.';
 
   @override
   String get unexpectedErrorLoadingVideo => 'Unexpected error loading media';
