@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.2.18
+version: 0.2.19
 
 publish_to: 'none'
 
@@ -12,6 +12,8 @@ dependencies:
   cached_network_image: ^3.4.1
   carousel_slider:
   collection:
+  # https://github.com/yako-dev/flutter-settings-ui/issues/161
+  cupertino_icons:
   device_info_plus:
   dolphinsr_dart:
     git:
