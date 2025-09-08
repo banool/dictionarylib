@@ -30,7 +30,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String nFlashcardsSelected(num count) {
     final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
-      
     );
     final String countString = countNumberFormat.format(count);
 
@@ -48,7 +47,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String nFlashcardsDue(num count) {
     final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
-      
     );
     final String countString = countNumberFormat.format(count);
 
@@ -66,7 +64,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsRevisionSources => 'திருத்த ஆதாரங்கள்';
 
   @override
-  String get flashcardsSelectListsToRevise => 'மாற்றியமைக்க பட்டியல்களைத் தேர்ந்தெடுக்கவும்';
+  String get flashcardsSelectListsToRevise =>
+      'மாற்றியமைக்க பட்டியல்களைத் தேர்ந்தெடுக்கவும்';
 
   @override
   String get flashcardsSelectLists => 'பட்டியலைத் தேர்ந்தெடு';
@@ -84,7 +83,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsRevisionSettings => 'மீள்திருத்த அமைப்புகள்';
 
   @override
-  String get flashcardsSelectRevisionStrategy => 'மீள்திருத்த முறையைத் தேர்ந்தெடு';
+  String get flashcardsSelectRevisionStrategy =>
+      'மீள்திருத்த முறையைத் தேர்ந்தெடு';
 
   @override
   String get flashcardsStrategy => 'மூலோபாயம்';
@@ -99,7 +99,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsStart => 'தொடங்கு';
 
   @override
-  String get flashcardsOnlyOneCard => 'ஒரு வார்த்தைக்கு ஒரு செட் கார்டுகளை மட்டும் காட்டு';
+  String get flashcardsOnlyOneCard =>
+      'ஒரு வார்த்தைக்கு ஒரு செட் கார்டுகளை மட்டும் காட்டு';
 
   @override
   String get flashcardsRevisionLanguage => 'திருத்த மொழி';
@@ -120,7 +121,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsGotIt => 'கண்டறியப்பட்டது!';
 
   @override
-  String get flashcardsWhatIsSignForWord => 'இந்த வார்த்தைக்கான சைகை மொழி என்ன?';
+  String get flashcardsWhatIsSignForWord =>
+      'இந்த வார்த்தைக்கான சைகை மொழி என்ன?';
 
   @override
   String get flashcardsWhatDoesSignMean => 'இந்த சிக்னல் எதையாவது குறிக்கிறதா?';
@@ -153,7 +155,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsLongestStreak => 'நீண்ட செயல்முறை';
 
   @override
-  String get flashcardsStatsCollectedSince => 'தற்போது உள்ளிடப்பட்டுள்ள புள்ளி விவரங்கள்';
+  String get flashcardsStatsCollectedSince =>
+      'தற்போது உள்ளிடப்பட்டுள்ள புள்ளி விவரங்கள்';
 
   @override
   String get flashcardsRevisionSummaryTitle => 'திருத்தச் சுருக்கம்';
@@ -162,7 +165,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsRevisionProgressTitle => 'திருத்த முன்னேற்றம்';
 
   @override
-  String get flashcardsRevisionStategyToShow => 'புள்ளிவிவரங்களைக் காட்ட திருத்த உத்தியைக் காட்டு';
+  String get flashcardsRevisionStategyToShow =>
+      'புள்ளிவிவரங்களைக் காட்ட திருத்த உத்தியைக் காட்டு';
 
   @override
   String get setPlaybackSpeedTo => 'பிளேபேக் வேகத்தை அமைக்கவும்';
@@ -189,13 +193,16 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsHideCommunityLists => 'சமூகப்பட்டியல்களை மறைக்கவும்';
 
   @override
-  String get settingsDeleteRevisionProgress => 'அனைத்து மீள்திருத்த முன்னேற்றத்தையும் நீக்கு';
+  String get settingsDeleteRevisionProgress =>
+      'அனைத்து மீள்திருத்த முன்னேற்றத்தையும் நீக்கு';
 
   @override
-  String get settingsDeleteRevisionProgressExplanation => 'இது உங்கள் எல்லா மதிப்புரைகளையும், முன்னேற்றத்தையும் நீக்கும். (உங்கள் பட்டியலில் பிடித்தவை பாதிக்கப்படாது.) இதை 100% உறுதியாகச் செய்ய விரும்புகிறீர்களா?';
+  String get settingsDeleteRevisionProgressExplanation =>
+      'இது உங்கள் எல்லா மதிப்புரைகளையும், முன்னேற்றத்தையும் நீக்கும். (உங்கள் பட்டியலில் பிடித்தவை பாதிக்கப்படாது.) இதை 100% உறுதியாகச் செய்ய விரும்புகிறீர்களா?';
 
   @override
-  String get settingsProgressDeleted => 'அனைத்து மதிப்பாய்வு முன்னேற்றமும் நீக்கப்பட்டது';
+  String get settingsProgressDeleted =>
+      'அனைத்து மதிப்பாய்வு முன்னேற்றமும் நீக்கப்பட்டது';
 
   @override
   String get settingsAppearance => 'தோற்றம்';
@@ -231,7 +238,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsCheckNewData => 'புதிய அகராதித் தரவைச் சரிபார்க்கவும்';
 
   @override
-  String get settingsDataUpdated => 'அகராதி தரவு வெற்றிகரமாக புதுப்பிக்கப்பட்டது';
+  String get settingsDataUpdated =>
+      'அகராதி தரவு வெற்றிகரமாக புதுப்பிக்கப்பட்டது';
 
   @override
   String get settingsDataUpToDate => 'தரவு ஏற்கனவே புதுப்பிக்கப்பட்டது';
@@ -252,13 +260,16 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsHelp => 'உதவி';
 
   @override
-  String get settingsReportDictionaryDataIssue => 'அகராதி தரவில் சிக்கலைப் புகாரளிக்கவும்';
+  String get settingsReportDictionaryDataIssue =>
+      'அகராதி தரவில் சிக்கலைப் புகாரளிக்கவும்';
 
   @override
-  String get settingsReportAppIssueGithub => 'பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (Github)';
+  String get settingsReportAppIssueGithub =>
+      'பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (Github)';
 
   @override
-  String get settingsReportAppIssueEmail => 'பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (மின்னஞ்சல்)';
+  String get settingsReportAppIssueEmail =>
+      'பயன்பாட்டுச் சிக்கலைப் புகாரளிக்கவும் (மின்னஞ்சல்)';
 
   @override
   String get settingsShowBuildInformation => 'உருவாக்க தகவலைக் காட்டு';
@@ -267,10 +278,12 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsNetwork => 'நெட்வொர்க்';
 
   @override
-  String get settingsUseSystemHttpProxy => 'கணினியின் HTTP ப்ராக்ஸி பயன்படுத்தவும்';
+  String get settingsUseSystemHttpProxy =>
+      'கணினியின் HTTP ப்ராக்ஸி பயன்படுத்தவும்';
 
   @override
-  String get settingsRestartApp => 'இந்த மாற்றம் செயல்பட பயன்பாட்டை மீண்டும் துவக்க வேண்டும்';
+  String get settingsRestartApp =>
+      'இந்த மாற்றம் செயல்பட பயன்பாட்டை மீண்டும் துவக்க வேண்டும்';
 
   @override
   String get listFavourites => 'பிடித்த';
@@ -279,7 +292,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get listNameCannotBeEmpty => 'பட்டியல் பெயர் காலியாக இருக்க முடியாது';
 
   @override
-  String get listNameInvalid => 'தவறான பெயர், இது ஏற்கனவே எடுக்கப்பட்டிருக்க வேண்டும்';
+  String get listNameInvalid =>
+      'தவறான பெயர், இது ஏற்கனவே எடுக்கப்பட்டிருக்க வேண்டும்';
 
   @override
   String get listEnterNewName => 'புதிய பெயர் பட்டியலைச் செருகு';
@@ -297,7 +311,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get listCommunity => 'சமூக';
 
   @override
-  String get listConfirmListDelete => 'இந்தப் பட்டியலை நிச்சயமாக நீக்க விரும்புகிறீர்களா?';
+  String get listConfirmListDelete =>
+      'இந்தப் பட்டியலை நிச்சயமாக நீக்க விரும்புகிறீர்களா?';
 
   @override
   String get listSearchAdd => 'சேர்க்க வார்த்தைகளைக் கண்டுபிடி';
@@ -312,7 +327,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get wordFavouriteThisWord => 'இந்த வார்த்தை பிடித்தது';
 
   @override
-  String get wordNoDefinitions => 'இந்த வார்த்தை/சொற்றொடருக்கு வரையறை தரவு எதுவும் இல்லை';
+  String get wordNoDefinitions =>
+      'இந்த வார்த்தை/சொற்றொடருக்கு வரையறை தரவு எதுவும் இல்லை';
 
   @override
   String get wordDataMissing => 'காணாமல் தரவு';
@@ -342,7 +358,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get alertConfirm => 'உறுதிப்படுத்தவும்';
 
   @override
-  String get startupFailureMessage => 'பயன்பாடு சரியாகத் தொடங்குவதில் தோல்வி. தயவுசெய்து, முதலில், நீங்கள் பயன்பாட்டின் சமீபத்திய பதிப்பைப் பயன்படுத்துகிறீர்கள் என்பதை உறுதிப்படுத்திக் கொள்ளுங்கள். நீங்கள் இருந்தால், இந்தப் பிழையின் நகலுடன் daniel@dport.me ஐ மின்னஞ்சல் செய்யவும்.';
+  String get startupFailureMessage =>
+      'பயன்பாடு சரியாகத் தொடங்குவதில் தோல்வி. தயவுசெய்து, முதலில், நீங்கள் பயன்பாட்டின் சமீபத்திய பதிப்பைப் பயன்படுத்துகிறீர்கள் என்பதை உறுதிப்படுத்திக் கொள்ளுங்கள். நீங்கள் இருந்தால், இந்தப் பிழையின் நகலுடன் daniel@dport.me ஐ மின்னஞ்சல் செய்யவும்.';
 
   @override
   String get unexpectedErrorLoadingVideo => 'எதிர்பாராத பிழை ஏற்றுதல்';

@@ -63,15 +63,18 @@ import 'app_localizations_ta.dart';
 /// be consistent with the languages listed in the DictLibLocalizations.supportedLocales
 /// property.
 abstract class DictLibLocalizations {
-  DictLibLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  DictLibLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
   static DictLibLocalizations? of(BuildContext context) {
-    return Localizations.of<DictLibLocalizations>(context, DictLibLocalizations);
+    return Localizations.of<DictLibLocalizations>(
+        context, DictLibLocalizations);
   }
 
-  static const LocalizationsDelegate<DictLibLocalizations> delegate = _DictLibLocalizationsDelegate();
+  static const LocalizationsDelegate<DictLibLocalizations> delegate =
+      _DictLibLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -83,7 +86,8 @@ abstract class DictLibLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -722,35 +726,38 @@ abstract class DictLibLocalizations {
   String get deviceDefault;
 }
 
-class _DictLibLocalizationsDelegate extends LocalizationsDelegate<DictLibLocalizations> {
+class _DictLibLocalizationsDelegate
+    extends LocalizationsDelegate<DictLibLocalizations> {
   const _DictLibLocalizationsDelegate();
 
   @override
   Future<DictLibLocalizations> load(Locale locale) {
-    return SynchronousFuture<DictLibLocalizations>(lookupDictLibLocalizations(locale));
+    return SynchronousFuture<DictLibLocalizations>(
+        lookupDictLibLocalizations(locale));
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'si', 'ta'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'si', 'ta'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_DictLibLocalizationsDelegate old) => false;
 }
 
 DictLibLocalizations lookupDictLibLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return DictLibLocalizationsEn();
-    case 'si': return DictLibLocalizationsSi();
-    case 'ta': return DictLibLocalizationsTa();
+    case 'en':
+      return DictLibLocalizationsEn();
+    case 'si':
+      return DictLibLocalizationsSi();
+    case 'ta':
+      return DictLibLocalizationsTa();
   }
 
   throw FlutterError(
-    'DictLibLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'DictLibLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

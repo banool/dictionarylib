@@ -30,7 +30,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String nFlashcardsSelected(num count) {
     final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
-      
     );
     final String countString = countNumberFormat.format(count);
 
@@ -48,7 +47,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String nFlashcardsDue(num count) {
     final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
-      
     );
     final String countString = countNumberFormat.format(count);
 
@@ -162,7 +160,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get flashcardsRevisionProgressTitle => 'සංශෝධන ප්‍රගතිය';
 
   @override
-  String get flashcardsRevisionStategyToShow => 'සංඛ්‍යාලේඛන පෙන්වීමට සඳහා සංශෝධන උපාය මාර්ගය පෙන්වන්න';
+  String get flashcardsRevisionStategyToShow =>
+      'සංඛ්‍යාලේඛන පෙන්වීමට සඳහා සංශෝධන උපාය මාර්ගය පෙන්වන්න';
 
   @override
   String get setPlaybackSpeedTo => 'ප්‍රතිවාදන වේගය සකසන්න';
@@ -192,7 +191,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsDeleteRevisionProgress => 'සියලුම සංශෝධන ප්‍රගතිය මකන්න';
 
   @override
-  String get settingsDeleteRevisionProgressExplanation => 'මෙය මගින් ඔබගේ සියලුම සමාලෝචන, ප්‍රගතිය මාකාදමයි. (ඔබගේ ලැයිස්තු ප්‍රියතමයන් බලපාන්නේ නැත.) ඔබට මෙය කිරීමට අවශ්‍ය බව 100% විශ්වාසද?';
+  String get settingsDeleteRevisionProgressExplanation =>
+      'මෙය මගින් ඔබගේ සියලුම සමාලෝචන, ප්‍රගතිය මාකාදමයි. (ඔබගේ ලැයිස්තු ප්‍රියතමයන් බලපාන්නේ නැත.) ඔබට මෙය කිරීමට අවශ්‍ය බව 100% විශ්වාසද?';
 
   @override
   String get settingsProgressDeleted => 'සියලුම සමාලෝචන ප්‍රගතිය මකාදමා ඇත';
@@ -252,13 +252,16 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsHelp => 'උපකාරය';
 
   @override
-  String get settingsReportDictionaryDataIssue => 'ශබ්දකෝෂ දත්ත ගැටළුව වාර්තා කරන්න';
+  String get settingsReportDictionaryDataIssue =>
+      'ශබ්දකෝෂ දත්ත ගැටළුව වාර්තා කරන්න';
 
   @override
-  String get settingsReportAppIssueGithub => 'යෙදුමේ ගැටළුව (Github) වාර්තා කරන්න';
+  String get settingsReportAppIssueGithub =>
+      'යෙදුමේ ගැටළුව (Github) වාර්තා කරන්න';
 
   @override
-  String get settingsReportAppIssueEmail => 'යෙදුමේ ගැටළුව (Email) වාර්තා කරන්න';
+  String get settingsReportAppIssueEmail =>
+      'යෙදුමේ ගැටළුව (Email) වාර්තා කරන්න';
 
   @override
   String get settingsShowBuildInformation => 'ගොඩනැගීමේ තොරතුරු පෙන්වන්න';
@@ -270,7 +273,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsUseSystemHttpProxy => 'පද්ධති HTTP ප්‍රොක්සි භාවිතා කරන්න';
 
   @override
-  String get settingsRestartApp => 'මෙම වෙනස ක්‍රියාත්මක වීමට යෙදුම නැවත ආරම්භ කළ යුතුය';
+  String get settingsRestartApp =>
+      'මෙම වෙනස ක්‍රියාත්මක වීමට යෙදුම නැවත ආරම්භ කළ යුතුය';
 
   @override
   String get listFavourites => 'ප්‍රියතම';
@@ -279,7 +283,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listNameCannotBeEmpty => 'ලැයිස්තු නම හිස් විය නොහැක';
 
   @override
-  String get listNameInvalid => 'වලංගු නොවන නම, මෙය දැනටමත් අල්ලාගෙන තිබිය යුතුය';
+  String get listNameInvalid =>
+      'වලංගු නොවන නම, මෙය දැනටමත් අල්ලාගෙන තිබිය යුතුය';
 
   @override
   String get listEnterNewName => 'නව නම ලැයිස්තු ඇතුළත් කරන්න';
@@ -297,7 +302,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listCommunity => 'ප්රජාව';
 
   @override
-  String get listConfirmListDelete => 'ඔබට මෙම ලැයිස්තුව මැකීමට අවශ්‍ය බව විශ්වාසද?';
+  String get listConfirmListDelete =>
+      'ඔබට මෙම ලැයිස්තුව මැකීමට අවශ්‍ය බව විශ්වාසද?';
 
   @override
   String get listSearchAdd => 'එක් කිරීම සඳහා වචන සොයන්න';
@@ -312,7 +318,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get wordFavouriteThisWord => 'මෙම වචනය ප්‍රියතම කරන්න';
 
   @override
-  String get wordNoDefinitions => 'මෙම වචනය / වාක්‍ය ඛණ්ඩය සඳහා නිර්වචන දත්ත නොමැත';
+  String get wordNoDefinitions =>
+      'මෙම වචනය / වාක්‍ය ඛණ්ඩය සඳහා නිර්වචන දත්ත නොමැත';
 
   @override
   String get wordDataMissing => 'දත්ත අතුරුදහන්';
@@ -342,7 +349,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get alertConfirm => 'තහවුරු කරන්න';
 
   @override
-  String get startupFailureMessage => 'යෙදුම නිවැරදිව ආරම්භ කිරීමට අසමත් විය. කරුණාකර, පළමුව, ඔබ යෙදුමේ නවතම අනුවාදය භාවිතා කරන බව සහතික කරන්න. ඔබ එසේ නම්, කරුණාකර මෙම දෝෂය පෙන්වන පුනරුපුවරුවක් සමග daniel@dport.me වෙත ඊමේල් කරන්න.';
+  String get startupFailureMessage =>
+      'යෙදුම නිවැරදිව ආරම්භ කිරීමට අසමත් විය. කරුණාකර, පළමුව, ඔබ යෙදුමේ නවතම අනුවාදය භාවිතා කරන බව සහතික කරන්න. ඔබ එසේ නම්, කරුණාකර මෙම දෝෂය පෙන්වන පුනරුපුවරුවක් සමග daniel@dport.me වෙත ඊමේල් කරන්න.';
 
   @override
   String get unexpectedErrorLoadingVideo => 'අනපේක්ෂිත දෝෂය පූරණය කරමින්';
