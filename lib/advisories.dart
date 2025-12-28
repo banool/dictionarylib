@@ -108,10 +108,15 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
 void showAdvisoryDialog({BuildContext? context}) {
   showDialog(
       context: context ?? rootNavigatorKey.currentContext!,
-      builder: (context) => AlertDialog(
-          title:
-              Text(DictLibLocalizations.of(context)?.newsTitle ?? "Advisories"),
-          content: SingleChildScrollView(child: getAdvisoriesInner())));
+      builder: (context) {
+        final maxHeight = MediaQuery.of(context).size.height * 0.7;
+        return AlertDialog(
+            title: Text(
+                DictLibLocalizations.of(context)?.newsTitle ?? "Advisories"),
+            content: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: SingleChildScrollView(child: getAdvisoriesInner())));
+      });
 }
 
 Widget getAdvisoriesInner() {
