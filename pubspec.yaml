@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.2.19
+version: 0.3.0
 
 publish_to: 'none'
 
@@ -47,7 +47,9 @@ dependencies:
   shared_preferences:
   store_redirect:
   url_launcher:
-  video_player:
+  media_kit:
+  media_kit_video:
+  media_kit_libs_video:
 
 dev_dependencies:
   build_runner: ^2.3.3

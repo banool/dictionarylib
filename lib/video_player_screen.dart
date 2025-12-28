@@ -6,9 +6,10 @@ import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
-import 'package:video_player/video_player.dart';
 
 enum PlaybackSpeed {
   PointFiveZero,
@@ -93,6 +94,17 @@ class InheritedPlaybackSpeed extends InheritedWidget {
   }
 }
 
+/// Data class to hold a Player and its associated VideoController.
+class _PlayerData {
+  final Player player;
+  final VideoController controller;
+  double? aspectRatio;
+  bool isReady = false;
+  String? error;
+
+  _PlayerData({required this.player, required this.controller});
+}
+
 class VideoPlayerScreen extends StatefulWidget {
   const VideoPlayerScreen(
       {super.key, required this.mediaLinks, required this.fallbackAspectRatio});
@@ -112,11 +124,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final List<String> mediaLinks;
   final double fallbackAspectRatio;
 
-  Map<int, VideoPlayerController> videoControllers = {};
-  Map<int, VideoPlayerController> imageControllers = {};
-  Map<int, Widget> errorWidgets = {};
-
-  List<Future<void>> initializePlayerFutures = [];
+  Map<int, _PlayerData> players = {};
 
   CarouselSliderController? carouselController;
 
@@ -124,51 +132,63 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   void initState() {
-    int idx = 0;
-    for (String mediaLink in mediaLinks) {
-      var future = initSingleVideo(mediaLink, idx);
-      initializePlayerFutures.add(future);
-      idx += 1;
-    }
+    super.initState();
     // Make carousel slider controller.
     carouselController = CarouselSliderController();
-    super.initState();
+
+    // Create players and controllers immediately (synchronously) so that
+    // the Video widgets can be in the tree when we open the media.
+    // This is important for Android where the texture surface needs to be
+    // set up before opening media.
+    for (int idx = 0; idx < mediaLinks.length; idx++) {
+      final mediaLink = mediaLinks[idx];
+      // Skip non-video files
+      if (mediaLink.endsWith(".jpg")) continue;
+
+      // Create Player and VideoController following media-kit README:
+      // https://github.com/media-kit/media-kit
+      final player = Player();
+      final controller = VideoController(player);
+      players[idx] = _PlayerData(player: player, controller: controller);
+
+      // Open the media asynchronously after the widget is in the tree.
+      // Use addPostFrameCallback to ensure Video widget is mounted first.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openMedia(mediaLink, idx);
+      });
+    }
   }
 
-  Future<void> initSingleVideo(String mediaLink, int idx) async {
+  Future<void> _openMedia(String mediaLink, int idx) async {
+    if (!mounted) return;
+
+    final playerData = players[idx];
+    if (playerData == null) return;
+
     bool shouldCache = sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true;
 
-    VideoPlayerOptions videoPlayerOptions =
-        VideoPlayerOptions(mixWithOthers: true);
-
     try {
-      late VideoPlayerController controller;
-      // Don't cache .bak files. They're rare and tricky to handle. In short,
-      // the underlying video players depend on the extension to figure out
-      // what kind of file we're working with. We need to remove the .bak
-      // extension for the video player to work correctly.
+      // Don't cache .bak files.
       if (mediaLink.endsWith(".bak")) {
         shouldCache = false;
       }
-      // We should only download directly if the user has disabled caching or
-      // if we're in a web environment, in which case the web player cannot
-      // use a file system based cache.
       bool shouldDownloadDirectly = !shouldCache || kIsWeb;
+
+      String mediaSource = mediaLink;
+
       if (shouldCache) {
         try {
           printAndLog(
               "Attempting to pull video $mediaLink from the cache / internet");
           File file = await myCacheManager.getSingleFile(mediaLink);
-          controller = VideoPlayerController.file(file,
-              videoPlayerOptions: videoPlayerOptions);
+          mediaSource = file.path;
         } catch (e) {
-          // I believe this never triggers now, getSingleFile internally handles
-          // either pulling from the cache or the internet.
           printAndLog(
               "Failed to use cache for $mediaLink despite caching being enabled, just trying to download directly: $e");
           shouldDownloadDirectly = true;
         }
       }
+
       if (shouldDownloadDirectly) {
         if (!shouldCache) {
           printAndLog(
@@ -187,39 +207,51 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           String newFileName = mediaLink.split("/").last.replaceAll(".bak", "");
           File file = File("$dir/$newFileName");
           await file.writeAsBytes(bytes);
-          controller = VideoPlayerController.file(file,
-              videoPlayerOptions: videoPlayerOptions);
+          mediaSource = file.path;
         } else {
-          controller = VideoPlayerController.network(mediaLink,
-              videoPlayerOptions: videoPlayerOptions);
+          mediaSource = mediaLink;
         }
       }
 
-      // Use the controller to loop the video.
-      await controller.setLooping(true);
+      // Set volume to 0.
+      await playerData.player.setVolume(0.0);
 
-      // Turn off the sound (some videos have sound for some reason).
-      await controller.setVolume(0.0);
+      // Set looping.
+      await playerData.player.setPlaylistMode(PlaylistMode.single);
 
-      // Start the video paused.
-      await controller.pause();
+      // Open the media.
+      Media media;
+      if (mediaSource.startsWith('/') || mediaSource.startsWith('file://')) {
+        media = Media(
+            'file://$mediaSource'.replaceAll('file://file://', 'file://'));
+      } else {
+        media = Media(mediaSource);
+      }
+      await playerData.player.open(media, play: false);
 
-      // Initialize the controller.
-      await controller.initialize();
+      // Wait for the video to be ready and get aspect ratio.
+      await playerData.player.stream.width.first.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => null,
+      );
+      final width = playerData.player.state.width;
+      final height = playerData.player.state.height;
+      if (width != null && height != null && height > 0) {
+        playerData.aspectRatio = width / height;
+      }
 
-      // Store the controller for later. We check mounted in case the user
-      // navigated away before the video loading, in which case calling setState
-      // would be invalid.
       if (mounted) {
         setState(() {
-          videoControllers[idx] = controller;
+          playerData.isReady = true;
         });
-      } else {
-        printAndLog("Not calling setState because not mounted");
       }
     } catch (e) {
       printAndLog("Error loading video: $e");
-      errorWidgets[idx] = createErrorWidget(e, mediaLink);
+      if (mounted) {
+        setState(() {
+          playerData.error = "$e";
+        });
+      }
     }
   }
 
@@ -259,29 +291,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   void onPageChanged(BuildContext context, int newPage) {
     setState(() {
-      for (VideoPlayerController c in videoControllers.values) {
-        c.pause();
+      for (var playerData in players.values) {
+        playerData.player.pause();
       }
       currentPage = newPage;
-      videoControllers[currentPage]?.play();
+      players[currentPage]?.player.play();
     });
   }
 
   @override
   void dispose() {
-    super.dispose();
-    // Ensure disposing of the VideoPlayerController to free up resources.
-    for (VideoPlayerController c in videoControllers.values) {
-      c.dispose();
+    // Ensure disposing of the Players to free up resources.
+    for (var playerData in players.values) {
+      playerData.player.dispose();
     }
+    super.dispose();
   }
 
-  void setPlaybackSpeed(
-      BuildContext context, VideoPlayerController controller) {
+  void setPlaybackSpeed(BuildContext context, Player player) {
     if (mounted) {
       double playbackSpeedDouble = getDoubleFromPlaybackSpeed(
           InheritedPlaybackSpeed.of(context)!.playbackSpeed);
-      controller.setPlaybackSpeed(playbackSpeedDouble);
+      player.setRate(playbackSpeedDouble);
     }
   }
 
@@ -299,6 +330,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             child: CachedNetworkImage(
                 imageUrl: mediaLink,
                 cacheManager: myCacheManager,
+                // Disable fade animation so spinner just disappears
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
                 progressIndicatorBuilder: (context, url, downloadProgress) =>
                     Padding(
                         padding: const EdgeInsets.only(top: 20),
@@ -314,67 +348,79 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 errorWidget: (context, url, error) =>
                     createErrorWidget(error, mediaLink)));
       } else {
-        item = FutureBuilder(
-            future: initializePlayerFutures[idx],
-            builder: (context, snapshot) {
-              var waitingWidget = const Padding(
-                  padding: EdgeInsets.only(top: 20),
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ));
-              if (snapshot.connectionState != ConnectionState.done) {
-                return waitingWidget;
-              }
-              if (errorWidgets.containsKey(idx)) {
-                return errorWidgets[idx]!;
-              }
-              if (!videoControllers.containsKey(idx)) {
-                return waitingWidget;
-              }
-              var controller = videoControllers[idx]!;
+        // Build video widget - the playerData should exist since we create it synchronously
+        final playerData = players[idx];
+        if (playerData == null) {
+          item = const Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: Center(child: CircularProgressIndicator()));
+        } else if (playerData.error != null) {
+          item = createErrorWidget(playerData.error!, mediaLink);
+        } else {
+          // Set playback speed here, since we need the context.
+          if (playerData.isReady) {
+            setPlaybackSpeed(context, playerData.player);
 
-              // Set playback speed here, since we need the context.
-              setPlaybackSpeed(context, controller);
+            // Set it again repeatedly since there can be a weird race.
+            Future.delayed(const Duration(milliseconds: 100),
+                () => setPlaybackSpeed(context, playerData.player));
+            Future.delayed(const Duration(milliseconds: 250),
+                () => setPlaybackSpeed(context, playerData.player));
+            Future.delayed(const Duration(milliseconds: 500),
+                () => setPlaybackSpeed(context, playerData.player));
+            Future.delayed(const Duration(milliseconds: 1000),
+                () => setPlaybackSpeed(context, playerData.player));
 
-              // Set it again repeatedly since there can be a weird race.
-              // I have confirmed that even from within video_player.dart, it is
-              // trying to set the correct value but the video still plays at
-              // the wrong playback speed.
-              Future.delayed(const Duration(milliseconds: 100),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 250),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 500),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 1000),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 2000),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 4000),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 6000),
-                  () => setPlaybackSpeed(context, controller));
-              Future.delayed(const Duration(milliseconds: 8000),
-                  () => setPlaybackSpeed(context, controller));
+            // Play or pause the video based on whether this is the current page.
+            if (idx == currentPage) {
+              playerData.player.play();
+            } else {
+              playerData.player.pause();
+            }
+          }
 
-              // Play or pause the video based on whether this is the first video.
-              if (idx == currentPage) {
-                controller.play();
-              } else {
-                controller.pause();
+          // Build the Video widget immediately so the texture surface is available.
+          // This is crucial for Android - the Video widget must be in the tree
+          // when player.open() is called.
+          item = LayoutBuilder(
+            builder: (context, constraints) {
+              final videoAspectRatio =
+                  playerData.aspectRatio ?? fallbackAspectRatio;
+              // Calculate dimensions based on available width
+              double videoWidth = constraints.maxWidth;
+              double videoHeight = videoWidth / videoAspectRatio;
+              // If height exceeds available space, constrain by height instead
+              if (constraints.maxHeight.isFinite &&
+                  videoHeight > constraints.maxHeight - 15) {
+                videoHeight = constraints.maxHeight - 15;
+                videoWidth = videoHeight * videoAspectRatio;
               }
-
-              var player = VideoPlayer(controller);
-              var videoContainer = Container(
-                  padding: const EdgeInsets.only(top: 15), child: player);
-              return videoContainer;
-            });
+              return Container(
+                padding: const EdgeInsets.only(top: 15),
+                child: SizedBox(
+                  width: videoWidth,
+                  height: videoHeight,
+                  child: Video(
+                    controller: playerData.controller,
+                    // Use LoadingVideoControls which shows a native loading
+                    // indicator when buffering or video not yet loaded
+                    controls: getLoadingVideoControls,
+                    // Use fill since the SizedBox is already sized to match
+                    // the video's aspect ratio - no need for letterboxing
+                    fit: BoxFit.fill,
+                  ),
+                ),
+              );
+            },
+          );
+        }
       }
       items.add(item);
     }
     double aspectRatio;
-    if (videoControllers.containsKey(currentPage)) {
-      aspectRatio = videoControllers[currentPage]!.value.aspectRatio;
+    if (players.containsKey(currentPage) &&
+        players[currentPage]!.aspectRatio != null) {
+      aspectRatio = players[currentPage]!.aspectRatio!;
     } else {
       // This is a fallback value for if the video hasn't loaded yet.
       aspectRatio = fallbackAspectRatio;
@@ -415,4 +461,29 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     return sliderContainer;
   }
+}
+
+/// A controls builder that shows a loading indicator when buffering,
+/// and nothing otherwise.
+Widget getLoadingVideoControls(VideoState state) {
+  return StreamBuilder<bool>(
+    stream: state.widget.controller.player.stream.buffering,
+    initialData: state.widget.controller.player.state.buffering,
+    builder: (context, snapshot) {
+      final isBuffering = snapshot.data ?? false;
+      final width = state.widget.controller.player.state.width;
+      final height = state.widget.controller.player.state.height;
+      // Show loading if buffering or video dimensions not yet available
+      final showLoading = isBuffering || width == null || height == null;
+
+      if (showLoading) {
+        return const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    },
+  );
 }
