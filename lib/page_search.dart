@@ -47,6 +47,12 @@ class SearchPageState extends State<SearchPage> {
     }
   }
 
+  @override
+  void dispose() {
+    _searchFieldController.dispose();
+    super.dispose();
+  }
+
   void search(String searchTerm, List<EntryType> entryTypes) {
     setState(() {
       entriesSearched =

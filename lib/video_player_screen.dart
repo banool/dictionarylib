@@ -105,6 +105,11 @@ class _PlayerData {
   // Track whether video has played at least once - used to avoid showing
   // loading spinner on loop.
   bool hasPlayedOnce = false;
+  // Track if playback speed retries have been scheduled to avoid scheduling
+  // them multiple times on each rebuild.
+  bool playbackSpeedRetriesScheduled = false;
+  // Track if initial play/pause has been set to avoid calling on every rebuild.
+  bool initialPlaybackSet = false;
   StreamSubscription? _playingSubscription;
 
   _PlayerData({required this.player, required this.controller});
@@ -259,6 +264,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           playerData.player.stream.playing.listen((isPlaying) {
         if (isPlaying && !playerData.hasPlayedOnce) {
           playerData.hasPlayedOnce = true;
+          // Trigger rebuild so the controls get the updated hasPlayedOnce value.
+          if (mounted) {
+            setState(() {});
+          }
         }
       });
 
@@ -383,21 +392,35 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           if (playerData.isReady) {
             setPlaybackSpeed(context, playerData.player);
 
-            // Set it again repeatedly since there can be a weird race.
-            Future.delayed(const Duration(milliseconds: 100),
-                () => setPlaybackSpeed(context, playerData.player));
-            Future.delayed(const Duration(milliseconds: 250),
-                () => setPlaybackSpeed(context, playerData.player));
-            Future.delayed(const Duration(milliseconds: 500),
-                () => setPlaybackSpeed(context, playerData.player));
-            Future.delayed(const Duration(milliseconds: 1000),
-                () => setPlaybackSpeed(context, playerData.player));
+            // Schedule delayed retries only once per player to avoid
+            // accumulating callbacks on each rebuild.
+            if (!playerData.playbackSpeedRetriesScheduled) {
+              playerData.playbackSpeedRetriesScheduled = true;
+              // Set it again repeatedly since there can be a weird race.
+              // Check mounted before each call to avoid issues after dispose.
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) setPlaybackSpeed(context, playerData.player);
+              });
+              Future.delayed(const Duration(milliseconds: 250), () {
+                if (mounted) setPlaybackSpeed(context, playerData.player);
+              });
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) setPlaybackSpeed(context, playerData.player);
+              });
+              Future.delayed(const Duration(milliseconds: 1000), () {
+                if (mounted) setPlaybackSpeed(context, playerData.player);
+              });
+            }
 
-            // Play or pause the video based on whether this is the current page.
-            if (idx == currentPage) {
-              playerData.player.play();
-            } else {
-              playerData.player.pause();
+            // Set initial play/pause state only once per player to avoid
+            // calling play/pause on every rebuild.
+            if (!playerData.initialPlaybackSet) {
+              playerData.initialPlaybackSet = true;
+              if (idx == currentPage) {
+                playerData.player.play();
+              } else {
+                playerData.player.pause();
+              }
             }
           }
 

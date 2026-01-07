@@ -40,6 +40,13 @@ class EntryListPageState extends State<EntryListPage> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    textFieldFocus.dispose();
+    _searchFieldController.dispose();
+    super.dispose();
+  }
+
   void toggleSort() {
     setState(() {
       viewSortedList = !viewSortedList;
