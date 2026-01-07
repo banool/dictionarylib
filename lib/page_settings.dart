@@ -534,8 +534,8 @@ class BackgroundLogsPage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   TextButton(
-                    child: Text("Copy logs to clipboard",
-                        textAlign: TextAlign.center, style: TextStyle()),
+                    child: const Text("Copy logs to clipboard",
+                        textAlign: TextAlign.center),
                     onPressed: () async {
                       await Clipboard.setData(
                           ClipboardData(text: backgroundLogs.items.join("\n")));

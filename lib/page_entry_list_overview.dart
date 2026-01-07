@@ -262,44 +262,48 @@ Widget getCommunityLists(BuildContext context,
 Future<bool> applyCreateListDialog(BuildContext context) async {
   TextEditingController controller = TextEditingController();
 
-  List<Widget> children = [
-    const Text(
-      "No special characters besides these are allowed: , . - _ !",
-    ),
-    const Padding(padding: EdgeInsets.only(top: 10)),
-    TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: DictLibLocalizations.of(context)!.listEnterNewName,
+  try {
+    List<Widget> children = [
+      const Text(
+        "No special characters besides these are allowed: , . - _ !",
       ),
-      autofocus: true,
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(EntryList.validNameCharacters),
-      ],
-      textInputAction: TextInputAction.send,
-      keyboardType: TextInputType.visiblePassword,
-      textCapitalization: TextCapitalization.words,
-    )
-  ];
+      const Padding(padding: EdgeInsets.only(top: 10)),
+      TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: DictLibLocalizations.of(context)!.listEnterNewName,
+        ),
+        autofocus: true,
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(EntryList.validNameCharacters),
+        ],
+        textInputAction: TextInputAction.send,
+        keyboardType: TextInputType.visiblePassword,
+        textCapitalization: TextCapitalization.words,
+      )
+    ];
 
-  Widget body = Column(
-    mainAxisSize: MainAxisSize.min,
-    children: children,
-  );
-  bool confirmed = await confirmAlert(context, body,
-      title: DictLibLocalizations.of(context)!.listNewList);
-  if (confirmed) {
-    String name = controller.text;
-    try {
-      String key = EntryList.getKeyFromName(name);
-      await userEntryListManager.createEntryList(key);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              "${DictLibLocalizations.of(context)!.listFailedToMake}: $e."),
-          backgroundColor: Colors.red));
-      confirmed = false;
+    Widget body = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+    bool confirmed = await confirmAlert(context, body,
+        title: DictLibLocalizations.of(context)!.listNewList);
+    if (confirmed) {
+      String name = controller.text;
+      try {
+        String key = EntryList.getKeyFromName(name);
+        await userEntryListManager.createEntryList(key);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                "${DictLibLocalizations.of(context)!.listFailedToMake}: $e."),
+            backgroundColor: Colors.red));
+        confirmed = false;
+      }
     }
+    return confirmed;
+  } finally {
+    controller.dispose();
   }
-  return confirmed;
 }
