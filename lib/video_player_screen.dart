@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -101,8 +102,17 @@ class _PlayerData {
   double? aspectRatio;
   bool isReady = false;
   String? error;
+  // Track whether video has played at least once - used to avoid showing
+  // loading spinner on loop.
+  bool hasPlayedOnce = false;
+  StreamSubscription? _playingSubscription;
 
   _PlayerData({required this.player, required this.controller});
+
+  void dispose() {
+    _playingSubscription?.cancel();
+    player.dispose();
+  }
 }
 
 class VideoPlayerScreen extends StatefulWidget {
@@ -216,8 +226,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       // Set volume to 0.
       await playerData.player.setVolume(0.0);
 
-      // Set looping.
-      await playerData.player.setPlaylistMode(PlaylistMode.single);
+      // Use PlaylistMode.loop instead of PlaylistMode.single for smoother loops.
+      // PlaylistMode.single can cause stuttering/freezing when the video loops.
+      // PlaylistMode.loop is designed for seamless playlist transitions and handles
+      // single-video looping more smoothly.
+      await playerData.player.setPlaylistMode(PlaylistMode.loop);
 
       // Open the media.
       Media media;
@@ -239,6 +252,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       if (width != null && height != null && height > 0) {
         playerData.aspectRatio = width / height;
       }
+
+      // Listen to the playing stream to track when video first starts playing.
+      // This is used to avoid showing loading spinner on loop.
+      playerData._playingSubscription =
+          playerData.player.stream.playing.listen((isPlaying) {
+        if (isPlaying && !playerData.hasPlayedOnce) {
+          playerData.hasPlayedOnce = true;
+        }
+      });
 
       if (mounted) {
         setState(() {
@@ -303,7 +325,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void dispose() {
     // Ensure disposing of the Players to free up resources.
     for (var playerData in players.values) {
-      playerData.player.dispose();
+      playerData.dispose();
     }
     super.dispose();
   }
@@ -402,9 +424,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   height: videoHeight,
                   child: Video(
                     controller: playerData.controller,
-                    // Use LoadingVideoControls which shows a native loading
-                    // indicator when buffering or video not yet loaded
-                    controls: getLoadingVideoControls,
+                    // Show loading indicator only on initial load, not on loop.
+                    controls: (state) => getLoadingVideoControls(
+                        state, playerData.hasPlayedOnce),
                     // Use fill since the SizedBox is already sized to match
                     // the video's aspect ratio - no need for letterboxing
                     fit: BoxFit.fill,
@@ -463,9 +485,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 }
 
-/// A controls builder that shows a loading indicator when buffering,
-/// and nothing otherwise.
-Widget getLoadingVideoControls(VideoState state) {
+/// A controls builder that shows a loading indicator on initial load only.
+/// The hasPlayedOnce flag prevents the spinner from appearing when the video
+/// loops (which can trigger brief buffering states).
+Widget getLoadingVideoControls(VideoState state, bool hasPlayedOnce) {
   return StreamBuilder<bool>(
     stream: state.widget.controller.player.stream.buffering,
     initialData: state.widget.controller.player.state.buffering,
@@ -473,8 +496,10 @@ Widget getLoadingVideoControls(VideoState state) {
       final isBuffering = snapshot.data ?? false;
       final width = state.widget.controller.player.state.width;
       final height = state.widget.controller.player.state.height;
-      // Show loading if buffering or video dimensions not yet available
-      final showLoading = isBuffering || width == null || height == null;
+
+      // Only show loading on initial load, not when looping.
+      final showLoading =
+          !hasPlayedOnce && (isBuffering || width == null || height == null);
 
       if (showLoading) {
         return const Center(
