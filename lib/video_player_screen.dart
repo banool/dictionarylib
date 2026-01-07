@@ -228,8 +228,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         }
       }
 
-      // Set volume to 0.
-      await playerData.player.setVolume(0.0);
+      // Disable audio completely to prevent interrupting other audio (like music).
+      // Setting volume to 0 is not enough - it still acquires audio focus.
+      // Disabling the audio track entirely prevents audio focus acquisition.
+      await playerData.player.setAudioTrack(AudioTrack.no());
 
       // Use PlaylistMode.loop instead of PlaylistMode.single for smoother loops.
       // PlaylistMode.single can cause stuttering/freezing when the video loops.
