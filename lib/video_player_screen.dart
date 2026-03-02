@@ -229,9 +229,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       }
 
       // Disable audio completely to prevent interrupting other audio (like music).
-      // Setting volume to 0 is not enough - it still acquires audio focus.
-      // Disabling the audio track entirely prevents audio focus acquisition.
-      await playerData.player.setAudioTrack(AudioTrack.no());
+      // On native, disabling the audio track entirely prevents audio focus
+      // acquisition (setVolume(0) alone still acquires it). On web, media_kit
+      // only supports AudioTrack.uri so we fall back to muting the volume.
+      if (kIsWeb) {
+        await playerData.player.setVolume(0);
+      } else {
+        await playerData.player.setAudioTrack(AudioTrack.no());
+      }
 
       // Use PlaylistMode.loop instead of PlaylistMode.single for smoother loops.
       // PlaylistMode.single can cause stuttering/freezing when the video loops.
