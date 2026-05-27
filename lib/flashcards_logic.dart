@@ -8,6 +8,7 @@ import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
 import 'globals.dart';
+import 'lists_service.dart';
 import 'revision.dart';
 
 const String VIDEO_LINKS_MARKER = "videolinks";
@@ -32,10 +33,21 @@ class DolphinInformation {
 }
 
 // Load up the entry list managers we'll consider. Start with the user's
-// lists. Include the community lists if the user hasn't chosen to hdie them.
+// lists (owner-shares appear here via their paired local source list),
+// then add lists shared with the user — editor + subscriber wrappers
+// from the sync manager. Community lists last, gated on the
+// hide-community knob.
 LinkedHashMap<String, EntryList> getCandidateEntryLists() {
   LinkedHashMap<String, EntryList> candidateEntryLists = LinkedHashMap();
-  candidateEntryLists.addAll(userEntryListManager.getEntryLists());
+  for (final el in listsService.myLists) {
+    candidateEntryLists[el.key] = el;
+  }
+  for (final el in sharing.lists.editorLists) {
+    candidateEntryLists[el.key] = el;
+  }
+  for (final el in sharing.lists.subscribedLists) {
+    candidateEntryLists[el.key] = el;
+  }
   if (!(sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)) {
     candidateEntryLists.addAll(communityEntryListManager.getEntryLists());
   }

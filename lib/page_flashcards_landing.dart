@@ -258,7 +258,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                   List<MultiSelectItem<String>> items = [];
                   for (MapEntry<String, EntryList> e
                       in candidateEntryLists.entries) {
-                    items.add(MultiSelectItem(e.key, e.value.getName()));
+                    items.add(MultiSelectItem(e.key, e.value.getName(context)));
                   }
                   return buildMultiSelectDialog(
                     context: context,

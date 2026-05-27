@@ -3,6 +3,8 @@
 .flutter-plugins-dependencies
 *.swp
 untranslated.txt
+.wrangler
+.env
 
 # Miscellaneous
 *.class

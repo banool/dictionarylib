@@ -20,3 +20,7 @@ dart fix --apply
 ```
 flutter pub run build_runner build
 ```
+
+## Shared lists
+
+Learn more about this feature in `lists/`.

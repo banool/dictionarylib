@@ -13,8 +13,12 @@ import 'entry_loader.dart';
 import 'flashcards_logic.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'lists_service.dart';
 import 'page_privacy_policy.dart';
 import 'page_settings_help_en.dart';
+import 'sharing/auth/auth_store.dart';
+import 'sharing/auth/sign_in_dialog.dart';
+import 'sharing/sync_api.dart';
 import 'top_level_scaffold.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -166,6 +170,86 @@ class SettingsPageState extends State<SettingsPage> {
           }));
     }
 
+    SettingsSection? sharingSection;
+    final shareState = sharing;
+    if (shareState.isEnabled) {
+      final l = DictLibLocalizations.of(context)!;
+      final session = shareState.auth.store.current;
+      final tiles = <AbstractSettingsTile>[
+        if (session == null)
+          SettingsTile.navigation(
+            title: getText(l.settingsSignIn),
+            trailing: Container(),
+            onPressed: (ctx) async {
+              final result = await showSignInDialog(ctx);
+              if (result != null && ctx.mounted) {
+                // Newly signed in — offer to import any lists they own
+                // from a previous device.
+                await offerImportOwnedLists(ctx);
+              }
+              setState(() {});
+            },
+          )
+        else ...[
+          SettingsTile(
+            title: getText(session.displayName.isNotEmpty
+                ? l.settingsSignedInAsNamed(
+                    session.displayName, _providerLabel(l, session.provider))
+                : l.settingsSignedInAs(_providerLabel(l, session.provider))),
+            trailing: const SizedBox.shrink(),
+          ),
+          SettingsTile.navigation(
+            title: getText(l.settingsSignOut),
+            trailing: Container(),
+            onPressed: (ctx) async {
+              // Warn the user before they drop the session if they have
+              // queued ops that won't reach the server otherwise.
+              final pendingLists = shareState.lists.editableLists
+                  .where((x) => x.meta.pendingOps.isNotEmpty)
+                  .toList();
+              final body = pendingLists.isNotEmpty
+                  ? l.settingsSignOutConfirmBodyWithPending(pendingLists.length)
+                  : l.settingsSignOutConfirmBody;
+              final confirmed = await confirmAlert(
+                ctx,
+                Text(body),
+                title: l.settingsSignOutConfirmTitle,
+              );
+              if (confirmed) {
+                await shareState.signOut();
+                setState(() {});
+              }
+            },
+          ),
+        ],
+        SettingsTile.navigation(
+          title: getText(l.settingsClearSharingData),
+          trailing: Container(),
+          onPressed: (ctx) async {
+            final confirmed = await confirmAlert(
+              ctx,
+              Text(l.settingsClearSharingDataConfirmBody),
+              title: l.settingsClearSharingDataConfirmTitle,
+            );
+            if (confirmed) {
+              await shareState.signOut();
+              await shareState.lists.clearAll();
+              // Tell every Sharing listener (e.g. open list pages) that
+              // sync state changed, so they redraw without a stale
+              // owner-share wrapper.
+              shareState.bumpState();
+              setState(() {});
+            }
+          },
+        ),
+      ];
+      sharingSection = SettingsSection(
+        title: Text(l.settingsSharing),
+        tiles: tiles,
+        margin: margin,
+      );
+    }
+
     List<AbstractSettingsSection?> sections = [
       SettingsSection(
         title: Text(DictLibLocalizations.of(context)!.settingsAppearance),
@@ -269,6 +353,7 @@ class SettingsPageState extends State<SettingsPage> {
         margin: margin,
       ),
       featuresSection,
+      sharingSection,
       SettingsSection(
         title: Text(DictLibLocalizations.of(context)!.settingsLegal),
         tiles: [
@@ -327,7 +412,8 @@ class SettingsPageState extends State<SettingsPage> {
               onPressed: (BuildContext context) async {
                 var mailto = Mailto(
                     to: ['d@dport.me'],
-                    subject: 'Issue with ${widget.appName}',
+                    subject: DictLibLocalizations.of(context)!
+                        .reportIssueEmailSubject(widget.appName),
                     body:
                         'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n');
                 String url = "$mailto";
@@ -462,7 +548,8 @@ class LegalInformationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text("Legal Information"),
+          title:
+              Text(DictLibLocalizations.of(context)!.legalInformationPageTitle),
         ),
         body: Padding(
             padding:
@@ -503,7 +590,8 @@ class BuildInformationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text("Build Information"),
+          title:
+              Text(DictLibLocalizations.of(context)!.buildInformationPageTitle),
         ),
         body: Padding(
             padding:
@@ -522,9 +610,10 @@ class BackgroundLogsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = DictLibLocalizations.of(context)!;
     return Scaffold(
         appBar: AppBar(
-          title: const Text("Background Logs"),
+          title: Text(l.backgroundLogsPageTitle),
         ),
         body: Padding(
             padding:
@@ -534,14 +623,13 @@ class BackgroundLogsPage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   TextButton(
-                    child: const Text("Copy logs to clipboard",
+                    child: Text(l.backgroundLogsCopyButton,
                         textAlign: TextAlign.center),
                     onPressed: () async {
                       await Clipboard.setData(
                           ClipboardData(text: backgroundLogs.items.join("\n")));
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: const Text("Logs copied to clipboard"),
-                        //backgroundColor: currentTheme.primary
+                        content: Text(l.backgroundLogsCopiedSnack),
                       ));
                     },
                   ),
@@ -557,6 +645,19 @@ class BackgroundLogsPage extends StatelessWidget {
                                       1.8 //You can set your custom height here
                                   )))),
                 ])));
+  }
+}
+
+String _providerLabel(DictLibLocalizations l, AuthProvider provider) {
+  switch (provider) {
+    case AuthProvider.apple:
+      return l.providerApple;
+    case AuthProvider.google:
+      return l.providerGoogle;
+    case AuthProvider.facebook:
+      return l.providerFacebook;
+    case AuthProvider.test:
+      return l.providerTest;
   }
 }
 
@@ -581,4 +682,40 @@ Future<void> _setThemeMode(ThemeMode themeMode) async {
   await sharedPreferences.setInt(KEY_THEME_MODE, themeMode.index);
   // We set this to affect the theme at runtime.
   themeNotifier.value = themeMode;
+}
+
+/// Prompt the user about pulling down any lists owned by their current
+/// signed-in account, then run the import + show a summary. Designed to
+/// be called right after sign-in completes (typically from the Settings
+/// sign-in flow on a fresh install).
+Future<void> offerImportOwnedLists(BuildContext context) async {
+  final l = DictLibLocalizations.of(context)!;
+  final messenger = ScaffoldMessenger.of(context);
+  // Capture the result via closure so we can format the snackbar after
+  // [runWithProgress] returns success.
+  ImportOwnedListsResult? result;
+  final go = await confirmAlert(
+    context,
+    Text(l.importOwnedListsPromptBody),
+    title: l.importOwnedListsPromptTitle,
+    confirmText: l.importOwnedListsActionImport,
+    cancelText: l.importOwnedListsActionSkip,
+  );
+  if (!go || !context.mounted) return;
+
+  final ok = await runWithProgress(
+    context: context,
+    message: l.importOwnedListsRunning,
+    task: () async =>
+        result = await listsService.importOwnedLists(context: context),
+    errorMessage: (e) =>
+        e is SyncException ? l.importOwnedListsFailed(e.message) : '$e',
+  );
+  if (!ok || result == null) return;
+  final r = result!;
+  messenger.showSnackBar(SnackBar(
+    content: Text(r.total == 0
+        ? l.importOwnedListsResultNone
+        : l.importOwnedListsResultDone(r.imported, r.total)),
+  ));
 }

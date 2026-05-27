@@ -25,6 +25,7 @@ const String KEY_SEARCH_FOR_PHRASES = "search_for_phrases";
 const String KEY_SEARCH_FOR_FINGERSPELLING = "search_for_fingerspelling";
 
 const String KEY_FAVOURITES_ENTRIES = "favourites_words";
+
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS = "last_data_check_time";
 const String KEY_DICTIONARY_DATA_CURRENT_VERSION = "current_data_version";
 const String KEY_HIDE_FLASHCARDS_FEATURE = "hide_flashcards_feature";
@@ -36,6 +37,16 @@ const String KEY_THEME_MODE = "theme_mode";
 const String KEY_USE_SYSTEM_HTTP_PROXY = "use_system_http_proxy";
 
 const int DEFAULT_THEME_MODE = 1; // Light.
+
+/// Defer disposing [controller] until after the current frame so any widget
+/// still holding a reference (typically a `TextField` inside a closing
+/// dialog) finishes its own disposal first. Disposing synchronously after
+/// `showDialog` returns can fire a "used after dispose" assertion because
+/// `Navigator.pop` completes the future before the dialog widget tree is
+/// unmounted.
+void disposeAfterFrame(ChangeNotifier controller) {
+  WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
+}
 
 const String PRIVACY_POLICY_EMAIL = 'srilankansignlanguage1@gmail.com';
 
@@ -144,57 +155,152 @@ List<Entry> searchList(BuildContext context, String searchTerm,
   return out;
 }
 
-Future<bool> confirmAlert(BuildContext context, Widget content,
-    {String? title, String? cancelText, String? confirmText}) async {
-  title = title ?? DictLibLocalizations.of(context)!.alertCareful;
-  cancelText = cancelText ?? DictLibLocalizations.of(context)!.alertCancel;
-  confirmText = confirmText ?? DictLibLocalizations.of(context)!.alertConfirm;
+/// A confirm/cancel alert.
+///
+/// In the simple form (no [onConfirm]) tapping Confirm closes the dialog
+/// and returns true; Cancel returns false. The caller does whatever it
+/// needs after.
+///
+/// When [onConfirm] is supplied, the dialog stays open while the callback
+/// runs: the Confirm button is replaced by a spinner and Cancel is
+/// disabled. On success the dialog closes and returns true. On failure
+/// the dialog stays open (so the user can retry) and an error snackbar
+/// is shown; the message comes from [errorMessage] if provided, else
+/// `e.toString()`. This means a caller doesn't have to write its own
+/// "show a spinner, await the future, show a snackbar on error" boilerplate
+/// — and crucially the user gets visible feedback that the network call
+/// is in flight before any UI dismissal.
+Future<bool> confirmAlert(
+  BuildContext context,
+  Widget content, {
+  String? title,
+  String? cancelText,
+  String? confirmText,
+  Future<void> Function()? onConfirm,
+  String Function(Object error)? errorMessage,
+}) async {
+  title ??= DictLibLocalizations.of(context)!.alertCareful;
+  cancelText ??= DictLibLocalizations.of(context)!.alertCancel;
+  confirmText ??= DictLibLocalizations.of(context)!.alertConfirm;
+  // Captured before any await so we don't reach across an async gap.
+  final messenger = ScaffoldMessenger.of(context);
+  final errorColor = Theme.of(context).colorScheme.error;
+
   bool confirmed = false;
-  Widget cancelButton = TextButton(
-    child: Text(cancelText, style: const TextStyle()),
-    onPressed: () {
-      Navigator.of(context).pop();
-    },
-  );
-  Widget continueButton = TextButton(
-    child: Text(confirmText, style: const TextStyle()),
-    onPressed: () {
-      confirmed = true;
-      Navigator.of(context).pop();
-    },
-  );
-  AlertDialog alert = AlertDialog(
-    title: Text(title),
-    content: content,
-    actions: [
-      cancelButton,
-      continueButton,
-      const Padding(padding: EdgeInsets.only(right: 0))
-    ],
-  );
-  await showDialog(
+  await showDialog<void>(
     context: context,
-    builder: (BuildContext context) {
-      return alert;
-    },
+    // While an async confirm is in-flight the user shouldn't be able to
+    // tap-outside-to-dismiss — that'd leave the task running with no UI.
+    barrierDismissible: onConfirm == null,
+    builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+      bool running = false;
+      Future<void> handleConfirm() async {
+        if (onConfirm == null) {
+          confirmed = true;
+          Navigator.of(ctx).pop();
+          return;
+        }
+        setLocal(() => running = true);
+        try {
+          await onConfirm();
+          confirmed = true;
+          if (ctx.mounted) Navigator.of(ctx).pop();
+        } catch (e) {
+          if (ctx.mounted) setLocal(() => running = false);
+          messenger.showSnackBar(SnackBar(
+            content: Text(errorMessage?.call(e) ?? e.toString()),
+            backgroundColor: errorColor,
+          ));
+        }
+      }
+
+      return AlertDialog(
+        title: Text(title!),
+        content: content,
+        actions: [
+          TextButton(
+            onPressed: running ? null : () => Navigator.of(ctx).pop(),
+            child: Text(cancelText!),
+          ),
+          TextButton(
+            onPressed: running ? null : handleConfirm,
+            child: running
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(confirmText!),
+          ),
+        ],
+      );
+    }),
   );
   return confirmed;
 }
 
-Widget buildActionButton(
-    BuildContext context, Icon icon, void Function() onPressed,
-    {bool enabled = true}) {
-  void Function()? onPressedFunc = onPressed;
-  if (!enabled) {
-    onPressedFunc = null;
-  }
-  return IconButton(
-      onPressed: onPressedFunc,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: 45,
-        maxWidth: 45,
+/// Run [task] behind a non-dismissible spinner dialog. On success the
+/// dialog closes silently; on failure it closes and an error snackbar is
+/// shown (message via [errorMessage], default `e.toString()`). Returns
+/// true on success, false on failure — handy for "tap a thing → it should
+/// show a spinner → then either complete or surface an error" flows where
+/// there's no preceding confirm step (e.g. Sync now).
+Future<bool> runWithProgress({
+  required BuildContext context,
+  required String message,
+  required Future<void> Function() task,
+  String Function(Object error)? errorMessage,
+}) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final errorColor = Theme.of(context).colorScheme.error;
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => Center(
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 12),
+            Text(message),
+          ]),
+        ),
       ),
+    ),
+  );
+  bool ok = false;
+  try {
+    await task();
+    ok = true;
+  } catch (e) {
+    messenger.showSnackBar(SnackBar(
+      content: Text(errorMessage?.call(e) ?? e.toString()),
+      backgroundColor: errorColor,
+    ));
+  } finally {
+    if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+  }
+  return ok;
+}
+
+/// Anchor rect for `Share.share`'s `sharePositionOrigin`. iOS uses this to
+/// position the share popover (required on iPad; required by recent
+/// share_plus versions on iPhone too). Pass a context from inside the
+/// button you want the popover to emerge from.
+Rect? sharePositionOrigin(BuildContext context) {
+  final box = context.findRenderObject() as RenderBox?;
+  if (box == null || !box.hasSize) return null;
+  return box.localToGlobal(Offset.zero) & box.size;
+}
+
+Widget buildActionButton(
+    BuildContext context, Widget icon, void Function() onPressed,
+    {bool enabled = true}) {
+  return IconButton(
+      onPressed: enabled ? onPressed : null,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 45, height: 45),
       icon: icon);
 }
 

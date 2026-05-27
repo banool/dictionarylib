@@ -1,17 +1,20 @@
+import 'dart:io' show HttpClient, HttpOverrides, SecurityContext, Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http_proxy/http_proxy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'dart:io' show HttpClient, HttpOverrides, SecurityContext, Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'advisories.dart';
 import 'common.dart';
 import 'entry_list.dart';
 import 'entry_loader.dart';
 import 'entry_types.dart';
+import 'sharing/sharing.dart';
+import 'sharing/sharing_config.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -54,6 +57,18 @@ PackageInfo? packageInfo;
 
 // Entry loader.
 late EntryLoader entryLoader;
+
+/// The sharing subsystem (config + API client + sync engine + deep-link
+/// handler + synced-list manager). Starts out as an inert
+/// [Sharing.disabled] so call sites never have to null-check —
+/// every accessor returns empty / no-op until [setupSharing]
+/// replaces it. Apps that don't want sharing simply don't call
+/// [setupSharing] and the global stays inert.
+///
+/// UI surfaces that should only appear when sharing is actually
+/// wired up (the "Shared with me" tab, share buttons, etc.) gate
+/// on `sharing.isEnabled` instead of `sharing != null`.
+Sharing sharing = Sharing.disabled();
 
 class MyCacheManager extends CacheManager with ImageCacheManager {
   static const key = 'mySignLanguageCacheManager';
@@ -130,6 +145,17 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
 
   // Build the cache manager.
   myCacheManager = MyCacheManager();
+}
+
+/// Wire up shared lists. Call **after** `setupPhaseThree` in apps that want
+/// sharing — the synced-list manager looks up local source lists in
+/// `userEntryListManager`, which `setupPhaseThree` initializes. After this
+/// returns the consuming app should subscribe to
+/// `sharing.deepLinks.payloads` and route each [SharePayload] to its
+/// `/share/:listId` route (carrying the invite token when present).
+Future<void> setupSharing(SharingConfig config) async {
+  assert(!sharing.isEnabled, 'setupSharing called more than once');
+  sharing = await Sharing.setup(config);
 }
 
 // Pull knobs, load up entry data. Make sure you have pulled other knobs you

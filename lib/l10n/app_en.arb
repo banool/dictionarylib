@@ -135,8 +135,386 @@
     "alertCareful": "Careful!",
     "alertCancel": "Cancel",
     "alertConfirm": "Confirm",
+    "alertOk": "OK",
 
     "startupFailureMessage": "Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.",
     "unexpectedErrorLoadingVideo": "Unexpected error loading media",
-    "deviceDefault": "Device Default"
+    "deviceDefault": "Device Default",
+
+    "shareDialogTitle": "Share this list",
+    "shareDialogBody": "Pick a display name for your list. Anyone with the share link can subscribe and follow your edits.",
+    "shareDialogDisplayNameLabel": "Display name",
+    "shareDialogDisplayNameHelper": "Emojis welcome 🎉",
+    "shareDialogShareButton": "Share",
+    "shareValidationRequired": "Required",
+    "shareValidationMaxLen": "At most {count} characters",
+    "@shareValidationMaxLen": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "shareValidationReservedName": "\"{name}\" is reserved — pick a different name",
+    "@shareValidationReservedName": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "shareNetworkError": "Couldn't reach the server. Check your connection and try again.",
+    "shareErrorUnauthorized": "Your session has expired. Please sign in again.",
+    "shareErrorForbidden": "You don't have permission to do that.",
+    "shareErrorGone": "This list has been deleted by its owner.",
+    "shareErrorPayloadTooLarge": "That change is too big. Try again with a smaller batch.",
+    "shareErrorRateLimited": "Slow down — too many requests. Try again in a moment.",
+    "shareErrorServer": "The server is having trouble. Try again later.",
+    "unshareToDeleteTooltip": "Stop sharing this list before deleting it.",
+    "shareTooManyEntriesTitle": "List is too big to share",
+    "shareTooManyEntriesBody": "This list has {count} entries, but shared lists are capped at {max}. Remove some entries and try again.",
+    "@shareTooManyEntriesBody": {
+        "placeholders": {
+            "count": { "type": "int" },
+            "max": { "type": "int" }
+        }
+    },
+
+    "shareLinkDialogTitle": "List shared",
+    "shareLinkDialogBody": "Anyone with this link can subscribe to \"{displayName}\":",
+    "@shareLinkDialogBody": {
+        "placeholders": {
+            "displayName": { "type": "String" }
+        }
+    },
+    "shareLinkCopiedSnack": "Link copied to clipboard",
+    "shareLinkCopyButton": "Copy",
+    "shareLinkShareButton": "Share",
+    "shareLinkQrButton": "QR code",
+    "shareLinkDoneButton": "Done",
+
+    "qrCodeDialogBody": "Other people can scan this to subscribe.",
+    "qrCodeDialogClose": "Close",
+
+    "signInDialogTitle": "Sign in to share",
+    "signInDialogBody": "To share a list, sign in below. We only use this to prove that you're the one editing it later — we don't collect any personal information.",
+    "signInWithApple": "Continue with Apple",
+    "signInWithGoogle": "Continue with Google",
+    "signInWithFacebook": "Continue with Facebook",
+    "signInFailed": "Sign-in failed. Please try again.",
+    "signInCancelled": "Sign-in cancelled.",
+    "signInProviderNotConfigured": "This sign-in option isn't available on this device.",
+    "signInProviderNoCredential": "Sign-in didn't return a valid response. Please try again.",
+    "providerApple": "Apple",
+    "providerGoogle": "Google",
+    "providerFacebook": "Facebook",
+    "providerTest": "Test session",
+
+    "subscribeDialogTitle": "Subscribe to a shared list",
+    "subscribeDialogBody": "Paste either a share link or just the list ID at the end of one.",
+    "subscribeDialogUrlLabel": "Share URL",
+    "subscribeDialogSubscribeButton": "Subscribe",
+    "subscribeInvalidInput": "Not a valid share link or list ID.",
+    "subscribeInputIsInviteUrl": "That's an invite link — tap it from your phone to join as editor instead of subscribing.",
+    "subscribeNotFound": "No list with that key exists.",
+
+    "sharedListLandingLoading": "Loading shared list",
+    "sharedListLandingDefaultError": "Couldn't load this list.",
+    "sharedListLandingNotFound": "This shared list doesn't exist or has been deleted by its owner.",
+    "sharedListLandingTryAgain": "Try again",
+
+    "unshareConfirmBody": "Stop sharing this list? Subscribers will no longer be able to see it.",
+    "unshareConfirmTitle": "Stop sharing?",
+    "unshareFailed": "Failed to stop sharing: {message}",
+    "@unshareFailed": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
+    "unsubscribeConfirmBody": "Unsubscribe from this list?",
+    "unsubscribeConfirmTitle": "Unsubscribe?",
+    "copyToMyListsSnack": "Copied to \"{name}\"",
+    "@copyToMyListsSnack": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "subscribedSyncNowMenuItem": "Sync now",
+    "subscribedSyncInProgress": "Syncing…",
+    "subscribedSyncDoneSnack": "Up to date",
+    "subscribedSyncFailedSnack": "Sync failed: {message}",
+    "@subscribedSyncFailedSnack": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
+    "subscribedCopyMenuItem": "Duplicate",
+
+    "settingsSharing": "Sharing",
+    "settingsSignIn": "Sign in to share lists",
+    "settingsSignedInAs": "Signed in with {provider}",
+    "@settingsSignedInAs": {
+        "placeholders": {
+            "provider": { "type": "String" }
+        }
+    },
+    "settingsSignOut": "Sign out",
+    "settingsSignOutConfirmTitle": "Sign out?",
+    "settingsSignOutConfirmBody": "Your shared lists stay on the server. You'll need to sign in again to edit or unshare them.",
+    "settingsClearSharingData": "Clear sharing data",
+    "settingsClearSharingDataConfirmTitle": "Clear sharing data?",
+    "settingsClearSharingDataConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
+
+    "alertSave": "Save",
+    "alertDone": "Done",
+
+    "listNameAllowedChars": "No special characters besides these are allowed: , . - _ !",
+
+    "forceUpgradeMessage": "You are using an unsupported version ({version}) of the app, please update.",
+    "@forceUpgradeMessage": {
+        "placeholders": {
+            "version": { "type": "String" }
+        }
+    },
+    "forceUpgradeButton": "Update",
+
+    "privacyPolicyPageTitle": "Privacy Policy",
+
+    "importOwnedListsPromptTitle": "Import your shared lists?",
+    "importOwnedListsPromptBody": "We'll fetch any shared lists tied to this account — both the ones you created and the ones you've been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you're online.",
+    "importOwnedListsActionImport": "Import",
+    "importOwnedListsActionSkip": "Skip",
+    "importOwnedListsRunning": "Importing your shared lists…",
+    "importOwnedListsFailed": "Couldn't import lists: {message}",
+    "@importOwnedListsFailed": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
+    "importOwnedListsResultNone": "No shared lists found.",
+    "importOwnedListsResultDone": "Imported {imported} of {total} list(s).",
+    "@importOwnedListsResultDone": {
+        "placeholders": {
+            "imported": { "type": "int" },
+            "total": { "type": "int" }
+        }
+    },
+    "duplicateConfirmTitle": "Duplicate list?",
+    "duplicateConfirmBody": "This makes a personal, private copy of the list. It won't update when the original owner edits theirs.",
+    "duplicateConfirmAction": "Duplicate",
+    "duplicateFallbackName": "Duplicated list",
+
+    "listSharedWithMeTab": "Shared with me",
+    "listSharedWithMeEmpty": "Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.",
+
+    "ownedStatusOrphaned": "Shared — deleted by you",
+    "ownedStatusSharedBy": "Shared by you",
+    "ownedStatusPendingSyncSuffix": "pending sync",
+    "ownedStatusSyncedSuffix": "synced",
+    "subscribedStatusOrphaned": "Removed by owner",
+    "subscribedStatusFallback": "Subscribed",
+    "syncedJustNow": "synced just now",
+    "syncedMinutesAgo": "synced {count}m ago",
+    "@syncedMinutesAgo": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "syncedHoursAgo": "synced {count}h ago",
+    "@syncedHoursAgo": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "syncedDaysAgo": "synced {count}d ago",
+    "@syncedDaysAgo": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+
+    "agoJustNow": "just now",
+    "agoMinutes": "{count}m ago",
+    "@agoMinutes": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "agoHours": "{count}h ago",
+    "@agoHours": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "agoDays": "{count}d ago",
+    "@agoDays": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "subscribedStatusSyncedAndUpdated": "synced {sync} · updated {updated}",
+    "@subscribedStatusSyncedAndUpdated": {
+        "placeholders": {
+            "sync": { "type": "String" },
+            "updated": { "type": "String" }
+        }
+    },
+
+    "shareLinkInviteEditorButton": "Invite an editor",
+
+    "inviteEditorDialogTitle": "Invite an editor",
+    "inviteEditorDialogBody": "Send this link to the person you want to add as an editor. They'll need to sign in to accept; once they do, they can add and remove entries on your list.",
+    "inviteEditorExpiresIn": "Expires in 7 days. The link can be used once.",
+    "inviteEditorFailed": "Couldn't create an invite: {message}",
+    "@inviteEditorFailed": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
+
+    "acceptInviteLandingTitle": "Accept invite",
+    "acceptInviteLandingSignedOut": "Sign in to accept this invite. After you sign in, you'll be able to edit \"{displayName}\" alongside the creator.",
+    "@acceptInviteLandingSignedOut": {
+        "placeholders": {
+            "displayName": { "type": "String" }
+        }
+    },
+    "acceptInviteLandingUnknownList": "This invite is for a list we couldn't preview yet. Sign in to continue.",
+    "acceptInviteLandingSignInButton": "Sign in to accept",
+    "acceptInviteLandingAccepting": "Joining…",
+    "acceptInviteLandingFailed": "Couldn't accept the invite: {message}",
+    "@acceptInviteLandingFailed": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
+    "acceptInviteLandingExpired": "This invite has expired or has already been used. Ask the list's creator for a new one.",
+    "acceptInviteLandingSignedIn": "Join \"{displayName}\" as an editor.",
+    "@acceptInviteLandingSignedIn": {
+        "placeholders": {
+            "displayName": { "type": "String" }
+        }
+    },
+    "acceptInviteLandingAcceptButton": "Accept invite",
+    "acceptInviteLandingOpenList": "Open list",
+    "acceptInviteLandingAlreadyOwner": "You're the creator of \"{displayName}\" — no need to accept your own invite.",
+    "@acceptInviteLandingAlreadyOwner": {
+        "placeholders": {
+            "displayName": { "type": "String" }
+        }
+    },
+    "acceptInviteLandingAlreadyEditor": "You already edit \"{displayName}\".",
+    "@acceptInviteLandingAlreadyEditor": {
+        "placeholders": {
+            "displayName": { "type": "String" }
+        }
+    },
+
+    "membersPageTitle": "Members",
+    "membersPageCreator": "Creator",
+    "membersPageEditors": "Editors",
+    "membersPageNoEditors": "No other editors yet. Tap \"Invite an editor\" to add one.",
+    "membersPageRemoveEditor": "Remove",
+    "membersPageRemoveEditorConfirmTitle": "Remove {name}?",
+    "@membersPageRemoveEditorConfirmTitle": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "membersPageRemoveEditorConfirmBody": "They will no longer be able to edit this list. Any of their pending offline edits will be discarded.",
+    "membersPageLeaveButton": "Leave this list",
+    "membersPageLeaveConfirmTitle": "Leave this list?",
+    "membersPageLeaveConfirmBody": "You won't be able to make changes anymore. The list itself stays available to read from your share link.",
+    "membersPageEditorAddedBy": "Added by {name}",
+    "@membersPageEditorAddedBy": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "membersPageNameYou": "{name} (you)",
+    "@membersPageNameYou": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "leaveListFailed": "Couldn't leave list: {message}",
+    "@leaveListFailed": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
+    "membersPageSubtitleFor": "Members of \"{name}\"",
+    "@membersPageSubtitleFor": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+
+    "signInDialogContextInvite": "Sign in to accept the invite. You'll be able to edit the list once you do.",
+    "signInDialogContextResume": "Sign in again to push your queued edits.",
+
+    "settingsSignedInAsNamed": "Signed in as {name} via {provider}",
+    "@settingsSignedInAsNamed": {
+        "placeholders": {
+            "name": { "type": "String" },
+            "provider": { "type": "String" }
+        }
+    },
+
+    "settingsSignOutConfirmBodyWithPending": "You have unsynced edits on {count} list(s). Signing out won't push them to the server. Are you sure?",
+    "@settingsSignOutConfirmBodyWithPending": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+
+    "overviewResumeSignInIdle": "Sign in to sync your shared lists across devices.",
+    "overviewResumeSignInWithPending": "You have unsynced edits. Sign in again to push them.",
+    "overviewResumeSignInButton": "Sign in",
+
+    "expiredSessionBanner": "Your session expired. Sign in again to push your edits.",
+    "expiredSessionBannerAction": "Sign in",
+
+    "engineSessionExpiredSnack": "Signed out — please sign in again",
+    "engineSessionExpiredSnackAction": "Sign in",
+    "engineRemovedAsEditorSnack": "You're no longer an editor of this list",
+    "engineSnapshotCatchUpSnack": "This list changed a lot while you were offline — review your recent edits.",
+    "importedListFallbackName": "Imported list",
+    "favouritesListName": "Favourites",
+    "listNameErrorEmpty": "List name cannot be empty",
+    "listNameErrorInvalid": "Invalid list name",
+    "listNameErrorReserved": "List name \"{name}\" is reserved",
+    "@listNameErrorReserved": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listNameErrorAlreadyExists": "A list with that name already exists",
+    "legalInformationPageTitle": "Legal Information",
+    "buildInformationPageTitle": "Build Information",
+    "backgroundLogsPageTitle": "Background Logs",
+    "backgroundLogsCopyButton": "Copy logs to clipboard",
+    "backgroundLogsCopiedSnack": "Logs copied to clipboard",
+    "reportIssueEmailSubject": "Issue with {appName}",
+    "@reportIssueEmailSubject": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+
+    "forkPartialDrop": "Copied {copied} of {total} entries — {dropped} signs are no longer in the dictionary.",
+    "@forkPartialDrop": {
+        "placeholders": {
+            "copied": { "type": "int" },
+            "total": { "type": "int" },
+            "dropped": { "type": "int" }
+        }
+    },
+
+    "signInTestUserButton": "Sign in as test user (debug)",
+    "signInTestPromptTitle": "Test sign-in",
+    "signInTestPromptBody": "Mints a session on the worker's test provider. Debug builds only. Use this to drive the shared-lists feature without a real provider account.",
+    "signInTestUserIdLabel": "User id (test:<slug>)",
+    "signInTestDisplayNameLabel": "Display name",
+    "signInTestPromptConfirm": "Sign in"
 }

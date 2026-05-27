@@ -358,6 +358,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get alertConfirm => 'உறுதிப்படுத்தவும்';
 
   @override
+  String get alertOk => 'OK';
+
+  @override
   String get startupFailureMessage =>
       'பயன்பாடு சரியாகத் தொடங்குவதில் தோல்வி. தயவுசெய்து, முதலில், நீங்கள் பயன்பாட்டின் சமீபத்திய பதிப்பைப் பயன்படுத்துகிறீர்கள் என்பதை உறுதிப்படுத்திக் கொள்ளுங்கள். நீங்கள் இருந்தால், இந்தப் பிழையின் நகலுடன் daniel@dport.me ஐ மின்னஞ்சல் செய்யவும்.';
 
@@ -366,4 +369,615 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get deviceDefault => 'சாதனங்களை வழங்கு';
+
+  @override
+  String get shareDialogTitle => 'Share this list';
+
+  @override
+  String get shareDialogBody =>
+      'Pick a display name for your list. Anyone with the share link can subscribe and follow your edits.';
+
+  @override
+  String get shareDialogDisplayNameLabel => 'Display name';
+
+  @override
+  String get shareDialogDisplayNameHelper => 'Emojis welcome 🎉';
+
+  @override
+  String get shareDialogShareButton => 'Share';
+
+  @override
+  String get shareValidationRequired => 'Required';
+
+  @override
+  String shareValidationMaxLen(int count) {
+    return 'At most $count characters';
+  }
+
+  @override
+  String shareValidationReservedName(String name) {
+    return '\"$name\" is reserved — pick a different name';
+  }
+
+  @override
+  String get shareNetworkError =>
+      'Couldn\'t reach the server. Check your connection and try again.';
+
+  @override
+  String get shareErrorUnauthorized =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get shareErrorForbidden => 'You don\'t have permission to do that.';
+
+  @override
+  String get shareErrorGone => 'This list has been deleted by its owner.';
+
+  @override
+  String get shareErrorPayloadTooLarge =>
+      'That change is too big. Try again with a smaller batch.';
+
+  @override
+  String get shareErrorRateLimited =>
+      'Slow down — too many requests. Try again in a moment.';
+
+  @override
+  String get shareErrorServer =>
+      'The server is having trouble. Try again later.';
+
+  @override
+  String get unshareToDeleteTooltip =>
+      'Stop sharing this list before deleting it.';
+
+  @override
+  String get shareTooManyEntriesTitle => 'List is too big to share';
+
+  @override
+  String shareTooManyEntriesBody(int count, int max) {
+    return 'This list has $count entries, but shared lists are capped at $max. Remove some entries and try again.';
+  }
+
+  @override
+  String get shareLinkDialogTitle => 'List shared';
+
+  @override
+  String shareLinkDialogBody(String displayName) {
+    return 'Anyone with this link can subscribe to \"$displayName\":';
+  }
+
+  @override
+  String get shareLinkCopiedSnack => 'Link copied to clipboard';
+
+  @override
+  String get shareLinkCopyButton => 'Copy';
+
+  @override
+  String get shareLinkShareButton => 'Share';
+
+  @override
+  String get shareLinkQrButton => 'QR code';
+
+  @override
+  String get shareLinkDoneButton => 'Done';
+
+  @override
+  String get qrCodeDialogBody => 'Other people can scan this to subscribe.';
+
+  @override
+  String get qrCodeDialogClose => 'Close';
+
+  @override
+  String get signInDialogTitle => 'Sign in to share';
+
+  @override
+  String get signInDialogBody =>
+      'To share a list, sign in below. We only use this to prove that you\'re the one editing it later — we don\'t collect any personal information.';
+
+  @override
+  String get signInWithApple => 'Continue with Apple';
+
+  @override
+  String get signInWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInWithFacebook => 'Continue with Facebook';
+
+  @override
+  String get signInFailed => 'Sign-in failed. Please try again.';
+
+  @override
+  String get signInCancelled => 'Sign-in cancelled.';
+
+  @override
+  String get signInProviderNotConfigured =>
+      'This sign-in option isn\'t available on this device.';
+
+  @override
+  String get signInProviderNoCredential =>
+      'Sign-in didn\'t return a valid response. Please try again.';
+
+  @override
+  String get providerApple => 'Apple';
+
+  @override
+  String get providerGoogle => 'Google';
+
+  @override
+  String get providerFacebook => 'Facebook';
+
+  @override
+  String get providerTest => 'Test session';
+
+  @override
+  String get subscribeDialogTitle => 'Subscribe to a shared list';
+
+  @override
+  String get subscribeDialogBody =>
+      'Paste either a share link or just the list ID at the end of one.';
+
+  @override
+  String get subscribeDialogUrlLabel => 'Share URL';
+
+  @override
+  String get subscribeDialogSubscribeButton => 'Subscribe';
+
+  @override
+  String get subscribeInvalidInput => 'Not a valid share link or list ID.';
+
+  @override
+  String get subscribeInputIsInviteUrl => 'That\'s an invite link — tap it from your phone to join as editor instead of subscribing.';
+
+  @override
+  String get subscribeNotFound => 'No list with that key exists.';
+
+  @override
+  String get sharedListLandingLoading => 'Loading shared list';
+
+  @override
+  String get sharedListLandingDefaultError => 'Couldn\'t load this list.';
+
+  @override
+  String get sharedListLandingNotFound =>
+      'This shared list doesn\'t exist or has been deleted by its owner.';
+
+  @override
+  String get sharedListLandingTryAgain => 'Try again';
+
+  @override
+  String get unshareConfirmBody =>
+      'Stop sharing this list? Subscribers will no longer be able to see it.';
+
+  @override
+  String get unshareConfirmTitle => 'Stop sharing?';
+
+  @override
+  String unshareFailed(String message) {
+    return 'Failed to stop sharing: $message';
+  }
+
+  @override
+  String get unsubscribeConfirmBody => 'Unsubscribe from this list?';
+
+  @override
+  String get unsubscribeConfirmTitle => 'Unsubscribe?';
+
+  @override
+  String copyToMyListsSnack(String name) {
+    return 'Copied to \"$name\"';
+  }
+
+  @override
+  String get subscribedSyncNowMenuItem => 'Sync now';
+
+  @override
+  String get subscribedSyncInProgress => 'Syncing…';
+
+  @override
+  String get subscribedSyncDoneSnack => 'Up to date';
+
+  @override
+  String subscribedSyncFailedSnack(String message) {
+    return 'Sync failed: $message';
+  }
+
+  @override
+  String get subscribedCopyMenuItem => 'Duplicate';
+
+  @override
+  String get settingsSharing => 'Sharing';
+
+  @override
+  String get settingsSignIn => 'Sign in to share lists';
+
+  @override
+  String settingsSignedInAs(String provider) {
+    return 'Signed in with $provider';
+  }
+
+  @override
+  String get settingsSignOut => 'Sign out';
+
+  @override
+  String get settingsSignOutConfirmTitle => 'Sign out?';
+
+  @override
+  String get settingsSignOutConfirmBody =>
+      'Your shared lists stay on the server. You\'ll need to sign in again to edit or unshare them.';
+
+  @override
+  String get settingsClearSharingData => 'Clear sharing data';
+
+  @override
+  String get settingsClearSharingDataConfirmTitle => 'Clear sharing data?';
+
+  @override
+  String get settingsClearSharingDataConfirmBody =>
+      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
+
+  @override
+  String get alertSave => 'Save';
+
+  @override
+  String get alertDone => 'Done';
+
+  @override
+  String get listNameAllowedChars =>
+      'No special characters besides these are allowed: , . - _ !';
+
+  @override
+  String forceUpgradeMessage(String version) {
+    return 'You are using an unsupported version ($version) of the app, please update.';
+  }
+
+  @override
+  String get forceUpgradeButton => 'Update';
+
+  @override
+  String get privacyPolicyPageTitle => 'Privacy Policy';
+
+  @override
+  String get importOwnedListsPromptTitle =>
+      'Import lists you\'ve shared before?';
+
+  @override
+  String get importOwnedListsPromptBody =>
+      'We\'ll ask the server which lists you\'re signed in to manage and import them as new local lists. Your existing local lists are untouched. Any name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). After import, your device is the source of truth — further edits stay local and push to the server in the background.';
+
+  @override
+  String get importOwnedListsActionImport => 'Import';
+
+  @override
+  String get importOwnedListsActionSkip => 'Skip';
+
+  @override
+  String get importOwnedListsRunning => 'Importing your shared lists…';
+
+  @override
+  String importOwnedListsFailed(String message) {
+    return 'Couldn\'t import lists: $message';
+  }
+
+  @override
+  String get importOwnedListsResultNone => 'No shared lists found.';
+
+  @override
+  String importOwnedListsResultDone(int imported, int total) {
+    return 'Imported $imported of $total list(s).';
+  }
+
+  @override
+  String get duplicateConfirmTitle => 'Duplicate list?';
+
+  @override
+  String get duplicateConfirmBody =>
+      'This makes a personal, private copy of the list. It won\'t update when the original owner edits theirs.';
+
+  @override
+  String get duplicateConfirmAction => 'Duplicate';
+
+  @override
+  String get duplicateFallbackName => 'Duplicated list';
+
+  @override
+  String get listSharedWithMeTab => 'Shared with me';
+
+  @override
+  String get listSharedWithMeEmpty =>
+      'Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.';
+
+  @override
+  String get ownedStatusOrphaned => 'Shared — deleted by you';
+
+  @override
+  String get ownedStatusSharedBy => 'Shared by you';
+
+  @override
+  String get ownedStatusPendingSyncSuffix => 'pending sync';
+
+  @override
+  String get ownedStatusSyncedSuffix => 'synced';
+
+  @override
+  String get subscribedStatusOrphaned => 'Removed by owner';
+
+  @override
+  String get subscribedStatusFallback => 'Subscribed';
+
+  @override
+  String get syncedJustNow => 'synced just now';
+
+  @override
+  String syncedMinutesAgo(int count) {
+    return 'synced ${count}m ago';
+  }
+
+  @override
+  String syncedHoursAgo(int count) {
+    return 'synced ${count}h ago';
+  }
+
+  @override
+  String syncedDaysAgo(int count) {
+    return 'synced ${count}d ago';
+  }
+
+  @override
+  String get agoJustNow => 'just now';
+
+  @override
+  String agoMinutes(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String agoHours(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String agoDays(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String subscribedStatusSyncedAndUpdated(String sync, String updated) {
+    return 'synced $sync · updated $updated';
+  }
+
+  @override
+  String get shareLinkInviteEditorButton => 'Invite an editor';
+
+  @override
+  String get inviteEditorDialogTitle => 'Invite an editor';
+
+  @override
+  String get inviteEditorDialogBody =>
+      'Send this link to the person you want to add as an editor. They\'ll need to sign in to accept; once they do, they can add and remove entries on your list.';
+
+  @override
+  String get inviteEditorExpiresIn =>
+      'Expires in 7 days. The link can be used once.';
+
+  @override
+  String inviteEditorFailed(String message) {
+    return 'Couldn\'t create an invite: $message';
+  }
+
+  @override
+  String get acceptInviteLandingTitle => 'Accept invite';
+
+  @override
+  String acceptInviteLandingSignedOut(String displayName) {
+    return 'Sign in to accept this invite. After you sign in, you\'ll be able to edit \"$displayName\" alongside the creator.';
+  }
+
+  @override
+  String get acceptInviteLandingUnknownList =>
+      'This invite is for a list we couldn\'t preview yet. Sign in to continue.';
+
+  @override
+  String get acceptInviteLandingSignInButton => 'Sign in to accept';
+
+  @override
+  String get acceptInviteLandingAccepting => 'Joining…';
+
+  @override
+  String acceptInviteLandingFailed(String message) {
+    return 'Couldn\'t accept the invite: $message';
+  }
+
+  @override
+  String get acceptInviteLandingExpired =>
+      'This invite has expired or has already been used. Ask the list\'s creator for a new one.';
+
+  @override
+  String acceptInviteLandingSignedIn(String displayName) {
+    return 'Join \"$displayName\" as an editor.';
+  }
+
+  @override
+  String get acceptInviteLandingAcceptButton => 'Accept invite';
+
+  @override
+  String get acceptInviteLandingOpenList => 'Open list';
+
+  @override
+  String acceptInviteLandingAlreadyOwner(String displayName) {
+    return 'You\'re the creator of "$displayName" — no need to accept your own invite.';
+  }
+
+  @override
+  String acceptInviteLandingAlreadyEditor(String displayName) {
+    return 'You already edit "$displayName".';
+  }
+
+  @override
+  String get membersPageTitle => 'Members';
+
+  @override
+  String get membersPageCreator => 'Creator';
+
+  @override
+  String get membersPageEditors => 'Editors';
+
+  @override
+  String get membersPageNoEditors =>
+      'No other editors yet. Tap \"Invite an editor\" to add one.';
+
+  @override
+  String get membersPageRemoveEditor => 'Remove';
+
+  @override
+  String membersPageRemoveEditorConfirmTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get membersPageRemoveEditorConfirmBody =>
+      'They will no longer be able to edit this list. Any of their pending offline edits will be discarded.';
+
+  @override
+  String get membersPageLeaveButton => 'Leave this list';
+
+  @override
+  String get membersPageLeaveConfirmTitle => 'Leave this list?';
+
+  @override
+  String get membersPageLeaveConfirmBody =>
+      'You won\'t be able to make changes anymore. The list itself stays available to read from your share link.';
+
+  @override
+  String membersPageEditorAddedBy(String name) {
+    return 'Added by $name';
+  }
+
+  @override
+  String membersPageNameYou(String name) {
+    return '$name (you)';
+  }
+
+  @override
+  String leaveListFailed(String message) {
+    return 'Couldn\'t leave list: $message';
+  }
+
+  @override
+  String membersPageSubtitleFor(String name) {
+    return 'Members of \"$name\"';
+  }
+
+  @override
+  String get signInDialogContextInvite =>
+      'Sign in to accept the invite. You\'ll be able to edit the list once you do.';
+
+  @override
+  String get signInDialogContextResume =>
+      'Sign in again to push your queued edits.';
+
+  @override
+  String settingsSignedInAsNamed(String name, String provider) {
+    return 'Signed in as $name via $provider';
+  }
+
+  @override
+  String settingsSignOutConfirmBodyWithPending(int count) {
+    return 'You have unsynced edits on $count list(s). Signing out won\'t push them to the server. Are you sure?';
+  }
+
+  @override
+  String get overviewResumeSignInIdle =>
+      'Sign in to sync your shared lists across devices.';
+
+  @override
+  String get overviewResumeSignInWithPending =>
+      'You have unsynced edits. Sign in again to push them.';
+
+  @override
+  String get overviewResumeSignInButton => 'Sign in';
+
+  @override
+  String get expiredSessionBanner =>
+      'Your session expired. Sign in again to push your edits.';
+
+  @override
+  String get expiredSessionBannerAction => 'Sign in';
+
+  @override
+  String get engineSessionExpiredSnack => 'Signed out — please sign in again';
+
+  @override
+  String get engineSessionExpiredSnackAction => 'Sign in';
+
+  @override
+  String get engineRemovedAsEditorSnack =>
+      'You\'re no longer an editor of this list';
+
+  @override
+  String get engineSnapshotCatchUpSnack =>
+      'This list changed a lot while you were offline — review your recent edits.';
+
+  @override
+  String get importedListFallbackName => 'Imported list';
+
+  @override
+  String get favouritesListName => 'Favourites';
+
+  @override
+  String get listNameErrorEmpty => 'List name cannot be empty';
+
+  @override
+  String get listNameErrorInvalid => 'Invalid list name';
+
+  @override
+  String listNameErrorReserved(String name) {
+    return 'List name "$name" is reserved';
+  }
+
+  @override
+  String get listNameErrorAlreadyExists =>
+      'A list with that name already exists';
+
+  @override
+  String get legalInformationPageTitle => 'Legal Information';
+
+  @override
+  String get buildInformationPageTitle => 'Build Information';
+
+  @override
+  String get backgroundLogsPageTitle => 'Background Logs';
+
+  @override
+  String get backgroundLogsCopyButton => 'Copy logs to clipboard';
+
+  @override
+  String get backgroundLogsCopiedSnack => 'Logs copied to clipboard';
+
+  @override
+  String reportIssueEmailSubject(String appName) {
+    return 'Issue with $appName';
+  }
+
+  @override
+  String forkPartialDrop(int copied, int total, int dropped) {
+    return 'Copied $copied of $total entries — $dropped signs are no longer in the dictionary.';
+  }
+
+  @override
+  String get signInTestUserButton => 'Sign in as test user (debug)';
+
+  @override
+  String get signInTestPromptTitle => 'Test sign-in';
+
+  @override
+  String get signInTestPromptBody =>
+      'Mints a session on the worker\'s test provider. Debug builds only. Use this to drive the shared-lists feature without a real provider account.';
+
+  @override
+  String get signInTestUserIdLabel => 'User id (test:<slug>)';
+
+  @override
+  String get signInTestDisplayNameLabel => 'Display name';
+
+  @override
+  String get signInTestPromptConfirm => 'Sign in';
 }

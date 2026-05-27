@@ -4,9 +4,69 @@ import 'package:flutter/material.dart';
 import 'common.dart';
 import 'entry_types.dart';
 import 'globals.dart';
+import 'l10n/app_localizations.dart';
 
 const String KEY_ENTRY_LIST_KEYS = "word_list_keys";
 const int SUFFIX_LENGTH = 6;
+
+/// Why a proposed list name failed validation. The UI looks up a
+/// localised message per kind via [EntryListNameException.localise].
+enum EntryListNameError {
+  /// Name was empty or whitespace-only.
+  empty,
+
+  /// Name contained characters outside [EntryList.validNameCharacters].
+  invalidChars,
+
+  /// Name matched one of [EntryList._reservedNamesLower].
+  reserved,
+
+  /// A list with the resulting storage key already exists.
+  alreadyExists,
+}
+
+/// Validation failure thrown by [EntryList.getKeyFromName] and
+/// [UserEntryListManager.createEntryList]. Carries a typed [kind] +
+/// the offending [name] so callers can render a localised message —
+/// raw `throw "..."` strings would bypass the l10n flow.
+class EntryListNameException implements Exception {
+  final EntryListNameError kind;
+  final String name;
+  const EntryListNameException(this.kind, this.name);
+
+  /// Map [kind] to a localised user-facing string. The [name] is
+  /// substituted for the `{name}` placeholder where present.
+  String localise(BuildContext context) {
+    final l = DictLibLocalizations.of(context);
+    if (l == null) return _fallbackMessage();
+    switch (kind) {
+      case EntryListNameError.empty:
+        return l.listNameErrorEmpty;
+      case EntryListNameError.invalidChars:
+        return l.listNameErrorInvalid;
+      case EntryListNameError.reserved:
+        return l.listNameErrorReserved(name);
+      case EntryListNameError.alreadyExists:
+        return l.listNameErrorAlreadyExists;
+    }
+  }
+
+  String _fallbackMessage() {
+    switch (kind) {
+      case EntryListNameError.empty:
+        return 'List name cannot be empty';
+      case EntryListNameError.invalidChars:
+        return 'Invalid list name';
+      case EntryListNameError.reserved:
+        return 'List name "$name" is reserved';
+      case EntryListNameError.alreadyExists:
+        return 'List already exists';
+    }
+  }
+
+  @override
+  String toString() => 'EntryListNameException($kind, "$name")';
+}
 
 // A user created list of entries.
 class EntryList {
@@ -81,29 +141,63 @@ class EntryList {
     return _canBeEdited;
   }
 
-  static String getNameFromKey(String key) {
+  /// Render a list's display name from its storage [key]. Pass a
+  /// [context] to localise the built-in favourites name; without one
+  /// the favourites name falls back to English (for `toString()`,
+  /// background-log lines, etc. that have no widget tree).
+  ///
+  /// User-derived names are stored case-/separator-preserving in the
+  /// key itself, so no l10n applies — every locale shows the name the
+  /// user typed.
+  static String getNameFromKey(String key, [BuildContext? context]) {
     if (key == KEY_FAVOURITES_ENTRIES) {
+      if (context != null) {
+        final l = DictLibLocalizations.of(context);
+        if (l != null) return l.favouritesListName;
+      }
       return "Favourites";
     }
     // This - 6 comes from the length of _words
     return key.substring(0, key.length - SUFFIX_LENGTH).replaceAll("_", " ");
   }
 
-  String getName() {
-    return EntryList.getNameFromKey(key);
+  /// Display name for this list. Pass a [context] to get the
+  /// localised "Favourites" — without one it falls back to English.
+  String getName([BuildContext? context]) {
+    return EntryList.getNameFromKey(key, context);
   }
+
+  /// Display names that conflict with the built-in favourites list. The
+  /// check is case-insensitive on the trimmed input — `"Favourites"`,
+  /// `"favourites"`, `"  FAVOURITES  "` all hit.
+  ///
+  /// Single source of truth on the client. The share-API Worker keeps its
+  /// own copy in `lists/workers/src/validation.ts` — keep them in sync.
+  static const Set<String> _reservedNamesLower = {'favourites'};
+
+  /// True if [name] (trimmed, case-insensitive) collides with a reserved
+  /// list name. Use this for inline UI validation before hitting the
+  /// network — the server applies the same check.
+  static bool isReservedDisplayName(String name) =>
+      _reservedNamesLower.contains(name.trim().toLowerCase());
 
   static String getKeyFromName(String name, {String suffix = "_words"}) {
     if (suffix.length != SUFFIX_LENGTH) {
-      throw "Suffix length must be $SUFFIX_LENGTH";
+      // Programmer error, not user-facing; assert in debug, ignore in
+      // release. Callers control the suffix.
+      throw StateError('Suffix length must be $SUFFIX_LENGTH');
     }
-    if (name.isEmpty) {
-      throw "List name cannot be empty";
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      throw EntryListNameException(EntryListNameError.empty, trimmed);
     }
-    if (!validNameCharacters.hasMatch(name)) {
-      throw "Invalid name, this should have been caught already";
+    if (!validNameCharacters.hasMatch(trimmed)) {
+      throw EntryListNameException(EntryListNameError.invalidChars, trimmed);
     }
-    return "$name$suffix".replaceAll(" ", "_");
+    if (isReservedDisplayName(trimmed)) {
+      throw EntryListNameException(EntryListNameError.reserved, trimmed);
+    }
+    return "$trimmed$suffix".replaceAll(" ", "_");
   }
 
   // No matter what locale they use we use the key of the entry for storage.
@@ -112,13 +206,41 @@ class EntryList {
         key, entries.map((e) => e.getKey()).toList());
   }
 
+  /// Assert that this list is not the source of an owner-mode share.
+  ///
+  /// Owner-mode `SyncedEntryList` wrappers share their `entries` set
+  /// with the underlying local list by reference (see
+  /// `lib/sharing/synced_entry_list.dart`). Mutations made through the
+  /// wrapper enqueue a sync op; mutations made directly on the source
+  /// list — bypassing the wrapper — would NOT enqueue, and the
+  /// server's view would silently diverge from the user's local one.
+  ///
+  /// Every UI path that mutates a shared list is engineered to hold the
+  /// wrapper rather than the source list (see
+  /// [ListsService.favouritesList] / `ownedShareFor` / the lists
+  /// overview's owner-share routing). This assertion is a tripwire so
+  /// a regression that re-introduces a direct-mutation path fails
+  /// loudly in debug builds rather than corrupting the synced mirror
+  /// silently in production. Stripped from release builds.
+  void _assertNotOwnerShared() {
+    assert(() {
+      if (!sharing.isEnabled) return true;
+      return sharing.lists.ownerForSourceKey(key) == null;
+    }(),
+        'EntryList "$key" is mutated directly while an owner-mode shared '
+        'wrapper is observing it — go through the SyncedEntryList wrapper '
+        'so the mutation enqueues a sync op (see ListsService.ownedShareFor).');
+  }
+
   Future<void> addEntry(Entry entryToAdd) async {
-    entries.add(entryToAdd);
+    _assertNotOwnerShared();
+    if (!entries.add(entryToAdd)) return;
     await write();
   }
 
   Future<void> removeEntry(Entry entryToRemove) async {
-    entries.remove(entryToRemove);
+    _assertNotOwnerShared();
+    if (!entries.remove(entryToRemove)) return;
     await write();
   }
 }
@@ -156,7 +278,8 @@ class UserEntryListManager implements EntryListManager {
 
   Future<void> createEntryList(String key) async {
     if (_entryLists.containsKey(key)) {
-      throw "List already exists";
+      throw EntryListNameException(
+          EntryListNameError.alreadyExists, EntryList.getNameFromKey(key));
     }
     _entryLists[key] = EntryList.fromRaw(key);
     await _entryLists[key]!.write();
