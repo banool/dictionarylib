@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
+import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/sharing.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,11 +29,11 @@ void main() {
         if (req.method == 'GET' && req.url.path.endsWith('/sub010000000')) {
           return http.Response(
             jsonEncode({
-              'schemaVersion': 2,
+              'schemaVersion': 3,
               'listId': 'sub010000000',
               'displayName': 'Sub',
               'appId': 'auslan',
-              'entries': const [],
+              'entries': const <Map<String, String>>[],
               'lastSeq': 1,
               'createdAt': 1,
               'updatedAt': 1,
@@ -76,13 +77,15 @@ void main() {
       // The "favourites star" / "My Lists tap" path both end up holding
       // the wrapper (via [ListsService.favouritesList] or the overview's
       // wrapper-routing). Edits through the wrapper enqueue a sync op.
-      await synced.addEntry(FakeEntry('apple'));
+      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      await synced.addVideo(v);
       expect(synced.meta.pendingOps, hasLength(1));
       expect(synced.meta.pendingOps.single.type, 'addEntry');
-      expect(synced.meta.pendingOps.single.args['key'], 'apple');
-      // The wrapper and the source share their entries set by reference,
-      // so the local view sees the add too.
-      expect(source.entries.map((e) => e.getKey()), contains('apple'));
+      expect(synced.meta.pendingOps.single.args['entry'], 'apple');
+      expect(synced.meta.pendingOps.single.args['video'], videoFor('apple'));
+      // The wrapper and the source share their savedVideos set by
+      // reference, so the local view sees the add too.
+      expect(source.savedVideos.map((sv) => sv.entryKey), contains('apple'));
       // Just one create request so far — the enqueue debounces.
       expect(requests.where((r) => r.method == 'POST').length, 1);
     });
@@ -110,7 +113,8 @@ void main() {
         displayName: 'Cats',
         sessionToken: 'fake-session-jwt',
       );
-      expect(() async => await source.addEntry(FakeEntry('apple')),
+      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      expect(() async => await source.addVideo(v),
           throwsA(isA<AssertionError>()));
       // No op enqueued either way — the assertion fires before the
       // source's `entries.add`.
@@ -185,47 +189,30 @@ void main() {
         if (req.url.path.endsWith('/state')) {
           if (req.url.path.contains('ownedlist001')) {
             return http.Response(
-                jsonEncode({
-                  'schemaVersion': 2,
-                  'listId': 'ownedlist001',
-                  'displayName': 'Mine',
-                  'appId': 'auslan',
-                  'entries': ['apple'],
-                  'lastSeq': 3,
-                  'createdAt': 1,
-                  'updatedAt': 1,
-                  'members': {
-                    'owner': {
-                      'userId': 'apple:test-user',
-                      'displayName': 'Test User'
-                    },
-                    'editors': <Map<String, dynamic>>[],
-                  },
-                }),
+                jsonEncode(snapshotJson(
+                    listId: 'ownedlist001',
+                    displayName: 'Mine',
+                    entries: ['apple'],
+                    lastSeq: 3)),
                 200);
           }
           return http.Response(
-              jsonEncode({
-                'schemaVersion': 2,
-                'listId': 'editorlist01',
-                'displayName': 'Editing',
-                'appId': 'auslan',
-                'entries': ['banana'],
-                'lastSeq': 4,
-                'createdAt': 1,
-                'updatedAt': 1,
-                'members': {
-                  'owner': {'userId': 'apple:other', 'displayName': 'Other'},
-                  'editors': [
-                    {
-                      'userId': 'apple:test-user',
-                      'displayName': 'Test User',
-                      'addedAt': 1,
-                      'addedBy': 'apple:other',
-                    }
-                  ],
-                },
-              }),
+              jsonEncode(snapshotJson(
+                  listId: 'editorlist01',
+                  displayName: 'Editing',
+                  entries: ['banana'],
+                  lastSeq: 4,
+                  members: {
+                    'owner': {'userId': 'apple:other', 'displayName': 'Other'},
+                    'editors': [
+                      {
+                        'userId': 'apple:test-user',
+                        'displayName': 'Test User',
+                        'addedAt': 1,
+                        'addedBy': 'apple:other',
+                      }
+                    ],
+                  })),
               200);
         }
         return http.Response('', 404);
@@ -239,12 +226,12 @@ void main() {
       final owned = sharing.lists.get('ownedlist001');
       expect(owned, isNotNull);
       expect(owned!.meta.role, ListRole.owner);
-      expect(owned.entries.map((e) => e.getKey()), ['apple']);
+      expect(owned.savedVideos.map((sv) => sv.entryKey), ['apple']);
 
       final edited = sharing.lists.get('editorlist01');
       expect(edited, isNotNull);
       expect(edited!.meta.role, ListRole.editor);
-      expect(edited.entries.map((e) => e.getKey()), ['banana']);
+      expect(edited.savedVideos.map((sv) => sv.entryKey), ['banana']);
     });
 
     test('skips lists already on the device', () async {
@@ -304,23 +291,11 @@ void main() {
         if (req.url.path.endsWith('/state') &&
             req.url.path.contains('ownedlist001')) {
           return http.Response(
-              jsonEncode({
-                'schemaVersion': 2,
-                'listId': 'ownedlist001',
-                'displayName': 'MyList',
-                'appId': 'auslan',
-                'entries': ['apple'],
-                'lastSeq': 3,
-                'createdAt': 1,
-                'updatedAt': 1,
-                'members': {
-                  'owner': {
-                    'userId': 'apple:test-user',
-                    'displayName': 'Test User'
-                  },
-                  'editors': <Map<String, dynamic>>[],
-                },
-              }),
+              jsonEncode(snapshotJson(
+                  listId: 'ownedlist001',
+                  displayName: 'MyList',
+                  entries: ['apple'],
+                  lastSeq: 3)),
               200);
         }
         return http.Response('', 404);
@@ -332,16 +307,16 @@ void main() {
       await userEntryListManager.createEntryList('MyList_words');
       final preExisting =
           userEntryListManager.getEntryLists()['MyList_words']!;
-      await preExisting.addEntry(FakeEntry('cherry'));
-      final preExistingEntries =
-          preExisting.entries.map((e) => e.getKey()).toSet();
+      final cherryVideo =
+          SavedVideo(entryKey: 'cherry', videoUrl: videoFor('cherry'));
+      await preExisting.addVideo(cherryVideo);
+      final preExistingVideos = preExisting.savedVideos.toSet();
 
       final result = await listsService.importOwnedLists();
       expect(result.imported, 1);
 
       // The pre-existing local list is untouched.
-      expect(preExisting.entries.map((e) => e.getKey()).toSet(),
-          preExistingEntries,
+      expect(preExisting.savedVideos.toSet(), preExistingVideos,
           reason: 'import must not overwrite an existing local list');
 
       // The imported owner list got a new local key — "MyList 2" →
@@ -349,7 +324,7 @@ void main() {
       final suffixed = userEntryListManager.getEntryLists()['MyList_2_words'];
       expect(suffixed, isNotNull,
           reason: 'allocateLocalKey should suffix on name collision');
-      expect(suffixed!.entries.map((e) => e.getKey()), contains('apple'));
+      expect(suffixed!.savedVideos.map((sv) => sv.entryKey), contains('apple'));
 
       // Both local lists still exist in the manager.
       expect(userEntryListManager.getEntryLists().keys,

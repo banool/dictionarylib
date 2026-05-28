@@ -6,6 +6,7 @@ import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_entry_list_help_en.dart';
+import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/list_members_page.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
@@ -30,17 +31,14 @@ class EntryListPage extends StatefulWidget {
 }
 
 class EntryListPageState extends State<EntryListPage> {
-  // The entries that match the user's search term.
+  /// Entries shown in the list — one row per unique entry that has at
+  /// least one saved video. Filtered by [currentSearchTerm].
   late List<Entry> entriesSearched;
 
   bool viewSortedList = false;
   bool enableSortButton = true;
   bool inEditMode = false;
 
-  /// Guards the share / unshare / sync-now / unsubscribe / copy
-  /// handlers against double-taps and re-entrant invocations. Each
-  /// handler short-circuits when this is true and flips it via
-  /// try/finally so an error path doesn't strand it as true.
   bool _actionInflight = false;
 
   String currentSearchTerm = "";
@@ -50,13 +48,8 @@ class EntryListPageState extends State<EntryListPage> {
 
   @override
   void initState() {
-    entriesSearched = List.from(widget.entryList.entries);
+    entriesSearched = widget.entryList.uniqueEntries.toList();
     super.initState();
-    // Re-run the search whenever sharing state changes — covers the
-    // case where a background /sync brings in another editor's
-    // additions/removals while this page is open. Without this, the
-    // ListenableBuilder-driven rebuild would re-render with the same
-    // stale `entriesSearched` list.
     sharing.addListener(_onSharingChanged);
   }
 
@@ -70,8 +63,6 @@ class EntryListPageState extends State<EntryListPage> {
 
   void _onSharingChanged() {
     if (!mounted) return;
-    // Refresh entriesSearched against the latest entries set. search()
-    // calls setState internally.
     search();
   }
 
@@ -96,22 +87,18 @@ class EntryListPageState extends State<EntryListPage> {
 
   void search() {
     setState(() {
+      final unique = widget.entryList.uniqueEntries;
       if (currentSearchTerm.isNotEmpty) {
         if (inEditMode) {
-          Set<Entry> entriesGlobalWithoutEntriesAlreadyInList =
-              entriesGlobal.difference(widget.entryList.entries);
+          final available = entriesGlobal.difference(unique);
           entriesSearched = searchList(context, currentSearchTerm,
-              EntryType.values, entriesGlobalWithoutEntriesAlreadyInList, {});
+              EntryType.values, available, {});
         } else {
-          entriesSearched = searchList(
-              context,
-              currentSearchTerm,
-              EntryType.values,
-              widget.entryList.entries,
-              widget.entryList.entries);
+          entriesSearched = searchList(context, currentSearchTerm,
+              EntryType.values, unique, unique);
         }
       } else {
-        entriesSearched = List.from(widget.entryList.entries);
+        entriesSearched = unique.toList();
         if (viewSortedList) {
           entriesSearched.sort();
         }
@@ -128,15 +115,31 @@ class EntryListPageState extends State<EntryListPage> {
     });
   }
 
+  /// Edit-mode "add this entry" — adds every video of the entry, then
+  /// the row falls out of the search results since it's no longer in
+  /// the "available to add" set.
   Future<void> addEntry(Entry entry) async {
-    await widget.entryList.addEntry(entry);
+    await widget.entryList.addAllVideosOfEntry(entry);
     setState(() {
       search();
     });
   }
 
+  /// Edit-mode "remove this entry" — removes every video the user had
+  /// saved for the entry, after a confirm when more than one is saved.
   Future<void> removeEntry(Entry entry) async {
-    await widget.entryList.removeEntry(entry);
+    final videos = widget.entryList.videosForEntry(entry);
+    if (videos.length > 1) {
+      final l = DictLibLocalizations.of(context)!;
+      final confirmed = await confirmAlert(
+        context,
+        Text(l.listRemoveAllVideosBody(
+            videos.length, entry.getPhrase(LOCALE_ENGLISH) ?? entry.getKey())),
+        title: l.listRemoveAllVideosTitle,
+      );
+      if (!confirmed) return;
+    }
+    await widget.entryList.removeAllVideosOfEntry(entry);
     setState(() {
       search();
     });
@@ -155,9 +158,6 @@ class EntryListPageState extends State<EntryListPage> {
     if (mounted) setState(() {});
   }
 
-  /// Run [body] under the `_actionInflight` guard. Re-entrant /
-  /// double-tap invocations short-circuit; the flag is always cleared
-  /// in `finally` so an error doesn't strand it as `true`.
   Future<void> _runGuarded(Future<void> Function() body) async {
     if (_actionInflight) return;
     setState(() => _actionInflight = true);
@@ -173,7 +173,6 @@ class EntryListPageState extends State<EntryListPage> {
         SyncedEntryList? owned = listsService.ownedShareFor(widget.entryList);
         final freshlyShared = owned == null;
         if (owned == null) {
-          // Not shared yet — collect a display name and create the share first.
           owned = await showShareDialog(
               context: context, sourceList: widget.entryList);
           if (owned == null || !mounted) return;
@@ -186,15 +185,10 @@ class EntryListPageState extends State<EntryListPage> {
         );
         if (!mounted) return;
         if (wantsUnshare) {
-          // Drop the inflight guard before re-entering: _onUnsharePressed
-          // takes the same guard and would otherwise short-circuit.
           setState(() => _actionInflight = false);
           await _onUnsharePressed();
           return;
         }
-        // The page was constructed with the plain local list; subsequent edits
-        // through `widget.entryList.addEntry` would bypass the owner wrapper's
-        // op-enqueue. Swap to the wrapper so this session keeps syncing.
         if (freshlyShared) {
           await Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (_) => EntryListPage(
@@ -211,10 +205,6 @@ class EntryListPageState extends State<EntryListPage> {
         final owned = listsService.ownedShareFor(widget.entryList);
         if (owned == null) return;
         final l = DictLibLocalizations.of(context)!;
-        // Pass the unshare call as onConfirm so the dialog keeps the spinner
-        // up while the DELETE is in flight and only dismisses on success.
-        // Failure stays on the prompt with an error snackbar so the user can
-        // retry.
         final confirmed = await confirmAlert(
           context,
           Text(l.unshareConfirmBody),
@@ -239,8 +229,6 @@ class EntryListPageState extends State<EntryListPage> {
               : '$e',
         );
         if (!ok || !mounted) return;
-        // refreshSubscriber may have replaced entries — rerun search so the
-        // list view reflects the new contents.
         setState(() => search());
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(l.subscribedSyncDoneSnack)));
@@ -271,13 +259,8 @@ class EntryListPageState extends State<EntryListPage> {
         if (!confirmed || !mounted) return;
 
         final list = widget.entryList;
-        final keys = list.entries.map((e) => e.getKey()).toList();
-        final totalCount = keys.length;
+        final videos = list.savedVideos.toList();
 
-        // Subscribed lists' display names are free-form (emoji, reserved
-        // words, special chars); local list IDs are restricted. The shared
-        // allocator routes unsupported names to a localised fallback and
-        // appends a numeric suffix on collision.
         final localKey = listsService.allocateLocalKey(
           preferredName: list.getName(context),
           fallbackBase: l.duplicateFallbackName,
@@ -285,40 +268,20 @@ class EntryListPageState extends State<EntryListPage> {
 
         await userEntryListManager.createEntryList(localKey);
         final copy = userEntryListManager.getEntryLists()[localKey]!;
-        var copiedCount = 0;
-        for (final k in keys) {
-          final entry = keyedByEnglishEntriesGlobal[k];
-          if (entry != null) {
-            copy.entries.add(entry);
-            copiedCount++;
-          }
+        for (final v in videos) {
+          await copy.addVideo(v);
         }
-        await copy.write();
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           messenger.showSnackBar(SnackBar(
               content: Text(
                   l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)))));
-          // Surface a follow-up snack if some entries dropped because their
-          // keys are no longer in the dictionary. Two snackbars stacked
-          // (the first one will be dismissed by the second).
-          if (copiedCount < totalCount) {
-            final dropped = totalCount - copiedCount;
-            messenger.showSnackBar(SnackBar(
-                content: Text(l.forkPartialDrop(
-                    copiedCount, totalCount, dropped))));
-          }
           Navigator.of(context).pop();
         }
       });
 
   @override
   Widget build(BuildContext context) {
-    // Rebuild whenever sharing state changes (push completes, share/unshare,
-    // dirty flips) so the pending-sync badge on the share icon reflects
-    // reality without explicit setState from those code paths. For the
-    // disabled sentinel this is harmless — nothing ever calls
-    // [Sharing.bumpState], so the builder never rebuilds.
     return ListenableBuilder(
       listenable: sharing,
       builder: (context, _) => _buildScaffold(context),
@@ -350,8 +313,6 @@ class EntryListPageState extends State<EntryListPage> {
       final ownedShare = listsService.ownedShareFor(list);
 
       if (isSubscribed) {
-        // Subscriber — overflow menu (copy / unsubscribe). The share icon
-        // doesn't apply because the user doesn't own this list.
         actions.add(PopupMenuButton<_ListMenuAction>(
           onSelected: (v) async {
             switch (v) {
@@ -368,12 +329,6 @@ class EntryListPageState extends State<EntryListPage> {
           },
           itemBuilder: (ctx) {
             final l = DictLibLocalizations.of(ctx)!;
-            // Bare `Icon` widgets inherit from the ambient IconTheme,
-            // which inside a popup menu spawned from an AppBar can pick
-            // up the AppBar's icon color (white on dark builds) instead
-            // of the menu's surface color. Match the icon to the menu's
-            // text colour so we're invariant to wherever the popup was
-            // triggered from.
             final menuIconColor = Theme.of(ctx).colorScheme.onSurface;
             Widget item(IconData icon, String label) => Row(children: [
                   Icon(icon, size: 20, color: menuIconColor),
@@ -394,8 +349,6 @@ class EntryListPageState extends State<EntryListPage> {
           },
         ));
       } else if (list is SyncedEntryList && list.meta.role == ListRole.editor) {
-        // Editor-mode shared list: members button (no share icon —
-        // editors can't reshare; the creator controls the membership).
         actions.add(buildActionButton(
           context,
           _PendingSyncIconBadge(
@@ -405,11 +358,6 @@ class EntryListPageState extends State<EntryListPage> {
           () async => _openMembersPage(list),
         ));
       } else if (ownedShare != null || list.canBeEdited()) {
-        // Both "share this list" and "re-open the share-link page for an
-        // already-shared list" go through the same icon — the dialog
-        // itself surfaces the destructive Unshare button when applicable.
-        // A tiny spinner at the bottom-left indicates an unpushed local
-        // edit (debounced push pending).
         actions.add(buildActionButton(
           context,
           _PendingSyncIconBadge(
@@ -419,8 +367,6 @@ class EntryListPageState extends State<EntryListPage> {
           () async => _onSharePressed(),
         ));
         if (ownedShare != null) {
-          // Once published, owners also get a "Members" action to
-          // invite editors and see the who's-who view.
           actions.add(buildActionButton(
             context,
             const Icon(Icons.group),
@@ -473,10 +419,6 @@ class EntryListPageState extends State<EntryListPage> {
           "${DictLibLocalizations.of(context)!.listSearchPrefix} $listName";
     }
 
-    // Inline "session expired — sign in to push" banner. Visible only
-    // for owner/editor lists that have queued ops the engine can't
-    // flush without a session. Mirrors the overview-screen banner so
-    // users editing in-place see the same call to action.
     final entryList = widget.entryList;
     final bannerLists = (entryList is SyncedEntryList &&
             (entryList.meta.role == ListRole.owner ||
@@ -518,7 +460,6 @@ class EntryListPageState extends State<EntryListPage> {
                       icon: const Icon(Icons.clear),
                     ),
                   ),
-                  // The validator receives the text that the user has entered.
                   onChanged: (String value) {
                     updateCurrentSearchTerm(value);
                     search();
@@ -533,16 +474,19 @@ class EntryListPageState extends State<EntryListPage> {
             Expanded(
                 child: Padding(
               padding: const EdgeInsets.only(left: 8),
-              child: listWidget(context, entriesSearched, refreshEntries,
-                  widget.navigateToEntryPage,
-                  showFavouritesButton:
-                      widget.entryList.key == KEY_FAVOURITES_ENTRIES,
-                  deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
-                      ? removeEntry
-                      : null,
-                  addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
-                      ? addEntry
-                      : null),
+              child: listWidget(
+                context,
+                entriesSearched,
+                refreshEntries,
+                widget.navigateToEntryPage,
+                entryList: widget.entryList,
+                deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
+                    ? removeEntry
+                    : null,
+                addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
+                    ? addEntry
+                    : null,
+              ),
             )),
           ],
         ),
@@ -556,7 +500,12 @@ Widget listWidget(
   List<Entry?> entriesSearched,
   Function refreshEntriesFn,
   NavigateToEntryPageFn navigateToEntryPage, {
-  bool showFavouritesButton = true,
+  /// The list we're showing rows from. Used to look up "how many videos
+  /// of this entry are saved" for the subtitle, and the first saved
+  /// video for the focus-on-tap target. Null when the caller is in
+  /// edit-mode "add to list" search results (where rows represent
+  /// entries NOT yet in the list).
+  EntryList? entryList,
   Future<void> Function(Entry)? deleteEntryFn,
   Future<void> Function(Entry)? addEntryFn,
 }) {
@@ -578,7 +527,7 @@ Widget listWidget(
       if (addEntryFn != null) {
         trailing = IconButton(
           padding: const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
-          icon: Icon(
+          icon: const Icon(
             Icons.add_circle,
             color: Colors.green,
           ),
@@ -588,44 +537,63 @@ Widget listWidget(
       return ListTile(
         key: ValueKey(entry.getKey()),
         title: listItem(context, entry, refreshEntriesFn, navigateToEntryPage,
-            showFavouritesButton: showFavouritesButton),
+            entryList: entryList),
         trailing: trailing,
       );
     },
   );
 }
 
-// We can pass in showFavouritesButton and set it to false for lists that
-// aren't the the favourites list, since that star icon might be confusing
-// and lead people to beleive they're interacting with the non-favourites
-// list they just came from.
+/// Single row for an entry in the list view.
+///
+/// Subtitle shows "N videos saved" when the entry has more than one
+/// saved video — single-video case stays clean. Tap navigates to the
+/// entry page, jumped to the user's first saved video for the entry
+/// (so a list of three favourite "hello" videos opens directly on the
+/// one they care about, not the corpus-default first one).
 Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
     NavigateToEntryPageFn navigateToEntryPage,
-    {bool showFavouritesButton = true}) {
-  // Try to show the text in the selected locale but if not possible,
-  // fallback to the key, which in this case is the word in English.
+    {EntryList? entryList}) {
   Locale currentLocale = Localizations.localeOf(context);
   var text = entry.getPhrase(currentLocale) ?? entry.getKey();
 
+  final saved = entryList?.videosForEntry(entry) ?? const <SavedVideo>[];
+  final focus = saved.isNotEmpty ? saved.first : null;
+
+  Widget? subtitle;
+  if (saved.length > 1) {
+    final l = DictLibLocalizations.of(context);
+    final label = l?.listSavedVideoCount(saved.length) ??
+        '${saved.length} videos saved';
+    subtitle = Text(label,
+        style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant));
+  }
+
   return TextButton(
-    child: Align(
-        alignment: Alignment.topLeft,
-        child: Text(
-          text,
-        )),
-    onPressed: () async => {
-      await navigateToEntryPage(context, entry, showFavouritesButton),
-      await refreshEntriesFn(),
+    style: TextButton.styleFrom(
+      alignment: Alignment.topLeft,
+      padding: EdgeInsets.zero,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(text),
+        if (subtitle != null) Padding(
+            padding: const EdgeInsets.only(top: 2), child: subtitle),
+      ],
+    ),
+    onPressed: () async {
+      await navigateToEntryPage(context, entry, true, focusVideo: focus);
+      await refreshEntriesFn();
     },
   );
 }
 
 enum _ListMenuAction { syncNow, copy, unsubscribe }
 
-/// AppBar icon with an optional small spinner overlay in the bottom-left
-/// corner. Used by the share / members icons to signal there are local
-/// pending ops the engine hasn't pushed to the server yet (debounced
-/// push pending).
 class _PendingSyncIconBadge extends StatelessWidget {
   final Widget child;
   final bool dirty;

@@ -4,14 +4,20 @@ import 'dart:io' show HttpDate;
 
 import 'package:http/http.dart' as http;
 
+import '../saved_video.dart';
 import 'sharing_config.dart';
 
 /// Schema version the client understands on incoming snapshots /
-/// list payloads. The server sends `schemaVersion: 2` on
+/// list payloads. The server sends `schemaVersion: 3` on
 /// [RemoteList] and [ListSnapshot]; anything else triggers a
 /// [SyncErrorKind.server] so a stale client doesn't misinterpret
 /// future-format fields. Bump in lockstep with the worker.
-const int supportedSchemaVersion = 2;
+///
+/// History:
+///   - v2: `entries: string[]` of entry keys (whole-entry saves).
+///   - v3: `entries: SavedVideoDto[]` (per-video saves). Op args
+///     `{key}` become `{entry, video}`.
+const int supportedSchemaVersion = 3;
 
 /// Mirror of the server's `MAX_DISPLAY_NAME_LEN` (see
 /// `lists/workers/src/validation.ts`). Used for client-side validation
@@ -173,7 +179,10 @@ class RemoteList {
   final String listId;
   final String displayName;
   final String appId;
-  final List<String> entries;
+
+  /// Saved videos in this list. The schema-v3 wire shape sends one
+  /// `{entry, video}` object per saved video.
+  final List<SavedVideo> entries;
 
   /// Monotonic per-list sequence as of the snapshot. Clients use this
   /// to bootstrap their `lastKnownSeq` when subscribing.
@@ -207,12 +216,38 @@ class RemoteList {
       listId: json['listId'] as String,
       displayName: json['displayName'] as String,
       appId: json['appId'] as String,
-      entries: (json['entries'] as List<dynamic>).cast<String>(),
+      entries: _parseEntriesArray(json['entries']),
       lastSeq: lastSeq,
       createdAt: json['createdAt'] as int,
       updatedAt: json['updatedAt'] as int,
     );
   }
+}
+
+/// Parse the `entries` field on a v3 server response into [SavedVideo]
+/// objects. The wire shape is `[{entry: string, video: string}, ...]`.
+/// Any malformed item is rejected at the request boundary so the local
+/// mirror never ends up holding partial garbage.
+List<SavedVideo> _parseEntriesArray(dynamic raw) {
+  if (raw is! List) {
+    throw SyncException(
+        SyncErrorKind.server, 'entries must be an array of objects');
+  }
+  final out = <SavedVideo>[];
+  for (var i = 0; i < raw.length; i++) {
+    final item = raw[i];
+    if (item is! Map) {
+      throw SyncException(SyncErrorKind.server, 'entries[$i] must be an object');
+    }
+    final entry = item['entry'];
+    final video = item['video'];
+    if (entry is! String || video is! String) {
+      throw SyncException(SyncErrorKind.server,
+          'entries[$i] must have string `entry` and `video` fields');
+    }
+    out.add(SavedVideo(entryKey: entry, videoUrl: video));
+  }
+  return out;
 }
 
 void _validateSchemaVersion(Map<String, dynamic> json) {
@@ -292,7 +327,7 @@ class ListSnapshot {
   final String listId;
   final String displayName;
   final String appId;
-  final List<String> entries;
+  final List<SavedVideo> entries;
   final int lastSeq;
   final int createdAt;
   final int updatedAt;
@@ -313,7 +348,7 @@ class ListSnapshot {
       listId: json['listId'] as String,
       displayName: json['displayName'] as String,
       appId: json['appId'] as String,
-      entries: (json['entries'] as List<dynamic>).cast<String>(),
+      entries: _parseEntriesArray(json['entries']),
       lastSeq: json['lastSeq'] as int,
       createdAt: json['createdAt'] as int,
       updatedAt: json['updatedAt'] as int,
@@ -508,13 +543,13 @@ class SyncApi {
   Future<CreateResult> createList({
     required String listId,
     required String displayName,
-    required List<String> entries,
+    required List<SavedVideo> entries,
     required String sessionToken,
   }) async {
     final body = jsonEncode({
       'listId': listId,
       'displayName': displayName,
-      'entries': entries,
+      'entries': entries.map((v) => v.toJson()).toList(),
       'schemaVersion': supportedSchemaVersion,
     });
     final resp = await _request(

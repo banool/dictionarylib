@@ -3,8 +3,8 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:dictionarylib/entry_list.dart';
-import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/auth/auth_api.dart';
 import 'package:dictionarylib/sharing/auth/auth_service.dart';
 import 'package:dictionarylib/sharing/auth/auth_store.dart';
@@ -17,6 +17,12 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
+
+/// Construct a SavedVideo for the synthetic `videoFor(entryKey)` URL.
+/// Lets per-entry tests stay terse — `_v('apple')` instead of spelling
+/// out the URL each time.
+SavedVideo _v(String entryKey) =>
+    SavedVideo(entryKey: entryKey, videoUrl: videoFor(entryKey));
 
 /// Build a [SyncEngine] backed by a stub HTTP client. Returns the
 /// engine, its manager, the requests list, and the auth service so
@@ -44,8 +50,8 @@ import '../_helpers.dart';
   return (engine: engine, manager: manager, auth: auth, requests: requests);
 }
 
-/// Construct a local list seeded with [keys] and registered with
-/// `userEntryListManager` under [localKey].
+/// Construct a local list seeded with one saved video per entry key in
+/// [keys] (the synthetic `videoFor(key)` URL).
 Future<EntryList> _localListWith(String localKey, List<String> keys) async {
   if (localKey != 'favourites_words' &&
       !userEntryListManager.getEntryLists().containsKey(localKey)) {
@@ -53,7 +59,7 @@ Future<EntryList> _localListWith(String localKey, List<String> keys) async {
   }
   final list = userEntryListManager.getEntryLists()[localKey]!;
   for (final k in keys) {
-    await list.addEntry(FakeEntry(k));
+    await list.addVideo(_v(k));
   }
   return list;
 }
@@ -82,15 +88,18 @@ void main() {
       expect(ctx.requests, hasLength(1));
       final body = jsonDecode(ctx.requests.single.body) as Map<String, dynamic>;
       expect(body['displayName'], 'My Cats');
-      expect(body['entries'], ['apple', 'banana']);
-      expect(body['schemaVersion'], 2);
+      expect(body['entries'], [
+        {'entry': 'apple', 'video': videoFor('apple')},
+        {'entry': 'banana', 'video': videoFor('banana')},
+      ]);
+      expect(body['schemaVersion'], 3);
 
       expect(synced.meta.role, ListRole.owner);
       expect(synced.meta.sourceLocalKey, 'cats_words');
       expect(synced.meta.lastKnownSeq, 1);
       expect(synced.ownerSource, same(source));
-      // Owner wrapper shares the local list's entries set by identity.
-      expect(synced.entries, same(source.entries));
+      // Owner wrapper shares the local list's savedVideos set by identity.
+      expect(synced.savedVideos, same(source.savedVideos));
     });
 
     test('retries on ID_COLLISION with a new key', () async {
@@ -167,18 +176,19 @@ void main() {
       final ctx = _makeEngine((req) async => stubSyncApplyAll(req));
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
 
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       expect(list.meta.pendingOps, hasLength(1));
       expect(list.meta.pendingOps.single.type, 'addEntry');
-      expect(list.meta.pendingOps.single.args['key'], 'banana');
+      expect(list.meta.pendingOps.single.args['entry'], 'banana');
+      expect(list.meta.pendingOps.single.args['video'], videoFor('banana'));
     });
 
     test('flush — applied ops are dropped from the queue', () async {
       final ctx = _makeEngine((req) async => stubSyncApplyAll(req));
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
 
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
-      ctx.engine.enqueueAddEntry(list.listId, 'cherry');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+      ctx.engine.enqueueAddVideo(list.listId, _v('cherry'));
       // The engine debounces by 2s; flush directly via pushAllDirty.
       await ctx.engine.pushAllDirty();
 
@@ -194,7 +204,7 @@ void main() {
     test('flush sends lastKnownSeq + clientId headers', () async {
       final ctx = _makeEngine((req) async => stubSyncApplyAll(req));
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       final req = ctx.requests.firstWhere((r) => r.url.path.endsWith('/sync'));
@@ -212,7 +222,7 @@ void main() {
             {
               'seq': 5,
               'type': 'addEntry',
-              'args': {'key': 'date'},
+              'args': {'entry': 'date', 'video': videoFor('date')},
               'userId': 'apple:other-editor',
               'actorDisplayName': 'Other Editor',
               'serverTs': 1700000100,
@@ -225,7 +235,7 @@ void main() {
       // Trigger a sync with no pending ops — pulls in missedOps.
       await ctx.engine.syncAll();
 
-      expect(list.entries.map((e) => e.getKey()), contains('date'));
+      expect(list.savedVideos.map((v) => v.entryKey), contains('date'));
     });
 
     test('snapshot response (catch-up) replaces local entries', () async {
@@ -255,7 +265,7 @@ void main() {
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
       await ctx.engine.syncAll();
       // The owner's local source list should now reflect the snapshot.
-      expect(list.ownerSource!.entries.map((e) => e.getKey()),
+      expect(list.ownerSource!.savedVideos.map((v) => v.entryKey),
           containsAll(['cherry', 'date']));
       expect(list.meta.lastKnownSeq, 99);
     });
@@ -269,7 +279,7 @@ void main() {
             401);
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       expect(ctx.auth.store.current, isNull,
@@ -287,7 +297,7 @@ void main() {
             403);
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       expect(list.meta.role, ListRole.subscriber);
@@ -303,7 +313,7 @@ void main() {
             404);
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       expect(list.meta.orphaned, isTrue);
@@ -313,7 +323,7 @@ void main() {
       final ctx =
           _makeEngine((req) async => stubSyncApplyAll(req), session: null);
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       expect(ctx.requests, isEmpty);
@@ -333,7 +343,7 @@ void main() {
             ],
           }));
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       expect(list.meta.cachedMembers, isNotNull);
@@ -348,11 +358,14 @@ void main() {
       final ctx = _makeEngine((req) async {
         return http.Response(
           jsonEncode({
-            'schemaVersion': 2,
+            'schemaVersion': 3,
             'listId': 'abcdef123456',
             'displayName': 'Greetings',
             'appId': 'auslan',
-            'entries': ['apple', 'banana'],
+            'entries': [
+              {'entry': 'apple', 'video': videoFor('apple')},
+              {'entry': 'banana', 'video': videoFor('banana')},
+            ],
             'lastSeq': 4,
             'createdAt': 1700000000,
             'updatedAt': 1700000050,
@@ -372,7 +385,7 @@ void main() {
       expect(list!.meta.role, ListRole.subscriber);
       expect(list.meta.lastKnownSeq, 4);
       expect(list.meta.etag, '"sub-etag"');
-      expect(list.entries.map((e) => e.getKey()), ['apple', 'banana']);
+      expect(list.savedVideos.map((v) => v.entryKey), ['apple', 'banana']);
     });
   });
 
@@ -398,7 +411,7 @@ void main() {
           .acceptInvite(listId: 'invitedlist1', token: 'invite-tok');
       expect(list.meta.role, ListRole.editor);
       expect(list.meta.lastKnownSeq, 7);
-      expect(list.entries.map((e) => e.getKey()), ['apple']);
+      expect(list.savedVideos.map((v) => v.entryKey), ['apple']);
     });
 
     test('owner accepting own invite is a no-op success', () async {
@@ -486,7 +499,7 @@ void main() {
           serverUpdatedAt: 1700000000,
           orphaned: false,
         ),
-        entries: LinkedHashSet<Entry>(),
+        savedVideos: LinkedHashSet<SavedVideo>(),
       ));
 
       await ctx.engine.leaveAsEditor('editingaaaaa');
@@ -508,7 +521,7 @@ void main() {
           serverUpdatedAt: 1700000000,
           orphaned: false,
         ),
-        entries: LinkedHashSet<Entry>(),
+        savedVideos: LinkedHashSet<SavedVideo>(),
       ));
 
       await ctx.engine.refreshSubscriber('subbed123456');
@@ -565,7 +578,7 @@ void main() {
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
 
       // Op 1 — kick off the first flush (which will block on the gate).
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       final firstFlush = ctx.engine.pushAllDirty();
       // Yield a few times so the request actually leaves the engine.
       for (var i = 0; i < 5; i++) {
@@ -576,8 +589,8 @@ void main() {
 
       // Op 2 — enqueued *while* the first sync is still in flight.
       // The lock should park this op's flush behind the in-flight one.
-      ctx.engine.enqueueAddEntry(list.listId, 'cherry');
-      expect(list.meta.pendingOps.where((o) => o.args['key'] == 'cherry'),
+      ctx.engine.enqueueAddVideo(list.listId, _v('cherry'));
+      expect(list.meta.pendingOps.where((o) => o.args['entry'] == 'cherry'),
           hasLength(1));
 
       // Release the first sync so it can drain.
@@ -611,7 +624,7 @@ void main() {
         return http.Response('', 404);
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       final theOpId = list.meta.pendingOps.single.opId;
 
       // Fire two pushAllDirty calls concurrently. The per-list lock
@@ -654,7 +667,7 @@ void main() {
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
 
       for (final k in keys) {
-        ctx.engine.enqueueAddEntry(list.listId, k);
+        ctx.engine.enqueueAddVideo(list.listId, _v(k));
       }
       expect(list.meta.pendingOps, hasLength(60));
 
@@ -681,7 +694,7 @@ void main() {
         );
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
 
       await ctx.engine.pushAllDirty();
 
@@ -709,7 +722,7 @@ void main() {
         );
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
 
       // First flush — fails 5xx, schedules backoff seconds = 2.
       await ctx.engine.pushAllDirty();
@@ -743,7 +756,7 @@ void main() {
       final pendingOp = PendingOp(
         opId: 'op-test-1',
         type: 'addEntry',
-        args: const {'key': 'banana'},
+        args: {'entry': 'banana', 'video': videoFor('banana')},
         clientTs: 1700000010,
       );
       final meta = SyncedListMeta(
@@ -768,9 +781,9 @@ void main() {
 
       expect(list, isNotNull,
           reason: 'loadFromRaw should successfully load the editor list');
-      expect(list!.entries.map((e) => e.getKey()), contains('banana'),
+      expect(list!.savedVideos.map((v) => v.entryKey), contains('banana'),
           reason: 'replayPendingOpsLocally must fold the pending '
-              'addEntry back into the in-memory entries set');
+              'addEntry back into the in-memory saved-videos set');
       expect(list.meta.pendingOps, hasLength(1),
           reason: 'pending op is still queued for the next /sync');
     });
@@ -799,11 +812,14 @@ void main() {
           // read-only view via this path.
           return http.Response(
             jsonEncode({
-              'schemaVersion': 2,
+              'schemaVersion': 3,
               'listId': 'listidaaaaa1',
               'displayName': 'My Cats',
               'appId': 'auslan',
-              'entries': ['apple', 'banana'],
+              'entries': [
+                {'entry': 'apple', 'video': videoFor('apple')},
+                {'entry': 'banana', 'video': videoFor('banana')},
+              ],
               'lastSeq': 5,
               'createdAt': 1700000000,
               'updatedAt': 1700000050,
@@ -828,14 +844,14 @@ void main() {
           serverUpdatedAt: 1700000000,
           orphaned: false,
         ),
-        entries: LinkedHashSet<Entry>.from([FakeEntry('apple')]),
+        savedVideos: LinkedHashSet<SavedVideo>.from([_v('apple')]),
       ));
       final list = ctx.manager.get('listidaaaaa1')!;
 
       final notifications = <SyncNotification>[];
       final sub = ctx.engine.notifications.listen(notifications.add);
 
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
       // The post-demote pull is fire-and-forget; let it run.
       for (var i = 0; i < 10; i++) {
@@ -869,7 +885,7 @@ void main() {
       final notifications = <SyncNotification>[];
       final sub = ctx.engine.notifications.listen(notifications.add);
 
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
       expect(notifications, contains(SyncNotification.sessionExpired));
@@ -895,7 +911,7 @@ void main() {
                 {
                   'seq': 5,
                   'type': 'addEntry',
-                  'args': {'key': 'banana'},
+                  'args': {'entry': 'banana', 'video': videoFor('banana')},
                   'userId': 'apple:other-device',
                   'actorDisplayName': 'Phone',
                   'serverTs': 1700000099,
@@ -906,13 +922,14 @@ void main() {
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager,
           initialKeys: const []);
-      ctx.engine.enqueueAddEntry(list.listId, 'apple');
+      ctx.engine.enqueueAddVideo(list.listId, _v('apple'));
       // Optimistically apply the local op to the source (mirrors what
-      // SyncedEntryList.addEntry does after enqueue).
-      list.ownerSource!.entries.add(FakeEntry('apple'));
+      // SyncedEntryList.addVideo does after enqueue).
+      list.ownerSource!.savedVideos.add(_v('apple'));
       await ctx.engine.pushAllDirty();
 
-      final keys = list.ownerSource!.entries.map((e) => e.getKey()).toSet();
+      final keys =
+          list.ownerSource!.savedVideos.map((v) => v.entryKey).toSet();
       expect(keys, containsAll(['apple', 'banana']),
           reason: 'owner source list must contain both the locally-added '
               'and the remotely-added entries after convergence');
@@ -921,7 +938,9 @@ void main() {
       // the source's payload key).
       final persisted =
           sharedPreferences.getStringList(list.ownerSource!.key) ?? const [];
-      expect(persisted.toSet(), containsAll(['apple', 'banana']),
+      expect(
+          persisted.toSet(),
+          containsAll([_v('apple').toStorage(), _v('banana').toStorage()]),
           reason: 'shared-prefs payload must reflect the merged state');
     });
   });
@@ -992,7 +1011,7 @@ void main() {
         );
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      ctx.engine.enqueueAddEntry(list.listId, 'banana');
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
       // unknownClient is treated as permanently rejected — ops dropped.
       expect(list.meta.pendingOps, isEmpty,

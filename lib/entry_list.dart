@@ -5,9 +5,27 @@ import 'common.dart';
 import 'entry_types.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'saved_video.dart';
 
 const String KEY_ENTRY_LIST_KEYS = "word_list_keys";
 const int SUFFIX_LENGTH = 6;
+
+/// Bumped when the on-disk format for a single list's entries changes
+/// in a way [EntryList.loadEntryList] needs to adapt to. Recorded
+/// per-list under [_listSchemaVersionKey] after a successful migration so
+/// we don't re-scan legacy items every launch.
+///
+/// History:
+///   - implicit v1: `List<String>` of entry keys (one entry per item).
+///   - v2: `List<String>` of `"<entryKey>|<videoUrl>"` (one saved video
+///     per item). Legacy items are detected by absence of `|` and
+///     expanded to all videos of the entry on first load.
+const int listSchemaVersion = 2;
+
+/// Per-list shared-prefs key that records the schema version of the
+/// last successful migration. Lists without this key are treated as
+/// pre-v2 and re-scanned for legacy items on load.
+String _listSchemaVersionKey(String listKey) => '${listKey}_schemaVersion';
 
 /// Why a proposed list name failed validation. The UI looks up a
 /// localised message per kind via [EntryListNameException.localise].
@@ -68,7 +86,13 @@ class EntryListNameException implements Exception {
   String toString() => 'EntryListNameException($kind, "$name")';
 }
 
-// A user created list of entries.
+/// A user-created list of saved videos.
+///
+/// Storage model: each item is a [SavedVideo] = `(entryKey, videoUrl)`,
+/// persisted in SharedPreferences as `"entryKey|videoUrl"`. The same
+/// entry can contribute multiple saved videos, in which case the list
+/// view groups them under a single entry row but the underlying
+/// container preserves per-video insertion order.
 class EntryList {
   // TODO: Confirm that this works as intended for Sinhala and Tamil.
   // The pattern checks for all Unicode letters and numbers, spaces, comma, dot, dash, underscore, and exclamation mark.
@@ -77,47 +101,91 @@ class EntryList {
       RegExp(r'^[\p{L}\p{N}\s,.-_!]*$', unicode: true);
 
   String key;
-  LinkedHashSet<Entry> entries; // Ordered by insertion order.
+
+  /// Canonical container. Insertion-ordered set of saved videos.
+  /// Owner-mode [SyncedEntryList] shares this set by reference with
+  /// its wrapper so mutations are visible from both surfaces.
+  LinkedHashSet<SavedVideo> savedVideos;
+
   bool _canBeEdited;
 
-  EntryList(this.key, this.entries, this._canBeEdited);
+  EntryList(this.key, this.savedVideos, this._canBeEdited);
 
   @override
   String toString() {
     return getName();
   }
 
-  // This takes in the raw string key, pulls the list of raw strings from
-  // storage, and converts them into a name and a list of entries respectively.
-  // This is specific to user entry lists.
+  /// Load this list from SharedPreferences. Performs the v1→v2
+  /// migration on the fly: legacy bare-entry-key items are expanded to
+  /// every video of the entry (in sub-entry / within-sub-entry order)
+  /// and the migrated list is written back immediately so subsequent
+  /// loads skip the work.
   factory EntryList.fromRaw(String key) {
-    LinkedHashSet<Entry> entries = loadEntryList(key);
-    return EntryList(key, entries, true);
+    final saved = loadSavedVideos(key);
+    return EntryList(key, saved, true);
   }
 
-  // Load up a list of entries. If the key doesn't exist, it'll just return an
-  // empty list. This is specific to user entry lists, which are in local
-  // storage.
-  static LinkedHashSet<Entry> loadEntryList(String key) {
-    LinkedHashSet<Entry> entries = LinkedHashSet();
-    List<String> entriesRaw = sharedPreferences.getStringList(key) ?? [];
-    printAndLog("Loaded ${entriesRaw.length} entries in list $key");
-    for (String s in entriesRaw) {
-      // We use the one keyed by English because for this app the value returned
-      // by getKey is the word / phrase in English, since that field is required
-      // to be set on entries.
-      Entry? matchingEntry = keyedByEnglishEntriesGlobal[s];
-      if (matchingEntry != null) {
-        entries.add(matchingEntry);
-      } else {
-        // In this case, the next time the user alters this list, the missing
-        // entries will be removed from storage permanently. Otherwise we'll
-        // keep filtering them out, which is no big deal.
-        printAndLog(
-            'Entry "$s" in entry list $key is no longer in the dictionary, removing from list (only in memory, not on disk until the list is modified)');
+  /// Load saved videos for [key], handling the v1→v2 migration.
+  ///
+  /// v1 storage was `List<String>` of entry keys. v2 stores one
+  /// `"entryKey|videoUrl"` per item. A list is considered already
+  /// migrated when its [_listSchemaVersionKey] equals
+  /// [listSchemaVersion]; otherwise legacy items are detected by
+  /// absence of `|` and expanded. The migration write is fire-and-forget
+  /// async — the in-memory result is correct regardless.
+  static LinkedHashSet<SavedVideo> loadSavedVideos(String key) {
+    final out = LinkedHashSet<SavedVideo>();
+    final raw = sharedPreferences.getStringList(key) ?? const <String>[];
+    final storedVersion = sharedPreferences.getInt(_listSchemaVersionKey(key));
+    final alreadyMigrated = storedVersion == listSchemaVersion;
+    var migratedAnything = false;
+    var droppedAnything = false;
+
+    for (final item in raw) {
+      final parsed = SavedVideo.tryParse(item);
+      if (parsed != null) {
+        out.add(parsed);
+        continue;
       }
+      // Legacy item: an entry key with no separator. Expand to every
+      // video of the entry. If the entry isn't in the dictionary
+      // anymore (data refresh dropped it), drop the item — same
+      // behaviour as the pre-refactor "entry missing" path.
+      final entry = keyedByEnglishEntriesGlobal[item];
+      if (entry == null) {
+        printAndLog('EntryList $key: legacy entry "$item" '
+            'not in dictionary; dropping');
+        droppedAnything = true;
+        continue;
+      }
+      final expanded = allVideosOf(entry);
+      if (expanded.isEmpty) {
+        printAndLog('EntryList $key: legacy entry "$item" has no videos; '
+            'dropping');
+        droppedAnything = true;
+        continue;
+      }
+      out.addAll(expanded);
+      migratedAnything = true;
     }
-    return entries;
+
+    if (!alreadyMigrated && (migratedAnything || droppedAnything)) {
+      printAndLog('EntryList $key: migrated to schemaVersion '
+          '$listSchemaVersion (expanded ${out.length} videos)');
+    }
+
+    if (!alreadyMigrated) {
+      // Fire-and-forget the migration write. Even if the user is
+      // currently offline / shared-prefs is being unusually slow, the
+      // in-memory state is already correct, and the next mutation will
+      // re-persist with the new format anyway.
+      sharedPreferences.setStringList(
+          key, out.map((v) => v.toStorage()).toList());
+      sharedPreferences.setInt(_listSchemaVersionKey(key), listSchemaVersion);
+    }
+    printAndLog("Loaded ${out.length} saved videos in list $key");
+    return out;
   }
 
   Widget getLeadingIcon({bool inEditMode = false}) {
@@ -200,28 +268,23 @@ class EntryList {
     return "$trimmed$suffix".replaceAll(" ", "_");
   }
 
-  // No matter what locale they use we use the key of the entry for storage.
+  /// Persist the current [savedVideos] set. Writes the schemaVersion
+  /// flag alongside so a later load doesn't re-run the legacy expand.
   Future<void> write() async {
     await sharedPreferences.setStringList(
-        key, entries.map((e) => e.getKey()).toList());
+        key, savedVideos.map((v) => v.toStorage()).toList());
+    await sharedPreferences.setInt(
+        _listSchemaVersionKey(key), listSchemaVersion);
   }
 
   /// Assert that this list is not the source of an owner-mode share.
   ///
-  /// Owner-mode `SyncedEntryList` wrappers share their `entries` set
+  /// Owner-mode `SyncedEntryList` wrappers share their `savedVideos` set
   /// with the underlying local list by reference (see
   /// `lib/sharing/synced_entry_list.dart`). Mutations made through the
   /// wrapper enqueue a sync op; mutations made directly on the source
   /// list — bypassing the wrapper — would NOT enqueue, and the
   /// server's view would silently diverge from the user's local one.
-  ///
-  /// Every UI path that mutates a shared list is engineered to hold the
-  /// wrapper rather than the source list (see
-  /// [ListsService.favouritesList] / `ownedShareFor` / the lists
-  /// overview's owner-share routing). This assertion is a tripwire so
-  /// a regression that re-introduces a direct-mutation path fails
-  /// loudly in debug builds rather than corrupting the synced mirror
-  /// silently in production. Stripped from release builds.
   void _assertNotOwnerShared() {
     assert(() {
       if (!sharing.isEnabled) return true;
@@ -232,16 +295,82 @@ class EntryList {
         'so the mutation enqueues a sync op (see ListsService.ownedShareFor).');
   }
 
-  Future<void> addEntry(Entry entryToAdd) async {
+  // -------- Read API --------
+
+  /// True if [video] is saved in this list.
+  bool containsVideo(SavedVideo video) => savedVideos.contains(video);
+
+  /// True if at least one video of [entry] is saved in this list.
+  /// Equivalent to "would the entry appear as a row in the list view?".
+  bool containsEntry(Entry entry) {
+    final key = entry.getKey();
+    for (final v in savedVideos) {
+      if (v.entryKey == key) return true;
+    }
+    return false;
+  }
+
+  /// Saved videos belonging to [entry], in insertion order. Empty when
+  /// no video of the entry has been saved.
+  List<SavedVideo> videosForEntry(Entry entry) {
+    final key = entry.getKey();
+    return [for (final v in savedVideos) if (v.entryKey == key) v];
+  }
+
+  /// All saved videos grouped by entry, in first-saved-video order.
+  /// Skips saved videos whose entry isn't in the dictionary (i.e.
+  /// orphaned by a data refresh) — same behaviour as v1's
+  /// "missing entry" path.
+  LinkedHashMap<Entry, List<SavedVideo>> get groupedByEntry {
+    final out = LinkedHashMap<Entry, List<SavedVideo>>();
+    for (final v in savedVideos) {
+      final entry = keyedByEnglishEntriesGlobal[v.entryKey];
+      if (entry == null) continue;
+      out.putIfAbsent(entry, () => <SavedVideo>[]).add(v);
+    }
+    return out;
+  }
+
+  /// Unique entries that have at least one saved video, in
+  /// first-saved-video order. Convenience around [groupedByEntry] for
+  /// callers that just want "which entry rows do I render".
+  LinkedHashSet<Entry> get uniqueEntries =>
+      LinkedHashSet<Entry>.from(groupedByEntry.keys);
+
+  // -------- Mutation API --------
+
+  /// Add a single saved video. No-op if already present.
+  Future<void> addVideo(SavedVideo video) async {
     _assertNotOwnerShared();
-    if (!entries.add(entryToAdd)) return;
+    if (!savedVideos.add(video)) return;
     await write();
   }
 
-  Future<void> removeEntry(Entry entryToRemove) async {
+  Future<void> removeVideo(SavedVideo video) async {
     _assertNotOwnerShared();
-    if (!entries.remove(entryToRemove)) return;
+    if (!savedVideos.remove(video)) return;
     await write();
+  }
+
+  /// Add every video of [entry] across its sub-entries. Used by the
+  /// "save all of this entry" path and the legacy-list migration.
+  Future<void> addAllVideosOfEntry(Entry entry) async {
+    _assertNotOwnerShared();
+    var changed = false;
+    for (final v in allVideosOf(entry)) {
+      if (savedVideos.add(v)) changed = true;
+    }
+    if (changed) await write();
+  }
+
+  /// Remove every video belonging to [entry]. Used by the list view's
+  /// long-press "remove from list" affordance.
+  Future<void> removeAllVideosOfEntry(Entry entry) async {
+    _assertNotOwnerShared();
+    final key = entry.getKey();
+    final initial = savedVideos.length;
+    savedVideos.removeWhere((v) => v.entryKey == key);
+    if (savedVideos.length != initial) await write();
   }
 }
 
@@ -289,6 +418,7 @@ class UserEntryListManager implements EntryListManager {
   Future<void> deleteEntryList(String key) async {
     _entryLists.remove(key);
     await sharedPreferences.remove(key);
+    await sharedPreferences.remove(_listSchemaVersionKey(key));
     await writeEntryListKeys();
   }
 

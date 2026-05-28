@@ -4,6 +4,7 @@ import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
 import 'globals.dart';
+import 'saved_video.dart';
 
 // Entry list manager for the communityEntryListManager in globals.dart from
 // dictionarylib based on the categories of the entries.
@@ -38,12 +39,18 @@ class CategoryEntryListManager implements EntryListManager {
       }
     }
 
-    // Build EntryLists from the previous map.
+    // Build EntryLists from the previous map. Each entry is expanded
+    // to every video across its sub-entries — same semantics as the
+    // v1→v2 list migration: a "community list of entries" becomes a
+    // community list of every video those entries contain.
     bool canBeEdited = false;
     SplayTreeMap<String, EntryList> entryLists = SplayTreeMap();
     for (String key in categoryToEntries.keys) {
-      entryLists[key] = EntryList(
-          key, LinkedHashSet.from(categoryToEntries[key]!), canBeEdited);
+      final saved = LinkedHashSet<SavedVideo>();
+      for (final e in categoryToEntries[key]!) {
+        saved.addAll(allVideosOf(e));
+      }
+      entryLists[key] = EntryList(key, saved, canBeEdited);
     }
 
     printAndLog(

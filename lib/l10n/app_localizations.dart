@@ -635,6 +635,30 @@ abstract class DictLibLocalizations {
   /// **'Search'**
   String get listSearchPrefix;
 
+  /// No description provided for @listSavedVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 video saved} other{{count} videos saved}}'**
+  String listSavedVideoCount(int count);
+
+  /// No description provided for @listRemoveAllVideosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list?'**
+  String get listRemoveAllVideosTitle;
+
+  /// No description provided for @listRemoveAllVideosBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all {count} saved videos of \"{word}\" from this list?'**
+  String listRemoveAllVideosBody(int count, String word);
+
+  /// No description provided for @savedVideoSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save this video to…'**
+  String get savedVideoSheetTitle;
+
   /// No description provided for @wordAlreadyFavourited.
   ///
   /// In en, this message translates to:
@@ -1460,13 +1484,13 @@ abstract class DictLibLocalizations {
   /// No description provided for @acceptInviteLandingAlreadyOwner.
   ///
   /// In en, this message translates to:
-  /// **'You\'re the creator of "{displayName}" — no need to accept your own invite.'**
+  /// **'You\'re the creator of \"{displayName}\" — no need to accept your own invite.'**
   String acceptInviteLandingAlreadyOwner(String displayName);
 
   /// No description provided for @acceptInviteLandingAlreadyEditor.
   ///
   /// In en, this message translates to:
-  /// **'You already edit "{displayName}".'**
+  /// **'You already edit \"{displayName}\".'**
   String acceptInviteLandingAlreadyEditor(String displayName);
 
   /// No description provided for @membersPageTitle.
@@ -1658,7 +1682,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @listNameErrorReserved.
   ///
   /// In en, this message translates to:
-  /// **'List name "{name}" is reserved'**
+  /// **'List name \"{name}\" is reserved'**
   String listNameErrorReserved(String name);
 
   /// No description provided for @listNameErrorAlreadyExists.

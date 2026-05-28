@@ -121,11 +121,25 @@ class _PlayerData {
 }
 
 class VideoPlayerScreen extends StatefulWidget {
-  const VideoPlayerScreen(
-      {super.key, required this.mediaLinks, required this.fallbackAspectRatio});
+  const VideoPlayerScreen({
+    super.key,
+    required this.mediaLinks,
+    required this.fallbackAspectRatio,
+    this.initialPage = 0,
+    this.onPageChanged,
+  });
 
   final List<String> mediaLinks;
   final double fallbackAspectRatio;
+
+  /// Video index to land on when the carousel first builds. Useful for
+  /// jump-to-saved-video flows from the list view.
+  final int initialPage;
+
+  /// Notified each time the carousel settles on a new video.
+  /// Used by callers that render UI keyed to the currently-visible
+  /// video (e.g. the per-video bookmark button on the entry page).
+  final void Function(int)? onPageChanged;
 
   @override
   _VideoPlayerScreenState createState() => _VideoPlayerScreenState(
@@ -150,6 +164,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.initState();
     // Make carousel slider controller.
     carouselController = CarouselSliderController();
+    // Honour the caller-supplied initial page so jump-to-video lands on
+    // the right slide on first build. Clamp to a valid index so a stale
+    // saved video URL whose sub-entry has fewer videos than expected
+    // doesn't render an empty carousel.
+    if (widget.initialPage > 0 &&
+        widget.initialPage < mediaLinks.length) {
+      currentPage = widget.initialPage;
+    }
 
     // Create players and controllers immediately (synchronously) so that
     // the Video widgets can be in the tree when we open the media.
@@ -335,6 +357,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       currentPage = newPage;
       players[currentPage]?.player.play();
     });
+    widget.onPageChanged?.call(newPage);
   }
 
   @override
@@ -485,6 +508,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         autoPlay: false,
         viewportFraction: 0.8,
         enableInfiniteScroll: false,
+        initialPage: currentPage,
         onPageChanged: (index, reason) => onPageChanged(context, index),
         enlargeCenterPage: true,
       ),

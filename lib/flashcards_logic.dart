@@ -1,6 +1,5 @@
 import 'dart:collection';
 
-import 'package:collection/collection.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 
@@ -10,6 +9,7 @@ import 'entry_types.dart';
 import 'globals.dart';
 import 'lists_service.dart';
 import 'revision.dart';
+import 'saved_video.dart';
 
 const String VIDEO_LINKS_MARKER = "videolinks";
 const String KEY_RANDOM_REVIEWS_COUNTER = "mykey_random_reviews_counter";
@@ -22,21 +22,64 @@ const String KEY_ONE_CARD_PER_WORD = "one_card_per_word";
 
 const String KEY_LISTS_TO_REVIEW = "lists_chosen_to_review";
 
+/// SharedPreferences flag that marks the v1→v2 review-history migration
+/// as having been attempted. Set unconditionally after a launch where
+/// [migrateLegacyReviewsIfNeeded] runs, even if it migrated nothing —
+/// repeat launches don't re-scan.
+const String KEY_REVIEWS_SCHEMA_VERSION = "reviews_schema_version";
+const int reviewsSchemaVersion = 2;
+
+/// Composite key used as a DolphinSR master id and as the master field
+/// in stored reviews. Format: `<entryKey>\x1F<videoUrl>`. ASCII unit
+/// separator chosen so it can't collide with anything in an entry key
+/// or URL.
+const String _masterKeySep = '\x1F';
+
+String savedVideoMasterId(SavedVideo video) =>
+    '${video.entryKey}$_masterKeySep${video.videoUrl}';
+
+/// Parse a master id back into the (entryKey, videoUrl) pair. Returns
+/// null for legacy v1 ids (which used the older "entryKey-firstVideo"
+/// shape with no separator we control). Used by review-history
+/// migration to skip legacy-shaped masters that were already dropped.
+SavedVideo? parseSavedVideoMasterId(String id) {
+  final i = id.indexOf(_masterKeySep);
+  if (i < 0) return null;
+  return SavedVideo(
+      entryKey: id.substring(0, i), videoUrl: id.substring(i + 1));
+}
+
 class DolphinInformation {
   DolphinInformation({
     required this.dolphin,
-    required this.keyToSubEntryMap,
+    required this.masterToVideoMap,
   });
 
   DolphinSR dolphin;
-  Map<String, SubEntry> keyToSubEntryMap;
+
+  /// Lookup from master id → the [SavedVideo] it represents, plus the
+  /// resolved [SubEntry] and parent [Entry]. The flashcard page reads
+  /// from this to render the right video.
+  Map<String, ResolvedSavedVideo> masterToVideoMap;
 }
 
-// Load up the entry list managers we'll consider. Start with the user's
-// lists (owner-shares appear here via their paired local source list),
-// then add lists shared with the user — editor + subscriber wrappers
-// from the sync manager. Community lists last, gated on the
-// hide-community knob.
+/// Resolved view of a [SavedVideo] — the saved video itself plus the
+/// dictionary [Entry] / [SubEntry] / video URL it currently points
+/// at. Null sub-entry means the video isn't in the dictionary anymore
+/// (data refresh dropped it); the resolver skips such items.
+class ResolvedSavedVideo {
+  final SavedVideo video;
+  final Entry entry;
+  final SubEntry subEntry;
+  final String videoUrl;
+  const ResolvedSavedVideo({
+    required this.video,
+    required this.entry,
+    required this.subEntry,
+    required this.videoUrl,
+  });
+}
+
 LinkedHashMap<String, EntryList> getCandidateEntryLists() {
   LinkedHashMap<String, EntryList> candidateEntryLists = LinkedHashMap();
   for (final el in listsService.myLists) {
@@ -67,69 +110,65 @@ LinkedHashMap<String, EntryList> getEntryListsToRevise(
   return entryLists;
 }
 
-Set<Entry> getEntriesFromEntryLists(
+/// Resolve every saved video across the given lists into a unique,
+/// dictionary-backed set. Dedupes saved videos shared between lists
+/// (e.g. favourites + another list both holding the same one) so
+/// they don't produce duplicate cards.
+List<ResolvedSavedVideo> resolveSavedVideos(
     LinkedHashMap<String, EntryList> entryLists) {
-  return entryLists.values.map((e) => e.entries).flattened.toSet();
-}
-
-Map<Entry, List<SubEntry>> getSubEntriesFromEntries(Set<Entry> favourites) {
-  Map<Entry, List<SubEntry>> subEntries = {};
-  for (Entry e in favourites) {
-    subEntries[e] = [];
-    for (SubEntry sw in e.getSubEntries()) {
-      subEntries[e]!.add(sw);
+  final seen = <SavedVideo>{};
+  final out = <ResolvedSavedVideo>[];
+  for (final list in entryLists.values) {
+    for (final v in list.savedVideos) {
+      if (!seen.add(v)) continue;
+      final entry = keyedByEnglishEntriesGlobal[v.entryKey];
+      if (entry == null) continue;
+      // Find the sub-entry the video belongs to.
+      SubEntry? matched;
+      for (final sub in entry.getSubEntries()) {
+        if (sub.getMedia().contains(v.videoUrl)) {
+          matched = sub;
+          break;
+        }
+      }
+      if (matched == null) continue;
+      out.add(ResolvedSavedVideo(
+        video: v,
+        entry: entry,
+        subEntry: matched,
+        videoUrl: v.videoUrl,
+      ));
     }
   }
-  return subEntries;
+  return out;
 }
 
-int getNumSubEntries(Map<String, List<SubEntry>> subEntries) {
-  if (subEntries.values.isEmpty) {
-    return 0;
-  }
-  if (subEntries.values.length == 1) {
-    return subEntries.values.toList()[0].length;
-  }
-  return subEntries.values.map((v) => v.length).reduce((a, b) => a + b);
-}
-
-// You should provide this function the filtered list of SubEntries.
-List<Master> getMasters(Locale revisionLocale,
-    Map<Entry, List<SubEntry>> subEntries, bool entryToSign, bool signToEntry) {
-  printAndLog("Making masters from ${subEntries.length} entries");
-  List<Master> masters = [];
-  Set<String> keys = {};
-  for (MapEntry<Entry, List<SubEntry>> e in subEntries.entries) {
-    Entry entry = e.key;
-    // If there is no word / phrase for the entry in the requested revision
-    // language don't use the entry.
-    String? phrase = entry.getPhrase(revisionLocale);
-    if (phrase == null) {
-      printAndLog(
-          "Skipping entry that doesn't have a phrase in the requested language");
-      continue;
+/// Build a DolphinSR Master per resolved saved video.
+List<Master> getMastersFromVideos(
+    Locale revisionLocale,
+    List<ResolvedSavedVideo> videos,
+    bool entryToSign,
+    bool signToEntry) {
+  printAndLog("Making masters from ${videos.length} saved videos");
+  final masters = <Master>[];
+  final seen = <String>{};
+  for (final r in videos) {
+    final phrase = r.entry.getPhrase(revisionLocale);
+    if (phrase == null) continue;
+    final combinations = <Combination>[];
+    if (entryToSign) {
+      combinations.add(const Combination(front: [0], back: [1]));
     }
-    for (SubEntry se in e.value) {
-      List<Combination> combinations = [];
-      if (entryToSign) {
-        combinations.add(const Combination(front: [0], back: [1]));
-      }
-      if (signToEntry) {
-        combinations.add(const Combination(front: [1], back: [0]));
-      }
-      var masterKey = se.getKey(entry);
-      var m = Master(
-        id: masterKey,
-        fields: [phrase, VIDEO_LINKS_MARKER],
-        combinations: combinations,
-      );
-      if (!keys.contains(masterKey)) {
-        masters.add(m);
-      } else {
-        printAndLog("Skipping master $m with duplicate key: $masterKey");
-      }
-      keys.add(masterKey);
+    if (signToEntry) {
+      combinations.add(const Combination(front: [1], back: [0]));
     }
+    final masterKey = savedVideoMasterId(r.video);
+    if (!seen.add(masterKey)) continue;
+    masters.add(Master(
+      id: masterKey,
+      fields: [phrase, VIDEO_LINKS_MARKER],
+      combinations: combinations,
+    ));
   }
   masters.shuffle();
   printAndLog("Built ${masters.length} masters");
@@ -140,35 +179,30 @@ int getNumCards(DolphinSR dolphin) {
   return dolphin.cardsLength();
 }
 
-DolphinInformation getDolphinInformation(
-    Map<Entry, List<SubEntry>> subEntries, List<Master> masters,
+DolphinInformation getDolphinInformationFromVideos(
+    List<ResolvedSavedVideo> videos, List<Master> masters,
     {List<Review>? reviews}) {
   reviews = reviews ?? [];
-  Map<String, SubEntry> keyToSubEntryMap = {};
-  for (MapEntry<Entry, List<SubEntry>> e in subEntries.entries) {
-    for (SubEntry se in e.value) {
-      // TODO: Make sure this is okay vs the key needing to have entry.key in it.
-      keyToSubEntryMap[se.getKey(e.key)] = se;
-    }
+  final masterToVideoMap = <String, ResolvedSavedVideo>{};
+  for (final r in videos) {
+    masterToVideoMap[savedVideoMasterId(r.video)] = r;
   }
-  DolphinSR dolphin = DolphinSR();
+  final dolphin = DolphinSR();
   dolphin.addMasters(masters);
 
-  // For each master + combination in random order, seed a review with an
-  // increasing timestamp near the epoch with Rating.Again. This way, ignoring
-  // the effect of other reviews added after, the masters will come out in a
-  // random order. I use MapEntry just because of the absence of a pair / tuple
-  // type.
-  List<MapEntry<String, Combination>> mastersEntries = [];
-  for (Master m in masters) {
-    for (Combination c in m.combinations!) {
+  // Seed reviews with rating=Again at staggered epoch timestamps so
+  // cards come out in a random order from `nextCard` when no real
+  // history exists. Same trick as the v1 implementation.
+  final mastersEntries = <MapEntry<String, Combination>>[];
+  for (final m in masters) {
+    for (final c in m.combinations!) {
       mastersEntries.add(MapEntry(m.id!, c));
     }
   }
   mastersEntries.shuffle();
-  List<Review> seedReviews = [];
+  final seedReviews = <Review>[];
   int epoch = 1000000;
-  for (MapEntry<String, Combination> e in mastersEntries) {
+  for (final e in mastersEntries) {
     seedReviews.add(Review(
         master: e.key,
         combination: e.value,
@@ -178,35 +212,23 @@ DolphinInformation getDolphinInformation(
   }
   dolphin.addReviews(seedReviews);
 
-  // Dolphin cannot handle reviews for masters it doesn't know about, so we
-  // filter those out. This can happen if you have reviews for a card but then
-  // choose to filter it out / remove it from your favourites. Be careful not
-  // to somehow retrieve the reviews from within the DolphinSR object and store
-  // them, since you'd be wiping reviews that are valid if not for the masters
-  // we ended up adding to this particular DolphinSR object.
-  Map<String, Master> masterLookup = Map.fromEntries(masters.map(
-    (e) => MapEntry(e.id!, e),
-  ));
-  List<Review> filteredReviews = [];
-  for (Review r in reviews) {
-    Master? m = masterLookup[r.master!];
-    if (m == null) {
-      printAndLog(
-          "Filtered out review for ${r.master!} because the master wasn't present");
-      continue;
-    }
-    if (!m.combinations!.contains(r.combination!)) {
-      printAndLog(
-          "Filtered out review for ${r.master!} because the master was present but not with the needed combination");
-      continue;
-    }
+  // Filter to reviews for known masters / combinations — DolphinSR
+  // crashes on unknown masters. Don't write the filtered set back; the
+  // dropped reviews may still be valid for a future session that
+  // includes their masters.
+  final masterLookup = {for (final m in masters) m.id!: m};
+  final filteredReviews = <Review>[];
+  for (final r in reviews) {
+    final m = masterLookup[r.master!];
+    if (m == null) continue;
+    if (!m.combinations!.contains(r.combination!)) continue;
     filteredReviews.add(r);
   }
   printAndLog(
       "Added ${filteredReviews.length} total reviews to Dolphin (excluding seed reviews)");
   dolphin.addReviews(filteredReviews);
   return DolphinInformation(
-      dolphin: dolphin, keyToSubEntryMap: keyToSubEntryMap);
+      dolphin: dolphin, masterToVideoMap: masterToVideoMap);
 }
 
 const String KEY_STORED_REVIEWS = "stored_reviews";
@@ -233,6 +255,106 @@ Review decodeReview(String s) {
     rating: rating,
     ts: ts,
   );
+}
+
+/// Migrate legacy review history (master id of shape
+/// `<entryKey>-<firstVideoFilename>`) to the v2 master id shape
+/// (`<entryKey>\x1F<videoUrl>`).
+///
+/// Best-effort: for each legacy review, find the entry and pick its
+/// first sub-entry's first video as the corresponding saved-video
+/// master. Reviews that can't be resolved are dropped — losing them
+/// is preferable to crashing DolphinSR with malformed masters.
+///
+/// Runs once per install, gated by [KEY_REVIEWS_SCHEMA_VERSION]. Safe
+/// to call on every launch; a no-op after the first successful run.
+Future<void> migrateLegacyReviewsIfNeeded() async {
+  final stored =
+      sharedPreferences.getInt(KEY_REVIEWS_SCHEMA_VERSION) ?? 1;
+  if (stored >= reviewsSchemaVersion) return;
+  final encoded =
+      sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? const <String>[];
+  if (encoded.isEmpty) {
+    await sharedPreferences.setInt(
+        KEY_REVIEWS_SCHEMA_VERSION, reviewsSchemaVersion);
+    return;
+  }
+  final out = <String>[];
+  var migrated = 0;
+  var dropped = 0;
+  var alreadyV2 = 0;
+  for (final raw in encoded) {
+    // The master field is the first delimited segment, so split on the
+    // first REVIEW_DELIMITER only.
+    final firstDelim = raw.indexOf(REVIEW_DELIMITER);
+    if (firstDelim < 0) {
+      dropped++;
+      continue;
+    }
+    final master = raw.substring(0, firstDelim);
+    final tail = raw.substring(firstDelim);
+    // v2 masters contain the unit-separator; pass through unchanged.
+    if (master.contains(_masterKeySep)) {
+      out.add(raw);
+      alreadyV2++;
+      continue;
+    }
+    // Legacy shape: `<entryKey>-<firstVideoFilenameOrUrl>`. We don't
+    // know exactly where the entry key ends, so try the leftmost `-`
+    // and walk rightward until we find an entry that exists.
+    final newMaster = _tryMigrateLegacyMaster(master);
+    if (newMaster == null) {
+      dropped++;
+      continue;
+    }
+    out.add('$newMaster$tail');
+    migrated++;
+  }
+  await sharedPreferences.setStringList(KEY_STORED_REVIEWS, out);
+  await sharedPreferences.setInt(
+      KEY_REVIEWS_SCHEMA_VERSION, reviewsSchemaVersion);
+  printAndLog('Reviews migration: $migrated migrated, $alreadyV2 already v2, '
+      '$dropped dropped (of ${encoded.length} total)');
+}
+
+/// Try to rewrite a v1 master id `<entryKey>-<videoSuffix>` to the v2
+/// shape. Returns the v2 master id on success, null when nothing
+/// resolves.
+///
+/// Walks `-` positions **rightmost first** so that a hyphenated entry
+/// key like `"welsh-corgi"` wins over the shorter `"welsh"` when both
+/// exist in the dictionary — without this, a v1 review for
+/// `"welsh-corgi"` would silently rewrite to `"welsh"` and the review
+/// would attach to the wrong entry forever.
+String? _tryMigrateLegacyMaster(String legacyMaster) {
+  var idx = legacyMaster.lastIndexOf('-');
+  while (idx >= 0) {
+    final candidate = legacyMaster.substring(0, idx);
+    final tail = legacyMaster.substring(idx + 1);
+    final entry = keyedByEnglishEntriesGlobal[candidate];
+    if (entry != null) {
+      for (final sub in entry.getSubEntries()) {
+        for (final url in sub.getMedia()) {
+          if (url.endsWith(tail) || url.contains(tail)) {
+            return savedVideoMasterId(
+                SavedVideo(entryKey: candidate, videoUrl: url));
+          }
+        }
+      }
+      // Tail didn't match any video URL — fall back to the entry's
+      // first sub-entry's first video so a stored review keeps some
+      // signal instead of being dropped wholesale. Best-effort.
+      for (final sub in entry.getSubEntries()) {
+        final media = sub.getMedia();
+        if (media.isNotEmpty) {
+          return savedVideoMasterId(
+              SavedVideo(entryKey: candidate, videoUrl: media.first));
+        }
+      }
+    }
+    idx = legacyMaster.lastIndexOf('-', idx - 1);
+  }
+  return null;
 }
 
 List<Review> readReviews() {
@@ -268,11 +390,6 @@ int getNumDueCards(DolphinSR dolphin, RevisionStrategy revisionStrategy) {
       return getNumCards(dolphin);
     case RevisionStrategy.SpacedRepetition:
       SummaryStatics summary = dolphin.summary();
-      // Everything but "later", that seems to match up with what Dolphin
-      // will spit out from nextCard. Note, this is only true if the user
-      // gets all the cards correct. If the user gets them wrong, those cards
-      // will immediately reappear in nextCard. Currently I just make it that
-      // you have to re-enter the review flow once it's all done.
       int due =
           (summary.due ?? 0) + (summary.overdue ?? 0) + (summary.learning ?? 0);
       return due;

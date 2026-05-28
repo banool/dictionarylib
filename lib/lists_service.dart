@@ -5,9 +5,9 @@ import 'package:flutter/widgets.dart';
 
 import 'common.dart';
 import 'entry_list.dart';
-import 'entry_types.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'saved_video.dart';
 import 'sharing/sync_api.dart';
 import 'sharing/synced_entry_list.dart';
 
@@ -238,7 +238,7 @@ class ListsService {
         await sharing.lists.removeLocal(result.listId);
         localKey = reusableSourceKey!;
         local = reusableSource;
-        local.entries.clear();
+        local.savedVideos.clear();
       } else {
         if (existing != null) await sharing.lists.removeLocal(result.listId);
         localKey = allocateLocalKey(
@@ -247,10 +247,7 @@ class ListsService {
         await userEntryListManager.createEntryList(localKey);
         local = userEntryListManager.getEntryLists()[localKey]!;
       }
-      for (final k in snapshot.entries) {
-        final entry = keyedByEnglishEntriesGlobal[k];
-        if (entry != null) local.entries.add(entry);
-      }
+      local.savedVideos.addAll(snapshot.entries);
       await local.write();
       await sharing.lists.insert(SyncedEntryList.ownerFromSnapshot(
           snapshot: snapshot, source: local, localKey: localKey, nowSecs: nowSecs));
@@ -265,11 +262,6 @@ class ListsService {
       }
       final existing = sharing.lists.get(result.listId);
       if (existing != null) await sharing.lists.removeLocal(result.listId);
-      final entries = <Entry>{};
-      for (final k in snapshot.entries) {
-        final entry = keyedByEnglishEntriesGlobal[k];
-        if (entry != null) entries.add(entry);
-      }
       await sharing.lists.insert(SyncedEntryList.editor(
         meta: SyncedListMeta(
           listId: snapshot.listId,
@@ -282,7 +274,7 @@ class ListsService {
           orphaned: false,
           cachedMembers: snapshot.members,
         ),
-        entries: LinkedHashSet<Entry>.from(entries),
+        savedVideos: LinkedHashSet<SavedVideo>.from(snapshot.entries),
       ));
       imported++;
     }

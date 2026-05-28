@@ -17,9 +17,33 @@ import 'package:http/testing.dart';
 
 /// Minimal stand-in for [Entry] suitable for tests that only round-trip
 /// keys (lists, sync engine, etc).
+///
+/// Construction modes:
+///   - Default (no args after key): zero sub-entries — for legacy-style
+///     tests that only care about the entry key.
+///   - `videos: [...]` — one sub-entry holding those video URLs.
+///   - `subEntries: [FakeSubEntryFixture(videos: [...]), ...]` — full
+///     control over the sub-entry shape, used by the v1→v2 list
+///     migration tests where ordering across sub-entries matters.
+///
+/// Passing both `videos` and `subEntries` is rejected as a programmer
+/// error — pick one or the other.
 class FakeEntry extends Entry {
   final String _key;
-  FakeEntry(this._key);
+  final List<SubEntry> _subEntries;
+  FakeEntry(
+    this._key, {
+    List<String>? videos,
+    List<FakeSubEntryFixture>? subEntries,
+  })  : assert(
+            videos == null || subEntries == null,
+            'pass `videos:` (single-sub-entry shorthand) OR `subEntries:` '
+            '(explicit list), not both'),
+        _subEntries = subEntries != null
+            ? subEntries.map((f) => f._build()).toList()
+            : (videos == null || videos.isEmpty)
+                ? const []
+                : [_FakeSubEntry(videos)];
   @override
   String getKey() => _key;
   @override
@@ -29,9 +53,34 @@ class FakeEntry extends Entry {
   @override
   EntryType getEntryType() => EntryType.WORD;
   @override
-  List<SubEntry> getSubEntries() => const [];
+  List<SubEntry> getSubEntries() => _subEntries;
   @override
   int compareTo(Entry other) => _key.compareTo(other.getKey());
+}
+
+/// Description of one sub-entry to attach to a [FakeEntry]. Wraps the
+/// private [_FakeSubEntry] so tests can compose multi-sub-entry
+/// entries without touching the implementation type.
+class FakeSubEntryFixture {
+  final List<String> videos;
+  const FakeSubEntryFixture({required this.videos});
+  _FakeSubEntry _build() => _FakeSubEntry(videos);
+}
+
+class _FakeSubEntry extends SubEntry<String, String> {
+  final List<String> _media;
+  _FakeSubEntry(this._media);
+  @override
+  String getKey(Entry parentEntry) =>
+      '${parentEntry.getKey()}::${_media.isEmpty ? "" : _media.first}';
+  @override
+  List<String> getMedia() => _media;
+  @override
+  List<String> getRelatedWords() => const [];
+  @override
+  List<String> getDefinitions(Locale locale) => const [];
+  @override
+  List<String> getRegions() => const [];
 }
 
 /// Install a no-op handler for the flutter_secure_storage MethodChannel
@@ -48,15 +97,27 @@ void installFakeSecureStorage() {
   );
 }
 
-/// Populate `keyedByEnglishEntriesGlobal` with [FakeEntry] instances so
-/// that `EntryList.loadEntryList` / `SyncedEntryList.replaceEntriesFromServer`
-/// can resolve stored keys back to objects.
-void seedDictionary(Iterable<String> keys) {
+/// Populate `keyedByEnglishEntriesGlobal` with [FakeEntry] instances.
+/// By default each entry gets one synthetic video named
+/// `"https://example.test/<key>.mp4"` so per-video tests can refer to
+/// it without spelling out a URL. Pass [videosByKey] to supply a
+/// specific video list per entry (used for migration / multi-video
+/// scenarios).
+void seedDictionary(
+  Iterable<String> keys, {
+  Map<String, List<String>> videosByKey = const {},
+}) {
   keyedByEnglishEntriesGlobal.clear();
   for (final k in keys) {
-    keyedByEnglishEntriesGlobal[k] = FakeEntry(k);
+    final videos = videosByKey[k] ?? ['https://example.test/$k.mp4'];
+    keyedByEnglishEntriesGlobal[k] = FakeEntry(k, videos: videos);
   }
 }
+
+/// Convenience for the very common "one video per entry, named after
+/// the entry key" pattern in tests. Mirrors what `seedDictionary` does
+/// by default.
+String videoFor(String entryKey) => 'https://example.test/$entryKey.mp4';
 
 /// Default config used by every sharing-related test.
 const kTestSharingConfig = SharingConfig(
@@ -167,21 +228,31 @@ Future<http.Response> stubSyncApplyAll(
 
 /// Canned 200 response shape for `GET /v1/lists/:id/state` (full
 /// authenticated snapshot including the members block).
+///
+/// Accepts entry keys for backward compatibility — each is mapped to
+/// `{entry: key, video: videoFor(key)}` so existing tests don't have
+/// to spell out the wire shape. For tests that exercise multi-video
+/// scenarios, pass [videoEntries] directly as the canonical shape.
 Map<String, dynamic> snapshotJson({
   required String listId,
   required String displayName,
-  required List<String> entries,
+  List<String>? entries,
+  List<Map<String, String>>? videoEntries,
   int lastSeq = 1,
   int createdAt = 1700000000,
   int updatedAt = 1700000000,
   Map<String, dynamic>? members,
 }) {
+  final wireEntries = videoEntries ??
+      (entries ?? const <String>[])
+          .map((k) => {'entry': k, 'video': videoFor(k)})
+          .toList();
   return {
-    'schemaVersion': 2,
+    'schemaVersion': 3,
     'listId': listId,
     'displayName': displayName,
     'appId': 'auslan',
-    'entries': entries,
+    'entries': wireEntries,
     'lastSeq': lastSeq,
     'createdAt': createdAt,
     'updatedAt': updatedAt,

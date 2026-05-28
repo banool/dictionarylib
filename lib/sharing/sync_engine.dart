@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 
 import '../common.dart';
 import '../entry_list.dart';
-import '../entry_types.dart';
 import '../globals.dart';
+import '../saved_video.dart';
 import 'auth/auth_service.dart';
 import 'list_id.dart';
 import 'sync_api.dart';
@@ -182,19 +182,20 @@ class SyncEngine {
 
   // -------- Public mutation entry points --------
 
-  /// Enqueue an `addEntry` op for [listId]. The caller is responsible
-  /// for having already applied the optimistic mutation to the local
-  /// mirror (or, for owner lists, to the source EntryList).
+  /// Enqueue an `addEntry` op for [listId] adding [video]. The caller
+  /// is responsible for having already applied the optimistic
+  /// mutation to the local mirror (or, for owner lists, to the source
+  /// EntryList).
   ///
   /// Persistence ordering: the pending op + meta are written before
-  /// the entries write that follows in [SyncedEntryList.addEntry].
+  /// the entries write that follows in [SyncedEntryList.addVideo].
   /// See the class-level doc.
-  Future<void> enqueueAddEntry(String listId, String entryKey) {
-    return _enqueueOp(listId, 'addEntry', {'key': entryKey});
+  Future<void> enqueueAddVideo(String listId, SavedVideo video) {
+    return _enqueueOp(listId, 'addEntry', video.toJson());
   }
 
-  Future<void> enqueueRemoveEntry(String listId, String entryKey) {
-    return _enqueueOp(listId, 'removeEntry', {'key': entryKey});
+  Future<void> enqueueRemoveVideo(String listId, SavedVideo video) {
+    return _enqueueOp(listId, 'removeEntry', video.toJson());
   }
 
   Future<void> _enqueueOp(
@@ -409,14 +410,14 @@ class SyncEngine {
       }
     } else if (missedOps != null && missedOps.isNotEmpty) {
       for (final op in missedOps) {
-        list.applyOpToEntries(op.type, op.args);
+        list.applyOpToSavedVideos(op.type, op.args);
       }
     }
     // 3. Re-apply this client's still-pending ops on top so the
     // visible state matches (server view at lastKnownSeq) +
     // (queued ops in order). Idempotent under set semantics.
     for (final op in list.meta.pendingOps) {
-      list.applyOpToEntries(op.type, op.args);
+      list.applyOpToSavedVideos(op.type, op.args);
     }
 
     // 4. Update cursor + member cache + sync timestamp.
@@ -596,7 +597,7 @@ class SyncEngine {
     required EntryList source,
     required String sessionToken,
   }) async {
-    final entryKeys = source.entries.map((e) => e.getKey()).toList();
+    final entries = source.savedVideos.toList();
     CreateResult result;
     String listId;
     var attempt = 0;
@@ -607,7 +608,7 @@ class SyncEngine {
         result = await _api.createList(
           listId: listId,
           displayName: displayName,
-          entries: entryKeys,
+          entries: entries,
           sessionToken: sessionToken,
         );
         break;
@@ -685,7 +686,7 @@ class SyncEngine {
           serverUpdatedAt: result.serverUpdatedAt,
           orphaned: false,
         ),
-        entries: _hydrateEntries(remote.entries),
+        savedVideos: _hydrateSavedVideos(remote.entries),
       );
       await _manager.insert(list);
       return list;
@@ -745,7 +746,7 @@ class SyncEngine {
           orphaned: false,
           cachedMembers: snapshot.members,
         ),
-        entries: _hydrateEntries(snapshot.entries),
+        savedVideos: _hydrateSavedVideos(snapshot.entries),
       );
       await _manager.insert(editorList);
       return editorList;
@@ -860,15 +861,11 @@ class SyncEngine {
 
   int _nowSecs() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-  LinkedHashSet<Entry> _hydrateEntries(List<String> keys) {
-    // Dart set literal `{}` is a LinkedHashSet under the hood, so the
-    // cast preserves insertion order — same as `LinkedHashSet<Entry>()`
-    // but pleases the prefer_collection_literals lint.
-    final out = <Entry>{};
-    for (final k in keys) {
-      final entry = keyedByEnglishEntriesGlobal[k];
-      if (entry != null) out.add(entry);
-    }
-    return LinkedHashSet<Entry>.from(out);
+  LinkedHashSet<SavedVideo> _hydrateSavedVideos(List<SavedVideo> entries) {
+    // LinkedHashSet preserves first-occurrence insertion order; the
+    // server payload is already insertion-ordered (per
+    // entries.position), so this just carries that ordering forward
+    // into the local mirror.
+    return LinkedHashSet<SavedVideo>.from(entries);
   }
 }

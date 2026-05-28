@@ -17,32 +17,29 @@ import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 import 'top_level_scaffold.dart';
 
 abstract class FlashcardsLandingPageController {
-  /// This function should read in whatever configuration necessary to figure
-  /// out what subentries to finally review.
-  Map<Entry, List<SubEntry>> filterSubEntries(
-      Map<Entry, List<SubEntry>> subEntries);
+  /// Filter the pool of saved videos that revision will run over.
+  /// Implementations apply per-app rules (region filter,
+  /// "one card per entry" toggle, etc.) and return the videos that
+  /// should actually become cards this session.
+  List<ResolvedSavedVideo> filterSavedVideos(List<ResolvedSavedVideo> videos);
 
-  DolphinInformation getDolphin(Map<Entry, List<SubEntry>> filteredSubEntries,
+  DolphinInformation getDolphin(List<ResolvedSavedVideo> filteredVideos,
       List<Review>? existingReviews,
       {RevisionStrategy? revisionStrategy}) {
     revisionStrategy = revisionStrategy ?? loadRevisionStrategy();
     var wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
     var signToEntry = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
-    // If they haven't selected a revision language before default to English.
-    // It'd be better to get the device language but it's a pain to get access
-    // to it here.
     var revisionLocale = LANGUAGE_CODE_TO_LOCALE[
             sharedPreferences.getString(KEY_REVISION_LANGUAGE_CODE)] ??
         LOCALE_ENGLISH;
-    var masters =
-        getMasters(revisionLocale, filteredSubEntries, wordToSign, signToEntry);
+    var masters = getMastersFromVideos(
+        revisionLocale, filteredVideos, wordToSign, signToEntry);
     switch (revisionStrategy) {
       case RevisionStrategy.Random:
-        return getDolphinInformation(filteredSubEntries, masters,
+        return getDolphinInformationFromVideos(filteredVideos, masters,
             reviews: existingReviews);
       case RevisionStrategy.SpacedRepetition:
-        // existingReviews must be non-null for the SpacedRepetition case.
-        return getDolphinInformation(filteredSubEntries, masters,
+        return getDolphinInformationFromVideos(filteredVideos, masters,
             reviews: existingReviews!);
     }
   }
@@ -94,13 +91,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   late final bool initialValueSignToEntry;
   late final bool initialValueEntryToSign;
 
-  // Loaded only once per page load.
   late LinkedHashMap<String, EntryList> candidateEntryLists;
 
-  // Updated on updateFilteredSubentries.
   late LinkedHashMap<String, EntryList> entryListsToRevise;
 
-  Map<Entry, List<SubEntry>> filteredSubEntries = {};
+  /// Saved videos in scope this session, after [filterSavedVideos] has
+  /// applied region / "one card per entry" / etc. filters.
+  List<ResolvedSavedVideo> filteredVideos = [];
 
   late DolphinInformation dolphinInformation;
   List<Review>? existingReviews;
@@ -129,27 +126,16 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   }
 
   void updateFilteredSubentries() {
-    // Get lists the user has previously said they want to review.
     var listsToReview = sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
         [KEY_FAVOURITES_ENTRIES];
 
-    // Get all the entry lists from the different entry list managers, filtering
-    // out certain managers if the user has opted out of them, e.g. if the user
-    // has chosen to hide community lists.
     entryListsToRevise =
         getEntryListsToRevise(candidateEntryLists, listsToReview);
 
-    // Get the entries from all these lists.
-    var entriesFromLists = getEntriesFromEntryLists(entryListsToRevise);
+    final resolved = resolveSavedVideos(entryListsToRevise);
 
-    // Get the subentries from all these entries.
-    Map<Entry, List<SubEntry>> subEntriesToReview =
-        getSubEntriesFromEntries(entriesFromLists);
-
-    // Finally get the final list of filtered subentries.
     setState(() {
-      filteredSubEntries =
-          widget.controller.filterSubEntries(subEntriesToReview);
+      filteredVideos = widget.controller.filterSavedVideos(resolved);
     });
   }
 
@@ -166,39 +152,24 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     });
   }
 
-  int getNumValidSubEntries() {
-    if (filteredSubEntries.values.isEmpty) {
-      return 0;
-    }
-    if (filteredSubEntries.values.length == 1) {
-      return filteredSubEntries.values.toList()[0].length;
-    }
-    return filteredSubEntries.values
-        .map((v) => v.length)
-        .reduce((a, b) => a + b);
-  }
+  int getNumValidSubEntries() => filteredVideos.length;
 
   bool startValid() {
     var revisionStrategy = loadRevisionStrategy();
     bool flashcardTypesValid = numEnabledFlashcardTypes > 0;
-    bool numfilteredSubEntriesValid = getNumValidSubEntries() > 0;
+    bool numFilteredValid = getNumValidSubEntries() > 0;
     bool numCardsValid =
         getNumDueCards(dolphinInformation.dolphin, revisionStrategy) > 0;
-    bool validBasedOnRevisionStrategy = true;
-    return flashcardTypesValid &&
-        numfilteredSubEntriesValid &&
-        numCardsValid &&
-        validBasedOnRevisionStrategy;
+    return flashcardTypesValid && numFilteredValid && numCardsValid;
   }
 
-  // Call this within setState.
   void updateDolphin() {
     if (existingReviews == null) {
       existingReviews = readReviews();
       print("Start: Read ${existingReviews!.length} reviews from storage");
     }
     dolphinInformation =
-        widget.controller.getDolphin(filteredSubEntries, existingReviews);
+        widget.controller.getDolphin(filteredVideos, existingReviews);
   }
 
   void updateRevisionSettings() {
@@ -344,7 +315,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                                   decoration: BoxDecoration(
                                       border: Border.all(
                                           color: colorScheme.primary),
-                                      //color: currentTheme.primary,
                                       borderRadius: BorderRadius.circular(20)),
                                   child: Text(
                                     e.pretty,

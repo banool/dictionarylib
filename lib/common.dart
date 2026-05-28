@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import 'entry_types.dart';
+import 'saved_video.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
 
@@ -380,8 +381,13 @@ Text getText(String s, {bool larger = false, Color? color}) {
 typedef NavigateToEntryPageFn = Future<void> Function(
   BuildContext context,
   Entry entry,
-  bool showFavouritesButton,
-);
+  bool showSaveButtons, {
+  /// If supplied, the entry page jumps to the sub-entry containing
+  /// [focusVideo] on first build. Used by the list view so tapping
+  /// "hello" with three saved videos lands the user on the first one
+  /// they saved.
+  SavedVideo? focusVideo,
+});
 
 /// The selected chips look weird in dark mode so we have to override the colors
 /// here based on the theme.
@@ -417,9 +423,7 @@ Widget? getInnerRelatedEntriesWidget(
     required SubEntry subEntry,
     required bool shouldUseHorizontalDisplay,
     required Entry? Function(String) getRelatedEntry,
-    required Future<void> Function(
-            BuildContext context, Entry entry, bool showFavouritesButton)
-        navigateToEntryPage}) {
+    required NavigateToEntryPageFn navigateToEntryPage}) {
   ColorScheme colorScheme = Theme.of(context).colorScheme;
   int numRelatedWords = subEntry.getRelatedWords().length;
   if (numRelatedWords == 0) {

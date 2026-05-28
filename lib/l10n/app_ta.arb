@@ -121,6 +121,23 @@
     "listSearchAdd": "சேர்க்க வார்த்தைகளைக் கண்டுபிடி",
     "listSearchPrefix": "தேடல்",
 
+    "listSavedVideoCount": "{count, plural, =1{1 video saved} other{{count} videos saved}}",
+    "@listSavedVideoCount": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "listRemoveAllVideosTitle": "Remove from list?",
+    "listRemoveAllVideosBody": "Remove all {count} saved videos of \"{word}\" from this list?",
+    "@listRemoveAllVideosBody": {
+        "placeholders": {
+            "count": { "type": "int" },
+            "word": { "type": "String" }
+        }
+    },
+
+    "savedVideoSheetTitle": "Save this video to…",
+
     "wordAlreadyFavourited": "ஏற்கனவே பிடித்தது!",
     "wordFavouriteThisWord":"இந்த வார்த்தை பிடித்தது",
 

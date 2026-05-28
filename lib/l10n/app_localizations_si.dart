@@ -312,6 +312,28 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listSearchPrefix => 'සොයන්න';
 
   @override
+  String listSavedVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos saved',
+      one: '1 video saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listRemoveAllVideosTitle => 'Remove from list?';
+
+  @override
+  String listRemoveAllVideosBody(int count, String word) {
+    return 'Remove all $count saved videos of \"$word\" from this list?';
+  }
+
+  @override
+  String get savedVideoSheetTitle => 'Save this video to…';
+
+  @override
   String get wordAlreadyFavourited => 'දැනටමත් ප්‍රියතම!';
 
   @override
@@ -516,7 +538,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get subscribeInvalidInput => 'Not a valid share link or list ID.';
 
   @override
-  String get subscribeInputIsInviteUrl => 'That\'s an invite link — tap it from your phone to join as editor instead of subscribing.';
+  String get subscribeInputIsInviteUrl =>
+      'That\'s an invite link — tap it from your phone to join as editor instead of subscribing.';
 
   @override
   String get subscribeNotFound => 'No list with that key exists.';
@@ -794,12 +817,12 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String acceptInviteLandingAlreadyOwner(String displayName) {
-    return 'You\'re the creator of "$displayName" — no need to accept your own invite.';
+    return 'You\'re the creator of \"$displayName\" — no need to accept your own invite.';
   }
 
   @override
   String acceptInviteLandingAlreadyEditor(String displayName) {
-    return 'You already edit "$displayName".';
+    return 'You already edit \"$displayName\".';
   }
 
   @override
@@ -921,7 +944,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String listNameErrorReserved(String name) {
-    return 'List name "$name" is reserved';
+    return 'List name \"$name\" is reserved';
   }
 
   @override

@@ -49,14 +49,14 @@ Future<SyncedEntryList?> showShareDialog({
   // message rather than letting the network call surface a generic 400.
   // Checked before allocating any dialog state so the early-return
   // path doesn't have to clean up controllers.
-  if (sourceList.entries.length > maxEntriesPerList) {
+  if (sourceList.savedVideos.length > maxEntriesPerList) {
     final l = DictLibLocalizations.of(context)!;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l.shareTooManyEntriesTitle),
         content: Text(l.shareTooManyEntriesBody(
-            sourceList.entries.length, maxEntriesPerList)),
+            sourceList.savedVideos.length, maxEntriesPerList)),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(), child: Text(l.alertOk)),

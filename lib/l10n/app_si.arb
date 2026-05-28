@@ -119,6 +119,23 @@
     "listSearchAdd": "එක් කිරීම සඳහා වචන සොයන්න",
     "listSearchPrefix": "සොයන්න",
 
+    "listSavedVideoCount": "{count, plural, =1{1 video saved} other{{count} videos saved}}",
+    "@listSavedVideoCount": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "listRemoveAllVideosTitle": "Remove from list?",
+    "listRemoveAllVideosBody": "Remove all {count} saved videos of \"{word}\" from this list?",
+    "@listRemoveAllVideosBody": {
+        "placeholders": {
+            "count": { "type": "int" },
+            "word": { "type": "String" }
+        }
+    },
+
+    "savedVideoSheetTitle": "Save this video to…",
+
     "wordAlreadyFavourited": "දැනටමත් ප්‍රියතම!",
     "wordFavouriteThisWord": "මෙම වචනය ප්‍රියතම කරන්න",
 

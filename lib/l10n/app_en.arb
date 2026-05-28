@@ -119,6 +119,23 @@
     "listSearchAdd": "Search for words to add",
     "listSearchPrefix": "Search",
 
+    "listSavedVideoCount": "{count, plural, =1{1 video saved} other{{count} videos saved}}",
+    "@listSavedVideoCount": {
+        "placeholders": {
+            "count": { "type": "int" }
+        }
+    },
+    "listRemoveAllVideosTitle": "Remove from list?",
+    "listRemoveAllVideosBody": "Remove all {count} saved videos of \"{word}\" from this list?",
+    "@listRemoveAllVideosBody": {
+        "placeholders": {
+            "count": { "type": "int" },
+            "word": { "type": "String" }
+        }
+    },
+
+    "savedVideoSheetTitle": "Save this video to…",
+
     "wordAlreadyFavourited": "Already favourited!",
     "wordFavouriteThisWord": "Favourite this word",
 
