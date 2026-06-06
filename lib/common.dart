@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
 
+import 'entry_list.dart';
 import 'entry_types.dart';
 import 'saved_video.dart';
 import 'globals.dart';
@@ -25,6 +25,10 @@ const String KEY_SEARCH_FOR_WORDS = "search_for_words";
 const String KEY_SEARCH_FOR_PHRASES = "search_for_phrases";
 const String KEY_SEARCH_FOR_FINGERSPELLING = "search_for_fingerspelling";
 
+// Recently opened words (their phrases), most-recent-first, shown as the
+// productive empty state on the search screen.
+const String KEY_RECENT_SEARCHES = "recent_searches";
+
 const String KEY_FAVOURITES_ENTRIES = "favourites_words";
 
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS = "last_data_check_time";
@@ -36,6 +40,11 @@ const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
 const String KEY_THEME_MODE = "theme_mode";
 const String KEY_USE_SYSTEM_HTTP_PROXY = "use_system_http_proxy";
+
+// Which visual style ("theme variant") to use, e.g. "hearth" or "classic".
+// Stored by name so the enum order can change without invalidating it. See
+// AppThemeVariant in theme.dart.
+const String KEY_THEME_VARIANT = "theme_variant";
 
 const int DEFAULT_THEME_MODE = 1; // Light.
 
@@ -83,15 +92,16 @@ Future<bool> readKnob(String urlBase, String key, bool fallback) async {
     } else if (raw == "false") {
       out = false;
     } else {
-      throw "Failed to check knob at $url, using fallback value: $fallback, due to ${result.body}";
+      throw Exception(
+          "Failed to check knob at $url, using fallback value: $fallback, due to ${result.body}");
     }
     await sharedPreferences.setBool(sharedPrefsKey, out);
-    print("Value of knob $key is $out, stored at $sharedPrefsKey");
+    printAndLog("Value of knob $key is $out, stored at $sharedPrefsKey");
     return out;
   } catch (e, stacktrace) {
-    print("$e:\n$stacktrace");
+    printAndLog("$e:\n$stacktrace");
     var out = sharedPreferences.getBool(sharedPrefsKey) ?? fallback;
-    print("Returning fallback value for knob $key: $out");
+    printAndLog("Returning fallback value for knob $key: $out");
     return out;
   }
 }
@@ -111,6 +121,25 @@ bool getShowLists() {
   return !kIsWeb;
 }
 
+// Matches everything up to the first space or "(", i.e. the head of the phrase
+// before any parenthetical content. Hoisted so it's compiled once, not per
+// search.
+final RegExp _searchNormaliseRegExp = RegExp(r"^[^ (]*");
+
+// Cache of phrase -> normalised search key. Normalisation (strip spaces/commas,
+// lowercase, drop parenthetical content) is a pure function of the phrase
+// string, so this is keyed by the phrase and never needs invalidation: the same
+// phrase always normalises the same way, even across a data refresh. It saves
+// recomputing the normalisation for every entry on every keystroke.
+final Map<String, String> _normalisedSearchCache = {};
+
+String _normaliseForSearch(String phrase) {
+  return _normalisedSearchCache.putIfAbsent(phrase, () {
+    final noPunctuation = phrase.replaceAll(" ", "").replaceAll(",", "");
+    return _searchNormaliseRegExp.stringMatch(noPunctuation.toLowerCase())!;
+  });
+}
+
 // Search a list of entries and return top matching items.
 List<Entry> searchList(BuildContext context, String searchTerm,
     List<EntryType> entryTypes, Set<Entry> entries, Set<Entry> fallback) {
@@ -121,12 +150,6 @@ List<Entry> searchList(BuildContext context, String searchTerm,
   }
   searchTerm = searchTerm.toLowerCase();
   JaroWinkler d = JaroWinkler();
-  RegExp noParenthesesRegExp = RegExp(
-    r"^[^ (]*",
-    caseSensitive: false,
-    multiLine: false,
-  );
-  print("Searching ${entries.length} entries with entryTypes $entryTypes");
   Locale currentLocale = Localizations.localeOf(context);
   for (Entry e in entries) {
     if (!entryTypes.contains(e.getEntryType())) {
@@ -136,10 +159,7 @@ List<Entry> searchList(BuildContext context, String searchTerm,
     if (phrase == null) {
       continue;
     }
-    String noPunctuation = phrase.replaceAll(" ", "").replaceAll(",", "");
-    String lowerCase = noPunctuation.toLowerCase();
-    String noParenthesesContent = noParenthesesRegExp.stringMatch(lowerCase)!;
-    String normalisedEntry = noParenthesesContent;
+    String normalisedEntry = _normaliseForSearch(phrase);
     double difference = d.normalizedDistance(normalisedEntry, searchTerm);
     if (difference == 1.0) {
       continue;
@@ -387,36 +407,14 @@ typedef NavigateToEntryPageFn = Future<void> Function(
   /// "hello" with three saved videos lands the user on the first one
   /// they saved.
   SavedVideo? focusVideo,
-});
 
-/// The selected chips look weird in dark mode so we have to override the colors
-/// here based on the theme.
-Widget buildMultiSelectDialog<T>({
-  required BuildContext context,
-  required String title,
-  required List<MultiSelectItem<T>> items,
-  required List<T> initialValue,
-  required void Function(List<T>) onConfirm,
-  bool searchable = false,
-}) {
-  Brightness brightness = Theme.of(context).brightness;
-  ColorScheme colorScheme = Theme.of(context).colorScheme;
-  return MultiSelectDialog(
-    listType: MultiSelectListType.CHIP,
-    title: Text(title),
-    items: items,
-    initialValue: initialValue,
-    onConfirm: onConfirm,
-    selectedColor: brightness == Brightness.dark ? colorScheme.primary : null,
-    unselectedColor: brightness == Brightness.dark ? colorScheme.surface : null,
-    // It seems like checkColor doesn't do anything.
-    checkColor: brightness == Brightness.dark ? colorScheme.onPrimary : null,
-    selectedItemsTextStyle: brightness == Brightness.dark
-        ? TextStyle(color: colorScheme.onPrimary)
-        : null,
-    searchable: searchable,
-  );
-}
+  /// If supplied, the entry page's per-video save button adds the video
+  /// directly to this list (toggling membership) instead of opening the
+  /// "choose a list" picker. Used by the list-edit "add videos from this
+  /// entry" flow, so the user lands on the entry already in the context of
+  /// the list they came from.
+  EntryList? saveToList,
+});
 
 Widget? getInnerRelatedEntriesWidget(
     {required BuildContext context,
@@ -453,23 +451,27 @@ Widget? getInnerRelatedEntriesWidget(
     textSpans.add(TextSpan(
       text: relatedWord,
       style: TextStyle(
-          color: colorScheme.onSurface,
+          color:
+              isRelated ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
           decoration: isRelated ? TextDecoration.underline : null),
       recognizer: TapGestureRecognizer()..onTap = navFunction,
     ));
-    textSpans.add(
-        TextSpan(text: suffix, style: TextStyle(color: colorScheme.onSurface)));
+    textSpans.add(TextSpan(
+        text: suffix,
+        style: TextStyle(color: colorScheme.onSurfaceVariant)));
     idx += 1;
   }
 
+  // A quiet, de-emphasised "See also" footer line (Related is rarely used).
   var initial = TextSpan(
-      text: "Related words: ",
-      style:
-          TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold));
+      text: "${DictLibLocalizations.of(context)!.seeAlso} ",
+      style: TextStyle(
+          color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700));
   textSpans = [initial] + textSpans;
   var richText = RichText(
-    text: TextSpan(children: textSpans),
-    textAlign: TextAlign.center,
+    text: TextSpan(style: const TextStyle(fontSize: 13.5), children: textSpans),
+    textAlign: TextAlign.start,
   );
 
   if (shouldUseHorizontalDisplay) {
@@ -477,8 +479,6 @@ Widget? getInnerRelatedEntriesWidget(
         padding: const EdgeInsets.only(left: 10.0, right: 20.0, top: 5.0),
         child: richText);
   } else {
-    return Padding(
-        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 15.0),
-        child: richText);
+    return richText;
   }
 }

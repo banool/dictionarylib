@@ -104,8 +104,8 @@ class AuthStore extends ChangeNotifier {
 /// metadata the UI needs to render "signed in as Alice via Google"
 /// without having to decode the token.
 class AuthSession {
-  /// The session JWT issued by our Worker. Sent as `Authorization:
-  /// Bearer <sessionToken>` on every write.
+  /// The session JWT issued by our Worker. Sent as the
+  /// `Authorization: Bearer <sessionToken>` header on every write.
   final String sessionToken;
 
   /// Which provider the user signed in with. Display only — the server

@@ -36,8 +36,8 @@ class SharePayload {
 /// is true).
 ///
 /// Handles two URL shapes:
-///   - https://<shareLinkHost>/l/<key>[?invite=<token>]  (Universal / App Link)
-///   - <scheme>://share/<key>[?invite=<token>]           (custom scheme fallback)
+///   - `https://<shareLinkHost>/l/<key>[?invite=<token>]`  (Universal / App Link)
+///   - `<scheme>://share/<key>[?invite=<token>]`           (custom scheme fallback)
 ///
 /// ## Cold-start replay
 ///

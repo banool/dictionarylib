@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
@@ -107,8 +108,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     final tabs = <_TabDescriptor>[
       _TabDescriptor.myLists,
     ];
-    if (_showCommunityLists()) tabs.add(_TabDescriptor.community);
+    // Order: My Lists, Subscribed, Community.
     if (sharing.isEnabled) tabs.add(_TabDescriptor.sharedWithMe);
+    if (_showCommunityLists()) tabs.add(_TabDescriptor.community);
     _tabs = tabs;
 
     final restored = initialIndex ?? _restoreTabIndex(tabs.length);
@@ -186,7 +188,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     FloatingActionButton? floatingActionButton;
     if (inEditMode) {
       floatingActionButton = FloatingActionButton(
-          backgroundColor: Colors.green,
           onPressed: () async {
             bool confirmed = await applyCreateListDialog(context);
             if (confirmed) {
@@ -221,18 +222,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
       actions.add(buildActionButton(
         context,
         const Icon(Icons.cloud_download_outlined),
-        () async {
-          final subscribed = await showSubscribeDialog(context: context);
-          if (subscribed != null && context.mounted) {
-            setState(() {});
-            await Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) =>
-                        widget.buildEntryListWidgetCallback(subscribed)));
-            if (mounted) setState(() {});
-          }
-        },
+        () => _subscribeViaLink(),
       ));
     }
 
@@ -251,9 +241,10 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     final tabsUi = <Tab>[];
     final children = <Widget>[];
     for (final t in _tabs) {
-      tabsUi.add(Tab(text: t.label(context)));
+      tabsUi.add(Tab(height: 38, child: Text(t.label(context))));
       children.add(_buildTabBody(t));
     }
+    final cs = Theme.of(context).colorScheme;
 
     bool showTabs = tabsUi.length > 1;
     Widget body;
@@ -280,9 +271,50 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
     return TopLevelScaffold(
         underAppBar: showTabs
-            ? TabBar(
-                controller: tabController,
-                tabs: tabsUi,
+            ? PreferredSize(
+                // 2 + 38 (tab) + 8 (container padding) + 10 = 58; matches the
+                // content so the pill control doesn't overflow its slot.
+                preferredSize: const Size.fromHeight(58),
+                // A pill segmented control rather than an underline TabBar.
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: TabBar(
+                      controller: tabController,
+                      tabs: tabsUi,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      indicatorPadding: EdgeInsets.zero,
+                      labelPadding: EdgeInsets.zero,
+                      splashFactory: NoSplash.splashFactory,
+                      overlayColor:
+                          const WidgetStatePropertyAll(Colors.transparent),
+                      indicator: BoxDecoration(
+                        color: cs.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: cs.shadow,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                            spreadRadius: -4,
+                          ),
+                        ],
+                      ),
+                      labelColor: cs.onSurface,
+                      unselectedLabelColor: cs.onSurfaceVariant,
+                      labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 13.5),
+                      unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13.5),
+                    ),
+                  ),
+                ),
               )
             : null,
         body: body,
@@ -310,6 +342,34 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     };
   }
 
+  /// Paste a share link / ID (or scan a QR) to follow a list. Following needs
+  /// no account, so this lives in the tab content, not behind a sign-in wall.
+  Future<void> _subscribeViaLink() async {
+    final subscribed = await showSubscribeDialog(context: context);
+    if (subscribed != null && context.mounted) {
+      setState(() {});
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => widget.buildEntryListWidgetCallback(subscribed)));
+      if (mounted) setState(() {});
+    }
+  }
+
+  Widget _subscribeViaLinkButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: _subscribeViaLink,
+          icon: const Icon(Icons.add_link, size: 20),
+          label: Text(DictLibLocalizations.of(context)!.listSubscribeViaLink),
+        ),
+      ),
+    );
+  }
+
   /// "Shared with me" — every synced list the user isn't the owner of:
   /// editor-mode (lists they were invited to and can edit) + subscriber-mode
   /// (read-only follows of someone else's share). Owner shares stay in My
@@ -326,40 +386,38 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
         // ListView (not Center) so pull-to-refresh still works on an empty
         // tab.
         children: [
-          Padding(
-            padding: const EdgeInsets.all(32),
-            child: Text(
-              l.listSharedWithMeEmpty,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14),
+          HearthEmptyState(
+            icon: Icons.cloud_outlined,
+            title: l.listSharedWithMeEmpty,
+            body: l.listSubscribedEmptyBody,
+            action: FilledButton.tonalIcon(
+              onPressed: _subscribeViaLink,
+              icon: const Icon(Icons.add_link, size: 18),
+              label: Text(l.listSubscribeViaLink),
             ),
           ),
         ],
       );
     }
     return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         for (final el in shared)
-          Card(
+          HearthListRow(
             key: ValueKey('shared-${el.listId}'),
-            child: ListTile(
-              leading: el.getLeadingIcon(),
-              minLeadingWidth: 10,
-              title: Text(el.getName(context),
-                  textAlign: TextAlign.start,
-                  style: const TextStyle(fontSize: 16)),
-              subtitle: Text(_formatSharedStatus(context, el),
-                  style: const TextStyle(fontSize: 12)),
-              onTap: () async {
-                await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            widget.buildEntryListWidgetCallback(el)));
-                if (mounted) setState(() {});
-              },
-            ),
+            leading: el.getLeadingIcon(),
+            title: el.getName(context),
+            subtitle: _formatSharedStatus(context, el),
+            onTap: () async {
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          widget.buildEntryListWidgetCallback(el)));
+              if (mounted) setState(() {});
+            },
           ),
+        _subscribeViaLinkButton(),
       ],
     );
   }
@@ -405,29 +463,42 @@ Widget _getUserLists(
     // enqueue a sync op). The wrapper shares its entries with the local
     // list, so the view stays identical to opening `el` directly.
     final target = owned ?? el;
-    tiles.add(Card(
+    tiles.add(HearthListRow(
       key: ValueKey(el.key),
-      child: ListTile(
-        leading: owned != null
-            ? Icon(iconForSharedList(owned.meta))
-            : el.getLeadingIcon(),
-        minLeadingWidth: 10,
-        title: Text(el.getName(context),
-            textAlign: TextAlign.start, style: const TextStyle(fontSize: 16)),
-        subtitle: owned != null
-            ? Text(_formatOwnedStatus(context, owned),
-                style: const TextStyle(fontSize: 12))
-            : null,
-        onTap: () async {
-          await Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => buildEntryListWidgetCallback(target)));
-        },
-      ),
+      leading: owned != null
+          ? Icon(iconForSharedList(owned.meta))
+          : el.getLeadingIcon(),
+      title: el.getName(context),
+      // Shared lists show their sync status; plain lists show a word count.
+      subtitle: owned != null
+          ? _formatOwnedStatus(context, owned)
+          : _wordCount(context, el),
+      onTap: () async {
+        await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => buildEntryListWidgetCallback(target)));
+      },
     ));
   }
-  return ListView(children: tiles);
+  // A gentle hint pointing at the edit (pencil) affordance, mirroring the
+  // design's sparse-state guidance.
+  tiles.add(Padding(
+    padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+    child: Text(
+      DictLibLocalizations.of(context)!.listsEditHint,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+          fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+    ),
+  ));
+  return ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: tiles);
+}
+
+/// A short "N words" subtitle for a list (counts distinct entries).
+String _wordCount(BuildContext context, EntryList el) {
+  return DictLibLocalizations.of(context)!
+      .listWordCount(el.uniqueEntries.length);
 }
 
 /// Edit-mode list — reorders the local user lists. Favourites stays pinned
@@ -473,15 +544,11 @@ Widget _buildEditModeList(
                 },
               )
             : null);
-    Widget tile = Card(
-      key: ValueKey(name),
-      child: ListTile(
-        leading: el.getLeadingIcon(inEditMode: true),
-        trailing: trailing,
-        minLeadingWidth: 10,
-        title: Text(name,
-            textAlign: TextAlign.start, style: const TextStyle(fontSize: 16)),
-      ),
+    Widget tile = HearthListRow(
+      leading: el.getLeadingIcon(inEditMode: true),
+      title: name,
+      trailing: trailing,
+      showChevron: false,
     );
     if (isFavouritesLocal) {
       tile = IgnorePointer(key: ValueKey(name), child: tile);
@@ -569,31 +636,22 @@ Widget getCommunityLists(BuildContext context,
       in communityEntryListManager.getEntryLists().entries) {
     EntryList el = e.value;
     String name = el.getName(context);
-    Card card = Card(
+    tiles.add(HearthListRow(
       key: ValueKey(name),
-      child: ListTile(
-        leading: el.getLeadingIcon(inEditMode: false),
-        minLeadingWidth: 10,
-        title: Text(
-          name,
-          textAlign: TextAlign.start,
-          style: const TextStyle(fontSize: 16),
-        ),
-        onTap: () async {
-          await Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => buildEntryListWidgetCallback(
-                        el,
-                      )));
-        },
-      ),
-    );
-    Widget toAdd = card;
-    tiles.add(toAdd);
+      leading: el.getLeadingIcon(inEditMode: false),
+      title: name,
+      subtitle: _wordCount(context, el),
+      onTap: () async {
+        await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => buildEntryListWidgetCallback(el)));
+      },
+    ));
   }
 
   return ListView(
+    padding: const EdgeInsets.symmetric(vertical: 8),
     children: tiles,
   );
 }

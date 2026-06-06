@@ -5,15 +5,15 @@ import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_revision_history.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:settings_ui/settings_ui.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
+import 'hearth.dart';
 import 'top_level_scaffold.dart';
 
 abstract class FlashcardsLandingPageController {
@@ -58,7 +58,11 @@ abstract class FlashcardsLandingPageController {
     return [];
   }
 
-  List<SettingsTile> getExtraSettingsTiles(
+  /// Extra rows to insert into the "Revision settings" card. Return
+  /// [HearthRow]s (or other widgets) so they sit cohesively in the bespoke
+  /// settings card. Used by apps with extra knobs (e.g. Auslan's sign-region
+  /// configurator).
+  List<Widget> getExtraSettingsRows(
       BuildContext context,
       void Function(void Function() fn) setState,
       void Function(String key, bool newValue, bool influencesStartValidity)
@@ -102,15 +106,21 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   late DolphinInformation dolphinInformation;
   List<Review>? existingReviews;
 
+  /// Lifecycle observer that refreshes revision settings when the app is
+  /// foregrounded. Held in a field so it can be removed in [dispose] —
+  /// otherwise it leaks and keeps firing on a disposed state.
+  LifecycleEventHandler? _lifecycleObserver;
+
   @override
   void initState() {
     super.initState();
     candidateEntryLists = getCandidateEntryLists();
-    WidgetsBinding.instance
-        .addObserver(LifecycleEventHandler(resumeCallBack: () async {
+    _lifecycleObserver = LifecycleEventHandler(resumeCallBack: () async {
+      if (!mounted) return;
       updateRevisionSettings();
       printAndLog("Updated revision settings on foregrounding");
-    }));
+    });
+    WidgetsBinding.instance.addObserver(_lifecycleObserver!);
     updateRevisionSettings();
     initialValueSignToEntry =
         sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
@@ -123,6 +133,14 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     if (initialValueEntryToSign) {
       numEnabledFlashcardTypes += 1;
     }
+  }
+
+  @override
+  void dispose() {
+    if (_lifecycleObserver != null) {
+      WidgetsBinding.instance.removeObserver(_lifecycleObserver!);
+    }
+    super.dispose();
   }
 
   void updateFilteredSubentries() {
@@ -166,7 +184,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   void updateDolphin() {
     if (existingReviews == null) {
       existingReviews = readReviews();
-      print("Start: Read ${existingReviews!.length} reviews from storage");
+      printAndLog("Start: Read ${existingReviews!.length} reviews from storage");
     }
     dolphinInformation =
         widget.controller.getDolphin(filteredVideos, existingReviews);
@@ -181,194 +199,140 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    Brightness brightness = Theme.of(context).brightness;
-    ColorScheme colorScheme = Theme.of(context).colorScheme;
-    EdgeInsetsDirectional margin = const EdgeInsetsDirectional.only(
-        start: 15, end: 15, top: 10, bottom: 10);
+    final cs = Theme.of(context).colorScheme;
+    final l = DictLibLocalizations.of(context)!;
 
-    var revisionStrategy = loadRevisionStrategy();
-
-    int cardsToDo =
+    final revisionStrategy = loadRevisionStrategy();
+    final cardsToDo =
         getNumDueCards(dolphinInformation.dolphin, revisionStrategy);
-    String cardNumberString;
-    switch (revisionStrategy) {
-      case RevisionStrategy.Random:
-        cardNumberString =
-            DictLibLocalizations.of(context)!.nFlashcardsSelected(cardsToDo);
-        break;
-      case RevisionStrategy.SpacedRepetition:
-        cardNumberString =
-            DictLibLocalizations.of(context)!.nFlashcardsDue(cardsToDo);
-        break;
-    }
-    cardNumberString = "$cardsToDo $cardNumberString";
+    final signToWord = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
+    final wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
+    final typesValid = numEnabledFlashcardTypes > 0;
 
-    var description = entryListsToRevise.keys
-        .toList()
-        .map((key) => EntryList.getNameFromKey(key))
-        .toList()
-        .join(", ");
+    // Sheet to pick which lists to study from, grouped into the same
+    // sections as the Lists page (My Lists / Subscribed / Community) so
+    // they're easy to find.
+    Future<void> openSourcesPicker() async {
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (ctx) {
+          return StatefulBuilder(builder: (ctx, setSheet) {
+            final selected = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+                    [KEY_FAVOURITES_ENTRIES])
+                .toSet();
 
-    SettingsSection? sourceListSection;
-    sourceListSection = SettingsSection(
-        title: Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: Text(
-              DictLibLocalizations.of(context)!.flashcardsRevisionSources,
-              style: const TextStyle(fontSize: 16),
-            )),
-        tiles: [
-          SettingsTile.navigation(
-            title: getText(DictLibLocalizations.of(context)!
-                .flashcardsSelectListsToRevise),
-            trailing: Container(),
-            onPressed: (BuildContext context) async {
-              await showDialog(
-                context: context,
-                builder: (ctx) {
-                  List<MultiSelectItem<String>> items = [];
-                  for (MapEntry<String, EntryList> e
-                      in candidateEntryLists.entries) {
-                    items.add(MultiSelectItem(e.key, e.value.getName(context)));
-                  }
-                  return buildMultiSelectDialog(
-                    context: context,
-                    title:
-                        DictLibLocalizations.of(context)!.flashcardsSelectLists,
-                    items: items,
-                    initialValue: entryListsToRevise.keys.toList(),
-                    onConfirm: (List<String> values) async {
-                      await sharedPreferences.setStringList(
-                          KEY_LISTS_TO_REVIEW, values);
-                      setState(() {
-                        updateRevisionSettings();
-                      });
-                    },
-                    searchable: true,
-                  );
-                },
-              );
-            },
-            description: Text(
-              description,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ]);
+            void toggle(String key) {
+              final s = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+                      [KEY_FAVOURITES_ENTRIES])
+                  .toSet();
+              if (!s.add(key)) s.remove(key);
+              sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, s.toList());
+              setState(() => updateRevisionSettings());
+              setSheet(() {});
+            }
 
-    List<AbstractSettingsSection?> sections = [
-      sourceListSection,
-      SettingsSection(
-          title: Padding(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Text(
-                DictLibLocalizations.of(context)!.flashcardsTypes,
-                style: const TextStyle(fontSize: 16),
-              )),
-          tiles: [
-            SettingsTile.switchTile(
-                title: Text(
-                  DictLibLocalizations.of(context)!.flashcardsSignToWord,
-                  style: const TextStyle(fontSize: 15),
+            Widget listRow(EntryList el) => HearthRow(
+                  icon: el.key == KEY_FAVOURITES_ENTRIES
+                      ? Icons.star
+                      : Icons.list_alt,
+                  title: el.getName(context),
+                  trailing: Checkbox(
+                      value: selected.contains(el.key),
+                      onChanged: (_) => toggle(el.key)),
+                  onTap: () => toggle(el.key),
+                );
+
+            List<Widget> section(String label, Iterable<EntryList> lists) {
+              if (lists.isEmpty) return const [];
+              return [
+                HearthSectionLabel(label,
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 4)),
+                ...lists.map(listRow),
+              ];
+            }
+
+            final List<EntryList> myLists = <EntryList>[
+              ...listsService.myLists,
+              if (sharing.isEnabled)
+                ...sharing.lists.editorLists.where((e) => !e.meta.orphaned),
+            ];
+            final List<EntryList> subscribed = sharing.isEnabled
+                ? <EntryList>[...sharing.lists.subscribedLists]
+                : const <EntryList>[];
+            final List<EntryList> community =
+                (sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)
+                    ? const <EntryList>[]
+                    : <EntryList>[...communityEntryListManager.getEntryLists().values];
+
+            return SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
+                        child: Text(l.flashcardsSelectLists,
+                            style: Theme.of(ctx).textTheme.titleLarge),
+                      ),
+                      ...section(l.listMyLists, myLists),
+                      ...section(l.listSharedWithMeTab, subscribed),
+                      ...section(l.listCommunity, community),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 52)),
+                            child: Text(l.shareLinkDoneButton),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                initialValue:
-                    sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true,
-                onToggle: (newValue) {
-                  onPrefSwitch(KEY_SIGN_TO_WORD, newValue, true);
-                  updateRevisionSettings();
-                }),
-            SettingsTile.switchTile(
-                title: Text(
-                  DictLibLocalizations.of(context)!.flashcardsWordToSign,
-                  style: const TextStyle(fontSize: 15),
-                ),
-                initialValue:
-                    sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true,
-                onToggle: (newValue) {
-                  onPrefSwitch(KEY_WORD_TO_SIGN, newValue, true);
-                  updateRevisionSettings();
-                }),
-          ]),
-      SettingsSection(
-        title: Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: Text(
-              DictLibLocalizations.of(context)!.flashcardsRevisionSettings,
-              style: const TextStyle(fontSize: 16),
-            )),
-        tiles: [
-          SettingsTile.navigation(
-            title: getText(DictLibLocalizations.of(context)!
-                .flashcardsSelectRevisionStrategy),
-            trailing: Container(),
-            onPressed: (BuildContext context) async {
-              await showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    SimpleDialog dialog = SimpleDialog(
-                      title: Text(
-                          DictLibLocalizations.of(context)!.flashcardsStrategy),
-                      children: RevisionStrategy.values
-                          .map((e) => SimpleDialogOption(
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: colorScheme.primary),
-                                      borderRadius: BorderRadius.circular(20)),
-                                  child: Text(
-                                    e.pretty,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                onPressed: () async {
-                                  await sharedPreferences.setInt(
-                                      KEY_REVISION_STRATEGY, e.index);
-                                  setState(() {
-                                    updateRevisionSettings();
-                                  });
-                                  if (!context.mounted) return;
-                                  Navigator.of(context).pop();
-                                },
-                              ))
-                          .toList(),
-                    );
-                    return dialog;
-                  });
-            },
-            description: Text(
-              revisionStrategy.pretty,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          ...widget.controller.getExtraSettingsTiles(
-              context, setState, onPrefSwitch, updateRevisionSettings),
-          SettingsTile.switchTile(
-            title: Text(
-              DictLibLocalizations.of(context)!.flashcardsOnlyOneCard,
-              style: const TextStyle(fontSize: 15),
-            ),
-            initialValue:
-                sharedPreferences.getBool(KEY_ONE_CARD_PER_WORD) ?? false,
-            onToggle: (newValue) {
-              onPrefSwitch(KEY_ONE_CARD_PER_WORD, newValue, false);
-              updateRevisionSettings();
-            },
-          )
-        ],
-        margin: margin,
-      ),
-    ];
-
-    List<AbstractSettingsSection> nonNullSections = [];
-    for (AbstractSettingsSection? section in sections) {
-      if (section != null) {
-        nonNullSections.add(section);
-      }
+              ),
+            );
+          });
+        },
+      );
     }
-    Widget settings = SettingsList(
-      sections: nonNullSections,
-    );
+
+    // An outlined card wrapping rows separated by hairline dividers.
+    Widget settingsCard(List<Widget> rows, {EdgeInsetsGeometry? padding}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: HearthRowGroup(rows: rows, padding: padding),
+      );
+    }
+
+    // Selected revision sources (Favourites + any chosen lists).
+    final sourceRows = <Widget>[];
+    for (final e in entryListsToRevise.entries) {
+      final el = e.value;
+      final count = el.uniqueEntries.length;
+      sourceRows.add(HearthRow(
+        icon: el.key == KEY_FAVOURITES_ENTRIES ? Icons.star : Icons.list_alt,
+        title: el.getName(context),
+        subtitle: l.revisionSignCount(count),
+        onTap: openSourcesPicker,
+      ));
+    }
+    if (sourceRows.isEmpty) {
+      sourceRows
+          .add(HearthRow(title: l.revisionNoListsChosen, onTap: openSourcesPicker));
+    }
+
+    // The "Revision settings" card rows — currently the app-specific extras
+    // (e.g. Auslan's sign-region configurator).
+    final settingRows = widget.controller.getExtraSettingsRows(
+        context, setState, onPrefSwitch, updateRevisionSettings);
 
     Function()? onPressedStart;
     if (startValid()) {
@@ -391,51 +355,168 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       };
     }
 
-    List<Widget> children = [
-          Padding(
-              padding: const EdgeInsets.only(top: 30, bottom: 10),
-              child: TextButton(
-                key: const ValueKey("startButton"),
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.resolveWith(
-                    (states) {
-                      if (states.contains(WidgetState.disabled)) {
-                        return Colors.grey;
-                      } else {
-                        return colorScheme.primaryContainer;
-                      }
-                    },
-                  ),
-                  minimumSize:
-                      WidgetStateProperty.all<Size>(const Size(120, 50)),
-                ),
-                onPressed: onPressedStart,
-                child: Text(
-                  DictLibLocalizations.of(context)!.flashcardsStart,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 20),
-                ),
-              )),
-          Text(
-            cardNumberString,
-            textAlign: TextAlign.center,
+    final listChildren = <Widget>[
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+        child: Text(
+          l.revisionBuildSessionHeader,
+          style:
+              TextStyle(fontSize: 15, height: 1.5, color: cs.onSurfaceVariant),
+        ),
+      ),
+      // --- Revision sources ---
+      HearthSectionLabel(l.flashcardsRevisionSources,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8)),
+      settingsCard(sourceRows),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: openSourcesPicker,
+            icon: const Icon(Icons.add, size: 20),
+            label: Text(l.flashcardsAddAnotherList),
           ),
-          Expanded(child: settings),
-        ] +
-        widget.controller
-            .getExtraBottomWidgets(context, setState, updateRevisionSettings);
+        ),
+      ),
+      // --- Flashcard types ---
+      HearthSectionLabel(l.flashcardsTypes,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8)),
+      settingsCard([
+        HearthRow(
+          icon: Icons.style,
+          title: l.flashcardsSignToWord,
+          subtitle: l.flashcardsSignToWordSubtitle,
+          trailing: Switch(
+              value: signToWord,
+              onChanged: (v) {
+                onPrefSwitch(KEY_SIGN_TO_WORD, v, true);
+                updateRevisionSettings();
+              }),
+          onTap: () {
+            onPrefSwitch(KEY_SIGN_TO_WORD, !signToWord, true);
+            updateRevisionSettings();
+          },
+        ),
+        HearthRow(
+          icon: Icons.search,
+          title: l.flashcardsWordToSign,
+          subtitle: l.flashcardsWordToSignSubtitle,
+          trailing: Switch(
+              value: wordToSign,
+              onChanged: (v) {
+                onPrefSwitch(KEY_WORD_TO_SIGN, v, true);
+                updateRevisionSettings();
+              }),
+          onTap: () {
+            onPrefSwitch(KEY_WORD_TO_SIGN, !wordToSign, true);
+            updateRevisionSettings();
+          },
+        ),
+      ]),
+      if (!typesValid)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Text(l.flashcardsChooseType,
+              style: TextStyle(fontSize: 12.5, color: cs.error)),
+        ),
+      // --- Revision settings ---
+      HearthSectionLabel(l.flashcardsRevisionSettings,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8)),
+      settingsCard(
+        [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l.flashcardsStrategyLabel,
+                  style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface)),
+              const SizedBox(height: 10),
+              HearthSegmented(
+                options: [
+                  RevisionStrategy.SpacedRepetition.pretty,
+                  RevisionStrategy.Random.pretty,
+                ],
+                selected: revisionStrategy == RevisionStrategy.SpacedRepetition
+                    ? 0
+                    : 1,
+                onChanged: (i) async {
+                  await sharedPreferences.setInt(
+                      KEY_REVISION_STRATEGY,
+                      i == 0
+                          ? RevisionStrategy.SpacedRepetition.index
+                          : RevisionStrategy.Random.index);
+                  setState(() {
+                    updateRevisionSettings();
+                  });
+                },
+              ),
+            ],
+          ),
+        ],
+        padding: const EdgeInsets.all(14),
+      ),
+      // App-specific extra rows (e.g. Auslan's sign-region configurator). Drop
+      // the card entirely when an app has none, so there's no empty outlined box.
+      if (settingRows.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        settingsCard(settingRows),
+      ],
+      ...widget.controller
+          .getExtraBottomWidgets(context, setState, updateRevisionSettings),
+      const SizedBox(height: 8),
+    ];
 
-    Widget body = Container(
-      color: brightness == Brightness.light
-          ? settingsBackgroundColor
-          : Colors.black,
-      child: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: children,
-      )),
+    // Sticky bottom bar with the live count + Start.
+    final dueLabel = revisionStrategy == RevisionStrategy.SpacedRepetition
+        ? l.revisionDueNow
+        : l.revisionSelected;
+    Widget startBar = Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(dueLabel,
+                  style: TextStyle(fontSize: 13.5, color: cs.onSurfaceVariant)),
+              const Spacer(),
+              Text(l.revisionFlashcardCount(cardsToDo),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey("startButton"),
+              onPressed: onPressedStart,
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 54)),
+              icon: const Icon(Icons.play_arrow),
+              label: Text(l.flashcardsStart),
+            ),
+          ),
+        ],
+      ),
     );
+
+    Widget body = Column(children: [
+      Expanded(
+        child: ListView(
+            padding: const EdgeInsets.only(top: 4, bottom: 16),
+            children: listChildren),
+      ),
+      startBar,
+    ]);
 
     List<Widget> actions = [
       buildActionButton(
@@ -462,9 +543,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     ];
 
     return TopLevelScaffold(
-        body: body,
-        title: DictLibLocalizations.of(context)!.revisionTitle,
-        actions: actions);
+        body: body, title: l.revisionTitle, actions: actions);
   }
 }
 

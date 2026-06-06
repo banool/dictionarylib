@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../common.dart';
 import '../globals.dart';
+import '../hearth.dart';
 import '../l10n/app_localizations.dart';
 import '../lists_service.dart';
 import '../sharing/sync_api.dart';
@@ -240,21 +241,19 @@ class _ListMembersPageState extends State<ListMembersPage> {
         ),
       ),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 16),
         children: [
-          ListTile(
-            leading: const Icon(Icons.star),
-            title: Text(l.membersPageCreator,
-                style: Theme.of(context).textTheme.labelMedium),
+          HearthSectionLabel(
+            l.membersPageCreator,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           ),
           if (members != null)
             _buildMemberTile(members.owner)
           else
             const ListTile(dense: true, title: Text('—')),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.edit_note),
-            title: Text(l.membersPageEditors,
-                style: Theme.of(context).textTheme.labelMedium),
+          HearthSectionLabel(
+            l.membersPageEditors,
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             trailing: _viewerIsOwner
                 ? FilledButton.icon(
                     onPressed: _invitingInflight ? null : _invite,
@@ -308,10 +307,20 @@ class _ListMembersPageState extends State<ListMembersPage> {
         ? l.membersPageNameYou(base)
         : base;
     return ListTile(
-      leading: CircleAvatar(
-        child: Text(_initial(name), style: const TextStyle(fontSize: 14)),
-      ),
+      leading: _avatar(name),
       title: Text(name),
+    );
+  }
+
+  Widget _avatar(String name) {
+    final cs = Theme.of(context).colorScheme;
+    return CircleAvatar(
+      backgroundColor: cs.primaryContainer,
+      child: Text(_initial(name),
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: cs.onPrimaryContainer)),
     );
   }
 
@@ -321,9 +330,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final name = isViewer ? l.membersPageNameYou(base) : base;
     final addedByName = _resolveAddedByName(editor);
     return ListTile(
-      leading: CircleAvatar(
-        child: Text(_initial(name), style: const TextStyle(fontSize: 14)),
-      ),
+      leading: _avatar(name),
       title: Text(name),
       subtitle: addedByName.isEmpty
           ? null

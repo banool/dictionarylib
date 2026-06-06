@@ -135,7 +135,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
               const SizedBox(height: 8),
               _ProviderButton(
                 label: l.signInWithGoogle,
-                icon: Icons.g_mobiledata,
+                iconWidget: const _GoogleLogo(),
                 onPressed: inflight == null
                     ? () => attempt(AuthProvider.google)
                     : null,
@@ -274,16 +274,24 @@ String _localiseProviderError(DictLibLocalizations l, SignInErrorKind kind) {
 
 class _ProviderButton extends StatelessWidget {
   final String label;
-  final IconData icon;
+
+  /// Monochrome icon for providers whose mark is a simple glyph (Apple,
+  /// Facebook). Mutually exclusive with [iconWidget].
+  final IconData? icon;
+
+  /// A bespoke leading widget for providers that need their own branded mark
+  /// (e.g. Google's multi-colour "G"). Takes precedence over [icon].
+  final Widget? iconWidget;
   final VoidCallback? onPressed;
   final bool inflight;
 
   const _ProviderButton({
     required this.label,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.onPressed,
     required this.inflight,
-  });
+  }) : assert(icon != null || iconWidget != null);
 
   @override
   Widget build(BuildContext context) {
@@ -295,8 +303,34 @@ class _ProviderButton extends StatelessWidget {
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Icon(icon),
+          : (iconWidget ?? Icon(icon)),
       label: Text(label),
+    );
+  }
+}
+
+/// Google's official multi-colour "G" mark, sat on the white rounded tile its
+/// branding guidelines call for, so the Sign in with Google button uses the
+/// real logo rather than a generic letter glyph.
+class _GoogleLogo extends StatelessWidget {
+  const _GoogleLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(1),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Image.asset(
+        'assets/brand/google-g.png',
+        package: 'dictionarylib',
+        fit: BoxFit.contain,
+      ),
     );
   }
 }

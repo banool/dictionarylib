@@ -92,6 +92,38 @@ void main() {
     });
   });
 
+  group('EntryList.containsAllVideosOf', () {
+    test('true only once every video of the entry is saved', () async {
+      seedDictionary(['apple'], videosByKey: {
+        'apple': ['https://example.test/a1.mp4', 'https://example.test/a2.mp4'],
+      });
+      final entry = keyedByEnglishEntriesGlobal['apple']!;
+      final list = EntryList('cats_words', LinkedHashSet<SavedVideo>(), true);
+
+      // Nothing saved → not fully contained.
+      expect(list.containsAllVideosOf(entry), isFalse);
+
+      // One of two saved → partially saved; still keep showing it in "add".
+      await list.addVideo(SavedVideo(
+          entryKey: 'apple', videoUrl: 'https://example.test/a1.mp4'));
+      expect(list.containsEntry(entry), isTrue);
+      expect(list.containsAllVideosOf(entry), isFalse);
+
+      // Both saved → fully contained; nothing left to add.
+      await list.addVideo(SavedVideo(
+          entryKey: 'apple', videoUrl: 'https://example.test/a2.mp4'));
+      expect(list.containsAllVideosOf(entry), isTrue);
+    });
+
+    test('an entry with no videos is never fully contained', () {
+      keyedByEnglishEntriesGlobal['voiceless'] = FakeEntry('voiceless');
+      final list = EntryList('cats_words', LinkedHashSet<SavedVideo>(), true);
+      expect(
+          list.containsAllVideosOf(keyedByEnglishEntriesGlobal['voiceless']!),
+          isFalse);
+    });
+  });
+
   group('EntryList v1→v2 migration', () {
     test('legacy entry keys expand to every video of the entry', () async {
       seedDictionary(['apple', 'banana'], videosByKey: {

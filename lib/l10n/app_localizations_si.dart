@@ -201,6 +201,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsAppearance => 'පෙනුම';
 
   @override
+  String get settingsAppTheme => 'යෙදුම් තේමාව';
+
+  @override
   String get settingsColourMode => 'වර්ණ මාදිලිය';
 
   @override
@@ -353,7 +356,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get entryTypePhrases => 'වාක්ය ඛණ්ඩ';
 
   @override
-  String get entryTypeFingerspelling => 'ඇඟිලි කථාව';
+  String get entryTypeFingerspelling => 'ඇඟිලි අකුරු';
 
   @override
   String get entrySelectEntryTypes => 'ඇතුල්වීමේ වර්ග තෝරන්න';
@@ -994,4 +997,273 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get signInTestPromptConfirm => 'Sign in';
+
+  @override
+  String get searchRecent => 'මෑත';
+
+  @override
+  String get searchRecentClear => 'හිස් කරන්න';
+
+  @override
+  String get searchSignOfTheDay => 'අද දවසේ සංඥාව';
+
+  @override
+  String get signOfTheDayBlurb => 'සෑම දිනකම ඉගෙන ගැනීමට නව සංඥාවක්.';
+
+  @override
+  String searchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ප්‍රතිඵල $count',
+      one: 'ප්‍රතිඵල 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get entryTypePhrase => 'වාක්‍ය ඛණ්ඩය';
+
+  @override
+  String searchNoMatchTitle(String query) {
+    return '\"$query\" සඳහා සංඥා නැත';
+  }
+
+  @override
+  String get searchNoMatchBody =>
+      'අක්ෂර වින්‍යාසය පරීක්ෂා කරන්න, නැතහොත් සම්බන්ධ වචනයක් උත්සාහ කරන්න. සමහර සංඥා වෙනත් ඉංග්‍රීසි වචනයක් යටතේ ඇත.';
+
+  @override
+  String get searchReportMissing => 'Report a missing word';
+
+  @override
+  String get searchReportMissingThanks =>
+      'Thanks — we\'ll look into adding it.';
+
+  @override
+  String get newsEmptyTitle => 'තවම නිවේදන නැත';
+
+  @override
+  String get newsEmptyBody => 'යෙදුම් පුවත් සහ ඉඟි මෙහි පෙන්වනු ඇත.';
+
+  @override
+  String get newsErrorTitle => 'පුවත් පූරණය කළ නොහැකි විය';
+
+  @override
+  String get newsErrorBody =>
+      'ඔබගේ සම්බන්ධතාවය පරීක්ෂා කර පසුව නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get saveVideoFailed =>
+      'ඔබගේ ලැයිස්තු යාවත්කාලීන කළ නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get videoOfflineError =>
+      'වීඩියෝව පූරණය කිරීමට අසමත් විය. ඔබගේ උපාංගය අන්තර්ජාලයට සම්බන්ධ දැයි තහවුරු කරගන්න. එසේ නම්, සේවාදායකවල ගැටලුවක් තිබිය හැක. මෙය යෙදුමේම ගැටලුවක් නොවේ.';
+
+  @override
+  String get listsEditHint =>
+      'නැවත පිළිවෙළට, නැවත නම් කිරීමට, හෝ නව ලැයිස්තුවක් සෑදීමට පැන්සල තට්ටු කරන්න.';
+
+  @override
+  String listWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'වචන $count',
+      one: 'වචන 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listSubscribeViaLink => 'සබැඳිය හරහා දායක වන්න';
+
+  @override
+  String get listSubscribedEmptyBody =>
+      'යමෙකු ඔබ සමඟ බෙදාගත් ලැයිස්තුවක් අනුගමනය කරන්න. ගිණුමක් අවශ්‍ය නැත.';
+
+  @override
+  String revisionStreak(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'දින $days ක අඛණ්ඩතාව',
+      one: 'දින 1 ක අඛණ්ඩතාව',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionStreakSubtitle =>
+      'මේ දක්වා දිගම ධාවනය — දිගටම කරගෙන යන්න!';
+
+  @override
+  String get revisionBuildSessionHeader =>
+      'අධ්‍යයන සැසියක් සාදන්න. පුණරීක්ෂණය කළ යුතු දේ තෝරා, පසුව ආරම්භ කරන්න.';
+
+  @override
+  String revisionSignCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'සංඥා $count',
+      one: 'සංඥා 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionNoListsChosen => 'තවම ලැයිස්තු තෝරා නැත';
+
+  @override
+  String get flashcardsAddAnotherList => 'තවත් ලැයිස්තුවක් එක් කරන්න';
+
+  @override
+  String get flashcardsSignToWordSubtitle => 'සංඥාවක් බලා, වචනය මතක් කරන්න';
+
+  @override
+  String get flashcardsWordToSignSubtitle => 'වචනයක් බලා, සංඥාව මතක් කරන්න';
+
+  @override
+  String get flashcardsChooseType =>
+      'අවම වශයෙන් එක් ෆ්ලෑෂ්කාඩ් වර්ගයක් තෝරන්න.';
+
+  @override
+  String get flashcardsStrategyLabel => 'උපාය මාර්ගය';
+
+  @override
+  String get revisionDueNow => 'දැන් නියමිතයි';
+
+  @override
+  String get revisionSelected => 'තෝරාගත්';
+
+  @override
+  String revisionFlashcardCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ෆ්ලෑෂ්කාඩ් $count',
+      one: 'ෆ්ලෑෂ්කාඩ් 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playbackSpeedTitle => 'ධාවන වේගය';
+
+  @override
+  String get playbackSpeedNormal => 'සාමාන්‍ය';
+
+  @override
+  String get regionSheetTitle => 'සංඥා කලාප';
+
+  @override
+  String get regionSheetDescription =>
+      'මුළු ඕස්ට්‍රේලියාව සඳහා සලකුණු කළ සංඥා සැමවිටම ඇතුළත් වේ. පහතින් තවත් කලාප එක් කරන්න.';
+
+  @override
+  String get regionSheetDialects => 'උපභාෂා';
+
+  @override
+  String get regionSheetStatesTerritories => 'ප්‍රාන්ත සහ ප්‍රදේශ';
+
+  @override
+  String wordVariationWithHint(int index, int count) {
+    return 'විචලනය $index/$count · සැසඳීමට ස්වයිප් කරන්න';
+  }
+
+  @override
+  String wordVariation(int index, int count) {
+    return 'විචලනය $index/$count';
+  }
+
+  @override
+  String videoIndicator(int index, int count) {
+    return 'වීඩියෝ $index/$count';
+  }
+
+  @override
+  String get seeAlso => 'මෙයත් බලන්න';
+
+  @override
+  String get revealAnswer => 'Reveal answer';
+
+  @override
+  String get tapToReveal => 'හෙළි කිරීමට තට්ටු කරන්න';
+
+  @override
+  String get openDictionaryEntry => 'ශබ්දකෝෂ ඇතුළත් කිරීම විවෘත කරන්න';
+
+  @override
+  String get ratingForgot => 'අමතක විය';
+
+  @override
+  String get ratingGotIt => 'තේරුණා!';
+
+  @override
+  String get ratingNext => 'ඊළඟ';
+
+  @override
+  String get sessionComplete => 'සැසිය සම්පූර්ණයි';
+
+  @override
+  String sessionCompleteHeadline(int count) {
+    return 'හොඳ වැඩක් — සංඥා $count ක් පුණරීක්ෂණය කළා';
+  }
+
+  @override
+  String get summarySuccess => 'සාර්ථකත්වය';
+
+  @override
+  String get summaryCards => 'කාඩ්';
+
+  @override
+  String get summaryGotIt => 'තේරුණා';
+
+  @override
+  String get summaryForgot => 'අමතක විය';
+
+  @override
+  String get studyPromptSignToWord => 'මෙම සංඥාවේ අර්ථය කුමක්ද?';
+
+  @override
+  String get studyPromptWordToSign => 'මෙම වචනය සඳහා සංඥාව කුමක්ද?';
+
+  @override
+  String get videoRotate => 'වීඩියෝව කරකවන්න';
+
+  @override
+  String get saveVideoButton => 'සුරකින්න';
+
+  @override
+  String savedToListCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ලැයිස්තු $countකට සුරකින ලදී',
+      one: 'ලැයිස්තු 1කට සුරකින ලදී',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionSummaryTitle => 'පුණරීක්ෂණ සාරාංශය';
+
+  @override
+  String get revisionStatsEmptyTitle => 'තවම සංඛ්‍යාලේඛන නැත';
+
+  @override
+  String get revisionStatsEmptyBody =>
+      'පුණරීක්ෂණ සැසියක් අවසන් කරන්න, එවිට ඔබේ ප්‍රගතිය මෙහි පෙන්වනු ඇත.';
+
+  @override
+  String saveToNamedList(String listName) {
+    return '$listName වෙත සුරකින්න';
+  }
+
+  @override
+  String savedToNamedList(String listName) {
+    return '$listName වෙත සුරකින ලදී';
+  }
 }

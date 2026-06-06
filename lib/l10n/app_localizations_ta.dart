@@ -208,6 +208,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsAppearance => 'தோற்றம்';
 
   @override
+  String get settingsAppTheme => 'செயலி தீம்';
+
+  @override
   String get settingsColourMode => 'நிற முறை';
 
   @override
@@ -362,7 +365,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get entryTypePhrases => 'வாக்கியங்கள்';
 
   @override
-  String get entryTypeFingerspelling => 'விரல் பேச்சு';
+  String get entryTypeFingerspelling => 'விரல் எழுத்து';
 
   @override
   String get entrySelectEntryTypes => 'நுழைவு வகைகளைத் தேர்ந்தெடு';
@@ -1003,4 +1006,275 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get signInTestPromptConfirm => 'Sign in';
+
+  @override
+  String get searchRecent => 'சமீபத்தியவை';
+
+  @override
+  String get searchRecentClear => 'அழி';
+
+  @override
+  String get searchSignOfTheDay => 'இன்றைய சைகை';
+
+  @override
+  String get signOfTheDayBlurb => 'ஒவ்வொரு நாளும் கற்க ஒரு புதிய சைகை.';
+
+  @override
+  String searchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count முடிவுகள்',
+      one: '1 முடிவு',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get entryTypePhrase => 'சொற்றொடர்';
+
+  @override
+  String searchNoMatchTitle(String query) {
+    return '\"$query\" க்கு சைகைகள் இல்லை';
+  }
+
+  @override
+  String get searchNoMatchBody =>
+      'எழுத்துப்பிழையைச் சரிபார்க்கவும், அல்லது தொடர்புடைய சொல்லை முயற்சிக்கவும். சில சைகைகள் வேறு ஆங்கிலச் சொல்லின் கீழ் பட்டியலிடப்பட்டுள்ளன.';
+
+  @override
+  String get searchReportMissing => 'Report a missing word';
+
+  @override
+  String get searchReportMissingThanks =>
+      'Thanks — we\'ll look into adding it.';
+
+  @override
+  String get newsEmptyTitle => 'இன்னும் அறிவிப்புகள் இல்லை';
+
+  @override
+  String get newsEmptyBody => 'செயலி செய்திகளும் குறிப்புகளும் இங்கே தோன்றும்.';
+
+  @override
+  String get newsErrorTitle => 'செய்தியை ஏற்ற முடியவில்லை';
+
+  @override
+  String get newsErrorBody =>
+      'உங்கள் இணைப்பைச் சரிபார்த்து பின்னர் மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get saveVideoFailed =>
+      'உங்கள் பட்டியல்களைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get videoOfflineError =>
+      'வீடியோவை ஏற்ற முடியவில்லை. உங்கள் சாதனம் இணையத்துடன் இணைக்கப்பட்டுள்ளதா எனச் சரிபார்க்கவும். இணைக்கப்பட்டிருந்தால், சேவையகங்களில் சிக்கல் இருக்கலாம். இது செயலியின் சிக்கல் அல்ல.';
+
+  @override
+  String get listsEditHint =>
+      'மறுவரிசைப்படுத்த, பெயர்மாற்ற, அல்லது புதிய பட்டியலை உருவாக்க பென்சிலைத் தட்டவும்.';
+
+  @override
+  String listWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count சொற்கள்',
+      one: '1 சொல்',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listSubscribeViaLink => 'இணைப்பு வழியாக குழுசேரவும்';
+
+  @override
+  String get listSubscribedEmptyBody =>
+      'யாரோ உங்களுடன் பகிர்ந்த பட்டியலைப் பின்தொடரவும். கணக்கு தேவையில்லை.';
+
+  @override
+  String revisionStreak(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days-நாள் தொடர்ச்சி',
+      one: '1-நாள் தொடர்ச்சி',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionStreakSubtitle => 'இதுவரை நீளமான தொடர் — தொடரவும்!';
+
+  @override
+  String get revisionBuildSessionHeader =>
+      'ஒரு படிப்பு அமர்வை உருவாக்குங்கள். எதை மீள்பார்வை செய்வது என்பதைத் தேர்ந்து, பிறகு தொடங்குங்கள்.';
+
+  @override
+  String revisionSignCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count சைகைகள்',
+      one: '1 சைகை',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionNoListsChosen =>
+      'இன்னும் பட்டியல்கள் தேர்ந்தெடுக்கப்படவில்லை';
+
+  @override
+  String get flashcardsAddAnotherList => 'மற்றொரு பட்டியலைச் சேர்க்கவும்';
+
+  @override
+  String get flashcardsSignToWordSubtitle =>
+      'ஒரு சைகையைப் பார்த்து, சொல்லை நினைவுகூரவும்';
+
+  @override
+  String get flashcardsWordToSignSubtitle =>
+      'ஒரு சொல்லைப் பார்த்து, சைகையை நினைவுகூரவும்';
+
+  @override
+  String get flashcardsChooseType =>
+      'குறைந்தது ஒரு ஃபிளாஷ்கார்டு வகையைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get flashcardsStrategyLabel => 'உத்தி';
+
+  @override
+  String get revisionDueNow => 'இப்போது நிலுவையில்';
+
+  @override
+  String get revisionSelected => 'தேர்ந்தெடுக்கப்பட்டது';
+
+  @override
+  String revisionFlashcardCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ஃபிளாஷ்கார்டுகள்',
+      one: '1 ஃபிளாஷ்கார்டு',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playbackSpeedTitle => 'இயக்க வேகம்';
+
+  @override
+  String get playbackSpeedNormal => 'சாதாரண';
+
+  @override
+  String get regionSheetTitle => 'சைகை பகுதிகள்';
+
+  @override
+  String get regionSheetDescription =>
+      'முழு ஆஸ்திரேலியாவிற்கும் குறிக்கப்பட்ட சைகைகள் எப்போதும் சேர்க்கப்படும். கீழே மேலும் பகுதிகளைச் சேர்க்கவும்.';
+
+  @override
+  String get regionSheetDialects => 'வட்டார வழக்குகள்';
+
+  @override
+  String get regionSheetStatesTerritories => 'மாநிலங்கள் & பிரதேசங்கள்';
+
+  @override
+  String wordVariationWithHint(int index, int count) {
+    return 'மாறுபாடு $index/$count · ஒப்பிட ஸ்வைப் செய்யவும்';
+  }
+
+  @override
+  String wordVariation(int index, int count) {
+    return 'மாறுபாடு $index/$count';
+  }
+
+  @override
+  String videoIndicator(int index, int count) {
+    return 'வீடியோ $index/$count';
+  }
+
+  @override
+  String get seeAlso => 'இதையும் பார்க்கவும்';
+
+  @override
+  String get revealAnswer => 'Reveal answer';
+
+  @override
+  String get tapToReveal => 'வெளிப்படுத்த தட்டவும்';
+
+  @override
+  String get openDictionaryEntry => 'அகராதி உள்ளீட்டைத் திறக்கவும்';
+
+  @override
+  String get ratingForgot => 'மறந்துவிட்டேன்';
+
+  @override
+  String get ratingGotIt => 'புரிந்தது!';
+
+  @override
+  String get ratingNext => 'அடுத்து';
+
+  @override
+  String get sessionComplete => 'அமர்வு முடிந்தது';
+
+  @override
+  String sessionCompleteHeadline(int count) {
+    return 'நல்ல வேலை — $count சைகைகள் மீள்பார்வை செய்யப்பட்டன';
+  }
+
+  @override
+  String get summarySuccess => 'வெற்றி';
+
+  @override
+  String get summaryCards => 'அட்டைகள்';
+
+  @override
+  String get summaryGotIt => 'புரிந்தது';
+
+  @override
+  String get summaryForgot => 'மறந்தது';
+
+  @override
+  String get studyPromptSignToWord => 'இந்தச் சைகையின் பொருள் என்ன?';
+
+  @override
+  String get studyPromptWordToSign => 'இந்தச் சொல்லுக்கான சைகை என்ன?';
+
+  @override
+  String get videoRotate => 'வீடியோவைச் சுழற்று';
+
+  @override
+  String get saveVideoButton => 'சேமி';
+
+  @override
+  String savedToListCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count பட்டியல்களில் சேமிக்கப்பட்டது',
+      one: '1 பட்டியலில் சேமிக்கப்பட்டது',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionSummaryTitle => 'மீள்பார்வை சுருக்கம்';
+
+  @override
+  String get revisionStatsEmptyTitle => 'இன்னும் புள்ளிவிவரங்கள் இல்லை';
+
+  @override
+  String get revisionStatsEmptyBody =>
+      'ஒரு மீள்பார்வை அமர்வை முடிக்கவும், உங்கள் முன்னேற்றம் இங்கே தோன்றும்.';
+
+  @override
+  String saveToNamedList(String listName) {
+    return '$listName இல் சேமி';
+  }
+
+  @override
+  String savedToNamedList(String listName) {
+    return '$listName இல் சேமிக்கப்பட்டது';
+  }
 }

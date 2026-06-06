@@ -176,13 +176,13 @@ abstract class DictLibLocalizations {
   /// No description provided for @flashcardsSignToWord.
   ///
   /// In en, this message translates to:
-  /// **'Sign -> Word'**
+  /// **'Sign → Word'**
   String get flashcardsSignToWord;
 
   /// No description provided for @flashcardsWordToSign.
   ///
   /// In en, this message translates to:
-  /// **'Word -> Sign'**
+  /// **'Word → Sign'**
   String get flashcardsWordToSign;
 
   /// No description provided for @flashcardsRevisionSettings.
@@ -424,6 +424,12 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Appearance'**
   String get settingsAppearance;
+
+  /// No description provided for @settingsAppTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'App theme'**
+  String get settingsAppTheme;
 
   /// No description provided for @settingsColourMode.
   ///
@@ -926,7 +932,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @signInDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'To share a list, sign in below. We only use this to prove that you\'re the one editing it later — we don\'t collect any personal information.'**
+  /// **'To share a list you must sign in.'**
   String get signInDialogBody;
 
   /// No description provided for @signInWithApple.
@@ -1768,6 +1774,396 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Sign in'**
   String get signInTestPromptConfirm;
+
+  /// No description provided for @searchRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get searchRecent;
+
+  /// No description provided for @searchRecentClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get searchRecentClear;
+
+  /// No description provided for @searchSignOfTheDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign of the day'**
+  String get searchSignOfTheDay;
+
+  /// No description provided for @signOfTheDayBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'A new sign to learn each day.'**
+  String get signOfTheDayBlurb;
+
+  /// No description provided for @searchResultCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 result} other{{count} results}}'**
+  String searchResultCount(int count);
+
+  /// No description provided for @entryTypePhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Phrase'**
+  String get entryTypePhrase;
+
+  /// No description provided for @searchNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No signs for \"{query}\"'**
+  String searchNoMatchTitle(String query);
+
+  /// No description provided for @searchNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the spelling, or try a related word. Some signs are listed under a different English word.'**
+  String get searchNoMatchBody;
+
+  /// No description provided for @searchReportMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a missing word'**
+  String get searchReportMissing;
+
+  /// No description provided for @searchReportMissingThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks — we\'ll look into adding it.'**
+  String get searchReportMissingThanks;
+
+  /// No description provided for @newsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No announcements yet'**
+  String get newsEmptyTitle;
+
+  /// No description provided for @newsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'App news and tips will show up here.'**
+  String get newsEmptyBody;
+
+  /// No description provided for @newsErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load news'**
+  String get newsErrorTitle;
+
+  /// No description provided for @newsErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again later.'**
+  String get newsErrorBody;
+
+  /// No description provided for @saveVideoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update your lists. Please try again.'**
+  String get saveVideoFailed;
+
+  /// No description provided for @videoOfflineError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load video. Please confirm your device is connected to the internet. If it is, the servers may be having issues. This is not an issue with the app itself.'**
+  String get videoOfflineError;
+
+  /// No description provided for @listsEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the pencil to reorder, rename, or create a new list.'**
+  String get listsEditHint;
+
+  /// No description provided for @listWordCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 word} other{{count} words}}'**
+  String listWordCount(int count);
+
+  /// No description provided for @listSubscribeViaLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe via link'**
+  String get listSubscribeViaLink;
+
+  /// No description provided for @listSubscribedEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow a list someone shared with you. No account needed.'**
+  String get listSubscribedEmptyBody;
+
+  /// No description provided for @revisionStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1-day streak} other{{days}-day streak}}'**
+  String revisionStreak(int days);
+
+  /// No description provided for @revisionStreakSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest run yet — keep it going!'**
+  String get revisionStreakSubtitle;
+
+  /// No description provided for @revisionBuildSessionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Build a study session. Pick what to revise, then start.'**
+  String get revisionBuildSessionHeader;
+
+  /// No description provided for @revisionSignCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sign} other{{count} signs}}'**
+  String revisionSignCount(int count);
+
+  /// No description provided for @revisionNoListsChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'No lists chosen yet'**
+  String get revisionNoListsChosen;
+
+  /// No description provided for @flashcardsAddAnotherList.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another list'**
+  String get flashcardsAddAnotherList;
+
+  /// No description provided for @flashcardsSignToWordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See a sign, recall the word'**
+  String get flashcardsSignToWordSubtitle;
+
+  /// No description provided for @flashcardsWordToSignSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See a word, recall the sign'**
+  String get flashcardsWordToSignSubtitle;
+
+  /// No description provided for @flashcardsChooseType.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one flashcard type.'**
+  String get flashcardsChooseType;
+
+  /// No description provided for @flashcardsStrategyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Strategy'**
+  String get flashcardsStrategyLabel;
+
+  /// No description provided for @revisionDueNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due now'**
+  String get revisionDueNow;
+
+  /// No description provided for @revisionSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get revisionSelected;
+
+  /// No description provided for @revisionFlashcardCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 flashcard} other{{count} flashcards}}'**
+  String revisionFlashcardCount(int count);
+
+  /// No description provided for @playbackSpeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback speed'**
+  String get playbackSpeedTitle;
+
+  /// No description provided for @playbackSpeedNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get playbackSpeedNormal;
+
+  /// No description provided for @regionSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign regions'**
+  String get regionSheetTitle;
+
+  /// No description provided for @regionSheetDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Signs marked for all of Australia are always included. Add more regions below.'**
+  String get regionSheetDescription;
+
+  /// No description provided for @regionSheetDialects.
+  ///
+  /// In en, this message translates to:
+  /// **'Dialects'**
+  String get regionSheetDialects;
+
+  /// No description provided for @regionSheetStatesTerritories.
+  ///
+  /// In en, this message translates to:
+  /// **'States & territories'**
+  String get regionSheetStatesTerritories;
+
+  /// No description provided for @wordVariationWithHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation {index} of {count} · swipe to compare'**
+  String wordVariationWithHint(int index, int count);
+
+  /// No description provided for @wordVariation.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation {index} of {count}'**
+  String wordVariation(int index, int count);
+
+  /// No description provided for @videoIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Video {index} of {count}'**
+  String videoIndicator(int index, int count);
+
+  /// No description provided for @seeAlso.
+  ///
+  /// In en, this message translates to:
+  /// **'See also'**
+  String get seeAlso;
+
+  /// No description provided for @revealAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal answer'**
+  String get revealAnswer;
+
+  /// No description provided for @tapToReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to reveal'**
+  String get tapToReveal;
+
+  /// No description provided for @openDictionaryEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Open dictionary entry'**
+  String get openDictionaryEntry;
+
+  /// No description provided for @ratingForgot.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot'**
+  String get ratingForgot;
+
+  /// No description provided for @ratingGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it!'**
+  String get ratingGotIt;
+
+  /// No description provided for @ratingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get ratingNext;
+
+  /// No description provided for @sessionComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Session complete'**
+  String get sessionComplete;
+
+  /// No description provided for @sessionCompleteHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Nice work — that\'s {count} signs revised'**
+  String sessionCompleteHeadline(int count);
+
+  /// No description provided for @summarySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'success'**
+  String get summarySuccess;
+
+  /// No description provided for @summaryCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get summaryCards;
+
+  /// No description provided for @summaryGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get summaryGotIt;
+
+  /// No description provided for @summaryForgot.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot'**
+  String get summaryForgot;
+
+  /// No description provided for @studyPromptSignToWord.
+  ///
+  /// In en, this message translates to:
+  /// **'What does this sign mean?'**
+  String get studyPromptSignToWord;
+
+  /// No description provided for @studyPromptWordToSign.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the sign for this word?'**
+  String get studyPromptWordToSign;
+
+  /// No description provided for @videoRotate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate video'**
+  String get videoRotate;
+
+  /// No description provided for @saveVideoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveVideoButton;
+
+  /// No description provided for @savedToListCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Saved to 1 list} other{Saved to {count} lists}}'**
+  String savedToListCount(int count);
+
+  /// No description provided for @revisionSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision summary'**
+  String get revisionSummaryTitle;
+
+  /// No description provided for @revisionStatsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No stats yet'**
+  String get revisionStatsEmptyTitle;
+
+  /// No description provided for @revisionStatsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish a revision session and your progress will show up here.'**
+  String get revisionStatsEmptyBody;
+
+  /// No description provided for @saveToNamedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to {listName}'**
+  String saveToNamedList(String listName);
+
+  /// No description provided for @savedToNamedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {listName}'**
+  String savedToNamedList(String listName);
 }
 
 class _DictLibLocalizationsDelegate

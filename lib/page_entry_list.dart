@@ -73,11 +73,6 @@ class EntryListPageState extends State<EntryListPage> {
     });
   }
 
-  Color getFloatingActionButtonColor(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
-    return enableSortButton ? currentTheme.onPrimary : Colors.grey;
-  }
-
   void updateCurrentSearchTerm(String term) {
     setState(() {
       currentSearchTerm = term;
@@ -90,7 +85,17 @@ class EntryListPageState extends State<EntryListPage> {
       final unique = widget.entryList.uniqueEntries;
       if (currentSearchTerm.isNotEmpty) {
         if (inEditMode) {
-          final available = entriesGlobal.difference(unique);
+          // Offer every entry that isn't already *fully* in the list — this
+          // includes partially-saved entries (some of their videos saved, some
+          // not) so the user can come back and add the rest. Only entries
+          // whose every video is already saved drop out. We only need to test
+          // the entries that have any saved video (a small set), then subtract
+          // the fully-saved ones from the corpus.
+          final fullySaved = <Entry>{
+            for (final e in unique)
+              if (widget.entryList.containsAllVideosOf(e)) e
+          };
+          final available = entriesGlobal.difference(fullySaved);
           entriesSearched = searchList(context, currentSearchTerm,
               EntryType.values, available, {});
         } else {
@@ -411,7 +416,6 @@ class EntryListPageState extends State<EntryListPage> {
             onPressed: () {
               textFieldFocus.requestFocus();
             },
-            backgroundColor: Colors.green,
             child: const Icon(Icons.add));
       }
     } else {
@@ -444,8 +448,7 @@ class EntryListPageState extends State<EntryListPage> {
             if (bannerLists.isNotEmpty)
               SignInResumeBanner(lists: bannerLists),
             Padding(
-              padding: const EdgeInsets.only(
-                  bottom: 10, left: 32, right: 32, top: 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
               child: Form(
                   child: Column(children: <Widget>[
                 TextField(
@@ -453,11 +456,12 @@ class EntryListPageState extends State<EntryListPage> {
                   focusNode: textFieldFocus,
                   decoration: InputDecoration(
                     hintText: hintText,
+                    prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
                       onPressed: () {
                         clearSearch();
                       },
-                      icon: const Icon(Icons.clear),
+                      icon: const Icon(Icons.close),
                     ),
                   ),
                   onChanged: (String value) {
@@ -514,30 +518,49 @@ Widget listWidget(
     itemBuilder: (context, index) {
       Entry entry = entriesSearched[index]!;
       Widget? trailing;
+      final cs = Theme.of(context).colorScheme;
       if (deleteEntryFn != null) {
         trailing = IconButton(
           padding: const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
-          icon: const Icon(
-            Icons.remove_circle,
-            color: Colors.red,
-          ),
+          icon: Icon(Icons.remove_circle, color: cs.error),
           onPressed: () async => await deleteEntryFn(entry),
         );
       }
       if (addEntryFn != null) {
-        trailing = IconButton(
-          padding: const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
-          icon: const Icon(
-            Icons.add_circle,
-            color: Colors.green,
-          ),
-          onPressed: () async => await addEntryFn(entry),
-        );
+        // Only offer one-tap "add" when the entry has a single video overall —
+        // there's no ambiguity about what gets saved. When an entry has
+        // multiple videos (across its sub-entries), show an arrow into the
+        // entry instead, so the user can pick which video(s) to save in the
+        // context of this list.
+        if (allVideosOf(entry).length <= 1) {
+          trailing = IconButton(
+            padding:
+                const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
+            icon: Icon(Icons.add_circle, color: cs.tertiary),
+            onPressed: () async => await addEntryFn(entry),
+          );
+        } else {
+          trailing = IconButton(
+            padding:
+                const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
+            icon: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+            onPressed: () async {
+              await navigateToEntryPage(context, entry, true,
+                  saveToList: entryList);
+              await refreshEntriesFn();
+            },
+          );
+        }
       }
+      // View mode shows a chevron affordance into the entry.
+      trailing ??= Icon(Icons.chevron_right, color: cs.onSurfaceVariant);
       return ListTile(
         key: ValueKey(entry.getKey()),
         title: listItem(context, entry, refreshEntriesFn, navigateToEntryPage,
-            entryList: entryList),
+            entryList: entryList,
+            // In edit-mode "add" search, tapping the row should also land the
+            // user in the save-to-this-list context.
+            saveToList: addEntryFn != null ? entryList : null),
         trailing: trailing,
       );
     },
@@ -553,7 +576,7 @@ Widget listWidget(
 /// one they care about, not the corpus-default first one).
 Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
     NavigateToEntryPageFn navigateToEntryPage,
-    {EntryList? entryList}) {
+    {EntryList? entryList, EntryList? saveToList}) {
   Locale currentLocale = Localizations.localeOf(context);
   var text = entry.getPhrase(currentLocale) ?? entry.getKey();
 
@@ -580,13 +603,18 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(text),
+        Text(text,
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface)),
         if (subtitle != null) Padding(
             padding: const EdgeInsets.only(top: 2), child: subtitle),
       ],
     ),
     onPressed: () async {
-      await navigateToEntryPage(context, entry, true, focusVideo: focus);
+      await navigateToEntryPage(context, entry, true,
+          focusVideo: focus, saveToList: saveToList);
       await refreshEntriesFn();
     },
   );

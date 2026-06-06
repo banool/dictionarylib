@@ -1,4 +1,6 @@
 import 'package:dictionarylib/common.dart';
+import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
@@ -63,11 +65,21 @@ class TopLevelScaffold extends StatelessWidget {
       label: DictLibLocalizations.of(context)!.settingsTitle,
     ));
 
+    // In the Hearth look, tab roots use a large left-aligned display title.
+    // Classic keeps its centred title so it matches the original design.
+    final hearth = themeVariantNotifier.value == AppThemeVariant.hearth;
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
           title: Text(title),
+          titleTextStyle: hearth
+              ? textTheme.headlineMedium?.copyWith(
+                  fontSize: 26, color: Theme.of(context).colorScheme.onSurface)
+              : null,
+          titleSpacing: hearth ? 20 : null,
+          toolbarHeight: hearth ? 64 : null,
           actions: buildActionButtons(actions ?? []),
-          centerTitle: true,
+          centerTitle: !hearth,
           bottom: underAppBar,
           surfaceTintColor: Colors.transparent),
       body: body,

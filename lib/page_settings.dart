@@ -5,17 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:store_redirect/store_redirect.dart';
 import 'package:mailto/mailto.dart';
-import 'package:settings_ui/settings_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'common.dart';
 import 'entry_loader.dart';
 import 'flashcards_logic.dart';
 import 'globals.dart';
+import 'hearth.dart';
 import 'l10n/app_localizations.dart';
 import 'lists_service.dart';
 import 'page_privacy_policy.dart';
 import 'page_settings_help_en.dart';
+import 'theme.dart';
 import 'sharing/auth/auth_store.dart';
 import 'sharing/auth/sign_in_dialog.dart';
 import 'sharing/sync_api.dart';
@@ -66,436 +67,326 @@ class SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final l = DictLibLocalizations.of(context)!;
     String? appStoreTileString;
     if (kIsWeb) {
       appStoreTileString = null;
     } else if (Platform.isAndroid) {
-      appStoreTileString =
-          DictLibLocalizations.of(context)!.settingsPlayStoreFeedback;
+      appStoreTileString = l.settingsPlayStoreFeedback;
     } else if (Platform.isIOS) {
-      appStoreTileString =
-          DictLibLocalizations.of(context)!.settingsAppStoreFeedback;
+      appStoreTileString = l.settingsAppStoreFeedback;
     }
 
-    EdgeInsetsDirectional margin = const EdgeInsetsDirectional.only(
-        start: 15, end: 15, top: 10, bottom: 10);
-
-    SettingsSection? featuresSection;
-    if (enableFlashcardsKnob && !kIsWeb) {
-      featuresSection = SettingsSection(
-        title: Text(DictLibLocalizations.of(context)!.settingsRevision),
-        tiles: [
-          SettingsTile.switchTile(
-            title: Text(
-              DictLibLocalizations.of(context)!.settingsHideRevision,
-              style: const TextStyle(fontSize: 15),
-            ),
-            initialValue:
-                sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false,
-            onToggle: (bool newValue) {
-              setState(() {
-                sharedPreferences.setBool(
-                    KEY_HIDE_FLASHCARDS_FEATURE, newValue);
-              });
-            },
+    // --- Bespoke Hearth settings rows ---
+    // A tappable navigation row; [value] shows the current setting on the
+    // right (before the chevron). With no value it shows a bare chevron.
+    Widget navRow(String title, {String? value, VoidCallback? onTap}) {
+      Widget? trailing;
+      if (value != null) {
+        trailing = Row(mainAxisSize: MainAxisSize.min, children: [
+          Flexible(
+            child: Text(value,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14)),
           ),
-          SettingsTile.navigation(
-              title: getText(
-                DictLibLocalizations.of(context)!
-                    .settingsDeleteRevisionProgress,
-              ),
-              trailing: Container(),
-              onPressed: (BuildContext context) async {
-                bool confirmed = await confirmAlert(
-                    context,
-                    Text(DictLibLocalizations.of(context)!
-                        .settingsDeleteRevisionProgressExplanation));
-                if (confirmed) {
-                  await writeReviews([], [], force: true);
-                  await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
-                  await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(DictLibLocalizations.of(context)!
-                        .settingsProgressDeleted),
-                    //backgroundColor: currentTheme.primary,
-                  ));
-                }
-              }),
-        ],
-        margin: margin,
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+        ]);
+      }
+      return HearthRow(title: title, onTap: onTap, trailing: trailing);
+    }
+
+    // A toggle row. The Material Switch picks up the Hearth switchTheme
+    // (clay track) automatically.
+    Widget switchRow(String title, bool value, ValueChanged<bool> onChanged) {
+      return HearthRow(
+        title: title,
+        onTap: () => onChanged(!value),
+        trailing: Switch(value: value, onChanged: onChanged),
       );
     }
 
-    List<AbstractSettingsTile> dataTiles = [
-      SettingsTile.navigation(
-        title: checkingForNewData
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
-            : getText(DictLibLocalizations.of(context)!.settingsCheckNewData),
-        trailing: Container(),
-        onPressed: (BuildContext context) async {
-          setState(() {
-            checkingForNewData = true;
-          });
-          NewData? newData = await entryLoader.downloadAndApplyNewData(true);
-          setState(() {
-            checkingForNewData = false;
-          });
-          String message;
-          if (newData != null && newData.newDataIsActuallyNew()) {
-            message = DictLibLocalizations.of(context)!.settingsDataUpdated;
-          } else {
-            message = DictLibLocalizations.of(context)!.settingsDataUpToDate;
-          }
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(message), backgroundColor: currentTheme.primary));
-        },
-      )
-    ];
-
-    if (communityEntryListManager.getEntryLists().isNotEmpty) {
-      dataTiles.add(SettingsTile.switchTile(
-          title: Text(
-            DictLibLocalizations.of(context)!.settingsHideCommunityLists,
-            style: const TextStyle(fontSize: 15),
-          ),
-          initialValue:
-              sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false,
-          onToggle: (bool newValue) {
-            setState(() {
-              sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue);
-            });
-          }));
+    // A labelled section: an uppercase header over an outlined card of rows
+    // separated by hairline dividers. Null rows (conditional tiles) drop out.
+    List<Widget> section(String title, List<Widget?> rows) {
+      final clean = rows.whereType<Widget>().toList();
+      if (clean.isEmpty) return const [];
+      return [
+        HearthSectionLabel(title,
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 8)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: HearthRowGroup(rows: clean),
+        ),
+      ];
     }
 
-    SettingsSection? sharingSection;
     final shareState = sharing;
-    if (shareState.isEnabled) {
-      final l = DictLibLocalizations.of(context)!;
-      final session = shareState.auth.store.current;
-      final tiles = <AbstractSettingsTile>[
-        if (session == null)
-          SettingsTile.navigation(
-            title: getText(l.settingsSignIn),
-            trailing: Container(),
-            onPressed: (ctx) async {
-              final result = await showSignInDialog(ctx);
-              if (result != null && ctx.mounted) {
-                // Newly signed in — offer to import any lists they own
-                // from a previous device.
-                await offerImportOwnedLists(ctx);
-              }
-              setState(() {});
+    final session = shareState.isEnabled ? shareState.auth.store.current : null;
+
+    final children = <Widget>[
+      ...widget.additionalTopWidgets,
+      ...section(l.settingsAppearance, [
+        navRow(l.settingsColourMode, value: _getThemeModeString(context),
+            onTap: () async {
+          await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              var currentMode = sharedPreferences.getInt(KEY_THEME_MODE) ?? 0;
+              return AlertDialog(
+                title: Text(l.settingsColourMode),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      title: Text(l.settingsColourModeSystem),
+                      trailing: currentMode == ThemeMode.system.index
+                          ? const Icon(Icons.check)
+                          : null,
+                      onTap: () {
+                        _setThemeMode(ThemeMode.system);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    ListTile(
+                      title: Text(l.settingsColourModeLight),
+                      trailing: currentMode == ThemeMode.light.index
+                          ? const Icon(Icons.check)
+                          : null,
+                      onTap: () {
+                        _setThemeMode(ThemeMode.light);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    ListTile(
+                      title: Text(l.settingsColourModeDark),
+                      trailing: currentMode == ThemeMode.dark.index
+                          ? const Icon(Icons.check)
+                          : null,
+                      onTap: () {
+                        _setThemeMode(ThemeMode.dark);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              );
             },
-          )
-        else ...[
-          SettingsTile(
-            title: getText(session.displayName.isNotEmpty
-                ? l.settingsSignedInAsNamed(
-                    session.displayName, _providerLabel(l, session.provider))
-                : l.settingsSignedInAs(_providerLabel(l, session.provider))),
-            trailing: const SizedBox.shrink(),
-          ),
-          SettingsTile.navigation(
-            title: getText(l.settingsSignOut),
-            trailing: Container(),
-            onPressed: (ctx) async {
-              // Warn the user before they drop the session if they have
-              // queued ops that won't reach the server otherwise.
+          );
+          setState(() {});
+        }),
+        navRow(l.settingsAppTheme,
+            value: themeVariantNotifier.value.displayName, onTap: () async {
+          await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              final current = themeVariantNotifier.value;
+              return AlertDialog(
+                title: Text(l.settingsAppTheme),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final variant in AppThemeVariant.values)
+                      ListTile(
+                        title: Text(variant.displayName),
+                        trailing: current == variant
+                            ? const Icon(Icons.check)
+                            : null,
+                        onTap: () {
+                          _setThemeVariant(variant);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                  ],
+                ),
+              );
+            },
+          );
+          setState(() {});
+        }),
+      ]),
+      ...section(l.settingsCache, [
+        switchRow(l.settingsCacheVideos,
+            sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true, (newValue) {
+          setState(() => sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue));
+        }),
+        navRow(l.settingsDropCache, onTap: () async {
+          await myCacheManager.emptyCache();
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l.settingsCacheDropped)));
+        }),
+      ]),
+      ...section(l.settingsData, [
+        checkingForNewData
+            ? const HearthRow(
+                title: '',
+                trailing: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            : navRow(l.settingsCheckNewData, onTap: () async {
+                setState(() => checkingForNewData = true);
+                NewData? newData =
+                    await entryLoader.downloadAndApplyNewData(true);
+                if (!mounted) return;
+                setState(() => checkingForNewData = false);
+                final message = (newData != null && newData.newDataIsActuallyNew())
+                    ? l.settingsDataUpdated
+                    : l.settingsDataUpToDate;
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(message), backgroundColor: cs.primary));
+              }),
+        if (communityEntryListManager.getEntryLists().isNotEmpty)
+          switchRow(l.settingsHideCommunityLists,
+              sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false,
+              (newValue) {
+            setState(() =>
+                sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue));
+          }),
+      ]),
+      if (enableFlashcardsKnob && !kIsWeb)
+        ...section(l.settingsRevision, [
+          switchRow(l.settingsHideRevision,
+              sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false,
+              (newValue) {
+            setState(() => sharedPreferences.setBool(
+                KEY_HIDE_FLASHCARDS_FEATURE, newValue));
+          }),
+          navRow(l.settingsDeleteRevisionProgress, onTap: () async {
+            bool confirmed = await confirmAlert(
+                context, Text(l.settingsDeleteRevisionProgressExplanation));
+            if (confirmed) {
+              await writeReviews([], [], force: true);
+              await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
+              await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l.settingsProgressDeleted)));
+            }
+          }),
+        ]),
+      if (shareState.isEnabled)
+        ...section(l.settingsSharing, [
+          if (session == null)
+            navRow(l.settingsSignIn, onTap: () async {
+              final result = await showSignInDialog(context);
+              if (result != null && context.mounted) {
+                await offerImportOwnedLists(context);
+              }
+              if (mounted) setState(() {});
+            })
+          else ...[
+            HearthRow(
+                title: session.displayName.isNotEmpty
+                    ? l.settingsSignedInAsNamed(
+                        session.displayName, _providerLabel(l, session.provider))
+                    : l.settingsSignedInAs(
+                        _providerLabel(l, session.provider))),
+            navRow(l.settingsSignOut, onTap: () async {
               final pendingLists = shareState.lists.editableLists
                   .where((x) => x.meta.pendingOps.isNotEmpty)
                   .toList();
               final body = pendingLists.isNotEmpty
                   ? l.settingsSignOutConfirmBodyWithPending(pendingLists.length)
                   : l.settingsSignOutConfirmBody;
-              final confirmed = await confirmAlert(
-                ctx,
-                Text(body),
-                title: l.settingsSignOutConfirmTitle,
-              );
+              final confirmed = await confirmAlert(context, Text(body),
+                  title: l.settingsSignOutConfirmTitle);
               if (confirmed) {
                 await shareState.signOut();
-                setState(() {});
+                if (mounted) setState(() {});
               }
-            },
-          ),
-        ],
-        SettingsTile.navigation(
-          title: getText(l.settingsClearSharingData),
-          trailing: Container(),
-          onPressed: (ctx) async {
+            }),
+          ],
+          navRow(l.settingsClearSharingData, onTap: () async {
             final confirmed = await confirmAlert(
-              ctx,
-              Text(l.settingsClearSharingDataConfirmBody),
-              title: l.settingsClearSharingDataConfirmTitle,
-            );
+                context, Text(l.settingsClearSharingDataConfirmBody),
+                title: l.settingsClearSharingDataConfirmTitle);
             if (confirmed) {
               await shareState.signOut();
               await shareState.lists.clearAll();
-              // Tell every Sharing listener (e.g. open list pages) that
-              // sync state changed, so they redraw without a stale
-              // owner-share wrapper.
               shareState.bumpState();
-              setState(() {});
+              if (mounted) setState(() {});
             }
-          },
-        ),
-      ];
-      sharingSection = SettingsSection(
-        title: Text(l.settingsSharing),
-        tiles: tiles,
-        margin: margin,
-      );
-    }
-
-    List<AbstractSettingsSection?> sections = [
-      SettingsSection(
-        title: Text(DictLibLocalizations.of(context)!.settingsAppearance),
-        tiles: [
-          SettingsTile.navigation(
-            title: Text(
-              DictLibLocalizations.of(context)!.settingsColourMode,
-              style: const TextStyle(fontSize: 15),
-            ),
-            value: Text(_getThemeModeString(context)),
-            onPressed: (BuildContext context) async {
-              await showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  var currentMode =
-                      sharedPreferences.getInt(KEY_THEME_MODE) ?? 0;
-                  return AlertDialog(
-                    title: Text(
-                        DictLibLocalizations.of(context)!.settingsColourMode),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          title: Text(DictLibLocalizations.of(context)!
-                              .settingsColourModeSystem),
-                          trailing: currentMode == ThemeMode.system.index
-                              ? Icon(Icons.check)
-                              : null,
-                          onTap: () {
-                            _setThemeMode(ThemeMode.system);
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                        ListTile(
-                          title: Text(DictLibLocalizations.of(context)!
-                              .settingsColourModeLight),
-                          trailing: currentMode == ThemeMode.light.index
-                              ? Icon(Icons.check)
-                              : null,
-                          onTap: () {
-                            _setThemeMode(ThemeMode.light);
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                        ListTile(
-                          title: Text(DictLibLocalizations.of(context)!
-                              .settingsColourModeDark),
-                          trailing: currentMode == ThemeMode.dark.index
-                              ? Icon(Icons.check)
-                              : null,
-                          onTap: () {
-                            _setThemeMode(ThemeMode.dark);
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-              // Refresh the UI to reflect the new color mode.
-              setState(() {});
-            },
-          ),
-        ],
-        margin: margin,
-      ),
-      SettingsSection(
-        title: Text(DictLibLocalizations.of(context)!.settingsCache),
-        tiles: [
-          SettingsTile.switchTile(
-            title: Text(
-              DictLibLocalizations.of(context)!.settingsCacheVideos,
-              style: const TextStyle(fontSize: 15),
-            ),
-            initialValue: sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true,
-            onToggle: (bool newValue) {
-              setState(() {
-                sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue);
-              });
-            },
-          ),
-          SettingsTile.navigation(
-              title:
-                  getText(DictLibLocalizations.of(context)!.settingsDropCache),
-              trailing: Container(),
-              onPressed: (BuildContext context) async {
-                await myCacheManager.emptyCache();
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(
-                      DictLibLocalizations.of(context)!.settingsCacheDropped),
-                  //backgroundColor: currentTheme.primary,
-                ));
-              }),
-        ],
-        margin: margin,
-      ),
-      SettingsSection(
-        title: Text(DictLibLocalizations.of(context)!.settingsData),
-        tiles: dataTiles,
-        margin: margin,
-      ),
-      featuresSection,
-      sharingSection,
-      SettingsSection(
-        title: Text(DictLibLocalizations.of(context)!.settingsLegal),
-        tiles: [
-          SettingsTile.navigation(
-            title: getText(DictLibLocalizations.of(context)!.settingsSeeLegal),
-            trailing: Container(),
-            onPressed: (BuildContext context) async {
-              return await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LegalInformationPage(
-                        buildLegalInformationChildren:
-                            widget.buildLegalInformationChildren),
-                  ));
-            },
-          ),
-          SettingsTile.navigation(
-            title: getText(
-                DictLibLocalizations.of(context)!.settingsSeePrivacyPolicy),
-            trailing: Container(),
-            onPressed: (BuildContext context) async {
-              return await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PrivacyPolicyPage(
-                        appName: widget.appName, email: PRIVACY_POLICY_EMAIL),
-                  ));
-            },
-          )
-        ],
-        margin: margin,
-      ),
-      SettingsSection(
-          title: Text(DictLibLocalizations.of(context)!.settingsHelp),
-          tiles: [
-            SettingsTile.navigation(
-              title: getText(DictLibLocalizations.of(context)!
-                  .settingsReportDictionaryDataIssue),
-              trailing: Container(),
-              onPressed: (BuildContext context) async {
-                await launch(widget.reportDataProblemUrl, forceSafariVC: false);
-              },
-            ),
-            SettingsTile.navigation(
-              title: getText(DictLibLocalizations.of(context)!
-                  .settingsReportAppIssueGithub),
-              trailing: Container(),
-              onPressed: (BuildContext context) async {
-                await launch(widget.reportAppProblemUrl, forceSafariVC: false);
-              },
-            ),
-            SettingsTile.navigation(
-              title: getText(DictLibLocalizations.of(context)!
-                  .settingsReportAppIssueEmail),
-              trailing: Container(),
-              onPressed: (BuildContext context) async {
-                var mailto = Mailto(
-                    to: ['d@dport.me'],
-                    subject: DictLibLocalizations.of(context)!
-                        .reportIssueEmailSubject(widget.appName),
-                    body:
-                        'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n');
-                String url = "$mailto";
-                if (await canLaunch(url)) {
-                  await launch(url);
-                } else {
-                  printAndLog('Could not launch $url');
-                }
-              },
-            ),
-            appStoreTileString != null
-                ? SettingsTile.navigation(
-                    title: getText(appStoreTileString),
-                    trailing: Container(),
-                    onPressed: (BuildContext context) async {
-                      await StoreRedirect.redirect(
-                          iOSAppId: widget.iOSAppId,
-                          androidAppId: widget.androidAppId);
-                    },
-                  )
-                : null,
-            SettingsTile.navigation(
-              title: getText(
-                DictLibLocalizations.of(context)!.settingsShowBuildInformation,
-              ),
-              trailing: Container(),
-              onPressed: (BuildContext context) async {
-                return await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BuildInformationPage(),
-                    ));
-              },
-            ),
-            SettingsTile.navigation(
-                title: getText(
-                    DictLibLocalizations.of(context)!.settingsBackgroundLogs),
-                trailing: Container(),
-                onPressed: (BuildContext context) async {
-                  return await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BackgroundLogsPage(),
-                      ));
-                }),
-          ].where((element) => element != null).cast<SettingsTile>().toList(),
-          margin: margin),
-      SettingsSection(
-          title: Text(DictLibLocalizations.of(context)!.settingsNetwork),
-          tiles: [
-            SettingsTile.switchTile(
-              title: Text(
-                  DictLibLocalizations.of(context)!.settingsUseSystemHttpProxy),
-              initialValue:
-                  sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false,
-              onToggle: (bool newValue) {
-                setState(() {
-                  sharedPreferences.setBool(
-                      KEY_USE_SYSTEM_HTTP_PROXY, newValue);
-                });
-                // Show a toast saying they need to restart the app.
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(
-                      DictLibLocalizations.of(context)!.settingsRestartApp),
-                ));
-              },
-            ),
-          ]),
+          }),
+        ]),
+      ...section(l.settingsLegal, [
+        navRow(l.settingsSeeLegal, onTap: () async {
+          await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LegalInformationPage(
+                    buildLegalInformationChildren:
+                        widget.buildLegalInformationChildren),
+              ));
+        }),
+        navRow(l.settingsSeePrivacyPolicy, onTap: () async {
+          await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PrivacyPolicyPage(
+                    appName: widget.appName, email: PRIVACY_POLICY_EMAIL),
+              ));
+        }),
+      ]),
+      ...section(l.settingsHelp, [
+        navRow(l.settingsReportDictionaryDataIssue, onTap: () async {
+          await launchUrl(Uri.parse(widget.reportDataProblemUrl),
+              mode: LaunchMode.externalApplication);
+        }),
+        navRow(l.settingsReportAppIssueGithub, onTap: () async {
+          await launchUrl(Uri.parse(widget.reportAppProblemUrl),
+              mode: LaunchMode.externalApplication);
+        }),
+        navRow(l.settingsReportAppIssueEmail, onTap: () async {
+          var mailto = Mailto(
+              to: ['d@dport.me'],
+              subject: l.reportIssueEmailSubject(widget.appName),
+              body:
+                  'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n');
+          final uri = Uri.parse("$mailto");
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri);
+          } else {
+            printAndLog('Could not launch $uri');
+          }
+        }),
+        if (appStoreTileString != null)
+          navRow(appStoreTileString, onTap: () async {
+            await StoreRedirect.redirect(
+                iOSAppId: widget.iOSAppId, androidAppId: widget.androidAppId);
+          }),
+        navRow(l.settingsShowBuildInformation, onTap: () async {
+          await Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const BuildInformationPage()));
+        }),
+        navRow(l.settingsBackgroundLogs, onTap: () async {
+          await Navigator.push(context,
+              MaterialPageRoute(builder: (context) => BackgroundLogsPage()));
+        }),
+      ]),
+      ...section(l.settingsNetwork, [
+        switchRow(l.settingsUseSystemHttpProxy,
+            sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false,
+            (newValue) {
+          setState(() =>
+              sharedPreferences.setBool(KEY_USE_SYSTEM_HTTP_PROXY, newValue));
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l.settingsRestartApp)));
+        }),
+      ]),
+      const SizedBox(height: 12),
     ];
 
-    List<AbstractSettingsSection> nonNullSections = [];
-    for (AbstractSettingsSection? section in sections) {
-      if (section != null) {
-        nonNullSections.add(section);
-      }
-    }
-
-    Widget body =
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      ...widget.additionalTopWidgets,
-      Expanded(child: SettingsList(sections: nonNullSections))
-    ]);
+    Widget body = ListView(
+      padding: const EdgeInsets.only(top: 4),
+      children: children,
+    );
 
     List<Widget> actions = [
       buildActionButton(
@@ -511,9 +402,7 @@ class SettingsPageState extends State<SettingsPage> {
     ];
 
     return TopLevelScaffold(
-        body: body,
-        title: DictLibLocalizations.of(context)!.settingsTitle,
-        actions: actions);
+        body: body, title: l.settingsTitle, actions: actions);
   }
 }
 
@@ -551,13 +440,17 @@ class LegalInformationPage extends StatelessWidget {
           title:
               Text(DictLibLocalizations.of(context)!.legalInformationPageTitle),
         ),
-        body: Padding(
-            padding:
-                const EdgeInsets.only(bottom: 10, left: 20, right: 20, top: 20),
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
-                children: buildLegalInformationChildren())));
+        // Comfortable long-form reading layout, matching the privacy page.
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+              children: buildLegalInformationChildren(),
+            ),
+          ),
+        ));
   }
 }
 
@@ -673,7 +566,7 @@ String _getThemeModeString(BuildContext context) {
     case 2:
       return DictLibLocalizations.of(context)!.settingsColourModeDark;
     default:
-      throw "Impossible";
+      throw ArgumentError("Unknown theme mode: $themeMode");
   }
 }
 
@@ -682,6 +575,13 @@ Future<void> _setThemeMode(ThemeMode themeMode) async {
   await sharedPreferences.setInt(KEY_THEME_MODE, themeMode.index);
   // We set this to affect the theme at runtime.
   themeNotifier.value = themeMode;
+}
+
+Future<void> _setThemeVariant(AppThemeVariant variant) async {
+  // Persisted by name so we load the same look at startup.
+  await sharedPreferences.setString(KEY_THEME_VARIANT, variant.name);
+  // Drives the live theme switch via the app's MaterialApp.
+  themeVariantNotifier.value = variant;
 }
 
 /// Prompt the user about pulling down any lists owned by their current

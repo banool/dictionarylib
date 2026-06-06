@@ -61,7 +61,7 @@ class _SaveVideoSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
               child: Text(title,
-                  style: Theme.of(context).textTheme.titleMedium),
+                  style: Theme.of(context).textTheme.titleLarge),
             ),
             Flexible(
               child: ListView.builder(
@@ -92,37 +92,86 @@ class _SaveVideoSheetRow extends StatefulWidget {
 class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final saved = widget.list.containsVideo(widget.video);
     // Role can flip to subscriber at runtime (editor demoted on 403);
     // re-check here even though `myLists` / `editorLists` filtered
     // out subscribers at sheet-open time.
     final canEdit = widget.list.canBeEdited();
-    return CheckboxListTile(
-      value: saved,
-      controlAffinity: ListTileControlAffinity.leading,
-      title: Text(widget.list.getName(context)),
-      secondary: _iconFor(widget.list),
-      onChanged: canEdit
-          ? (newValue) async {
-              if (newValue == null) return;
-              if (newValue) {
-                await widget.list.addVideo(widget.video);
-              } else {
-                await widget.list.removeVideo(widget.video);
-              }
-              if (mounted) setState(() {});
-            }
-          : null,
+
+    Future<void> toggle() async {
+      if (!canEdit) return;
+      // Capture before the await so we don't touch BuildContext across the gap.
+      final messenger = ScaffoldMessenger.of(context);
+      final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
+          "Couldn't update your lists. Please try again.";
+      try {
+        if (saved) {
+          await widget.list.removeVideo(widget.video);
+        } else {
+          await widget.list.addVideo(widget.video);
+        }
+      } catch (e) {
+        printAndLog("Failed to toggle video in list ${widget.list.key}: $e");
+        if (mounted) {
+          messenger.showSnackBar(SnackBar(content: Text(failMessage)));
+        }
+      }
+      // Re-read membership either way so the checkbox reflects reality even if
+      // the toggle failed midway.
+      if (mounted) setState(() {});
+    }
+
+    final isFav = widget.list.key == KEY_FAVOURITES_ENTRIES;
+    Widget row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: canEdit ? toggle : null,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              // Icon in a rounded tile; the favourites star is gold.
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(_iconDataFor(widget.list),
+                    size: 21, color: isFav ? cs.secondary : cs.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(widget.list.getName(context),
+                    style: const TextStyle(
+                        fontSize: 15.5, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+              Checkbox(
+                value: saved,
+                onChanged: canEdit ? (_) => toggle() : null,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
+    // Read-only (subscriber) lists are shown but dimmed and non-interactive.
+    if (!canEdit) row = Opacity(opacity: 0.5, child: row);
+    return row;
   }
 
-  Widget _iconFor(EntryList list) {
+  IconData _iconDataFor(EntryList list) {
     if (list is SyncedEntryList) {
-      return Icon(iconForSharedList(list.meta), size: 20);
+      return iconForSharedList(list.meta);
     }
     if (list.key == KEY_FAVOURITES_ENTRIES) {
-      return const Icon(Icons.star, size: 20);
+      return Icons.star;
     }
-    return const Icon(Icons.list_alt, size: 20);
+    return Icons.list_alt;
   }
 }

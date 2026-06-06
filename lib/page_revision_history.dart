@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/page_flashcards_landing.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
@@ -25,48 +26,17 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
     revisionStrategy = loadRevisionStrategy();
   }
 
+  String _getDatetimeString(DateTime dt) {
+    return "${dt.year.toString()}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
-    ColorScheme currentTheme = Theme.of(context).colorScheme;
-    Widget getText(String s, {bool bold = false}) {
-      FontWeight? weight;
-      if (bold) {
-        weight = FontWeight.w600;
-      }
-      return Padding(
-        padding: const EdgeInsets.only(top: 30),
-        child: Text(s, style: TextStyle(fontSize: 16, fontWeight: weight)),
-      );
-    }
+    final cs = Theme.of(context).colorScheme;
+    final l = DictLibLocalizations.of(context)!;
 
-    Widget getRevisionStrategyButton(RevisionStrategy rs) {
-      return TextButton(
-        onPressed: () {
-          setState(() {
-            revisionStrategy = rs;
-          });
-        },
-        style: ButtonStyle(
-            padding: WidgetStateProperty.all(const EdgeInsets.all(10)),
-            backgroundColor: WidgetStateProperty.all(currentTheme.onPrimary),
-            foregroundColor: WidgetStateProperty.all(rs == revisionStrategy
-                ? currentTheme.primary
-                : const Color.fromARGB(255, 145, 145, 145)),
-            minimumSize: WidgetStateProperty.all<Size>(const Size(160, 45)),
-            side: WidgetStateProperty.all(const BorderSide(
-                /*color: Color.fromARGB(110, 185, 185, 185),*/ width: 1.5))),
-        child: Text(rs.pretty),
-      );
-    }
-
-    String getDatetimeString(DateTime dt) {
-      return "${dt.year.toString()}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
-    }
-
-    List<Widget> leftColumn;
-    List<Widget> rightColumn;
-
-    Widget disclaimer = Container();
+    Widget content;
+    String? disclaimer;
 
     switch (revisionStrategy) {
       case RevisionStrategy.SpacedRepetition:
@@ -144,123 +114,193 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
           rememberRate =
               totalAnswers == 0 ? 0 : numCardsRemembered / totalAnswers;
 
-          String dateString = getDatetimeString(earliestDateTime);
-          disclaimer = Text("Stats collected since $dateString");
+          disclaimer =
+              "${l.flashcardsStatsCollectedSince} ${_getDatetimeString(earliestDateTime)}";
         }
 
-        String days = longestStreakDays == 1 ? "day" : "days";
-
-        leftColumn = [
-          getText(
-              "${DictLibLocalizations.of(context)!.flashcardsTotalReviews}:",
-              bold: true),
-          getText("${DictLibLocalizations.of(context)!.flashcardsSuccessRate}:",
-              bold: true),
-          getText(
-              "${DictLibLocalizations.of(context)!.flashcardsSuccessfulCards}:",
-              bold: true),
-          getText(
-              "${DictLibLocalizations.of(context)!.flashcardsUnsuccessfulCards}:",
-              bold: true),
-          getText("${DictLibLocalizations.of(context)!.flashcardsUniqueWords}:",
-              bold: true),
-          getText(
-              "${DictLibLocalizations.of(context)!.flashcardsLongestStreak}:",
-              bold: true),
-        ];
-        rightColumn = [
-          getText("$totalAnswers"),
-          getText("${(rememberRate * 100).toStringAsFixed(1)}%"),
-          getText("$numCardsRemembered"),
-          getText("$numCardsForgotten"),
-          getText("${uniqueMasters.length}"),
-          getText("$longestStreakDays $days"),
-        ];
+        content = reviews.isEmpty
+            ? _emptyState(context)
+            : Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Only celebrate a streak once there is one.
+            if (longestStreakDays > 0) ...[
+              _streakBanner(context, longestStreakDays),
+              const SizedBox(height: 14),
+            ],
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ringBox(context, rememberRate, l.flashcardsSuccessRate),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    children: [
+                      HearthStatTile(
+                          value: "$totalAnswers",
+                          label: l.flashcardsTotalReviews),
+                      const SizedBox(height: 12),
+                      HearthStatTile(
+                          value: "${uniqueMasters.length}",
+                          label: l.flashcardsUniqueWords),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: HearthStatTile(
+                  value: "$numCardsRemembered",
+                  label: l.flashcardsSuccessfulCards,
+                  valueColor: cs.tertiary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HearthStatTile(
+                  value: "$numCardsForgotten",
+                  label: l.flashcardsUnsuccessfulCards,
+                  valueColor: cs.error,
+                ),
+              ),
+            ]),
+          ],
+        );
         break;
       case RevisionStrategy.Random:
         int totalRandomReviews =
             sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
-        leftColumn = [
-          getText(
-              "${DictLibLocalizations.of(context)!.flashcardsTotalReviews}:",
-              bold: true),
-        ];
-        rightColumn = [getText("$totalRandomReviews")];
         int? firstStartedTrackingRandomReviews =
             sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
         if (firstStartedTrackingRandomReviews != null) {
           var dt = DateTime.fromMillisecondsSinceEpoch(
                   firstStartedTrackingRandomReviews * 1000)
               .toLocal();
-          String dateString = getDatetimeString(dt);
-          // TODO Localize this date string if this isn't happening already.
-          disclaimer = Text(
-              "${DictLibLocalizations.of(context)!.flashcardsStatsCollectedSince} $dateString");
+          disclaimer =
+              "${l.flashcardsStatsCollectedSince} ${_getDatetimeString(dt)}";
         }
+        content = totalRandomReviews == 0
+            ? _emptyState(context)
+            : HearthStatTile(
+                value: "$totalRandomReviews", label: l.flashcardsTotalReviews);
         break;
     }
 
     return Scaffold(
-        appBar: AppBar(
-          title: Text(DictLibLocalizations.of(context)!
-              .flashcardsRevisionProgressTitle),
-          centerTitle: true,
-        ),
-        body: CustomScrollView(slivers: [
-          SliverFillRemaining(
-              hasScrollBody: false,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 50),
-                  ),
-                  Text(DictLibLocalizations.of(context)!
-                      .flashcardsRevisionStategyToShow),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 15),
-                  ),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    getRevisionStrategyButton(
-                        RevisionStrategy.SpacedRepetition),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 20),
-                    ),
-                    getRevisionStrategyButton(RevisionStrategy.Random),
-                  ]),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 30),
-                  ),
-                  const Divider(
-                    height: 20,
-                    thickness: 2,
-                    indent: 20,
-                    endIndent: 20,
-                  ),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Padding(
-                      padding: EdgeInsets.only(left: 60),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: leftColumn,
-                    ),
-                    const Spacer(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: rightColumn,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 60),
-                    ),
-                  ]),
-                  Expanded(child: Container()),
-                  disclaimer,
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 50),
-                  )
-                ],
-              ))
-        ]));
+      appBar: AppBar(
+        title: Text(l.flashcardsRevisionProgressTitle),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          HearthSegmented(
+            options: [
+              RevisionStrategy.SpacedRepetition.pretty,
+              RevisionStrategy.Random.pretty,
+            ],
+            selected:
+                revisionStrategy == RevisionStrategy.SpacedRepetition ? 0 : 1,
+            onChanged: (i) {
+              setState(() {
+                revisionStrategy = i == 0
+                    ? RevisionStrategy.SpacedRepetition
+                    : RevisionStrategy.Random;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
+          content,
+          if (disclaimer != null) ...[
+            const SizedBox(height: 18),
+            Text(
+              disclaimer,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Shown for whichever strategy has no recorded reviews yet.
+  Widget _emptyState(BuildContext context) {
+    final l = DictLibLocalizations.of(context)!;
+    return HearthEmptyState(
+      icon: Icons.insights_outlined,
+      title: l.revisionStatsEmptyTitle,
+      body: l.revisionStatsEmptyBody,
+    );
+  }
+
+  Widget _streakBanner(BuildContext context, int streakDays) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(Icons.local_fire_department,
+                size: 28, color: cs.primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  DictLibLocalizations.of(context)!.revisionStreak(streakDays),
+                  style: tt.headlineSmall
+                      ?.copyWith(fontSize: 24, color: cs.onPrimaryContainer),
+                ),
+                Text(
+                  DictLibLocalizations.of(context)!.revisionStreakSubtitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onPrimaryContainer),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ringBox(BuildContext context, double rate, String label) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HearthRing(percent: rate, size: 104, stroke: 10),
+          const SizedBox(height: 8),
+          Text(label,
+              style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
+        ],
+      ),
+    );
   }
 }

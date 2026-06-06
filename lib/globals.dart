@@ -15,11 +15,16 @@ import 'entry_loader.dart';
 import 'entry_types.dart';
 import 'sharing/sharing.dart';
 import 'sharing/sharing_config.dart';
+import 'theme.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
-// The settings page background color.
-late Color settingsBackgroundColor;
+// Which visual style the app is currently using. The consuming app's
+// MaterialApp listens to this to rebuild with the chosen theme. Initialised
+// from KEY_THEME_VARIANT at startup (see the app's root widget) and updated
+// from the settings page.
+final ValueNotifier<AppThemeVariant> themeVariantNotifier =
+    ValueNotifier(kDefaultThemeVariant);
 
 Set<Entry> entriesGlobal = {};
 Map<String, Entry> keyedByEnglishEntriesGlobal = {};
@@ -97,16 +102,6 @@ Future<void> setupPhaseOne() async {
         "Failed to get package info: $e (continuing without raising any error)");
   }
 
-  // Get background color of settings pages. Only needed for light mode.
-  if (kIsWeb) {
-    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
-  } else if (Platform.isAndroid) {
-    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
-  } else if (Platform.isIOS) {
-    settingsBackgroundColor = const Color.fromRGBO(242, 242, 247, 1);
-  } else {
-    settingsBackgroundColor = const Color.fromRGBO(240, 240, 240, 1);
-  }
 }
 
 // Set up up until we fetch knobs. This includes shared device / package info,
@@ -166,7 +161,7 @@ Future<void> setupPhaseThree(
     required String knobUrlBase,
     Set<Entry>? entriesGlobalReplacement}) async {
   if (entriesGlobalReplacement != null && entriesGlobalReplacement.isEmpty) {
-    throw "If given, entriesGlobalReplacement must not be empty";
+    throw ArgumentError("If given, entriesGlobalReplacement must not be empty");
   }
 
   await Future.wait<void>([
@@ -195,7 +190,8 @@ Future<void> setupPhaseThree(
   // If entriesGlobalReplacement was set, entriesGlobal should have something
   // in it at this point.
   if (entriesGlobalReplacement != null && entriesGlobal.isEmpty) {
-    throw "entriesGlobal is empty after the loading phase despite entriesGlobalReplacement being set.";
+    throw Exception(
+        "entriesGlobal is empty after the loading phase despite entriesGlobalReplacement being set.");
   }
 
   // At this point if entriesGlobal is empty it means either there was no data
@@ -209,7 +205,8 @@ Future<void> setupPhaseThree(
     if (newData == null) {
       // This implies that there is some incompatibility between the data upstream
       // and how the app interprets it.
-      throw "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...";
+      throw Exception(
+          "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...");
     }
   } else {
     printAndLog(
@@ -219,7 +216,8 @@ Future<void> setupPhaseThree(
 
   // A final sanity check to ensure that we have entries data.
   if (entriesGlobal.isEmpty) {
-    throw "entriesGlobal is empty even after the loading phase. The app cannot operate without entries data, throwing...";
+    throw Exception(
+        "entriesGlobal is empty even after the loading phase. The app cannot operate without entries data, throwing...");
   }
 
   entryLoader = paramEntryLoader;

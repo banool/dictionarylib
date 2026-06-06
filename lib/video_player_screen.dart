@@ -5,8 +5,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/hearth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
@@ -51,29 +53,66 @@ double getDoubleFromPlaybackSpeed(PlaybackSpeed playbackSpeed) {
 }
 
 Widget getPlaybackSpeedDropdownWidget(void Function(PlaybackSpeed?) onChanged,
-    {bool enabled = true, Color? disabledColor}) {
-  Color? color;
-  if (!enabled) {
-    color = disabledColor;
-  }
-  return Align(
-      alignment: Alignment.center,
-      child: PopupMenuButton<PlaybackSpeed>(
-        icon: Icon(
-          Icons.slow_motion_video,
-          color: color,
+    {bool enabled = true, Color? disabledColor, PlaybackSpeed? current}) {
+  return Builder(builder: (context) {
+    return IconButton(
+      icon: Icon(Icons.slow_motion_video,
+          color: enabled ? null : disabledColor),
+      tooltip: DictLibLocalizations.of(context)!.playbackSpeedTitle,
+      onPressed: enabled
+          ? () => _showPlaybackSpeedSheet(context, onChanged, current)
+          : null,
+    );
+  });
+}
+
+/// A bottom sheet listing the playback speeds, with the current one ticked.
+Future<void> _showPlaybackSpeedSheet(
+    BuildContext context,
+    void Function(PlaybackSpeed?) onChanged,
+    PlaybackSpeed? current) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) {
+      final cs = Theme.of(ctx).colorScheme;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
+                child: Text(DictLibLocalizations.of(ctx)!.playbackSpeedTitle,
+                    style: Theme.of(ctx).textTheme.titleLarge),
+              ),
+              for (final s in PlaybackSpeed.values)
+                ListTile(
+                  title: Text(
+                    s == PlaybackSpeed.One
+                        ? "${getPlaybackSpeedString(s)}  ·  ${DictLibLocalizations.of(ctx)!.playbackSpeedNormal}"
+                        : getPlaybackSpeedString(s),
+                    style: TextStyle(
+                        fontWeight:
+                            s == current ? FontWeight.w800 : FontWeight.w500,
+                        color: s == current ? cs.primary : cs.onSurface),
+                  ),
+                  trailing: s == current
+                      ? Icon(Icons.check, color: cs.primary)
+                      : null,
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    onChanged(s);
+                  },
+                ),
+            ],
+          ),
         ),
-        enabled: enabled,
-        itemBuilder: (BuildContext context) {
-          return PlaybackSpeed.values.map((PlaybackSpeed value) {
-            return PopupMenuItem<PlaybackSpeed>(
-              value: value,
-              child: Text(getPlaybackSpeedString(value)),
-            );
-          }).toList();
-        },
-        onSelected: enabled ? onChanged : null,
-      ));
+      );
+    },
+  );
 }
 
 class InheritedPlaybackSpeed extends InheritedWidget {
@@ -105,9 +144,6 @@ class _PlayerData {
   // Track whether video has played at least once - used to avoid showing
   // loading spinner on loop.
   bool hasPlayedOnce = false;
-  // Track if playback speed retries have been scheduled to avoid scheduling
-  // them multiple times on each rebuild.
-  bool playbackSpeedRetriesScheduled = false;
   // Track if initial play/pause has been set to avoid calling on every rebuild.
   bool initialPlaybackSet = false;
   StreamSubscription? _playingSubscription;
@@ -142,22 +178,21 @@ class VideoPlayerScreen extends StatefulWidget {
   final void Function(int)? onPageChanged;
 
   @override
-  _VideoPlayerScreenState createState() => _VideoPlayerScreenState(
-      mediaLinks: mediaLinks, fallbackAspectRatio: fallbackAspectRatio);
+  State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  _VideoPlayerScreenState(
-      {required this.mediaLinks, required this.fallbackAspectRatio});
-
-  final List<String> mediaLinks;
-  final double fallbackAspectRatio;
-
   Map<int, _PlayerData> players = {};
 
   CarouselSliderController? carouselController;
 
   int currentPage = 0;
+
+  /// The playback rate currently applied to the players, mirrored from the
+  /// inherited [InheritedPlaybackSpeed] in [didChangeDependencies]. Stored so
+  /// the playing-stream listener can re-apply it (outside build, with no
+  /// BuildContext) after media_kit resets the rate when playback starts.
+  double _playbackRate = 1.0;
 
   @override
   void initState() {
@@ -169,7 +204,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     // saved video URL whose sub-entry has fewer videos than expected
     // doesn't render an empty carousel.
     if (widget.initialPage > 0 &&
-        widget.initialPage < mediaLinks.length) {
+        widget.initialPage < widget.mediaLinks.length) {
       currentPage = widget.initialPage;
     }
 
@@ -177,8 +212,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     // the Video widgets can be in the tree when we open the media.
     // This is important for Android where the texture surface needs to be
     // set up before opening media.
-    for (int idx = 0; idx < mediaLinks.length; idx++) {
-      final mediaLink = mediaLinks[idx];
+    for (int idx = 0; idx < widget.mediaLinks.length; idx++) {
+      final mediaLink = widget.mediaLinks[idx];
       // Skip non-video files
       if (mediaLink.endsWith(".jpg")) continue;
 
@@ -193,6 +228,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openMedia(mediaLink, idx);
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // React to the inherited playback speed (set/changed from the entry page).
+    // Apply it to every ready player now; players that become ready later pick
+    // it up when they start playing (see the playing-stream listener), which
+    // also re-applies after the open/play rate reset media_kit can do.
+    final speed = InheritedPlaybackSpeed.of(context);
+    if (speed != null) {
+      _playbackRate = getDoubleFromPlaybackSpeed(speed.playbackSpeed);
+      for (final pd in players.values) {
+        if (pd.isReady) pd.player.setRate(_playbackRate);
+      }
     }
   }
 
@@ -232,7 +283,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               "Caching is disabled, pulling $mediaLink from the network");
         }
         if (mediaLink.endsWith(".bak")) {
-          print("Building video controller with custom .bak behaviour");
+          printAndLog("Building video controller with custom .bak behaviour");
           HttpClient httpClient = HttpClient();
           var request = await httpClient.getUrl(Uri.parse(mediaLink));
           var response = await request.close();
@@ -291,6 +342,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       // This is used to avoid showing loading spinner on loop.
       playerData._playingSubscription =
           playerData.player.stream.playing.listen((isPlaying) {
+        if (isPlaying) {
+          // media_kit can reset the rate to 1.0 when playback (re)starts, so
+          // re-apply the desired speed every time it begins playing. This is
+          // what makes the speed stick on initial load without the old timed
+          // retries.
+          playerData.player.setRate(_playbackRate);
+        }
         if (isPlaying && !playerData.hasPlayedOnce) {
           playerData.hasPlayedOnce = true;
           // Trigger rebuild so the controls get the updated hasPlayedOnce value.
@@ -321,10 +379,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       out = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            "Failed to load video. Please confirm your device is connected to the internet. If it is, the servers may be having issues. This is not an issue with the app itself.",
+          Text(
+            DictLibLocalizations.of(context)!.videoOfflineError,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14),
+            style: const TextStyle(fontSize: 14),
           ),
           const Padding(padding: EdgeInsets.only(top: 10)),
           Text(
@@ -369,21 +427,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.dispose();
   }
 
-  void setPlaybackSpeed(BuildContext context, Player player) {
-    if (mounted) {
-      double playbackSpeedDouble = getDoubleFromPlaybackSpeed(
-          InheritedPlaybackSpeed.of(context)!.playbackSpeed);
-      player.setRate(playbackSpeedDouble);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // Get height of screen to ensure that the video only takes up
     // a certain proportion of it.
     List<Widget> items = [];
-    for (int idx = 0; idx < mediaLinks.length; idx++) {
-      var mediaLink = mediaLinks[idx];
+    for (int idx = 0; idx < widget.mediaLinks.length; idx++) {
+      var mediaLink = widget.mediaLinks[idx];
       Widget item;
       if (mediaLink.endsWith(".jpg")) {
         item = Padding(
@@ -418,39 +468,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         } else if (playerData.error != null) {
           item = createErrorWidget(playerData.error!, mediaLink);
         } else {
-          // Set playback speed here, since we need the context.
-          if (playerData.isReady) {
-            setPlaybackSpeed(context, playerData.player);
-
-            // Schedule delayed retries only once per player to avoid
-            // accumulating callbacks on each rebuild.
-            if (!playerData.playbackSpeedRetriesScheduled) {
-              playerData.playbackSpeedRetriesScheduled = true;
-              // Set it again repeatedly since there can be a weird race.
-              // Check mounted before each call to avoid issues after dispose.
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (mounted) setPlaybackSpeed(context, playerData.player);
-              });
-              Future.delayed(const Duration(milliseconds: 250), () {
-                if (mounted) setPlaybackSpeed(context, playerData.player);
-              });
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) setPlaybackSpeed(context, playerData.player);
-              });
-              Future.delayed(const Duration(milliseconds: 1000), () {
-                if (mounted) setPlaybackSpeed(context, playerData.player);
-              });
-            }
-
-            // Set initial play/pause state only once per player to avoid
-            // calling play/pause on every rebuild.
-            if (!playerData.initialPlaybackSet) {
-              playerData.initialPlaybackSet = true;
-              if (idx == currentPage) {
-                playerData.player.play();
-              } else {
-                playerData.player.pause();
-              }
+          // Set the initial play/pause state once per player. Playback speed is
+          // applied via didChangeDependencies (live changes) and the
+          // playing-stream listener (the open/play rate reset) — not here — so
+          // there's no per-build work or timed retries.
+          if (playerData.isReady && !playerData.initialPlaybackSet) {
+            playerData.initialPlaybackSet = true;
+            if (idx == currentPage) {
+              playerData.player.play();
+            } else {
+              playerData.player.pause();
             }
           }
 
@@ -460,29 +487,35 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           item = LayoutBuilder(
             builder: (context, constraints) {
               final videoAspectRatio =
-                  playerData.aspectRatio ?? fallbackAspectRatio;
-              // Calculate dimensions based on available width
-              double videoWidth = constraints.maxWidth;
+                  playerData.aspectRatio ?? widget.fallbackAspectRatio;
+              // Reserve room for HearthVideoFrame's padding (8px each side) so
+              // the framed card fits within the carousel slide without
+              // overflowing.
+              const frameTotal = 16.0;
+              double videoWidth = constraints.maxWidth - frameTotal;
               double videoHeight = videoWidth / videoAspectRatio;
-              // If height exceeds available space, constrain by height instead
               if (constraints.maxHeight.isFinite &&
-                  videoHeight > constraints.maxHeight - 15) {
-                videoHeight = constraints.maxHeight - 15;
+                  videoHeight > constraints.maxHeight - 15 - frameTotal) {
+                videoHeight = constraints.maxHeight - 15 - frameTotal;
                 videoWidth = videoHeight * videoAspectRatio;
               }
               return Container(
                 padding: const EdgeInsets.only(top: 15),
-                child: SizedBox(
-                  width: videoWidth,
-                  height: videoHeight,
-                  child: Video(
-                    controller: playerData.controller,
-                    // Show loading indicator only on initial load, not on loop.
-                    controls: (state) => getLoadingVideoControls(
-                        state, playerData.hasPlayedOnce),
-                    // Use fill since the SizedBox is already sized to match
-                    // the video's aspect ratio - no need for letterboxing
-                    fit: BoxFit.fill,
+                alignment: Alignment.center,
+                // The signing video framed as the hero (shared Hearth widget:
+                // soft surface card, subtle border + warm shadow, rounded
+                // video inside).
+                child: HearthVideoFrame(
+                  child: SizedBox(
+                    width: videoWidth,
+                    height: videoHeight,
+                    child: Video(
+                      controller: playerData.controller,
+                      // Loading indicator on initial load only, not on loop.
+                      controls: (state) => getLoadingVideoControls(
+                          state, playerData.hasPlayedOnce),
+                      fit: BoxFit.fill,
+                    ),
                   ),
                 ),
               );
@@ -498,7 +531,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       aspectRatio = players[currentPage]!.aspectRatio!;
     } else {
       // This is a fallback value for if the video hasn't loaded yet.
-      aspectRatio = fallbackAspectRatio;
+      aspectRatio = widget.fallbackAspectRatio;
     }
     var slider = CarouselSlider(
       carouselController: carouselController,
@@ -506,7 +539,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       options: CarouselOptions(
         aspectRatio: aspectRatio,
         autoPlay: false,
-        viewportFraction: 0.8,
+        // A higher fraction lets the centred video take more width, leaving a
+        // smaller peek of the adjacent slide on each side.
+        viewportFraction: 0.88,
         enableInfiniteScroll: false,
         initialPage: currentPage,
         onPageChanged: (index, reason) => onPageChanged(context, index),
@@ -536,6 +571,126 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ));
 
     return sliderContainer;
+  }
+}
+
+/// A stripped-down, full-screen, full-width player for a single sign video,
+/// opened by tapping the video on the entry page. Plays muted + looped, with
+/// just a close button and a rotate-to-landscape button.
+class FullScreenVideoPage extends StatefulWidget {
+  final String mediaLink;
+  const FullScreenVideoPage({super.key, required this.mediaLink});
+
+  @override
+  State<FullScreenVideoPage> createState() => _FullScreenVideoPageState();
+}
+
+class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
+  late final Player _player;
+  late final VideoController _controller;
+  bool _landscape = false;
+
+  // Whether the user used the rotate button while this page was open. The apps
+  // aren't orientation-locked (iOS/Android both allow portrait + landscape, and
+  // there's a dedicated horizontal layout), so we only nudge SystemChrome when
+  // the user explicitly asks to rotate, and only restore the OS default on exit
+  // if we actually changed it — otherwise we leave the system's auto-rotation
+  // untouched.
+  bool _didForceOrientation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = Player();
+    _controller = VideoController(_player);
+    _open();
+  }
+
+  Future<void> _open() async {
+    try {
+      if (kIsWeb) {
+        await _player.setVolume(0);
+      } else {
+        await _player.setAudioTrack(AudioTrack.no());
+      }
+      await _player.setPlaylistMode(PlaylistMode.loop);
+
+      String source = widget.mediaLink;
+      final shouldCache = sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true;
+      if (shouldCache && !kIsWeb && !widget.mediaLink.endsWith(".bak")) {
+        try {
+          final file = await myCacheManager.getSingleFile(widget.mediaLink);
+          source = file.path;
+        } catch (_) {/* fall back to streaming */}
+      }
+      final media = (source.startsWith('/') || source.startsWith('file://'))
+          ? Media('file://$source'.replaceAll('file://file://', 'file://'))
+          : Media(source);
+      await _player.open(media);
+    } catch (e) {
+      printAndLog("Full-screen video error: $e");
+    }
+  }
+
+  void _toggleRotation() {
+    setState(() => _landscape = !_landscape);
+    _didForceOrientation = true;
+    SystemChrome.setPreferredOrientations(_landscape
+        ? const [
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]
+        : const [DeviceOrientation.portraitUp]);
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    // Hand orientation back to the OS (bounded by the native supported set) so
+    // the rest of the app auto-rotates again — but only if we forced it.
+    if (_didForceOrientation) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Video(
+                controller: _controller,
+                fit: BoxFit.contain,
+                controls: (state) => const SizedBox.shrink(),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              left: 4,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                icon: const Icon(Icons.screen_rotation,
+                    color: Colors.white, size: 26),
+                tooltip: DictLibLocalizations.of(context)!.videoRotate,
+                onPressed: _toggleRotation,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

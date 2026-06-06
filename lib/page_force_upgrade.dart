@@ -56,7 +56,8 @@ class GitHubYankedVersionChecker extends YankedVersionChecker {
           .get(Uri.parse(uri))
           .timeout(const Duration(milliseconds: 2250));
       if (response.statusCode != 200) {
-        throw "HTTP response for getting yanked versions was non 200: ${response.statusCode}";
+        throw Exception(
+            "HTTP response for getting yanked versions was non 200: ${response.statusCode}");
       }
       return response.body.split("\n");
     } catch (e) {

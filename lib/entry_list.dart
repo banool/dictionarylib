@@ -190,9 +190,10 @@ class EntryList {
 
   Widget getLeadingIcon({bool inEditMode = false}) {
     if (key == KEY_FAVOURITES_ENTRIES) {
-      return const Icon(
-        Icons.star,
-      );
+      // The favourites star uses the warm accent (gold) colour.
+      return Builder(
+          builder: (context) =>
+              Icon(Icons.star, color: Theme.of(context).colorScheme.secondary));
     }
     if (inEditMode) {
       return const Icon(Icons.drag_handle);
@@ -315,6 +316,19 @@ class EntryList {
   List<SavedVideo> videosForEntry(Entry entry) {
     final key = entry.getKey();
     return [for (final v in savedVideos) if (v.entryKey == key) v];
+  }
+
+  /// True when *every* video of [entry] is already saved in this list, i.e.
+  /// there's nothing left to add for it. An entry with no videos is never
+  /// "fully contained" (there's nothing to contain). Used by the list-edit
+  /// "add" search to keep showing partially-saved entries.
+  bool containsAllVideosOf(Entry entry) {
+    final all = allVideosOf(entry);
+    if (all.isEmpty) return false;
+    for (final v in all) {
+      if (!savedVideos.contains(v)) return false;
+    }
+    return true;
   }
 
   /// All saved videos grouped by entry, in first-saved-video order.

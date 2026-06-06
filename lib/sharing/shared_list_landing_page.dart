@@ -219,18 +219,55 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
       buttonLabel = l.acceptInviteLandingSignInButton;
       onPressed = _acceptInvite;
     }
+    return _state(
+      icon: alreadyMember ? Icons.playlist_add_check : Icons.group_add,
+      heading: name,
+      message: body,
+      buttonLabel: buttonLabel,
+      onPressed: onPressed,
+    );
+  }
+
+  /// Shared centred "icon tile + heading + message + CTA" layout used by the
+  /// invite-prompt and error states. Colours come from the active theme.
+  Widget _state({
+    required IconData icon,
+    String? heading,
+    required String message,
+    required String buttonLabel,
+    required VoidCallback onPressed,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(body, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: onPressed,
-              child: Text(buttonLabel),
+            Container(
+              width: 72,
+              height: 72,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, size: 34, color: cs.onSurfaceVariant),
             ),
+            const SizedBox(height: 18),
+            if (heading != null) ...[
+              Text(heading,
+                  textAlign: TextAlign.center,
+                  style: tt.titleLarge?.copyWith(fontSize: 22)),
+              const SizedBox(height: 8),
+            ],
+            Text(message,
+                textAlign: TextAlign.center,
+                style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant, height: 1.5)),
+            const SizedBox(height: 22),
+            FilledButton(onPressed: onPressed, child: Text(buttonLabel)),
           ],
         ),
       ),
@@ -267,24 +304,13 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     } else {
       message = l.sharedListLandingDefaultError;
     }
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => setState(() {
-                _future =
-                    widget.inviteToken == null ? _subscribe() : _doAccept();
-              }),
-              child: Text(l.sharedListLandingTryAgain),
-            ),
-          ],
-        ),
-      ),
+    return _state(
+      icon: isInvite ? Icons.link_off : Icons.error_outline,
+      message: message,
+      buttonLabel: l.sharedListLandingTryAgain,
+      onPressed: () => setState(() {
+        _future = widget.inviteToken == null ? _subscribe() : _doAccept();
+      }),
     );
   }
 }

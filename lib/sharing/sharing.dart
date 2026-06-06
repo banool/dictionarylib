@@ -105,7 +105,7 @@ class Sharing with ChangeNotifier {
 
   /// Fire the change notifier. The engine, [ListsService], and the
   /// auth store all funnel through here so UI bits like the "pending
-  /// sync" badge or the "signed in as <Provider>" indicator rebuild
+  /// sync" badge or the "signed in as `<Provider>`" indicator rebuild
   /// without manual setState.
   void bumpState() => notifyListeners();
 

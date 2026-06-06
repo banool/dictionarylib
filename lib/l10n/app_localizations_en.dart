@@ -73,10 +73,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get flashcardsTypes => 'Flashcard Types';
 
   @override
-  String get flashcardsSignToWord => 'Sign -> Word';
+  String get flashcardsSignToWord => 'Sign → Word';
 
   @override
-  String get flashcardsWordToSign => 'Word -> Sign';
+  String get flashcardsWordToSign => 'Word → Sign';
 
   @override
   String get flashcardsRevisionSettings => 'Revision Settings';
@@ -199,6 +199,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsAppTheme => 'App theme';
 
   @override
   String get settingsColourMode => 'Colour mode';
@@ -481,8 +484,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get signInDialogTitle => 'Sign in to share';
 
   @override
-  String get signInDialogBody =>
-      'To share a list, sign in below. We only use this to prove that you\'re the one editing it later — we don\'t collect any personal information.';
+  String get signInDialogBody => 'To share a list you must sign in.';
 
   @override
   String get signInWithApple => 'Continue with Apple';
@@ -991,4 +993,270 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get signInTestPromptConfirm => 'Sign in';
+
+  @override
+  String get searchRecent => 'Recent';
+
+  @override
+  String get searchRecentClear => 'Clear';
+
+  @override
+  String get searchSignOfTheDay => 'Sign of the day';
+
+  @override
+  String get signOfTheDayBlurb => 'A new sign to learn each day.';
+
+  @override
+  String searchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get entryTypePhrase => 'Phrase';
+
+  @override
+  String searchNoMatchTitle(String query) {
+    return 'No signs for \"$query\"';
+  }
+
+  @override
+  String get searchNoMatchBody =>
+      'Check the spelling, or try a related word. Some signs are listed under a different English word.';
+
+  @override
+  String get searchReportMissing => 'Report a missing word';
+
+  @override
+  String get searchReportMissingThanks =>
+      'Thanks — we\'ll look into adding it.';
+
+  @override
+  String get newsEmptyTitle => 'No announcements yet';
+
+  @override
+  String get newsEmptyBody => 'App news and tips will show up here.';
+
+  @override
+  String get newsErrorTitle => 'Couldn\'t load news';
+
+  @override
+  String get newsErrorBody => 'Check your connection and try again later.';
+
+  @override
+  String get saveVideoFailed =>
+      'Couldn\'t update your lists. Please try again.';
+
+  @override
+  String get videoOfflineError =>
+      'Failed to load video. Please confirm your device is connected to the internet. If it is, the servers may be having issues. This is not an issue with the app itself.';
+
+  @override
+  String get listsEditHint =>
+      'Tap the pencil to reorder, rename, or create a new list.';
+
+  @override
+  String listWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count words',
+      one: '1 word',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listSubscribeViaLink => 'Subscribe via link';
+
+  @override
+  String get listSubscribedEmptyBody =>
+      'Follow a list someone shared with you. No account needed.';
+
+  @override
+  String revisionStreak(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days-day streak',
+      one: '1-day streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionStreakSubtitle => 'Longest run yet — keep it going!';
+
+  @override
+  String get revisionBuildSessionHeader =>
+      'Build a study session. Pick what to revise, then start.';
+
+  @override
+  String revisionSignCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count signs',
+      one: '1 sign',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionNoListsChosen => 'No lists chosen yet';
+
+  @override
+  String get flashcardsAddAnotherList => 'Add another list';
+
+  @override
+  String get flashcardsSignToWordSubtitle => 'See a sign, recall the word';
+
+  @override
+  String get flashcardsWordToSignSubtitle => 'See a word, recall the sign';
+
+  @override
+  String get flashcardsChooseType => 'Choose at least one flashcard type.';
+
+  @override
+  String get flashcardsStrategyLabel => 'Strategy';
+
+  @override
+  String get revisionDueNow => 'Due now';
+
+  @override
+  String get revisionSelected => 'Selected';
+
+  @override
+  String revisionFlashcardCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count flashcards',
+      one: '1 flashcard',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playbackSpeedTitle => 'Playback speed';
+
+  @override
+  String get playbackSpeedNormal => 'Normal';
+
+  @override
+  String get regionSheetTitle => 'Sign regions';
+
+  @override
+  String get regionSheetDescription =>
+      'Signs marked for all of Australia are always included. Add more regions below.';
+
+  @override
+  String get regionSheetDialects => 'Dialects';
+
+  @override
+  String get regionSheetStatesTerritories => 'States & territories';
+
+  @override
+  String wordVariationWithHint(int index, int count) {
+    return 'Variation $index of $count · swipe to compare';
+  }
+
+  @override
+  String wordVariation(int index, int count) {
+    return 'Variation $index of $count';
+  }
+
+  @override
+  String videoIndicator(int index, int count) {
+    return 'Video $index of $count';
+  }
+
+  @override
+  String get seeAlso => 'See also';
+
+  @override
+  String get revealAnswer => 'Reveal answer';
+
+  @override
+  String get tapToReveal => 'Tap to reveal';
+
+  @override
+  String get openDictionaryEntry => 'Open dictionary entry';
+
+  @override
+  String get ratingForgot => 'Forgot';
+
+  @override
+  String get ratingGotIt => 'Got it!';
+
+  @override
+  String get ratingNext => 'Next';
+
+  @override
+  String get sessionComplete => 'Session complete';
+
+  @override
+  String sessionCompleteHeadline(int count) {
+    return 'Nice work — that\'s $count signs revised';
+  }
+
+  @override
+  String get summarySuccess => 'success';
+
+  @override
+  String get summaryCards => 'Cards';
+
+  @override
+  String get summaryGotIt => 'Got it';
+
+  @override
+  String get summaryForgot => 'Forgot';
+
+  @override
+  String get studyPromptSignToWord => 'What does this sign mean?';
+
+  @override
+  String get studyPromptWordToSign => 'What is the sign for this word?';
+
+  @override
+  String get videoRotate => 'Rotate video';
+
+  @override
+  String get saveVideoButton => 'Save';
+
+  @override
+  String savedToListCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Saved to $count lists',
+      one: 'Saved to 1 list',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get revisionSummaryTitle => 'Revision summary';
+
+  @override
+  String get revisionStatsEmptyTitle => 'No stats yet';
+
+  @override
+  String get revisionStatsEmptyBody =>
+      'Finish a revision session and your progress will show up here.';
+
+  @override
+  String saveToNamedList(String listName) {
+    return 'Save to $listName';
+  }
+
+  @override
+  String savedToNamedList(String listName) {
+    return 'Saved to $listName';
+  }
 }

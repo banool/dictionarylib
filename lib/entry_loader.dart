@@ -78,16 +78,16 @@ abstract class EntryLoader {
   Future<void> _writeEntries(String newData) async {
     printAndLog("Writing new data to local storage");
     if (kIsWeb) {
-      // If we're on web use local storage. Currently the dump file is around
-      // 1mb and local storage should support 5mb per site, so this should be
-      // sufficient for now: https://stackoverflow.com/q/2989284/3846032.
-      // TODO: This is no longer true, the dump file is like 11mb.
+      // On web we persist the whole dump as a single local-storage value. The
+      // dump is ~11mb and local-storage limits vary by browser (some as low as
+      // ~5mb), so this can fail on web for large dictionaries — a known
+      // limitation. See https://stackoverflow.com/q/2989284/3846032.
       await sharedPreferences.setString(KEY_WEB_DICTIONARY_DATA, newData);
     } else {
       final path = await _dictionaryDataFilePath;
       await path.writeAsString(newData);
     }
-    print("Wrote new data to local storage");
+    printAndLog("Wrote new data to local storage");
   }
 
   /// Private. I just can't mark it as such because subclasses don't really
@@ -114,7 +114,7 @@ abstract class EntryLoader {
     int? lastCheckTimeSecs =
         sharedPreferences.getInt(KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS);
     if (lastCheckTimeSecs == null) {
-      print(
+      printAndLog(
           "Downloading new dictionary data because it seems we've never checked before");
       return true;
     }
@@ -167,7 +167,8 @@ abstract class EntryLoader {
     NewData? newData = await _downloadNewDataIfAppropriate(forceDownload);
     if (newData == null) {
       if (forceDownload) {
-        throw "forceDownload was true but no new data was downloaded, this should be impossible";
+        throw StateError(
+            "forceDownload was true but no new data was downloaded, this should be impossible");
       }
       printAndLog(
           "No new data was downloaded, not updating any downstream variables");
@@ -197,7 +198,7 @@ abstract class EntryLoader {
     // Record that we just checked for new data.
     await recordLastCheckTime();
 
-    print("downloadAndApplyNewData is done");
+    printAndLog("downloadAndApplyNewData is done");
 
     return newData;
   }

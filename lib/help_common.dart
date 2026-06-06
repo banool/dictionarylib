@@ -8,43 +8,59 @@ class HelpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> tiles = [];
-    for (MapEntry<String, List<String>> e in items.entries) {
-      tiles.add(Card(
-        child: ListTile(
-          title: Text(
-            e.key,
-            textAlign: TextAlign.start,
-            style: const TextStyle(fontSize: 14),
+    final cs = Theme.of(context).colorScheme;
+    final tiles = <Widget>[];
+    for (final e in items.entries) {
+      tiles.add(Padding(
+        padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
+        // A rounded, outlined card containing an expand/collapse FAQ entry —
+        // the answer reveals inline rather than in a dialog.
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: cs.outlineVariant),
           ),
-          onTap: () async => showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                List<Widget> children = [];
-                for (String s in e.value) {
-                  children.add(Text(
-                    s,
-                    strutStyle: const StrutStyle(fontSize: 15),
-                  ));
-                  children.add(const Padding(
-                    padding: EdgeInsets.only(top: 20),
-                  ));
-                }
-                children.removeLast();
-                return SimpleDialog(
-                  contentPadding: const EdgeInsets.all(20),
-                  children: children,
-                );
-              }),
+          child: ExpansionTile(
+            // Drop the default top/bottom divider lines so the card reads
+            // as one clean surface.
+            shape: const Border(),
+            collapsedShape: const Border(),
+            tilePadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            expandedCrossAxisAlignment: CrossAxisAlignment.start,
+            iconColor: cs.primary,
+            collapsedIconColor: cs.onSurfaceVariant,
+            title: Text(
+              e.key,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            children: [
+              for (int i = 0; i < e.value.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(top: i == 0 ? 0 : 14),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      e.value[i],
+                      style: TextStyle(
+                          fontSize: 15, height: 1.5, color: cs.onSurface),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ));
     }
     return Scaffold(
-        appBar: AppBar(
-          title: Text(title),
-        ),
-        body: ListView(
-          children: tiles,
-        ));
+      appBar: AppBar(title: Text(title)),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: tiles,
+      ),
+    );
   }
 }

@@ -18,7 +18,6 @@ const String KEY_FIRST_RANDOM_REVIEW = "mykey_first_random_review";
 const String KEY_SIGN_TO_WORD = "sign_to_word";
 const String KEY_WORD_TO_SIGN = "word_to_sign";
 const String KEY_USE_UNKNOWN_REGION_SIGNS = "use_unknown_region_signs";
-const String KEY_ONE_CARD_PER_WORD = "one_card_per_word";
 
 const String KEY_LISTS_TO_REVIEW = "lists_chosen_to_review";
 
