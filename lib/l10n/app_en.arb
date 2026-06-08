@@ -225,7 +225,7 @@
     "providerTest": "Test session",
 
     "subscribeDialogTitle": "Subscribe to a shared list",
-    "subscribeDialogBody": "Paste either a share link or just the list ID at the end of one.",
+    "subscribeDialogBody": "Paste a share link / list ID.",
     "subscribeDialogUrlLabel": "Share URL",
     "subscribeDialogSubscribeButton": "Subscribe",
     "subscribeInvalidInput": "Not a valid share link or list ID.",
@@ -319,7 +319,7 @@
     "duplicateFallbackName": "Duplicated list",
 
     "listSharedWithMeTab": "Shared with me",
-    "listSharedWithMeEmpty": "Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.",
+    "listSharedWithMeEmpty": "Nothing here yet.",
 
     "ownedStatusOrphaned": "Shared — deleted by you",
     "ownedStatusSharedBy": "Shared by you",
@@ -559,7 +559,7 @@
     "listWordCount": "{count, plural, =1{1 word} other{{count} words}}",
     "@listWordCount": { "placeholders": { "count": { "type": "int" } } },
     "listSubscribeViaLink": "Subscribe via link",
-    "listSubscribedEmptyBody": "Follow a list someone shared with you. No account needed.",
+    "listSubscribedEmptyBody": "Tap the cloud icon up top to subscribe to a shared list, or open a share link from someone else. No account needed.",
     "revisionStreak": "{days, plural, =1{1-day streak} other{{days}-day streak}}",
     "@revisionStreak": { "placeholders": { "days": { "type": "int" } } },
     "revisionStreakSubtitle": "Longest run yet — keep it going!",
@@ -582,7 +582,7 @@
     "regionSheetDescription": "Signs marked for all of Australia are always included. Add more regions below.",
     "regionSheetDialects": "Dialects",
     "regionSheetStatesTerritories": "States & territories",
-    "wordVariationWithHint": "Variation {index} of {count} · swipe to compare",
+    "wordVariationWithHint": "Variation {index} of {count}",
     "@wordVariationWithHint": { "placeholders": { "index": { "type": "int" }, "count": { "type": "int" } } },
     "wordVariation": "Variation {index} of {count}",
     "@wordVariation": { "placeholders": { "index": { "type": "int" }, "count": { "type": "int" } } },
