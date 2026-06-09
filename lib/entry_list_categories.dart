@@ -44,7 +44,9 @@ class CategoryEntryListManager implements EntryListManager {
     // v1→v2 list migration: a "community list of entries" becomes a
     // community list of every video those entries contain.
     bool canBeEdited = false;
-    SplayTreeMap<String, EntryList> entryLists = SplayTreeMap();
+    // Case-insensitive key order so the community lists read alphabetically
+    // rather than capitals-first (ASCII) order.
+    SplayTreeMap<String, EntryList> entryLists = SplayTreeMap(compareDisplayNames);
     for (String key in categoryToEntries.keys) {
       final saved = LinkedHashSet<SavedVideo>();
       for (final e in categoryToEntries[key]!) {

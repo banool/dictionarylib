@@ -118,6 +118,10 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get flashcardsGotIt => 'සොයා ගත්තා!';
 
   @override
+  String get flashcardsCardUnavailable =>
+      'A card was unavailable and was skipped.';
+
+  @override
   String get flashcardsWhatIsSignForWord => 'මෙම වචනය සඳහා සංඥා භාෂාව කුමක්ද?';
 
   @override
@@ -305,6 +309,12 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listCommunity => 'ප්රජාව';
 
   @override
+  String get listSortAdded => 'Added';
+
+  @override
+  String get listSortAlpha => 'A-Z';
+
+  @override
   String get listConfirmListDelete =>
       'ඔබට මෙම ලැයිස්තුව මැකීමට අවශ්‍ය බව විශ්වාසද?';
 
@@ -490,6 +500,11 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'To share a list, sign in below. We only use this to prove that you\'re the one editing it later — we don\'t collect any personal information.';
 
   @override
+  String signInLastUsedHint(String provider) {
+    return 'Last time, you signed in with $provider.';
+  }
+
+  @override
   String get signInWithApple => 'Continue with Apple';
 
   @override
@@ -536,6 +551,16 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get subscribeDialogSubscribeButton => 'Subscribe';
+
+  @override
+  String get alreadySubscribedSnack =>
+      'You\'re already subscribed to this list.';
+
+  @override
+  String get alreadyOwnerSnack => 'You own this list.';
+
+  @override
+  String get alreadyEditorSnack => 'You\'re an editor of this list.';
 
   @override
   String get subscribeInvalidInput => 'Not a valid share link or list ID.';
@@ -587,6 +612,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get subscribedSyncNowMenuItem => 'Sync now';
 
   @override
+  String get subscribedCopyLinkMenuItem => 'Copy link';
+
+  @override
   String get subscribedSyncInProgress => 'Syncing…';
 
   @override
@@ -619,17 +647,28 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get settingsSignOutConfirmBody =>
-      'Your shared lists stay on the server. You\'ll need to sign in again to edit or unshare them.';
+      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
 
   @override
-  String get settingsClearSharingData => 'Clear sharing data';
+  String get settingsDeleteAccount => 'Delete account';
 
   @override
-  String get settingsClearSharingDataConfirmTitle => 'Clear sharing data?';
+  String get settingsDeleteAccountConfirmTitle => 'Delete account?';
 
   @override
-  String get settingsClearSharingDataConfirmBody =>
-      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
+  String get settingsDeleteAccountConfirmButton => 'Delete account';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed to them will lose access.\n  • You\'re removed as an editor from other people\'s lists.\n  • The name we have for you is erased.\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
+
+  @override
+  String get settingsDeleteAccountRunning => 'Deleting account…';
+
+  @override
+  String settingsDeleteAccountFailed(String message) {
+    return 'Couldn\'t delete your account: $message';
+  }
 
   @override
   String get alertSave => 'Save';
@@ -696,7 +735,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get duplicateFallbackName => 'Duplicated list';
 
   @override
-  String get listSharedWithMeTab => 'Shared with me';
+  String get listSharedWithMeTab => 'Subscribed';
 
   @override
   String get listSharedWithMeEmpty =>
@@ -832,6 +871,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get membersPageTitle => 'Members';
 
   @override
+  String get membersPageYou => 'You';
+
+  @override
   String get membersPageCreator => 'Creator';
 
   @override
@@ -890,11 +932,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String get signInDialogContextResume =>
       'Sign in again to push your queued edits.';
-
-  @override
-  String settingsSignedInAsNamed(String name, String provider) {
-    return 'Signed in as $name via $provider';
-  }
 
   @override
   String settingsSignOutConfirmBodyWithPending(int count) {
@@ -1011,6 +1048,10 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get signOfTheDayBlurb => 'සෑම දිනකම ඉගෙන ගැනීමට නව සංඥාවක්.';
 
   @override
+  String get signOfTheDayInfo =>
+      'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.';
+
+  @override
   String searchResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1064,6 +1105,10 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String get listsEditHint =>
       'නැවත පිළිවෙළට, නැවත නම් කිරීමට, හෝ නව ලැයිස්තුවක් සෑදීමට පැන්සල තට්ටු කරන්න.';
+
+  @override
+  String get listsReorderHint =>
+      'Drag a list to reorder it. Favourites stays pinned to the top.';
 
   @override
   String listWordCount(int count) {
@@ -1131,6 +1176,12 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get flashcardsStrategyLabel => 'උපාය මාර්ගය';
+
+  @override
+  String get flashcardsCardLimitLabel => 'Card limit';
+
+  @override
+  String get flashcardsCardLimitNone => 'No limit';
 
   @override
   String get revisionDueNow => 'දැන් නියමිතයි';

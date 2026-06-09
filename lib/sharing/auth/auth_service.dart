@@ -121,6 +121,21 @@ class AuthService {
   /// network call to Google/Facebook.
   Future<void> dropSessionLocally() => _store.clear();
 
+  /// Permanently delete the signed-in user's account on the server (all
+  /// owned lists, editor memberships, and the stored display name), then
+  /// forget the local session + platform SDK login like a sign-out.
+  ///
+  /// The server call runs first: if it throws the local session is left
+  /// intact, so the user can retry rather than ending up "signed out"
+  /// with their data still on the server. Prefer
+  /// `Sharing.deleteAccount`, which also clears the local list mirrors.
+  Future<void> deleteAccount() async {
+    final session = _store.current;
+    if (session == null) return;
+    await _api.deleteAccount(sessionToken: session.sessionToken);
+    await signOut();
+  }
+
   /// Mint a session via the worker's test sign-in path and persist it
   /// like a real sign-in. Used by:
   ///   - the in-app "Test sign-in" debug affordance (gated by

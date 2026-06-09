@@ -47,6 +47,7 @@
     "flashcardsNext": "Next",
     "flashcardsForgot": "Forgot",
     "flashcardsGotIt": "Got it!",
+    "flashcardsCardUnavailable": "A card was unavailable and was skipped.",
 
     "flashcardsWhatIsSignForWord": "What is the sign for this word?",
     "flashcardsWhatDoesSignMean": "What does this sign mean?",
@@ -115,6 +116,8 @@
     "listNewList": "New List",
     "listMyLists": "My Lists",
     "listCommunity": "Community",
+    "listSortAdded": "Added",
+    "listSortAlpha": "A-Z",
     "listConfirmListDelete": "Are you sure you want to delete this list?",
 
     "listSearchAdd": "Search for words to add",
@@ -212,6 +215,12 @@
 
     "signInDialogTitle": "Sign in to share",
     "signInDialogBody": "To share a list you must sign in.",
+    "signInLastUsedHint": "Last time, you signed in with {provider}.",
+    "@signInLastUsedHint": {
+        "placeholders": {
+            "provider": { "type": "String" }
+        }
+    },
     "signInWithApple": "Continue with Apple",
     "signInWithGoogle": "Continue with Google",
     "signInWithFacebook": "Continue with Facebook",
@@ -228,6 +237,9 @@
     "subscribeDialogBody": "Paste a share link / list ID.",
     "subscribeDialogUrlLabel": "Share URL",
     "subscribeDialogSubscribeButton": "Subscribe",
+    "alreadySubscribedSnack": "You're already subscribed to this list.",
+    "alreadyOwnerSnack": "You own this list.",
+    "alreadyEditorSnack": "You're an editor of this list.",
     "subscribeInvalidInput": "Not a valid share link or list ID.",
     "subscribeInputIsInviteUrl": "That's an invite link — tap it from your phone to join as editor instead of subscribing.",
     "subscribeNotFound": "No list with that key exists.",
@@ -254,6 +266,7 @@
         }
     },
     "subscribedSyncNowMenuItem": "Sync now",
+    "subscribedCopyLinkMenuItem": "Copy link",
     "subscribedSyncInProgress": "Syncing…",
     "subscribedSyncDoneSnack": "Up to date",
     "subscribedSyncFailedSnack": "Sync failed: {message}",
@@ -274,10 +287,18 @@
     },
     "settingsSignOut": "Sign out",
     "settingsSignOutConfirmTitle": "Sign out?",
-    "settingsSignOutConfirmBody": "Your shared lists stay on the server. You'll need to sign in again to edit or unshare them.",
-    "settingsClearSharingData": "Clear sharing data",
-    "settingsClearSharingDataConfirmTitle": "Clear sharing data?",
-    "settingsClearSharingDataConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
+    "settingsSignOutConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
+    "settingsDeleteAccount": "Delete account",
+    "settingsDeleteAccountConfirmTitle": "Delete account?",
+    "settingsDeleteAccountConfirmButton": "Delete account",
+    "settingsDeleteAccountConfirmBody": "This permanently deletes your account and everything we store for you:\n  • Every list you've shared is deleted from the server — anyone subscribed to them will lose access.\n  • You're removed as an editor from other people's lists.\n  • The name we have for you is erased.\n\nThe lists on this device keep their entries; only the sharing is removed. This can't be undone.",
+    "settingsDeleteAccountRunning": "Deleting account…",
+    "settingsDeleteAccountFailed": "Couldn't delete your account: {message}",
+    "@settingsDeleteAccountFailed": {
+        "placeholders": {
+            "message": { "type": "String" }
+        }
+    },
 
     "alertSave": "Save",
     "alertDone": "Done",
@@ -318,7 +339,7 @@
     "duplicateConfirmAction": "Duplicate",
     "duplicateFallbackName": "Duplicated list",
 
-    "listSharedWithMeTab": "Shared with me",
+    "listSharedWithMeTab": "Subscribed",
     "listSharedWithMeEmpty": "Nothing here yet.",
 
     "ownedStatusOrphaned": "Shared — deleted by you",
@@ -425,6 +446,7 @@
     },
 
     "membersPageTitle": "Members",
+    "membersPageYou": "You",
     "membersPageCreator": "Creator",
     "membersPageEditors": "Editors",
     "membersPageNoEditors": "No other editors yet. Tap \"Invite an editor\" to add one.",
@@ -466,14 +488,6 @@
 
     "signInDialogContextInvite": "Sign in to accept the invite. You'll be able to edit the list once you do.",
     "signInDialogContextResume": "Sign in again to push your queued edits.",
-
-    "settingsSignedInAsNamed": "Signed in as {name} via {provider}",
-    "@settingsSignedInAsNamed": {
-        "placeholders": {
-            "name": { "type": "String" },
-            "provider": { "type": "String" }
-        }
-    },
 
     "settingsSignOutConfirmBodyWithPending": "You have unsynced edits on {count} list(s). Signing out won't push them to the server. Are you sure?",
     "@settingsSignOutConfirmBodyWithPending": {
@@ -540,6 +554,7 @@
     "searchRecentClear": "Clear",
     "searchSignOfTheDay": "Sign of the day",
     "signOfTheDayBlurb": "A new sign to learn each day.",
+    "signOfTheDayInfo": "The sign of the day is a random word from the lists you've created or subscribed to. It changes once a day.",
     "searchResultCount": "{count, plural, =1{1 result} other{{count} results}}",
     "@searchResultCount": { "placeholders": { "count": { "type": "int" } } },
     "entryTypePhrase": "Phrase",
@@ -556,6 +571,7 @@
     "saveVideoFailed": "Couldn't update your lists. Please try again.",
     "videoOfflineError": "Failed to load video. Please confirm your device is connected to the internet. If it is, the servers may be having issues. This is not an issue with the app itself.",
     "listsEditHint": "Tap the pencil to reorder, rename, or create a new list.",
+    "listsReorderHint": "Drag a list to reorder it. Favourites stays pinned to the top.",
     "listWordCount": "{count, plural, =1{1 word} other{{count} words}}",
     "@listWordCount": { "placeholders": { "count": { "type": "int" } } },
     "listSubscribeViaLink": "Subscribe via link",
@@ -572,6 +588,8 @@
     "flashcardsWordToSignSubtitle": "See a word, recall the sign",
     "flashcardsChooseType": "Choose at least one flashcard type.",
     "flashcardsStrategyLabel": "Strategy",
+    "flashcardsCardLimitLabel": "Card limit",
+    "flashcardsCardLimitNone": "No limit",
     "revisionDueNow": "Due now",
     "revisionSelected": "Selected",
     "revisionFlashcardCount": "{count, plural, =1{1 flashcard} other{{count} flashcards}}",

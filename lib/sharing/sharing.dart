@@ -114,12 +114,12 @@ class Sharing with ChangeNotifier {
   /// consumers don't have to reach into `sharing.engine.notifications`.
   Stream<SyncNotification> get engineNotifications => engine.notifications;
 
-  /// Sign the current user out, dropping every list's pending-op
-  /// queue first. Without the queue drop, a follow-up sign-in by a
-  /// different account on the same device would push the previous
-  /// user's queued edits under the new identity — a clear cross-
-  /// account bleed. Local entries-sets on each list are untouched;
-  /// it's just the queues + engine timers that go.
+  /// Sign the current user out: drop every list's pending-op queue (so a
+  /// follow-up sign-in by a different account can't push the previous user's
+  /// queued edits under the new identity), then drop the account-bound list
+  /// mirrors (owned + editor) so the new account doesn't inherit the previous
+  /// user's lists. Anonymous subscriptions, and the underlying local lists
+  /// that owner mirrors wrap, are kept.
   ///
   /// Call this instead of `auth.signOut()` directly. The latter is
   /// reserved for the engine's own 401-handling path
@@ -129,6 +129,28 @@ class Sharing with ChangeNotifier {
   Future<void> signOut() async {
     await engine.clearAllPendingOps();
     await auth.signOut();
+    // Drop account-bound list mirrors (owned + editor) so the next account to
+    // sign in doesn't inherit the previous user's lists. Subscriptions are
+    // anonymous public reads, so they stay.
+    await lists.clearEditableLists();
+    bumpState();
+  }
+
+  /// Permanently delete the signed-in user's account: every list they own
+  /// and their editor access to others' lists are removed on the server
+  /// (along with the display name we store), then all local sharing state
+  /// on this device is cleared — pending ops, the session, and every
+  /// synced list mirror (subscriptions included; re-subscribe is one tap).
+  ///
+  /// Throws if the server call fails, leaving the local session intact so
+  /// the user can retry. On success there's nothing left to manage.
+  Future<void> deleteAccount() async {
+    await engine.clearAllPendingOps();
+    await auth.deleteAccount();
+    // The owned + editor lists are gone on the server; drop their local
+    // mirrors. Subscriptions to other people's lists are anonymous and stay.
+    await lists.clearEditableLists();
+    bumpState();
   }
 
   /// Construct the subsystem, load the persisted auth session, start

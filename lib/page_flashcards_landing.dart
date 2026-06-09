@@ -158,8 +158,11 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   }
 
   void onPrefSwitch(String key, bool newValue, bool influencesStartValidity) {
+    // Persist outside setState (setBool returns a Future; setState must not
+    // be handed a callback that returns one). The cache updates synchronously
+    // so the next build reads the new value immediately.
+    sharedPreferences.setBool(key, newValue);
     setState(() {
-      sharedPreferences.setBool(key, newValue);
       if (influencesStartValidity) {
         if (newValue) {
           numEnabledFlashcardTypes += 1;
@@ -203,8 +206,15 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     final l = DictLibLocalizations.of(context)!;
 
     final revisionStrategy = loadRevisionStrategy();
-    final cardsToDo =
+    // Honour the optional session-size cap so the count shown on the Start bar
+    // matches what the session will actually serve (FlashcardsPage applies the
+    // same cap). 0 = no limit.
+    final cardLimit = sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT) ?? 0;
+    final rawCardsToDo =
         getNumDueCards(dolphinInformation.dolphin, revisionStrategy);
+    final cardsToDo = (cardLimit > 0 && rawCardsToDo > cardLimit)
+        ? cardLimit
+        : rawCardsToDo;
     final signToWord = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
     final wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
     final typesValid = numEnabledFlashcardTypes > 0;
@@ -213,12 +223,18 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     // sections as the Lists page (My Lists / Subscribed / Community) so
     // they're easy to find.
     Future<void> openSourcesPicker() async {
+      // Cap the sheet so it never reaches the top of the screen. That leaves a
+      // tappable scrim above it and keeps the drag handle reachable, so it can
+      // be dismissed by tapping outside or dragging down — no Done button needed.
+      final maxSheetHeight = MediaQuery.of(context).size.height * 0.85;
       await showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
         isScrollControlled: true,
+        constraints: BoxConstraints(maxHeight: maxSheetHeight),
         builder: (ctx) {
           return StatefulBuilder(builder: (ctx, setSheet) {
+            final cs = Theme.of(ctx).colorScheme;
             final selected = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
                     [KEY_FAVOURITES_ENTRIES])
                 .toSet();
@@ -244,13 +260,34 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                   onTap: () => toggle(el.key),
                 );
 
-            List<Widget> section(String label, Iterable<EntryList> lists) {
-              if (lists.isEmpty) return const [];
-              return [
-                HearthSectionLabel(label,
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 4)),
-                ...lists.map(listRow),
-              ];
+            // A collapsible section. Its expanded/collapsed state is remembered
+            // across sessions in shared prefs.
+            Widget collapsibleSection(
+                String id, String label, Iterable<EntryList> lists) {
+              if (lists.isEmpty) return const SizedBox.shrink();
+              final prefKey = 'flashcards_sources_expanded_$id';
+              return ExpansionTile(
+                // Drop ExpansionTile's default divider lines for a clean look.
+                shape: const Border(),
+                collapsedShape: const Border(),
+                tilePadding: const EdgeInsets.symmetric(horizontal: 20),
+                childrenPadding: EdgeInsets.zero,
+                iconColor: cs.onSurfaceVariant,
+                collapsedIconColor: cs.onSurfaceVariant,
+                initiallyExpanded: sharedPreferences.getBool(prefKey) ?? true,
+                onExpansionChanged: (v) =>
+                    sharedPreferences.setBool(prefKey, v),
+                title: Text(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+                children: lists.map(listRow).toList(),
+              );
             }
 
             final List<EntryList> myLists = <EntryList>[
@@ -275,25 +312,15 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
+                        padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
                         child: Text(l.flashcardsSelectLists,
                             style: Theme.of(ctx).textTheme.titleLarge),
                       ),
-                      ...section(l.listMyLists, myLists),
-                      ...section(l.listSharedWithMeTab, subscribed),
-                      ...section(l.listCommunity, community),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 52)),
-                            child: Text(l.shareLinkDoneButton),
-                          ),
-                        ),
-                      ),
+                      collapsibleSection('mylists', l.listMyLists, myLists),
+                      collapsibleSection(
+                          'subscribed', l.listSharedWithMeTab, subscribed),
+                      collapsibleSection(
+                          'community', l.listCommunity, community),
                     ],
                   ),
                 ),
@@ -356,14 +383,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     }
 
     final listChildren = <Widget>[
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-        child: Text(
-          l.revisionBuildSessionHeader,
-          style:
-              TextStyle(fontSize: 15, height: 1.5, color: cs.onSurfaceVariant),
-        ),
-      ),
       // --- Revision sources ---
       HearthSectionLabel(l.flashcardsRevisionSources,
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 8)),
@@ -453,6 +472,32 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                   });
                 },
               ),
+              const SizedBox(height: 18),
+              Text(l.flashcardsCardLimitLabel,
+                  style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface)),
+              const SizedBox(height: 6),
+              // How many cards a session serves at most. 0 = no limit, and the
+              // choice is remembered across sessions.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: DropdownButton<int>(
+                  value: cardLimit,
+                  items: [
+                    DropdownMenuItem(
+                        value: 0, child: Text(l.flashcardsCardLimitNone)),
+                    for (final n in const [10, 25, 50, 100])
+                      DropdownMenuItem(value: n, child: Text('$n')),
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, v);
+                    setState(() {});
+                  },
+                ),
+              ),
             ],
           ),
         ],
@@ -460,8 +505,9 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       ),
       // App-specific extra rows (e.g. Auslan's sign-region configurator). Drop
       // the card entirely when an app has none, so there's no empty outlined box.
+      // Give it clear separation from the settings card above it.
       if (settingRows.isNotEmpty) ...[
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         settingsCard(settingRows),
       ],
       ...widget.controller

@@ -38,11 +38,6 @@ void main() {
     }
   });
 
-  test('the Google sign-in logo asset is bundled', () async {
-    final data = await rootBundle.load('assets/brand/google-g.png');
-    expect(data.lengthInBytes, greaterThan(0));
-  });
-
   // Asset existence alone doesn't prove the theme actually uses the custom
   // typefaces — google_fonts silently falls back to the platform font if the
   // wiring breaks. Assert the families are threaded into the text theme. The

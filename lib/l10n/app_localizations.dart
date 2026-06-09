@@ -263,6 +263,12 @@ abstract class DictLibLocalizations {
   /// **'Got it!'**
   String get flashcardsGotIt;
 
+  /// No description provided for @flashcardsCardUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A card was unavailable and was skipped.'**
+  String get flashcardsCardUnavailable;
+
   /// No description provided for @flashcardsWhatIsSignForWord.
   ///
   /// In en, this message translates to:
@@ -623,6 +629,18 @@ abstract class DictLibLocalizations {
   /// **'Community'**
   String get listCommunity;
 
+  /// No description provided for @listSortAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get listSortAdded;
+
+  /// No description provided for @listSortAlpha.
+  ///
+  /// In en, this message translates to:
+  /// **'A-Z'**
+  String get listSortAlpha;
+
   /// No description provided for @listConfirmListDelete.
   ///
   /// In en, this message translates to:
@@ -935,6 +953,12 @@ abstract class DictLibLocalizations {
   /// **'To share a list you must sign in.'**
   String get signInDialogBody;
 
+  /// No description provided for @signInLastUsedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Last time, you signed in with {provider}.'**
+  String signInLastUsedHint(String provider);
+
   /// No description provided for @signInWithApple.
   ///
   /// In en, this message translates to:
@@ -1010,7 +1034,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @subscribeDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Paste either a share link or just the list ID at the end of one.'**
+  /// **'Paste a share link / list ID.'**
   String get subscribeDialogBody;
 
   /// No description provided for @subscribeDialogUrlLabel.
@@ -1024,6 +1048,24 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Subscribe'**
   String get subscribeDialogSubscribeButton;
+
+  /// No description provided for @alreadySubscribedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already subscribed to this list.'**
+  String get alreadySubscribedSnack;
+
+  /// No description provided for @alreadyOwnerSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'You own this list.'**
+  String get alreadyOwnerSnack;
+
+  /// No description provided for @alreadyEditorSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re an editor of this list.'**
+  String get alreadyEditorSnack;
 
   /// No description provided for @subscribeInvalidInput.
   ///
@@ -1109,6 +1151,12 @@ abstract class DictLibLocalizations {
   /// **'Sync now'**
   String get subscribedSyncNowMenuItem;
 
+  /// No description provided for @subscribedCopyLinkMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get subscribedCopyLinkMenuItem;
+
   /// No description provided for @subscribedSyncInProgress.
   ///
   /// In en, this message translates to:
@@ -1166,26 +1214,44 @@ abstract class DictLibLocalizations {
   /// No description provided for @settingsSignOutConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'Your shared lists stay on the server. You\'ll need to sign in again to edit or unshare them.'**
+  /// **'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.'**
   String get settingsSignOutConfirmBody;
 
-  /// No description provided for @settingsClearSharingData.
+  /// No description provided for @settingsDeleteAccount.
   ///
   /// In en, this message translates to:
-  /// **'Clear sharing data'**
-  String get settingsClearSharingData;
+  /// **'Delete account'**
+  String get settingsDeleteAccount;
 
-  /// No description provided for @settingsClearSharingDataConfirmTitle.
+  /// No description provided for @settingsDeleteAccountConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Clear sharing data?'**
-  String get settingsClearSharingDataConfirmTitle;
+  /// **'Delete account?'**
+  String get settingsDeleteAccountConfirmTitle;
 
-  /// No description provided for @settingsClearSharingDataConfirmBody.
+  /// No description provided for @settingsDeleteAccountConfirmButton.
   ///
   /// In en, this message translates to:
-  /// **'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.'**
-  String get settingsClearSharingDataConfirmBody;
+  /// **'Delete account'**
+  String get settingsDeleteAccountConfirmButton;
+
+  /// No description provided for @settingsDeleteAccountConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed to them will lose access.\n  • You\'re removed as an editor from other people\'s lists.\n  • The name we have for you is erased.\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.'**
+  String get settingsDeleteAccountConfirmBody;
+
+  /// No description provided for @settingsDeleteAccountRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting account…'**
+  String get settingsDeleteAccountRunning;
+
+  /// No description provided for @settingsDeleteAccountFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete your account: {message}'**
+  String settingsDeleteAccountFailed(String message);
 
   /// No description provided for @alertSave.
   ///
@@ -1298,13 +1364,13 @@ abstract class DictLibLocalizations {
   /// No description provided for @listSharedWithMeTab.
   ///
   /// In en, this message translates to:
-  /// **'Shared with me'**
+  /// **'Subscribed'**
   String get listSharedWithMeTab;
 
   /// No description provided for @listSharedWithMeEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.'**
+  /// **'Nothing here yet.'**
   String get listSharedWithMeEmpty;
 
   /// No description provided for @ownedStatusOrphaned.
@@ -1505,6 +1571,12 @@ abstract class DictLibLocalizations {
   /// **'Members'**
   String get membersPageTitle;
 
+  /// No description provided for @membersPageYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get membersPageYou;
+
   /// No description provided for @membersPageCreator.
   ///
   /// In en, this message translates to:
@@ -1594,12 +1666,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Sign in again to push your queued edits.'**
   String get signInDialogContextResume;
-
-  /// No description provided for @settingsSignedInAsNamed.
-  ///
-  /// In en, this message translates to:
-  /// **'Signed in as {name} via {provider}'**
-  String settingsSignedInAsNamed(String name, String provider);
 
   /// No description provided for @settingsSignOutConfirmBodyWithPending.
   ///
@@ -1799,6 +1865,12 @@ abstract class DictLibLocalizations {
   /// **'A new sign to learn each day.'**
   String get signOfTheDayBlurb;
 
+  /// No description provided for @signOfTheDayInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.'**
+  String get signOfTheDayInfo;
+
   /// No description provided for @searchResultCount.
   ///
   /// In en, this message translates to:
@@ -1877,6 +1949,12 @@ abstract class DictLibLocalizations {
   /// **'Tap the pencil to reorder, rename, or create a new list.'**
   String get listsEditHint;
 
+  /// No description provided for @listsReorderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag a list to reorder it. Favourites stays pinned to the top.'**
+  String get listsReorderHint;
+
   /// No description provided for @listWordCount.
   ///
   /// In en, this message translates to:
@@ -1892,7 +1970,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @listSubscribedEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Follow a list someone shared with you. No account needed.'**
+  /// **'Tap the cloud icon up top to subscribe to a shared list, or open a share link from someone else. No account needed.'**
   String get listSubscribedEmptyBody;
 
   /// No description provided for @revisionStreak.
@@ -1955,6 +2033,18 @@ abstract class DictLibLocalizations {
   /// **'Strategy'**
   String get flashcardsStrategyLabel;
 
+  /// No description provided for @flashcardsCardLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Card limit'**
+  String get flashcardsCardLimitLabel;
+
+  /// No description provided for @flashcardsCardLimitNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get flashcardsCardLimitNone;
+
   /// No description provided for @revisionDueNow.
   ///
   /// In en, this message translates to:
@@ -2012,7 +2102,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @wordVariationWithHint.
   ///
   /// In en, this message translates to:
-  /// **'Variation {index} of {count} · swipe to compare'**
+  /// **'Variation {index} of {count}'**
   String wordVariationWithHint(int index, int count);
 
   /// No description provided for @wordVariation.

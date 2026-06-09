@@ -54,31 +54,25 @@ class PrivacyPolicyPage extends StatelessWidget {
     return [
       Text('Privacy Policy', style: tt.displaySmall?.copyWith(fontSize: 28)),
       const SizedBox(height: 6),
-      Text('Last updated 2026-05-27',
+      Text('Last updated 2026-06-09',
           style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
       const SizedBox(height: 10),
       _body(context,
           '$appName ("we", "us", or "our") operates the $appName mobile application (the "App").'),
       _heading(context, 'Information Collection and Use'),
       _body(context,
-          'Browsing the dictionary itself does not require an account and does not collect or transmit any personal information about you. We do not use analytics tools or third-party trackers.'),
+          'Browsing the dictionary, saving words to lists on your device, and following (subscribing to) someone else\'s shared list do not require an account and do not collect or transmit any personal information about you. We do not use analytics tools or third-party trackers.'),
       if (sharingEnabled) ...[
         const SizedBox(height: 12),
         _body(context,
-            'The optional shared-lists feature requires you to sign in with Apple, Google, or Facebook. When you sign in, our server receives a verified user identifier from the provider you chose and the display name they expose (e.g. "Alice Smith"). We store the identifier and display name in our cloud storage so we can show your name on lists you share, recognize you on subsequent sign-ins, and let other members of a shared list see who added what. Lists you create or are invited to — their display name and the dictionary entry keys in them — are stored on our server and shared with the other members of each list. If you generate a public share link for a list, anyone with that link can read it. We do not request or store your email address, contacts, profile photo, or anything else from the sign-in provider.'),
+            'We only collect information if you choose to create a shared list of your own, or accept an invitation to become an editor of someone else\'s shared list. Those actions require you to sign in with Apple, Google, or Facebook. When you sign in, our server receives a verified user identifier from the provider you chose and the display name they expose (e.g. "Alice Smith"); we store these so we can show your name on lists you share, recognise you on subsequent sign-ins, and let other members of a shared list see who added what. The lists involved — their name and the dictionary entries in them — are stored on our server and shared with the other members of each list. If you generate a public share link for a list, anyone with that link can read it. We do not request or store your email address, contacts, profile photo, or anything else from the sign-in provider. If you never create or edit a shared list, no account is created and we collect nothing.'),
       ],
       _heading(context, 'Data Retention and Deletion'),
       _body(
           context,
           sharingEnabled
-              ? 'Lists you have shared remain on our server until you delete them (use "Stop sharing" on the list, or "Clear sharing data" in Settings). When you sign out, your session is removed from this device, but your shared lists stay on the server so you can manage them after signing back in. To request full deletion of your account record (display name + user id), contact us at the address below — we will remove your record and any lists you own.'
+              ? 'Lists you have shared remain on our server until you delete them (use "Stop sharing" on the list). When you sign out, your session is removed from this device, but your shared lists stay on the server so you can manage them after signing back in. To delete your account and everything we store for you — your display name, user id, and every list you own — use "Delete account" in Settings, or contact us at the address below.'
               : 'Since we do not collect any user data, we do not retain or delete any personal information.'),
-      _heading(context, 'Security'),
-      _body(
-          context,
-          sharingEnabled
-              ? 'Sign-in sessions are stored in your device\'s secure keychain (iOS Keychain / Android EncryptedSharedPreferences). Communication with our server uses HTTPS. We verify sign-in credentials against the issuing provider before issuing our own session token. Our server runs on Cloudflare and we do not log request bodies or list contents.'
-              : 'We are committed to ensuring that your information is secure. However, since we do not collect any data, there are no security concerns regarding personal data within the App.'),
       _heading(context, 'Changes to This Privacy Policy'),
       _body(context,
           'We may update our Privacy Policy from time to time. Any changes will be posted on this page.'),

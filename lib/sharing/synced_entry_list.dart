@@ -543,6 +543,17 @@ class SyncedEntryListManager {
     }
   }
 
+  /// Remove every owned + editor list mirror, leaving subscriptions intact.
+  /// Owner mirrors wrap a local list, which keeps its entries — only the
+  /// sharing wrapper is dropped. Used on sign-out and account deletion so
+  /// account-bound state doesn't carry over to a different account, while
+  /// anonymous public subscriptions stay.
+  Future<void> clearEditableLists() async {
+    for (final list in editableLists.toList()) {
+      await removeLocal(list.listId);
+    }
+  }
+
   void _indexIfOwner(SyncedEntryList list) {
     if (list.meta.role != ListRole.owner) return;
     final sourceKey = list.meta.sourceLocalKey;

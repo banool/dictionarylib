@@ -110,4 +110,32 @@ class AuthApi {
     }
     throw SyncException.fromResponse(resp);
   }
+
+  /// DELETE `/v1/account` — permanently delete the signed-in user's
+  /// server-side data: every list they own, their editor membership on
+  /// other people's lists, and the display name we store for them. The
+  /// caller ([AuthService.deleteAccount]) is responsible for clearing the
+  /// local session + lists afterwards.
+  ///
+  /// Returns normally on success; throws [SyncException] otherwise so the
+  /// caller can surface a localised error and leave the local session
+  /// intact for a retry.
+  Future<void> deleteAccount({required String sessionToken}) async {
+    final url = Uri.parse('${_config.apiBaseUrl}/v1/account');
+    http.Response resp;
+    try {
+      resp = await _client.delete(url, headers: {
+        'x-app-id': _config.appId,
+        'authorization': 'Bearer $sessionToken',
+      }).timeout(_timeout);
+    } on TimeoutException {
+      throw SyncException(
+          SyncErrorKind.network, 'delete-account request timed out');
+    } catch (e) {
+      throw SyncException(
+          SyncErrorKind.network, 'delete-account network error: $e');
+    }
+    if (resp.statusCode == 200) return;
+    throw SyncException.fromResponse(resp);
+  }
 }

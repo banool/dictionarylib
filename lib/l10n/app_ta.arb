@@ -239,10 +239,7 @@
     "settingsSignedInAs": "Signed in with {provider}",
     "settingsSignOut": "Sign out",
     "settingsSignOutConfirmTitle": "Sign out?",
-    "settingsSignOutConfirmBody": "Your shared lists stay on the server. You'll need to sign in again to edit or unshare them.",
-    "settingsClearSharingData": "Clear sharing data",
-    "settingsClearSharingDataConfirmTitle": "Clear sharing data?",
-    "settingsClearSharingDataConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
+    "settingsSignOutConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
     "alertSave": "Save",
     "alertDone": "Done",
     "listNameAllowedChars": "No special characters besides these are allowed: , . - _ !",
@@ -262,7 +259,7 @@
     "duplicateConfirmAction": "Duplicate",
     "duplicateFallbackName": "Duplicated list",
 
-    "listSharedWithMeTab": "Shared with me",
+    "listSharedWithMeTab": "Subscribed",
     "listSharedWithMeEmpty": "Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.",
 
     "ownedStatusOrphaned": "Shared — deleted by you",

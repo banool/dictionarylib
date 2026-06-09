@@ -3,9 +3,10 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../../common.dart';
 import 'sign_in_exception.dart';
 
-/// Trigger Facebook login and return the access token (which the Worker
-/// verifies via Facebook's /debug_token endpoint — Facebook isn't OIDC
-/// by default, so we don't get a JWT).
+/// Trigger Facebook login (Limited Login) and return the OpenID Connect
+/// ID token — a signed JWT the Worker verifies offline against Facebook's
+/// JWKS, exactly like Apple/Google. The token is exposed by the plugin via
+/// `result.accessToken?.tokenString` despite the field name.
 ///
 /// Throws [ProviderSignInException] on cancellation or failure.
 Future<String> signInWithFacebook() async {

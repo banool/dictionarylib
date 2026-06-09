@@ -94,6 +94,9 @@ class SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _openEntry(BuildContext context, Entry entry) async {
+    // Dismiss the keyboard before navigating (e.g. tapping the sign of the day
+    // while the search field still holds focus).
+    FocusScope.of(context).unfocus();
     Locale locale = Localizations.localeOf(context);
     final phrase = entry.getPhrase(locale);
     if (phrase != null) await _recordRecent(phrase);
@@ -198,7 +201,8 @@ class SearchPageState extends State<SearchPage> {
               if (widget.includeEntryTypeButton)
                 Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: EntryTypeMultiPopUpMenu(onChanged: (entryTypes) async {
+                    child:
+                        EntryTypeMultiPopUpMenu(onChanged: (entryTypes) async {
                       for (EntryType type in EntryType.values) {
                         String key;
                         if (type == EntryType.WORD) {
@@ -233,14 +237,12 @@ class SearchPageState extends State<SearchPage> {
     if (advisoriesResponse != null &&
         advisoriesResponse!.advisories.isNotEmpty) {
       final icon = advisoriesResponse!.newAdvisories
-          ? const Badge(
-              smallSize: 9, child: Icon(Icons.campaign_outlined))
+          ? const Badge(smallSize: 9, child: Icon(Icons.campaign_outlined))
           : const Icon(Icons.campaign_outlined);
       actions.add(buildActionButton(context, icon, () => _openNews()));
     }
 
-    return TopLevelScaffold(
-        body: body, title: l.searchTitle, actions: actions);
+    return TopLevelScaffold(body: body, title: l.searchTitle, actions: actions);
   }
 
   Widget _buildResults(BuildContext context) {
@@ -284,23 +286,6 @@ class SearchPageState extends State<SearchPage> {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Text(
-                phrase.isEmpty ? "?" : phrase.substring(0, 1).toUpperCase(),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontSize: 17, color: cs.primary),
-              ),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Text(phrase,
                   style: const TextStyle(
@@ -341,7 +326,14 @@ class SearchPageState extends State<SearchPage> {
   Entry? _signOfDay(Locale locale) {
     try {
       final saved = <Entry>{};
-      for (final list in userEntryListManager.getEntryLists().values) {
+      // Lists you created (local) plus ones you subscribe to or co-edit —
+      // never community lists.
+      final lists = [
+        ...userEntryListManager.getEntryLists().values,
+        ...sharing.lists.subscribedLists,
+        ...sharing.lists.editorLists,
+      ];
+      for (final list in lists) {
         for (final entry in list.uniqueEntries) {
           if (entry.getPhrase(locale) != null) saved.add(entry);
         }
@@ -351,9 +343,9 @@ class SearchPageState extends State<SearchPage> {
         ..sort((a, b) => a.getPhrase(locale)!.compareTo(b.getPhrase(locale)!));
       // Roll over at local midnight (not UTC) by indexing off the local date.
       final now = DateTime.now();
-      final dayIndex = DateTime(now.year, now.month, now.day)
-              .millisecondsSinceEpoch ~/
-          Duration.millisecondsPerDay;
+      final dayIndex =
+          DateTime(now.year, now.month, now.day).millisecondsSinceEpoch ~/
+              Duration.millisecondsPerDay;
       return candidates[dayIndex % candidates.length];
     } catch (_) {
       return null;
@@ -371,6 +363,7 @@ class SearchPageState extends State<SearchPage> {
       children: [
         if (recents.isNotEmpty) ...[
           HearthSectionLabel(
+            padding: EdgeInsets.fromLTRB(4, 16, 4, 0),
             l.searchRecent,
             trailing: TextButton(
               onPressed: () async {
@@ -382,12 +375,18 @@ class SearchPageState extends State<SearchPage> {
           ),
           Wrap(
             spacing: 8,
-            runSpacing: 8,
+            runSpacing: 4,
             children: [
               for (final w in recents)
                 ActionChip(
                   avatar: const Icon(Icons.schedule, size: 16),
-                  label: Text(w),
+                  // Cap the width so a long saved term ellipsizes into a tidy
+                  // chip instead of overflowing the row.
+                  label: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.6),
+                    child: Text(w, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
                   onPressed: () {
                     final entry = _findByPhrase(context, w);
                     if (entry != null) {
@@ -403,7 +402,30 @@ class SearchPageState extends State<SearchPage> {
           ),
         ],
         if (signOfDay != null) ...[
-          HearthSectionLabel(l.searchSignOfTheDay),
+          HearthSectionLabel(
+            l.searchSignOfTheDay,
+            trailing: IconButton(
+              icon: const Icon(Icons.info_outline, size: 18),
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              tooltip: l.signOfTheDayInfo,
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(l.searchSignOfTheDay),
+                  content: Text(l.signOfTheDayInfo),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           _signOfDayCard(context, signOfDay),
         ],
       ],
@@ -422,8 +444,7 @@ class SearchPageState extends State<SearchPage> {
         children: [
           // A light, themed illustration tile rather than a real video — the
           // home screen shouldn't spin up a video player just for a still.
-          HearthSignIllustration(
-              width: 96, height: 76, seed: phrase.hashCode),
+          HearthSignIllustration(width: 96, height: 76, seed: phrase.hashCode),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -437,7 +458,8 @@ class SearchPageState extends State<SearchPage> {
                         ?.copyWith(fontSize: 22)),
                 const SizedBox(height: 5),
                 Text(
-                  preview ?? DictLibLocalizations.of(context)!.signOfTheDayBlurb,
+                  preview ??
+                      DictLibLocalizations.of(context)!.signOfTheDayBlurb,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -513,14 +535,13 @@ class EntryTypeMultiPopUpMenuState extends State<EntryTypeMultiPopUpMenu> {
 
   @override
   Widget build(BuildContext context) {
-    Brightness brightness = Theme.of(context).brightness;
     return IconButton(
       icon: const Icon(Icons.filter_list),
       onPressed: () async {
         await _showDialog(context);
         await widget.onChanged(_selectedEntryTypes);
       },
-      color: brightness == Brightness.light ? Colors.black : Colors.white,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 }

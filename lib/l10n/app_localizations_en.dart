@@ -118,6 +118,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get flashcardsGotIt => 'Got it!';
 
   @override
+  String get flashcardsCardUnavailable =>
+      'A card was unavailable and was skipped.';
+
+  @override
   String get flashcardsWhatIsSignForWord => 'What is the sign for this word?';
 
   @override
@@ -301,6 +305,12 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get listCommunity => 'Community';
+
+  @override
+  String get listSortAdded => 'Added';
+
+  @override
+  String get listSortAlpha => 'A-Z';
 
   @override
   String get listConfirmListDelete =>
@@ -487,6 +497,11 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get signInDialogBody => 'To share a list you must sign in.';
 
   @override
+  String signInLastUsedHint(String provider) {
+    return 'Last time, you signed in with $provider.';
+  }
+
+  @override
   String get signInWithApple => 'Continue with Apple';
 
   @override
@@ -525,14 +540,23 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get subscribeDialogTitle => 'Subscribe to a shared list';
 
   @override
-  String get subscribeDialogBody =>
-      'Paste either a share link or just the list ID at the end of one.';
+  String get subscribeDialogBody => 'Paste a share link / list ID.';
 
   @override
   String get subscribeDialogUrlLabel => 'Share URL';
 
   @override
   String get subscribeDialogSubscribeButton => 'Subscribe';
+
+  @override
+  String get alreadySubscribedSnack =>
+      'You\'re already subscribed to this list.';
+
+  @override
+  String get alreadyOwnerSnack => 'You own this list.';
+
+  @override
+  String get alreadyEditorSnack => 'You\'re an editor of this list.';
 
   @override
   String get subscribeInvalidInput => 'Not a valid share link or list ID.';
@@ -584,6 +608,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get subscribedSyncNowMenuItem => 'Sync now';
 
   @override
+  String get subscribedCopyLinkMenuItem => 'Copy link';
+
+  @override
   String get subscribedSyncInProgress => 'Syncing…';
 
   @override
@@ -616,17 +643,28 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsSignOutConfirmBody =>
-      'Your shared lists stay on the server. You\'ll need to sign in again to edit or unshare them.';
+      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
 
   @override
-  String get settingsClearSharingData => 'Clear sharing data';
+  String get settingsDeleteAccount => 'Delete account';
 
   @override
-  String get settingsClearSharingDataConfirmTitle => 'Clear sharing data?';
+  String get settingsDeleteAccountConfirmTitle => 'Delete account?';
 
   @override
-  String get settingsClearSharingDataConfirmBody =>
-      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n  • Your subscriptions are removed.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
+  String get settingsDeleteAccountConfirmButton => 'Delete account';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed to them will lose access.\n  • You\'re removed as an editor from other people\'s lists.\n  • The name we have for you is erased.\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
+
+  @override
+  String get settingsDeleteAccountRunning => 'Deleting account…';
+
+  @override
+  String settingsDeleteAccountFailed(String message) {
+    return 'Couldn\'t delete your account: $message';
+  }
 
   @override
   String get alertSave => 'Save';
@@ -692,11 +730,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get duplicateFallbackName => 'Duplicated list';
 
   @override
-  String get listSharedWithMeTab => 'Shared with me';
+  String get listSharedWithMeTab => 'Subscribed';
 
   @override
-  String get listSharedWithMeEmpty =>
-      'Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.';
+  String get listSharedWithMeEmpty => 'Nothing here yet.';
 
   @override
   String get ownedStatusOrphaned => 'Shared — deleted by you';
@@ -828,6 +865,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get membersPageTitle => 'Members';
 
   @override
+  String get membersPageYou => 'You';
+
+  @override
   String get membersPageCreator => 'Creator';
 
   @override
@@ -886,11 +926,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   @override
   String get signInDialogContextResume =>
       'Sign in again to push your queued edits.';
-
-  @override
-  String settingsSignedInAsNamed(String name, String provider) {
-    return 'Signed in as $name via $provider';
-  }
 
   @override
   String settingsSignOutConfirmBodyWithPending(int count) {
@@ -1007,6 +1042,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get signOfTheDayBlurb => 'A new sign to learn each day.';
 
   @override
+  String get signOfTheDayInfo =>
+      'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.';
+
+  @override
   String searchResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1061,6 +1100,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'Tap the pencil to reorder, rename, or create a new list.';
 
   @override
+  String get listsReorderHint =>
+      'Drag a list to reorder it. Favourites stays pinned to the top.';
+
+  @override
   String listWordCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1076,7 +1119,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get listSubscribedEmptyBody =>
-      'Follow a list someone shared with you. No account needed.';
+      'Tap the cloud icon up top to subscribe to a shared list, or open a share link from someone else. No account needed.';
 
   @override
   String revisionStreak(int days) {
@@ -1126,6 +1169,12 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get flashcardsStrategyLabel => 'Strategy';
 
   @override
+  String get flashcardsCardLimitLabel => 'Card limit';
+
+  @override
+  String get flashcardsCardLimitNone => 'No limit';
+
+  @override
   String get revisionDueNow => 'Due now';
 
   @override
@@ -1163,7 +1212,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String wordVariationWithHint(int index, int count) {
-    return 'Variation $index of $count · swipe to compare';
+    return 'Variation $index of $count';
   }
 
   @override

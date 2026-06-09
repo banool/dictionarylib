@@ -26,17 +26,12 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
     revisionStrategy = loadRevisionStrategy();
   }
 
-  String _getDatetimeString(DateTime dt) {
-    return "${dt.year.toString()}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}";
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l = DictLibLocalizations.of(context)!;
 
     Widget content;
-    String? disclaimer;
 
     switch (revisionStrategy) {
       case RevisionStrategy.SpacedRepetition:
@@ -113,9 +108,6 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
 
           rememberRate =
               totalAnswers == 0 ? 0 : numCardsRemembered / totalAnswers;
-
-          disclaimer =
-              "${l.flashcardsStatsCollectedSince} ${_getDatetimeString(earliestDateTime)}";
         }
 
         content = reviews.isEmpty
@@ -172,15 +164,6 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
       case RevisionStrategy.Random:
         int totalRandomReviews =
             sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
-        int? firstStartedTrackingRandomReviews =
-            sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
-        if (firstStartedTrackingRandomReviews != null) {
-          var dt = DateTime.fromMillisecondsSinceEpoch(
-                  firstStartedTrackingRandomReviews * 1000)
-              .toLocal();
-          disclaimer =
-              "${l.flashcardsStatsCollectedSince} ${_getDatetimeString(dt)}";
-        }
         content = totalRandomReviews == 0
             ? _emptyState(context)
             : HearthStatTile(
@@ -213,14 +196,6 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
           ),
           const SizedBox(height: 20),
           content,
-          if (disclaimer != null) ...[
-            const SizedBox(height: 18),
-            Text(
-              disclaimer,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
-            ),
-          ],
         ],
       ),
     );

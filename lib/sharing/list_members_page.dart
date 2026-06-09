@@ -120,9 +120,8 @@ class _ListMembersPageState extends State<ListMembersPage> {
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: url));
                 if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                      content: Text(
-                          DictLibLocalizations.of(ctx)!.shareLinkCopiedSnack)));
+                  showSnack(
+                      ctx, DictLibLocalizations.of(ctx)!.shareLinkCopiedSnack);
                 }
               },
               icon: const Icon(Icons.copy),
@@ -226,19 +225,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final members = widget.list.meta.cachedMembers;
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l.membersPageTitle),
-            Text(
-              widget.list.meta.displayName,
-              style: Theme.of(context).textTheme.labelSmall,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ],
-        ),
+        title: Text(l.membersPageTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 16),
@@ -249,8 +236,10 @@ class _ListMembersPageState extends State<ListMembersPage> {
           ),
           if (members != null)
             _buildMemberTile(members.owner)
+          else if (_viewerIsOwner)
+            _buildSelfOwnerTile()
           else
-            const ListTile(dense: true, title: Text('—')),
+            const HearthListRow(title: '—', showChevron: false),
           HearthSectionLabel(
             l.membersPageEditors,
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -258,10 +247,14 @@ class _ListMembersPageState extends State<ListMembersPage> {
                 ? FilledButton.icon(
                     onPressed: _invitingInflight ? null : _invite,
                     icon: _invitingInflight
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                            // onPrimary so the spinner shows on the filled
+                            // button background in both themes.
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.onPrimary))
                         : const Icon(Icons.person_add),
                     label: Text(l.shareLinkInviteEditorButton),
                   )
@@ -306,22 +299,35 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final name = member.userId == _viewerUserId && _viewerUserId.isNotEmpty
         ? l.membersPageNameYou(base)
         : base;
-    return ListTile(
-      leading: _avatar(name),
-      title: Text(name),
+    return HearthListRow(
+      leading: _initialAvatar(name),
+      title: name,
+      showChevron: false,
     );
   }
 
-  Widget _avatar(String name) {
-    final cs = Theme.of(context).colorScheme;
-    return CircleAvatar(
-      backgroundColor: cs.primaryContainer,
-      child: Text(_initial(name),
-          style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: cs.onPrimaryContainer)),
+  /// Before the first /sync populates the member directory, an owner
+  /// viewing their freshly-created list has no cached members yet — but
+  /// the creator is necessarily the viewer. Render them from the session
+  /// so the row shows their name (or "You") instead of a placeholder dash.
+  Widget _buildSelfOwnerTile() {
+    final l = DictLibLocalizations.of(context)!;
+    final display = sharing.auth.store.current?.displayName ?? '';
+    final name =
+        display.isEmpty ? l.membersPageYou : l.membersPageNameYou(display);
+    return HearthListRow(
+      leading: _initialAvatar(name),
+      title: name,
+      showChevron: false,
     );
+  }
+
+  /// The leading initial that sits inside [HearthListRow]'s rounded tile.
+  Widget _initialAvatar(String name) {
+    final cs = Theme.of(context).colorScheme;
+    return Text(_initial(name),
+        style: TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w700, color: cs.primary));
   }
 
   Widget _buildEditorTile(DictLibLocalizations l, EditorRef editor) {
@@ -329,12 +335,12 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final isViewer = editor.userId == _viewerUserId && _viewerUserId.isNotEmpty;
     final name = isViewer ? l.membersPageNameYou(base) : base;
     final addedByName = _resolveAddedByName(editor);
-    return ListTile(
-      leading: _avatar(name),
-      title: Text(name),
-      subtitle: addedByName.isEmpty
-          ? null
-          : Text(l.membersPageEditorAddedBy(addedByName)),
+    return HearthListRow(
+      leading: _initialAvatar(name),
+      title: name,
+      subtitle:
+          addedByName.isEmpty ? null : l.membersPageEditorAddedBy(addedByName),
+      showChevron: false,
       trailing: _viewerIsOwner && !isViewer
           ? IconButton(
               icon: const Icon(Icons.person_remove_outlined),

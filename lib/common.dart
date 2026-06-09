@@ -38,8 +38,16 @@ const String KEY_HIDE_COMMUNITY_LISTS = "hide_community_lists";
 const String KEY_FLASHCARD_REGIONS = "flashcard_regions";
 const String KEY_REVISION_STRATEGY = "revision_strategy";
 const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
+
+// Optional cap on how many cards a revision session serves. 0 means no limit
+// (do every due/selected card). Remembered across sessions.
+const String KEY_REVISION_CARD_LIMIT = "revision_card_limit";
 const String KEY_THEME_MODE = "theme_mode";
 const String KEY_USE_SYSTEM_HTTP_PROXY = "use_system_http_proxy";
+
+// The auth provider (by AuthProvider.name) the user last signed in with, so
+// the sign-in dialog can remind a returning, signed-out user which one to use.
+const String KEY_LAST_AUTH_PROVIDER = "last_auth_provider";
 
 // Which visual style ("theme variant") to use, e.g. "hearth" or "classic".
 // Stored by name so the enum order can change without invalidating it. See
@@ -73,6 +81,16 @@ bool getShouldUseHorizontalLayout(BuildContext context) {
   var screenSize = MediaQuery.of(context).size;
   var shouldUseHorizontalDisplay = screenSize.width > screenSize.height * 1.2;
   return shouldUseHorizontalDisplay;
+}
+
+/// Case-insensitive lexicographic comparison for *display* sorting, so mixed
+/// case sorts sensibly ("Apple", "banana", "Cat") instead of all capitals
+/// first the way raw code-unit order (String.compareTo) does. Strings that
+/// differ only by case fall back to a stable code-unit compare so the order is
+/// deterministic.
+int compareDisplayNames(String a, String b) {
+  final c = a.toLowerCase().compareTo(b.toLowerCase());
+  return c != 0 ? c : a.compareTo(b);
 }
 
 // Reaches out to check the value of the knob. If this succeeds, we store the
@@ -273,7 +291,7 @@ Future<bool> runWithProgress({
   String Function(Object error)? errorMessage,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
-  final errorColor = Theme.of(context).colorScheme.error;
+  final cs = Theme.of(context).colorScheme;
   showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -296,13 +314,41 @@ Future<bool> runWithProgress({
     ok = true;
   } catch (e) {
     messenger.showSnackBar(SnackBar(
-      content: Text(errorMessage?.call(e) ?? e.toString()),
-      backgroundColor: errorColor,
+      content: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => messenger.hideCurrentSnackBar(),
+        child: Text(errorMessage?.call(e) ?? e.toString(),
+            style: TextStyle(color: cs.onError)),
+      ),
+      backgroundColor: cs.error,
     ));
   } finally {
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
   }
   return ok;
+}
+
+/// Show a toast that dismisses on tap (in addition to the usual auto-timeout /
+/// swipe). Prefer this over `ScaffoldMessenger...showSnackBar` so toasts are
+/// consistently tappable-to-dismiss across the app.
+void showSnack(
+  BuildContext context,
+  String message, {
+  Duration? duration,
+  Color? backgroundColor,
+  Color? textColor,
+}) {
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.showSnackBar(SnackBar(
+    content: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => messenger.hideCurrentSnackBar(),
+      child: Text(message,
+          style: textColor != null ? TextStyle(color: textColor) : null),
+    ),
+    backgroundColor: backgroundColor,
+    duration: duration ?? const Duration(seconds: 4),
+  ));
 }
 
 /// Anchor rect for `Share.share`'s `sharePositionOrigin`. iOS uses this to

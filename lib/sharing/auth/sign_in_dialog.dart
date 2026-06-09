@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../common.dart';
 import '../../globals.dart';
@@ -79,6 +80,10 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
         });
         try {
           final session = await sharing.auth.signIn(provider);
+          // Remember which provider worked so a future signed-out visit can
+          // remind the user how they got in last time.
+          await sharedPreferences.setString(
+              KEY_LAST_AUTH_PROVIDER, provider.name);
           if (ctx.mounted) Navigator.of(ctx).pop(session);
         } on ProviderSignInException catch (e) {
           // Platform SDK rejection (cancel, missing credential, etc.).
@@ -122,11 +127,20 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
+            if (_lastProviderHint() case final last?) ...[
+              const SizedBox(height: 10),
+              Text(
+                l.signInLastUsedHint(_providerDisplayName(l, last)),
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+              ),
+            ],
             const SizedBox(height: 16),
             if (sharing.auth.isProviderAvailable(AuthProvider.apple))
               _ProviderButton(
                 label: l.signInWithApple,
-                icon: Icons.apple,
+                icon: const FaIcon(FontAwesomeIcons.apple),
                 onPressed:
                     inflight == null ? () => attempt(AuthProvider.apple) : null,
                 inflight: inflight == AuthProvider.apple,
@@ -135,7 +149,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
               const SizedBox(height: 8),
               _ProviderButton(
                 label: l.signInWithGoogle,
-                iconWidget: const _GoogleLogo(),
+                icon: const FaIcon(FontAwesomeIcons.google),
                 onPressed: inflight == null
                     ? () => attempt(AuthProvider.google)
                     : null,
@@ -146,7 +160,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
               const SizedBox(height: 8),
               _ProviderButton(
                 label: l.signInWithFacebook,
-                icon: Icons.facebook,
+                icon: const FaIcon(FontAwesomeIcons.facebook),
                 onPressed: inflight == null
                     ? () => attempt(AuthProvider.facebook)
                     : null,
@@ -158,13 +172,14 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
             // Sends to the worker's gated test-provider path —
             // production deploys reject this even if a release build
             // somehow tried.
-            if (kDebugMode && (sharing.config.testSignIn?.enabled ?? false)) ...[
+            if (kDebugMode &&
+                (sharing.config.testSignIn?.enabled ?? false)) ...[
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 8),
               _ProviderButton(
                 label: l.signInTestUserButton,
-                icon: Icons.bug_report,
+                icon: const Icon(Icons.bug_report),
                 onPressed: inflight == null
                     ? () => _attemptTestSignIn(ctx, sharing.config.testSignIn!,
                         (err) => setLocal(() => error = err))
@@ -259,6 +274,30 @@ Future<void> _attemptTestSignIn(
   }
 }
 
+/// The provider the user last successfully signed in with, or null if there's
+/// no record (or it was the debug-only test provider, which we never surface).
+AuthProvider? _lastProviderHint() {
+  final name = sharedPreferences.getString(KEY_LAST_AUTH_PROVIDER);
+  if (name == null) return null;
+  for (final p in AuthProvider.values) {
+    if (p.name == name && p != AuthProvider.test) return p;
+  }
+  return null;
+}
+
+String _providerDisplayName(DictLibLocalizations l, AuthProvider provider) {
+  switch (provider) {
+    case AuthProvider.apple:
+      return l.providerApple;
+    case AuthProvider.google:
+      return l.providerGoogle;
+    case AuthProvider.facebook:
+      return l.providerFacebook;
+    case AuthProvider.test:
+      return l.providerTest;
+  }
+}
+
 String _localiseProviderError(DictLibLocalizations l, SignInErrorKind kind) {
   switch (kind) {
     case SignInErrorKind.cancelled:
@@ -275,62 +314,44 @@ String _localiseProviderError(DictLibLocalizations l, SignInErrorKind kind) {
 class _ProviderButton extends StatelessWidget {
   final String label;
 
-  /// Monochrome icon for providers whose mark is a simple glyph (Apple,
-  /// Facebook). Mutually exclusive with [iconWidget].
-  final IconData? icon;
-
-  /// A bespoke leading widget for providers that need their own branded mark
-  /// (e.g. Google's multi-colour "G"). Takes precedence over [icon].
-  final Widget? iconWidget;
+  /// The provider's brand mark. Passed as a widget (an [Icon] or [FaIcon]) so
+  /// each provider can use its proper glyph; it inherits the button's
+  /// foreground colour and size from the ambient icon theme, so they all look
+  /// consistent.
+  final Widget icon;
   final VoidCallback? onPressed;
   final bool inflight;
 
   const _ProviderButton({
     required this.label,
-    this.icon,
-    this.iconWidget,
+    required this.icon,
     required this.onPressed,
     required this.inflight,
-  }) : assert(icon != null || iconWidget != null);
+  });
 
   @override
   Widget build(BuildContext context) {
     return FilledButton.tonalIcon(
       onPressed: onPressed,
-      icon: inflight
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : (iconWidget ?? Icon(icon)),
+      // Left-align the icon + label instead of centring them in the
+      // full-width button.
+      style: FilledButton.styleFrom(alignment: Alignment.centerLeft),
+      // Brand glyphs have different intrinsic widths (Apple is narrow, Google /
+      // Facebook wider), which would shift each label to a different x. Pin the
+      // icon into a fixed-width, centred slot so all the labels line up.
+      icon: SizedBox(
+        width: 26,
+        child: Center(
+          child: inflight
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : icon,
+        ),
+      ),
       label: Text(label),
-    );
-  }
-}
-
-/// Google's official multi-colour "G" mark, sat on the white rounded tile its
-/// branding guidelines call for, so the Sign in with Google button uses the
-/// real logo rather than a generic letter glyph.
-class _GoogleLogo extends StatelessWidget {
-  const _GoogleLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: 20,
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.all(1),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Image.asset(
-        'assets/brand/google-g.png',
-        package: 'dictionarylib',
-        fit: BoxFit.contain,
-      ),
     );
   }
 }

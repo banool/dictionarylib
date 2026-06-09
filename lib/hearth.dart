@@ -197,11 +197,11 @@ class HearthVideoFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: cs.outlineVariant),
+        border: Border.all(color: cs.outlineVariant, width: 0.75),
         boxShadow: [
           BoxShadow(
             // The scheme's shadow token is already brightness-appropriate
@@ -214,7 +214,7 @@ class HearthVideoFrame extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius - 8),
+        borderRadius: BorderRadius.circular(radius - 6),
         child: child,
       ),
     );
@@ -444,36 +444,42 @@ class HearthRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 20, color: iconColor ?? cs.primary),
-              const SizedBox(width: 13),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title,
-                      style: tt.titleMedium
-                          ?.copyWith(fontSize: 15.5, fontWeight: FontWeight.w600)),
-                  if (subtitle != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(subtitle!,
-                          style: tt.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant, height: 1.35)),
-                    ),
-                ],
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        // A uniform minimum row height so rows with a tall trailing (Switch /
+        // Checkbox, whose tap target is ~48dp) are the same height as plain
+        // rows (chevron / value). Multi-line subtitles can still grow past it.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: iconColor ?? cs.primary),
+                const SizedBox(width: 13),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(title,
+                        style: tt.titleMedium?.copyWith(
+                            fontSize: 15.5, fontWeight: FontWeight.w600)),
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(subtitle!,
+                            style: tt.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant, height: 1.35)),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            if (trailing != null) ...[
-              const SizedBox(width: 10),
-              trailing!,
+              if (trailing != null) ...[
+                const SizedBox(width: 10),
+                trailing!,
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -515,6 +521,53 @@ class HearthRowGroup extends StatelessWidget {
     }
     return HearthCard(padding: padding, child: Column(children: kids));
   }
+}
+
+/// An option for [showHearthPicker].
+class HearthPickerOption<T> {
+  final T value;
+  final String label;
+  const HearthPickerOption(this.value, this.label);
+}
+
+/// A single-choice picker dialog styled with [HearthRow]s and a check on the
+/// current selection. Returns the chosen value, or null if dismissed. Use this
+/// instead of hand-rolling an AlertDialog full of raw ListTiles, so choice
+/// dialogs (app theme, colour mode, …) match the rest of the Hearth UI.
+Future<T?> showHearthPicker<T>({
+  required BuildContext context,
+  required String title,
+  required T selected,
+  required List<HearthPickerOption<T>> options,
+}) {
+  return showDialog<T>(
+    context: context,
+    builder: (ctx) {
+      final cs = Theme.of(ctx).colorScheme;
+      return AlertDialog(
+        title: Text(title),
+        // Zero horizontal content padding so each HearthRow's own inset + ripple
+        // span the dialog width.
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final o in options)
+                HearthRow(
+                  title: o.label,
+                  onTap: () => Navigator.of(ctx).pop(o.value),
+                  trailing: o.value == selected
+                      ? Icon(Icons.check, color: cs.primary)
+                      : null,
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// A list row presented as its own spaced, outlined card: a rounded leading

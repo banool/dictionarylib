@@ -181,7 +181,8 @@ class VideoPlayerScreen extends StatefulWidget {
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
 }
 
-class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
+class _VideoPlayerScreenState extends State<VideoPlayerScreen>
+    with WidgetsBindingObserver {
   Map<int, _PlayerData> players = {};
 
   CarouselSliderController? carouselController;
@@ -197,6 +198,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    // Observe app lifecycle so we can resume playback after the app is
+    // backgrounded (e.g. the user opened an external link and came back).
+    WidgetsBinding.instance.addObserver(this);
     // Make carousel slider controller.
     carouselController = CarouselSliderController();
     // Honour the caller-supplied initial page so jump-to-video lands on
@@ -419,7 +423,21 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // The OS pauses media playback when the app is backgrounded (e.g. when the
+    // user follows an external link). On return, resume the visible video so it
+    // never stays stuck paused. Players that aren't ready yet auto-play once
+    // they load (see the build-time initial play/pause), so guard on isReady.
+    if (state == AppLifecycleState.resumed) {
+      final pd = players[currentPage];
+      if (pd != null && pd.isReady) pd.player.play();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // Ensure disposing of the Players to free up resources.
     for (var playerData in players.values) {
       playerData.dispose();
@@ -488,19 +506,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             builder: (context, constraints) {
               final videoAspectRatio =
                   playerData.aspectRatio ?? widget.fallbackAspectRatio;
-              // Reserve room for HearthVideoFrame's padding (8px each side) so
+              // Reserve room for HearthVideoFrame's padding (6px each side) so
               // the framed card fits within the carousel slide without
               // overflowing.
-              const frameTotal = 16.0;
+              const frameTotal = 12.0;
+              // Equal breathing room above and below the framed video, so the
+              // gaps match and the frame's drop shadow has room at the bottom.
+              const verticalMargin = 15.0;
               double videoWidth = constraints.maxWidth - frameTotal;
               double videoHeight = videoWidth / videoAspectRatio;
               if (constraints.maxHeight.isFinite &&
-                  videoHeight > constraints.maxHeight - 15 - frameTotal) {
-                videoHeight = constraints.maxHeight - 15 - frameTotal;
+                  videoHeight >
+                      constraints.maxHeight - verticalMargin * 2 - frameTotal) {
+                videoHeight =
+                    constraints.maxHeight - verticalMargin * 2 - frameTotal;
                 videoWidth = videoHeight * videoAspectRatio;
               }
               return Container(
-                padding: const EdgeInsets.only(top: 15),
+                padding: const EdgeInsets.symmetric(vertical: verticalMargin),
                 alignment: Alignment.center,
                 // The signing video framed as the hero (shared Hearth widget:
                 // soft surface card, subtle border + warm shadow, rounded
@@ -656,6 +679,9 @@ class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Fullscreen video deliberately ignores the app theme: video always plays
+    // on black with white chrome, in both light and dark mode — like every
+    // video player. These Colors.black/white are intentional, not theme leaks.
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(

@@ -145,9 +145,12 @@ class _HearthTokens {
     surface2: Color(0xFF2A211B),
     onSurface: Color(0xFFF3E9E0),
     muted: Color(0xFFB7A899),
-    faint: Color(0xFF8A7C6F),
-    outline: Color(0xFF43342A),
-    faintOutline: Color(0xFF2E241C),
+    // Nudged lighter than the original tokens so dividers, card borders, and
+    // hint text actually separate from the dark surfaces (the originals —
+    // faint 8A7C6F, outline 43342A, faintOutline 2E241C — read as nearly flat).
+    faint: Color(0xFF998A7B),
+    outline: Color(0xFF4E3D30),
+    faintOutline: Color(0xFF382C22),
     primary: Color(0xFFE89070),
     onPrimary: Color(0xFF46190A),
     primaryCont: Color(0xFF6A3320),

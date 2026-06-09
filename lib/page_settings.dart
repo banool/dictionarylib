@@ -33,6 +33,7 @@ class SettingsPage extends StatefulWidget {
     required this.iOSAppId,
     required this.androidAppId,
     required this.showPrivacyPolicy,
+    this.privacyPolicyEmail = PRIVACY_POLICY_EMAIL,
   });
 
   final String appName;
@@ -43,6 +44,10 @@ class SettingsPage extends StatefulWidget {
   final String iOSAppId;
   final String androidAppId;
   final bool showPrivacyPolicy;
+
+  /// Address shown in the privacy policy's Contact Us section. Defaults to the
+  /// shared [PRIVACY_POLICY_EMAIL]; an app can override it (Auslan uses its own).
+  final String privacyPolicyEmail;
 
   @override
   SettingsPageState createState() => SettingsPageState();
@@ -60,7 +65,8 @@ class SettingsPageState extends State<SettingsPage> {
             context,
             MaterialPageRoute(
                 builder: (context) => PrivacyPolicyPage(
-                    appName: widget.appName, email: PRIVACY_POLICY_EMAIL)));
+                    appName: widget.appName,
+                    email: widget.privacyPolicyEmail)));
       });
     }
   }
@@ -130,92 +136,92 @@ class SettingsPageState extends State<SettingsPage> {
       ...section(l.settingsAppearance, [
         navRow(l.settingsColourMode, value: _getThemeModeString(context),
             onTap: () async {
-          await showDialog(
+          final current = ThemeMode
+              .values[sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
+          final chosen = await showHearthPicker<ThemeMode>(
             context: context,
-            builder: (BuildContext context) {
-              var currentMode = sharedPreferences.getInt(KEY_THEME_MODE) ?? 0;
-              return AlertDialog(
-                title: Text(l.settingsColourMode),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      title: Text(l.settingsColourModeSystem),
-                      trailing: currentMode == ThemeMode.system.index
-                          ? const Icon(Icons.check)
-                          : null,
-                      onTap: () {
-                        _setThemeMode(ThemeMode.system);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    ListTile(
-                      title: Text(l.settingsColourModeLight),
-                      trailing: currentMode == ThemeMode.light.index
-                          ? const Icon(Icons.check)
-                          : null,
-                      onTap: () {
-                        _setThemeMode(ThemeMode.light);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    ListTile(
-                      title: Text(l.settingsColourModeDark),
-                      trailing: currentMode == ThemeMode.dark.index
-                          ? const Icon(Icons.check)
-                          : null,
-                      onTap: () {
-                        _setThemeMode(ThemeMode.dark);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+            title: l.settingsColourMode,
+            selected: current,
+            options: [
+              HearthPickerOption(ThemeMode.system, l.settingsColourModeSystem),
+              HearthPickerOption(ThemeMode.light, l.settingsColourModeLight),
+              HearthPickerOption(ThemeMode.dark, l.settingsColourModeDark),
+            ],
           );
-          setState(() {});
+          if (chosen != null) await _setThemeMode(chosen);
+          if (mounted) setState(() {});
         }),
         navRow(l.settingsAppTheme,
             value: themeVariantNotifier.value.displayName, onTap: () async {
-          await showDialog(
+          final chosen = await showHearthPicker<AppThemeVariant>(
             context: context,
-            builder: (BuildContext context) {
-              final current = themeVariantNotifier.value;
-              return AlertDialog(
-                title: Text(l.settingsAppTheme),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final variant in AppThemeVariant.values)
-                      ListTile(
-                        title: Text(variant.displayName),
-                        trailing: current == variant
-                            ? const Icon(Icons.check)
-                            : null,
-                        onTap: () {
-                          _setThemeVariant(variant);
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                  ],
-                ),
-              );
-            },
+            title: l.settingsAppTheme,
+            selected: themeVariantNotifier.value,
+            options: [
+              for (final variant in AppThemeVariant.values)
+                HearthPickerOption(variant, variant.displayName),
+            ],
           );
-          setState(() {});
+          if (chosen != null) await _setThemeVariant(chosen);
+          if (mounted) setState(() {});
         }),
       ]),
+      if (shareState.isEnabled)
+        ...section(l.settingsSharing, [
+          if (session == null)
+            navRow(l.settingsSignIn, onTap: () async {
+              final result = await showSignInDialog(context);
+              if (result != null && context.mounted) {
+                await offerImportOwnedLists(context);
+              }
+              if (mounted) setState(() {});
+            })
+          else ...[
+            HearthRow(
+                title: l.settingsSignedInAs(
+                    _providerLabel(l, session.provider))),
+            navRow(l.settingsSignOut, onTap: () async {
+              final pendingLists = shareState.lists.editableLists
+                  .where((x) => x.meta.pendingOps.isNotEmpty)
+                  .toList();
+              final body = pendingLists.isNotEmpty
+                  ? l.settingsSignOutConfirmBodyWithPending(pendingLists.length)
+                  : l.settingsSignOutConfirmBody;
+              final confirmed = await confirmAlert(context, Text(body),
+                  title: l.settingsSignOutConfirmTitle);
+              if (confirmed) {
+                await shareState.signOut();
+                if (mounted) setState(() {});
+              }
+            }),
+            navRow(l.settingsDeleteAccount, onTap: () async {
+              final confirmed = await confirmAlert(
+                  context, Text(l.settingsDeleteAccountConfirmBody),
+                  title: l.settingsDeleteAccountConfirmTitle,
+                  confirmText: l.settingsDeleteAccountConfirmButton);
+              if (!confirmed || !context.mounted) return;
+              await runWithProgress(
+                context: context,
+                message: l.settingsDeleteAccountRunning,
+                task: () => shareState.deleteAccount(),
+                errorMessage: (e) => e is SyncException
+                    ? l.settingsDeleteAccountFailed(e.message)
+                    : '$e',
+              );
+              if (mounted) setState(() {});
+            }),
+          ],
+        ]),
       ...section(l.settingsCache, [
         switchRow(l.settingsCacheVideos,
             sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true, (newValue) {
-          setState(() => sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue));
+          sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue);
+          setState(() {});
         }),
         navRow(l.settingsDropCache, onTap: () async {
           await myCacheManager.emptyCache();
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l.settingsCacheDropped)));
+          showSnack(context, l.settingsCacheDropped);
         }),
       ]),
       ...section(l.settingsData, [
@@ -233,19 +239,19 @@ class SettingsPageState extends State<SettingsPage> {
                     await entryLoader.downloadAndApplyNewData(true);
                 if (!mounted) return;
                 setState(() => checkingForNewData = false);
-                final message = (newData != null && newData.newDataIsActuallyNew())
-                    ? l.settingsDataUpdated
-                    : l.settingsDataUpToDate;
+                final message =
+                    (newData != null && newData.newDataIsActuallyNew())
+                        ? l.settingsDataUpdated
+                        : l.settingsDataUpToDate;
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(message), backgroundColor: cs.primary));
+                showSnack(context, message, backgroundColor: cs.primary);
               }),
         if (communityEntryListManager.getEntryLists().isNotEmpty)
           switchRow(l.settingsHideCommunityLists,
               sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false,
               (newValue) {
-            setState(() =>
-                sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue));
+            sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue);
+            setState(() {});
           }),
       ]),
       if (enableFlashcardsKnob && !kIsWeb)
@@ -253,8 +259,8 @@ class SettingsPageState extends State<SettingsPage> {
           switchRow(l.settingsHideRevision,
               sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false,
               (newValue) {
-            setState(() => sharedPreferences.setBool(
-                KEY_HIDE_FLASHCARDS_FEATURE, newValue));
+            sharedPreferences.setBool(KEY_HIDE_FLASHCARDS_FEATURE, newValue);
+            setState(() {});
           }),
           navRow(l.settingsDeleteRevisionProgress, onTap: () async {
             bool confirmed = await confirmAlert(
@@ -266,50 +272,6 @@ class SettingsPageState extends State<SettingsPage> {
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(l.settingsProgressDeleted)));
-            }
-          }),
-        ]),
-      if (shareState.isEnabled)
-        ...section(l.settingsSharing, [
-          if (session == null)
-            navRow(l.settingsSignIn, onTap: () async {
-              final result = await showSignInDialog(context);
-              if (result != null && context.mounted) {
-                await offerImportOwnedLists(context);
-              }
-              if (mounted) setState(() {});
-            })
-          else ...[
-            HearthRow(
-                title: session.displayName.isNotEmpty
-                    ? l.settingsSignedInAsNamed(
-                        session.displayName, _providerLabel(l, session.provider))
-                    : l.settingsSignedInAs(
-                        _providerLabel(l, session.provider))),
-            navRow(l.settingsSignOut, onTap: () async {
-              final pendingLists = shareState.lists.editableLists
-                  .where((x) => x.meta.pendingOps.isNotEmpty)
-                  .toList();
-              final body = pendingLists.isNotEmpty
-                  ? l.settingsSignOutConfirmBodyWithPending(pendingLists.length)
-                  : l.settingsSignOutConfirmBody;
-              final confirmed = await confirmAlert(context, Text(body),
-                  title: l.settingsSignOutConfirmTitle);
-              if (confirmed) {
-                await shareState.signOut();
-                if (mounted) setState(() {});
-              }
-            }),
-          ],
-          navRow(l.settingsClearSharingData, onTap: () async {
-            final confirmed = await confirmAlert(
-                context, Text(l.settingsClearSharingDataConfirmBody),
-                title: l.settingsClearSharingDataConfirmTitle);
-            if (confirmed) {
-              await shareState.signOut();
-              await shareState.lists.clearAll();
-              shareState.bumpState();
-              if (mounted) setState(() {});
             }
           }),
         ]),
@@ -328,7 +290,7 @@ class SettingsPageState extends State<SettingsPage> {
               context,
               MaterialPageRoute(
                 builder: (context) => PrivacyPolicyPage(
-                    appName: widget.appName, email: PRIVACY_POLICY_EMAIL),
+                    appName: widget.appName, email: widget.privacyPolicyEmail),
               ));
         }),
       ]),
@@ -374,10 +336,9 @@ class SettingsPageState extends State<SettingsPage> {
         switchRow(l.settingsUseSystemHttpProxy,
             sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false,
             (newValue) {
-          setState(() =>
-              sharedPreferences.setBool(KEY_USE_SYSTEM_HTTP_PROXY, newValue));
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l.settingsRestartApp)));
+          sharedPreferences.setBool(KEY_USE_SYSTEM_HTTP_PROXY, newValue);
+          setState(() {});
+          showSnack(context, l.settingsRestartApp);
         }),
       ]),
       const SizedBox(height: 12),
@@ -521,9 +482,7 @@ class BackgroundLogsPage extends StatelessWidget {
                     onPressed: () async {
                       await Clipboard.setData(
                           ClipboardData(text: backgroundLogs.items.join("\n")));
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(l.backgroundLogsCopiedSnack),
-                      ));
+                      showSnack(context, l.backgroundLogsCopiedSnack);
                     },
                   ),
                   Container(
@@ -591,6 +550,26 @@ Future<void> _setThemeVariant(AppThemeVariant variant) async {
 Future<void> offerImportOwnedLists(BuildContext context) async {
   final l = DictLibLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
+
+  // Don't pop an import dialog at all unless the account actually has lists
+  // to pull down — a brand-new user signing in for the first time shouldn't
+  // be asked to import zero lists. If the pre-check fails (offline, etc.) we
+  // skip the prompt silently rather than block the freshly-completed sign-in;
+  // the user can sign out and back in to retry once connectivity returns.
+  final session = sharing.auth.store.current;
+  if (session == null) return;
+  try {
+    final userLists =
+        await sharing.api.userLists(sessionToken: session.sessionToken);
+    if (userLists.ownedListIds.isEmpty && userLists.editorListIds.isEmpty) {
+      return;
+    }
+  } catch (e) {
+    printAndLog('offerImportOwnedLists: pre-check failed, skipping prompt: $e');
+    return;
+  }
+  if (!context.mounted) return;
+
   // Capture the result via closure so we can format the snackbar after
   // [runWithProgress] returns success.
   ImportOwnedListsResult? result;

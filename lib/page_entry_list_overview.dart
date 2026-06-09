@@ -520,7 +520,8 @@ Widget _buildEditModeList(
     final canDelete = el.canBeDeleted() && ownedShare == null;
     final trailing = canDelete
         ? IconButton(
-            icon: const Icon(Icons.remove_circle, color: Colors.red),
+            icon: Icon(Icons.remove_circle,
+                color: Theme.of(context).colorScheme.error),
             onPressed: () async {
               final confirmed = await confirmAlert(
                   context,
@@ -538,9 +539,8 @@ Widget _buildEditModeList(
                 tooltip:
                     DictLibLocalizations.of(context)!.unshareToDeleteTooltip,
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(DictLibLocalizations.of(context)!
-                          .unshareToDeleteTooltip)));
+                  showSnack(context,
+                      DictLibLocalizations.of(context)!.unshareToDeleteTooltip);
                 },
               )
             : null);
@@ -559,6 +559,18 @@ Widget _buildEditModeList(
     i++;
   }
   return ReorderableListView(
+    // Match the non-edit list's top/bottom padding so toggling edit mode
+    // doesn't shift the content vertically.
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    header: Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 4),
+      child: Text(
+        DictLibLocalizations.of(context)!.listsReorderHint,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+            fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    ),
     children: tiles,
     onReorder: (prev, updated) async {
       setState(() {
@@ -686,16 +698,14 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
         await userEntryListManager.createEntryList(key);
       } on EntryListNameException catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('${l.listFailedToMake}: ${e.localise(context)}.'),
-              backgroundColor: Colors.red));
+          showSnack(context, '${l.listFailedToMake}: ${e.localise(context)}.',
+              backgroundColor: Theme.of(context).colorScheme.error);
         }
         confirmed = false;
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('${l.listFailedToMake}: $e.'),
-              backgroundColor: Colors.red));
+          showSnack(context, '${l.listFailedToMake}: $e.',
+              backgroundColor: Theme.of(context).colorScheme.error);
         }
         confirmed = false;
       }

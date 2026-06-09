@@ -165,10 +165,16 @@ Future<SyncedEntryList?> showShareDialog({
             FilledButton(
               onPressed: submitting ? null : doShare,
               child: submitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      // Match the button's foreground (onPrimary) so the
+                      // spinner is visible on the filled background in both
+                      // light and dark themes — the default progress colour
+                      // is `primary`, i.e. the button's own background.
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(ctx).colorScheme.onPrimary))
                   : Text(l.shareDialogShareButton),
             ),
           ],
@@ -378,7 +384,19 @@ Future<SyncedEntryList?> showSubscribeDialog(
           // so the user sees fresh state when the entry list page builds.
           final existing = sharing.lists.get(listId);
           if (existing != null) {
-            unawaited(sharing.engine.refreshSubscriber(listId));
+            // Already have this list — open it and say so. The snackbar shows
+            // on the app-level messenger so it survives the dialog closing.
+            final role = existing.meta.role;
+            showSnack(
+                ctx,
+                role == ListRole.owner
+                    ? l.alreadyOwnerSnack
+                    : role == ListRole.editor
+                        ? l.alreadyEditorSnack
+                        : l.alreadySubscribedSnack);
+            if (role == ListRole.subscriber) {
+              unawaited(sharing.engine.refreshSubscriber(listId));
+            }
             Navigator.of(ctx).pop(existing);
             return;
           }
@@ -436,10 +454,12 @@ Future<SyncedEntryList?> showSubscribeDialog(
             FilledButton(
               onPressed: submitting ? null : doSubscribe,
               child: submitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(ctx).colorScheme.onPrimary))
                   : Text(l.subscribeDialogSubscribeButton),
             ),
           ],

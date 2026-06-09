@@ -13,6 +13,7 @@ import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 class EntryListPage extends StatefulWidget {
@@ -105,7 +106,12 @@ class EntryListPageState extends State<EntryListPage> {
       } else {
         entriesSearched = unique.toList();
         if (viewSortedList) {
-          entriesSearched.sort();
+          // Sort by the displayed phrase, case-insensitively, so it reads
+          // alphabetically rather than ASCII order (all capitals first).
+          final locale = Localizations.localeOf(context);
+          entriesSearched.sort((a, b) => compareDisplayNames(
+              a.getPhrase(locale) ?? a.getKey(),
+              b.getPhrase(locale) ?? b.getKey()));
         }
       }
     });
@@ -235,9 +241,17 @@ class EntryListPageState extends State<EntryListPage> {
         );
         if (!ok || !mounted) return;
         setState(() => search());
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l.subscribedSyncDoneSnack)));
+        showSnack(context, l.subscribedSyncDoneSnack);
       });
+
+  Future<void> _onCopyLinkPressed() async {
+    final list = widget.entryList;
+    if (list is! SyncedEntryList) return;
+    final l = DictLibLocalizations.of(context)!;
+    await Clipboard.setData(
+        ClipboardData(text: sharing.config.shareUrlFor(list.listId)));
+    if (mounted) showSnack(context, l.shareLinkCopiedSnack);
+  }
 
   Future<void> _onUnsubscribePressed() => _runGuarded(() async {
         final list = widget.entryList;
@@ -311,11 +325,16 @@ class EntryListPageState extends State<EntryListPage> {
       ));
     }
 
+    // Shared lists carry extra app-bar icons (share / members / sync menu).
+    // Dropping the help button for them keeps the action count low enough
+    // that the title stays centred (a 4th icon pushes it off-centre).
+    bool isSharedList = false;
     if (sharing.isEnabled) {
       final list = widget.entryList;
       final isSubscribed =
           list is SyncedEntryList && list.meta.role == ListRole.subscriber;
       final ownedShare = listsService.ownedShareFor(list);
+      isSharedList = list is SyncedEntryList || ownedShare != null;
 
       if (isSubscribed) {
         actions.add(PopupMenuButton<_ListMenuAction>(
@@ -323,6 +342,9 @@ class EntryListPageState extends State<EntryListPage> {
             switch (v) {
               case _ListMenuAction.syncNow:
                 await _onSyncNowPressed();
+                break;
+              case _ListMenuAction.copyLink:
+                await _onCopyLinkPressed();
                 break;
               case _ListMenuAction.copy:
                 await _onCopyToMyListsPressed();
@@ -344,6 +366,9 @@ class EntryListPageState extends State<EntryListPage> {
               PopupMenuItem(
                   value: _ListMenuAction.syncNow,
                   child: item(Icons.sync, l.subscribedSyncNowMenuItem)),
+              PopupMenuItem(
+                  value: _ListMenuAction.copyLink,
+                  child: item(Icons.link, l.subscribedCopyLinkMenuItem)),
               PopupMenuItem(
                   value: _ListMenuAction.copy,
                   child: item(Icons.copy_all, l.subscribedCopyMenuItem)),
@@ -381,29 +406,34 @@ class EntryListPageState extends State<EntryListPage> {
       }
     }
 
-    actions.add(
-      buildActionButton(
-        context,
-        const Icon(Icons.help),
-        () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => getEntryListHelpPageEn()),
-          );
-        },
-      ),
-    );
+    if (!isSharedList) {
+      actions.add(
+        buildActionButton(
+          context,
+          const Icon(Icons.help),
+          () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => getEntryListHelpPageEn()),
+            );
+          },
+        ),
+      );
+    }
 
     String listName = widget.entryList.getName(context);
 
-    FloatingActionButton? floatingActionButton = FloatingActionButton(
-        onPressed: () {
-          if (!enableSortButton) {
-            return;
-          }
-          toggleSort();
-        },
-        child: const Icon(Icons.sort));
+    // Sort button. It's hidden while a search is active (below), so its
+    // onPressed can sort unconditionally. The label names the *current* mode
+    // ("Added" = insertion order, "A-Z" = alphabetical) and the up/down arrows
+    // hint that tapping toggles it.
+    FloatingActionButton? floatingActionButton = FloatingActionButton.extended(
+      onPressed: toggleSort,
+      icon: const Icon(Icons.swap_vert),
+      label: Text(viewSortedList
+          ? DictLibLocalizations.of(context)!.listSortAlpha
+          : DictLibLocalizations.of(context)!.listSortAdded),
+    );
 
     String hintText;
     if (inEditMode) {
@@ -421,6 +451,9 @@ class EntryListPageState extends State<EntryListPage> {
     } else {
       hintText =
           "${DictLibLocalizations.of(context)!.listSearchPrefix} $listName";
+      // Sorting a filtered view is meaningless — hide the sort button while a
+      // search is active rather than leaving a dead no-op button.
+      if (!enableSortButton) floatingActionButton = null;
     }
 
     final entryList = widget.entryList;
@@ -448,7 +481,7 @@ class EntryListPageState extends State<EntryListPage> {
             if (bannerLists.isNotEmpty)
               SignInResumeBanner(lists: bannerLists),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Form(
                   child: Column(children: <Widget>[
                 TextField(
@@ -457,12 +490,14 @@ class EntryListPageState extends State<EntryListPage> {
                   decoration: InputDecoration(
                     hintText: hintText,
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        clearSearch();
-                      },
-                      icon: const Icon(Icons.close),
-                    ),
+                    // Match the main search page: only offer the clear button
+                    // once there's something to clear.
+                    suffixIcon: currentSearchTerm.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: clearSearch,
+                            icon: const Icon(Icons.close),
+                          ),
                   ),
                   onChanged: (String value) {
                     updateCurrentSearchTerm(value);
@@ -620,7 +655,7 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
   );
 }
 
-enum _ListMenuAction { syncNow, copy, unsubscribe }
+enum _ListMenuAction { syncNow, copyLink, copy, unsubscribe }
 
 class _PendingSyncIconBadge extends StatelessWidget {
   final Widget child;
