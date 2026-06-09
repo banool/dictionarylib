@@ -8,7 +8,6 @@ import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
@@ -163,10 +162,17 @@ class VideoPlayerScreen extends StatefulWidget {
     required this.fallbackAspectRatio,
     this.initialPage = 0,
     this.onPageChanged,
+    this.expandOnTap = false,
   });
 
   final List<String> mediaLinks;
   final double fallbackAspectRatio;
+
+  /// When true, tapping a (non-image) video opens it expanded over a dimmed
+  /// backdrop via [showExpandedVideo]. The inline tile is paused and hidden
+  /// while it's expanded, so the video appears to move into the overlay rather
+  /// than playing in two places at once.
+  final bool expandOnTap;
 
   /// Video index to land on when the carousel first builds. Useful for
   /// jump-to-saved-video flows from the list view.
@@ -188,6 +194,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   CarouselSliderController? carouselController;
 
   int currentPage = 0;
+
+  /// The carousel index currently shown expanded (see [expandOnTap]); its
+  /// inline tile is hidden while the overlay is open. Null when nothing is
+  /// expanded.
+  int? _expandedIndex;
 
   /// The playback rate currently applied to the players, mirrored from the
   /// inherited [InheritedPlaybackSpeed] in [didChangeDependencies]. Stored so
@@ -445,6 +456,23 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     super.dispose();
   }
 
+  /// Pause + hide the inline tile at [idx], show its video expanded over a
+  /// dimmed backdrop, then restore the tile (resuming playback if it had been
+  /// playing). Doing the pause/hide here — rather than spinning a second player
+  /// in the overlay alongside the inline one — means the video appears to move
+  /// into the overlay instead of two copies playing at once.
+  Future<void> _expand(int idx) async {
+    final pd = players[idx];
+    final wasPlaying = pd?.player.state.playing ?? false;
+    await pd?.player.pause();
+    if (!mounted) return;
+    setState(() => _expandedIndex = idx);
+    await showExpandedVideo(context, widget.mediaLinks[idx]);
+    if (!mounted) return;
+    setState(() => _expandedIndex = null);
+    if (wasPlaying) await pd?.player.play();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get height of screen to ensure that the video only takes up
@@ -510,9 +538,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               // the framed card fits within the carousel slide without
               // overflowing.
               const frameTotal = 10.0;
-              // Equal breathing room above and below the framed video, so the
-              // gaps match and the frame's drop shadow has room at the bottom.
-              const verticalMargin = 15.0;
+              // Small breathing room above and below the framed video (room for
+              // the drop shadow). Kept small so the video stays wide — landscape
+              // sign videos are otherwise height-capped here and end up much
+              // narrower than the full content width.
+              const verticalMargin = 10.0;
               double videoWidth = constraints.maxWidth - frameTotal;
               double videoHeight = videoWidth / videoAspectRatio;
               if (constraints.maxHeight.isFinite &&
@@ -546,6 +576,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           );
         }
       }
+      // Tap a (non-image) video to open it expanded over a dimmed backdrop.
+      if (widget.expandOnTap && !mediaLink.endsWith(".jpg")) {
+        item = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _expand(idx),
+          child: item,
+        );
+      }
+      // Hide this tile while it's the one being shown expanded, so the video
+      // reads as having moved into the overlay rather than playing twice. Kept
+      // in the tree (Opacity, not removed) so its player isn't torn down.
+      item = Opacity(opacity: idx == _expandedIndex ? 0.0 : 1.0, child: item);
       items.add(item);
     }
     double aspectRatio;
@@ -598,29 +640,60 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   }
 }
 
-/// A stripped-down, full-screen, full-width player for a single sign video,
-/// opened by tapping the video on the entry page. Plays muted + looped, with
-/// just a close button and a rotate-to-landscape button.
-class FullScreenVideoPage extends StatefulWidget {
-  final String mediaLink;
-  const FullScreenVideoPage({super.key, required this.mediaLink});
-
-  @override
-  State<FullScreenVideoPage> createState() => _FullScreenVideoPageState();
+/// Show [mediaLink] expanded over the current screen: the video grows to the
+/// full screen width, the page behind is heavily dimmed (rather than replaced
+/// by an opaque black page), and close + rotate-to-landscape controls are
+/// offered. Tapping the dimmed area — or the close button — dismisses it. The
+/// video plays muted + looped. Opened by tapping a sign video.
+Future<void> showExpandedVideo(BuildContext context, String mediaLink) {
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    // Heavy dim so the video is the focus while the page stays faintly visible
+    // behind it.
+    barrierColor: Colors.black.withValues(alpha: 0.82),
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (ctx, _, __) => _ExpandedVideoOverlay(mediaLink: mediaLink),
+    transitionBuilder: (ctx, anim, _, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+        child: child),
+  );
 }
 
-class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
+class _ExpandedVideoOverlay extends StatefulWidget {
+  final String mediaLink;
+  const _ExpandedVideoOverlay({required this.mediaLink});
+
+  @override
+  State<_ExpandedVideoOverlay> createState() => _ExpandedVideoOverlayState();
+}
+
+class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
   late final Player _player;
   late final VideoController _controller;
-  bool _landscape = false;
 
-  // Whether the user used the rotate button while this page was open. The apps
-  // aren't orientation-locked (iOS/Android both allow portrait + landscape, and
-  // there's a dedicated horizontal layout), so we only nudge SystemChrome when
-  // the user explicitly asks to rotate, and only restore the OS default on exit
-  // if we actually changed it — otherwise we leave the system's auto-rotation
-  // untouched.
-  bool _didForceOrientation = false;
+  // Whether the user tapped rotate to view the video turned a quarter turn.
+  //
+  // This is a *purely visual* rotation (a [RotatedBox]) — we never call
+  // SystemChrome.setPreferredOrientations to rotate the device itself. Forcing
+  // the device orientation and then restoring it on close was the source of the
+  // "extra rotation on exit" bug: restoring re-evaluates the orientation and
+  // flicks the screen to landscape and back. On the iOS Simulator it's
+  // unavoidable, because forcing an orientation also dirties the simulator's
+  // device-orientation sensor, which the restore then chases.
+  //
+  // Rotating the *content* instead looks identical on this full-screen black
+  // overlay (the status bar is hidden either way), costs nothing to undo, and
+  // leaves the screen tracking the real hardware orientation — so closing never
+  // triggers a stray rotation, and physically turning the device still rotates
+  // the overlay naturally. The manual turn only applies while the device is
+  // portrait; in landscape the video already fills the screen upright.
+  bool _manualLandscape = false;
+
+  // The video's natural aspect ratio, learned once it's open, so the box can be
+  // sized to fill the width rather than letterboxed. 16/9 until then.
+  double? _aspectRatio;
 
   @override
   void initState() {
@@ -651,69 +724,90 @@ class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
           ? Media('file://$source'.replaceAll('file://file://', 'file://'))
           : Media(source);
       await _player.open(media);
+
+      // Learn the natural aspect ratio so the video fills the width instead of
+      // being letterboxed.
+      await _player.stream.width.first
+          .timeout(const Duration(seconds: 10), onTimeout: () => null);
+      final width = _player.state.width;
+      final height = _player.state.height;
+      if (width != null && height != null && height > 0 && mounted) {
+        setState(() => _aspectRatio = width / height);
+      }
     } catch (e) {
-      printAndLog("Full-screen video error: $e");
+      printAndLog("Expanded video error: $e");
     }
   }
 
-  void _toggleRotation() {
-    setState(() => _landscape = !_landscape);
-    _didForceOrientation = true;
-    SystemChrome.setPreferredOrientations(_landscape
-        ? const [
-            DeviceOrientation.landscapeLeft,
-            DeviceOrientation.landscapeRight,
-          ]
-        : const [DeviceOrientation.portraitUp]);
-  }
+  void _toggleRotation() =>
+      setState(() => _manualLandscape = !_manualLandscape);
+
+  /// Dismiss the overlay. Nothing to restore — the overlay never forces the
+  /// device orientation, so the screen is already at the hardware orientation.
+  void _close() => Navigator.of(context).pop();
 
   @override
   void dispose() {
     _player.dispose();
-    if (_didForceOrientation) {
-      // Snap the underlying page back to portrait, then re-enable free rotation
-      // a moment later. Just restoring all orientations would leave the page
-      // stuck in landscape if the device was physically turned to watch the
-      // rotated video; forcing portrait first returns it to the app's normal
-      // orientation, and the delayed restore keeps auto-rotation working after.
-      SystemChrome.setPreferredOrientations(
-          const [DeviceOrientation.portraitUp]);
-      Future.delayed(const Duration(milliseconds: 500), () {
-        SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-      });
-    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Fullscreen video deliberately ignores the app theme: video always plays
-    // on black with white chrome, in both light and dark mode — like every
-    // video player. These Colors.black/white are intentional, not theme leaks.
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Video(
-                controller: _controller,
-                fit: BoxFit.contain,
-                controls: (state) => const SizedBox.shrink(),
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
+    // The manual quarter-turn only applies in portrait; in landscape the video
+    // already fills the screen the right way up.
+    final quarterTurns = (isPortrait && _manualLandscape) ? 1 : 0;
+
+    // The video deliberately ignores the app theme: it plays with white chrome
+    // over the dim backdrop in both light and dark mode, like every video
+    // player. The Colors.white here are intentional, not theme leaks.
+    return Stack(
+      children: [
+        // Tap the dimmed area around the video to dismiss.
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _close,
+          ),
+        ),
+        // The expanded video: filling the screen, sized to its aspect ratio and
+        // centred, with the dimmed page showing above and below. Tapping rotate
+        // (in portrait) turns it a quarter turn so it fills the screen like a
+        // landscape video — a pure visual rotation, no device-orientation change
+        // (see [_manualLandscape]).
+        Positioned.fill(
+          child: RotatedBox(
+            quarterTurns: quarterTurns,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: _aspectRatio ?? 16 / 9,
+                child: Video(
+                  controller: _controller,
+                  fit: BoxFit.contain,
+                  controls: (state) => const SizedBox.shrink(),
+                ),
               ),
             ),
-            Positioned(
-              top: 4,
-              left: 4,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+          ),
+        ),
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+              onPressed: _close,
             ),
-            Positioned(
-              top: 4,
-              right: 4,
+          ),
+        ),
+        // Only offer the rotate toggle in portrait — in landscape the video is
+        // already full-screen, so the turn would be a no-op.
+        if (isPortrait)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
               child: IconButton(
                 icon: const Icon(Icons.screen_rotation,
                     color: Colors.white, size: 26),
@@ -721,9 +815,8 @@ class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
                 onPressed: _toggleRotation,
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

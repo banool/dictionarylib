@@ -656,7 +656,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsDeleteAccountConfirmBody =>
-      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed to them will lose access.\n  • You\'re removed as an editor from other people\'s lists.\n  • The name we have for you is erased.\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
+      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
 
   @override
   String get settingsDeleteAccountRunning => 'Deleting account…';
@@ -1173,6 +1173,12 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get flashcardsCardLimitNone => 'No limit';
+
+  @override
+  String get revisionPreviousCard => 'Previous card';
+
+  @override
+  String get revisionNextCard => 'Next card';
 
   @override
   String get revisionDueNow => 'Due now';

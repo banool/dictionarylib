@@ -550,31 +550,66 @@ Future<void> offerImportOwnedLists(BuildContext context) async {
   final l = DictLibLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
 
-  // Don't pop an import dialog at all unless the account actually has lists
-  // to pull down — a brand-new user signing in for the first time shouldn't
-  // be asked to import zero lists. If the pre-check fails (offline, etc.) we
-  // skip the prompt silently rather than block the freshly-completed sign-in;
-  // the user can sign out and back in to retry once connectivity returns.
+  // Don't pop an import dialog at all unless the account actually has lists to
+  // pull down — a brand-new user signing in for the first time shouldn't be
+  // asked to import zero lists. We also gather the lists' names so the dialog
+  // can show exactly what will be pulled down. Snapshots are small (saved-video
+  // references, not the videos), so fetching them here is cheap. If the
+  // pre-check fails (offline, etc.) we skip the prompt silently rather than
+  // block the freshly-completed sign-in; the user can sign out and back in to
+  // retry once connectivity returns.
   final session = sharing.auth.store.current;
   if (session == null) return;
+  final names = <String>[];
   try {
     final userLists =
         await sharing.api.userLists(sessionToken: session.sessionToken);
-    if (userLists.ownedListIds.isEmpty && userLists.editorListIds.isEmpty) {
-      return;
+    final ids = [...userLists.ownedListIds, ...userLists.editorListIds];
+    if (ids.isEmpty) return;
+    for (final id in ids) {
+      try {
+        final snapshot = await sharing.api
+            .getState(listId: id, sessionToken: session.sessionToken);
+        if (snapshot.displayName.trim().isNotEmpty) {
+          names.add(snapshot.displayName);
+        }
+      } catch (_) {
+        // Skip a list we can't read; it just won't be listed (and the import
+        // will skip it too).
+      }
     }
   } catch (e) {
     printAndLog('offerImportOwnedLists: pre-check failed, skipping prompt: $e');
     return;
   }
-  if (!context.mounted) return;
+  if (names.isEmpty || !context.mounted) return;
 
   // Capture the result via closure so we can format the snackbar after
   // [runWithProgress] returns success.
   ImportOwnedListsResult? result;
   final go = await confirmAlert(
     context,
-    Text(l.importOwnedListsPromptBody),
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l.importOwnedListsPromptBody),
+        const SizedBox(height: 12),
+        for (final name in names)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('•  '),
+                Expanded(
+                    child: Text(name,
+                        style: const TextStyle(fontWeight: FontWeight.w600))),
+              ],
+            ),
+          ),
+      ],
+    ),
     title: l.importOwnedListsPromptTitle,
     confirmText: l.importOwnedListsActionImport,
     cancelText: l.importOwnedListsActionSkip,

@@ -143,7 +143,6 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                 icon: const FaIcon(FontAwesomeIcons.apple),
                 onPressed:
                     inflight == null ? () => attempt(AuthProvider.apple) : null,
-                inflight: inflight == AuthProvider.apple,
               ),
             if (sharing.auth.isProviderAvailable(AuthProvider.google)) ...[
               const SizedBox(height: 8),
@@ -153,7 +152,6 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                 onPressed: inflight == null
                     ? () => attempt(AuthProvider.google)
                     : null,
-                inflight: inflight == AuthProvider.google,
               ),
             ],
             if (sharing.auth.isProviderAvailable(AuthProvider.facebook)) ...[
@@ -164,7 +162,6 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                 onPressed: inflight == null
                     ? () => attempt(AuthProvider.facebook)
                     : null,
-                inflight: inflight == AuthProvider.facebook,
               ),
             ],
             // Test-only affordance. Visible only in debug builds AND
@@ -184,7 +181,6 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                     ? () => _attemptTestSignIn(ctx, sharing.config.testSignIn!,
                         (err) => setLocal(() => error = err))
                     : null,
-                inflight: inflight == AuthProvider.test,
               ),
             ],
             if (error != null) ...[
@@ -199,7 +195,17 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
           TextButton(
             onPressed:
                 inflight != null ? null : () => Navigator.of(ctx).pop(null),
-            child: Text(l.alertCancel),
+            // While a sign-in is finalising (the in-app browser has returned but
+            // we're still completing), turn Cancel into a spinner rather than
+            // hiding the provider's logo. Disabled meanwhile so a stray tap
+            // can't tear down the in-flight request.
+            child: inflight != null
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(l.alertCancel),
           ),
         ],
       );
@@ -320,13 +326,11 @@ class _ProviderButton extends StatelessWidget {
   /// consistent.
   final Widget icon;
   final VoidCallback? onPressed;
-  final bool inflight;
 
   const _ProviderButton({
     required this.label,
     required this.icon,
     required this.onPressed,
-    required this.inflight,
   });
 
   @override
@@ -338,19 +342,9 @@ class _ProviderButton extends StatelessWidget {
       style: FilledButton.styleFrom(alignment: Alignment.centerLeft),
       // Brand glyphs have different intrinsic widths (Apple is narrow, Google /
       // Facebook wider), which would shift each label to a different x. Pin the
-      // icon into a fixed-width, centred slot so all the labels line up.
-      icon: SizedBox(
-        width: 26,
-        child: Center(
-          child: inflight
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : icon,
-        ),
-      ),
+      // icon into a fixed-width, centred slot so all the labels line up. The
+      // logo stays put while signing in — the Cancel button shows the spinner.
+      icon: SizedBox(width: 26, child: Center(child: icon)),
       label: Text(label),
     );
   }

@@ -1238,7 +1238,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @settingsDeleteAccountConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed to them will lose access.\n  • You\'re removed as an editor from other people\'s lists.\n  • The name we have for you is erased.\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.'**
+  /// **'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.'**
   String get settingsDeleteAccountConfirmBody;
 
   /// No description provided for @settingsDeleteAccountRunning.
@@ -2044,6 +2044,18 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'No limit'**
   String get flashcardsCardLimitNone;
+
+  /// No description provided for @revisionPreviousCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous card'**
+  String get revisionPreviousCard;
+
+  /// No description provided for @revisionNextCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Next card'**
+  String get revisionNextCard;
 
   /// No description provided for @revisionDueNow.
   ///

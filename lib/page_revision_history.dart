@@ -113,53 +113,47 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
         content = reviews.isEmpty
             ? _emptyState(context)
             : Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Only celebrate a streak once there is one.
-            if (longestStreakDays > 0) ...[
-              _streakBanner(context, longestStreakDays),
-              const SizedBox(height: 14),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _ringBox(context, rememberRate, l.flashcardsSuccessRate),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    children: [
-                      HearthStatTile(
-                          value: "$totalAnswers",
-                          label: l.flashcardsTotalReviews),
-                      const SizedBox(height: 12),
-                      HearthStatTile(
-                          value: "${uniqueMasters.length}",
-                          label: l.flashcardsUniqueWords),
-                    ],
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Only celebrate a streak once there is one.
+                  if (longestStreakDays > 0) ...[
+                    _streakBanner(context, longestStreakDays),
+                    const SizedBox(height: 14),
+                  ],
+                  // The success-rate ring on top, then the rest of the numbers
+                  // in a tidy 2×2 grid below.
+                  Center(
+                    child: _ringBox(
+                        context, rememberRate, l.flashcardsSuccessRate),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: HearthStatTile(
-                  value: "$numCardsRemembered",
-                  label: l.flashcardsSuccessfulCards,
-                  valueColor: cs.tertiary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: HearthStatTile(
-                  value: "$numCardsForgotten",
-                  label: l.flashcardsUnsuccessfulCards,
-                  valueColor: cs.error,
-                ),
-              ),
-            ]),
-          ],
-        );
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                        child: HearthStatTile(
+                            value: "$totalAnswers",
+                            label: l.flashcardsTotalReviews)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: HearthStatTile(
+                            value: "${uniqueMasters.length}",
+                            label: l.flashcardsUniqueWords)),
+                  ]),
+                  const SizedBox(height: 12),
+                  Row(children: [
+                    Expanded(
+                        child: HearthStatTile(
+                            value: "$numCardsRemembered",
+                            label: l.flashcardsSuccessfulCards,
+                            valueColor: cs.tertiary)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: HearthStatTile(
+                            value: "$numCardsForgotten",
+                            label: l.flashcardsUnsuccessfulCards,
+                            valueColor: cs.error)),
+                  ]),
+                ],
+              );
         break;
       case RevisionStrategy.Random:
         int totalRandomReviews =
