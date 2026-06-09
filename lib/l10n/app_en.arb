@@ -399,7 +399,7 @@
 
     "inviteEditorDialogTitle": "Invite an editor",
     "inviteEditorDialogBody": "Send this link to the person you want to add as an editor. They'll need to sign in to accept; once they do, they can add and remove entries on your list.",
-    "inviteEditorExpiresIn": "Expires in 7 days. The link can be used once.",
+    "inviteEditorExpiresIn": "Expires in 7 days. Each link can only be used once, you must create a new link per editor you want to invite.",
     "inviteEditorFailed": "Couldn't create an invite: {message}",
     "@inviteEditorFailed": {
         "placeholders": {

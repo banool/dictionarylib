@@ -67,8 +67,11 @@ class _SaveVideoSheet extends StatelessWidget {
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: rows.length,
-                itemBuilder: (context, i) =>
-                    _SaveVideoSheetRow(list: rows[i], video: video),
+                itemBuilder: (context, i) => _SaveVideoSheetRow(
+                      key: ValueKey('saveVideoSheet.row.${rows[i].key}'),
+                      list: rows[i],
+                      video: video,
+                    ),
               ),
             ),
           ],
@@ -83,7 +86,8 @@ class _SaveVideoSheet extends StatelessWidget {
 class _SaveVideoSheetRow extends StatefulWidget {
   final EntryList list;
   final SavedVideo video;
-  const _SaveVideoSheetRow({required this.list, required this.video});
+  const _SaveVideoSheetRow(
+      {super.key, required this.list, required this.video});
 
   @override
   State<_SaveVideoSheetRow> createState() => _SaveVideoSheetRowState();

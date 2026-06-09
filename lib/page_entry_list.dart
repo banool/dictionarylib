@@ -603,8 +603,8 @@ Widget listWidget(
 
 /// Single row for an entry in the list view.
 ///
-/// Subtitle shows "N videos saved" when the entry has more than one
-/// saved video — single-video case stays clean. Tap navigates to the
+/// Subtitle shows how many of the entry's videos are saved in this list
+/// ("1 video saved", "3 videos saved"). Tap navigates to the
 /// entry page, jumped to the user's first saved video for the entry
 /// (so a list of three favourite "hello" videos opens directly on the
 /// one they care about, not the corpus-default first one).
@@ -618,10 +618,10 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
   final focus = saved.isNotEmpty ? saved.first : null;
 
   Widget? subtitle;
-  if (saved.length > 1) {
+  if (saved.isNotEmpty) {
     final l = DictLibLocalizations.of(context);
     final label = l?.listSavedVideoCount(saved.length) ??
-        '${saved.length} videos saved';
+        (saved.length == 1 ? '1 video saved' : '${saved.length} videos saved');
     subtitle = Text(label,
         style: TextStyle(
             fontSize: 12,

@@ -821,7 +821,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get inviteEditorExpiresIn =>
-      'Expires in 7 days. The link can be used once.';
+      'Expires in 7 days. Each link can only be used once, you must create a new link per editor you want to invite.';
 
   @override
   String inviteEditorFailed(String message) {

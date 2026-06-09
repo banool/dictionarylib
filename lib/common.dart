@@ -250,15 +250,9 @@ Future<bool> confirmAlert(
           if (ctx.mounted) Navigator.of(ctx).pop();
         } catch (e) {
           if (ctx.mounted) setLocal(() => running = false);
-          messenger.showSnackBar(SnackBar(
-            content: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => messenger.hideCurrentSnackBar(),
-              child: SizedBox(
-                width: double.infinity,
-                child: Text(errorMessage?.call(e) ?? e.toString()),
-              ),
-            ),
+          messenger.showSnackBar(_tapToDismissSnackBar(
+            messenger,
+            Text(errorMessage?.call(e) ?? e.toString()),
             backgroundColor: errorColor,
           ));
         }
@@ -325,19 +319,46 @@ Future<bool> runWithProgress({
     await task();
     ok = true;
   } catch (e) {
-    messenger.showSnackBar(SnackBar(
-      content: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => messenger.hideCurrentSnackBar(),
-        child: Text(errorMessage?.call(e) ?? e.toString(),
-            style: TextStyle(color: cs.onError)),
-      ),
+    messenger.showSnackBar(_tapToDismissSnackBar(
+      messenger,
+      Text(errorMessage?.call(e) ?? e.toString(),
+          style: TextStyle(color: cs.onError)),
       backgroundColor: cs.error,
     ));
   } finally {
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
   }
   return ok;
+}
+
+/// Build a SnackBar whose *entire* surface — the text and the padding around
+/// it — dismisses on tap.
+///
+/// Wrapping only the text in the tap target leaves a dead zone in the toast's
+/// own vertical padding (~14px above and below the text) that swallows taps, so
+/// the toast feels un-dismissible when tapped anywhere but dead-centre. We zero
+/// the SnackBar's padding and re-add it *inside* the GestureDetector so the
+/// whole toast is tappable. All toasts go through here so this stays consistent.
+SnackBar _tapToDismissSnackBar(
+  ScaffoldMessengerState messenger,
+  Widget content, {
+  Color? backgroundColor,
+  Duration? duration,
+}) {
+  return SnackBar(
+    padding: EdgeInsets.zero,
+    backgroundColor: backgroundColor,
+    duration: duration ?? const Duration(seconds: 4),
+    content: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => messenger.hideCurrentSnackBar(),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        child: content,
+      ),
+    ),
+  );
 }
 
 /// Show a toast that dismisses on tap (in addition to the usual auto-timeout /
@@ -351,20 +372,12 @@ void showSnack(
   Color? textColor,
 }) {
   final messenger = ScaffoldMessenger.of(context);
-  messenger.showSnackBar(SnackBar(
-    content: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => messenger.hideCurrentSnackBar(),
-      // Full-width so the whole toast is a tap target, not just the text — a
-      // tap anywhere on it dismisses.
-      child: SizedBox(
-        width: double.infinity,
-        child: Text(message,
-            style: textColor != null ? TextStyle(color: textColor) : null),
-      ),
-    ),
+  messenger.showSnackBar(_tapToDismissSnackBar(
+    messenger,
+    Text(message,
+        style: textColor != null ? TextStyle(color: textColor) : null),
     backgroundColor: backgroundColor,
-    duration: duration ?? const Duration(seconds: 4),
+    duration: duration,
   ));
 }
 
@@ -373,15 +386,9 @@ void showSnack(
 /// `BuildContext`). Same tap-anywhere-to-dismiss behaviour.
 void showSnackVia(ScaffoldMessengerState messenger, String message,
     {Color? backgroundColor}) {
-  messenger.showSnackBar(SnackBar(
-    content: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => messenger.hideCurrentSnackBar(),
-      child: SizedBox(
-        width: double.infinity,
-        child: Text(message),
-      ),
-    ),
+  messenger.showSnackBar(_tapToDismissSnackBar(
+    messenger,
+    Text(message),
     backgroundColor: backgroundColor,
   ));
 }

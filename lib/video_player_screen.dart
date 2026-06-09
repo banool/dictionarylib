@@ -542,7 +542,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               // the drop shadow). Kept small so the video stays wide — landscape
               // sign videos are otherwise height-capped here and end up much
               // narrower than the full content width.
-              const verticalMargin = 10.0;
+              const verticalMargin = 8.0;
               double videoWidth = constraints.maxWidth - frameTotal;
               double videoHeight = videoWidth / videoAspectRatio;
               if (constraints.maxHeight.isFinite &&
