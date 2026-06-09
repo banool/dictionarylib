@@ -304,7 +304,8 @@ void main() {
       expect(list.meta.pendingOps, isEmpty);
     });
 
-    test('404/410 marks the list orphaned', () async {
+    test('404/410 on an owned list drops the share but keeps the local list',
+        () async {
       final ctx = _makeEngine((req) async {
         return http.Response(
             jsonEncode({
@@ -316,7 +317,13 @@ void main() {
       ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
       await ctx.engine.pushAllDirty();
 
-      expect(list.meta.orphaned, isTrue);
+      // The share is gone server-side, so rather than leave a "deleted by you"
+      // zombie the owner mirror is dropped...
+      expect(ctx.manager.hasList(list.listId), isFalse);
+      // ...while the underlying local list (the user's own data) is kept, so it
+      // simply reverts to a plain local list.
+      expect(userEntryListManager.getEntryLists().containsKey('cats_words'),
+          isTrue);
     });
 
     test('no session → flush is a no-op, ops stay queued', () async {

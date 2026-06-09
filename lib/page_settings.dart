@@ -270,8 +270,7 @@ class SettingsPageState extends State<SettingsPage> {
               await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
               await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l.settingsProgressDeleted)));
+              showSnack(context, l.settingsProgressDeleted);
             }
           }),
         ]),
@@ -592,9 +591,9 @@ Future<void> offerImportOwnedLists(BuildContext context) async {
   );
   if (!ok || result == null) return;
   final r = result!;
-  messenger.showSnackBar(SnackBar(
-    content: Text(r.total == 0
-        ? l.importOwnedListsResultNone
-        : l.importOwnedListsResultDone(r.imported, r.total)),
-  ));
+  showSnackVia(
+      messenger,
+      r.total == 0
+          ? l.importOwnedListsResultNone
+          : l.importOwnedListsResultDone(r.imported, r.total));
 }

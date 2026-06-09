@@ -23,8 +23,8 @@ abstract class FlashcardsLandingPageController {
   /// should actually become cards this session.
   List<ResolvedSavedVideo> filterSavedVideos(List<ResolvedSavedVideo> videos);
 
-  DolphinInformation getDolphin(List<ResolvedSavedVideo> filteredVideos,
-      List<Review>? existingReviews,
+  DolphinInformation getDolphin(
+      List<ResolvedSavedVideo> filteredVideos, List<Review>? existingReviews,
       {RevisionStrategy? revisionStrategy}) {
     revisionStrategy = revisionStrategy ?? loadRevisionStrategy();
     var wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
@@ -187,7 +187,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   void updateDolphin() {
     if (existingReviews == null) {
       existingReviews = readReviews();
-      printAndLog("Start: Read ${existingReviews!.length} reviews from storage");
+      printAndLog(
+          "Start: Read ${existingReviews!.length} reviews from storage");
     }
     dolphinInformation =
         widget.controller.getDolphin(filteredVideos, existingReviews);
@@ -212,9 +213,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     final cardLimit = sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT) ?? 0;
     final rawCardsToDo =
         getNumDueCards(dolphinInformation.dolphin, revisionStrategy);
-    final cardsToDo = (cardLimit > 0 && rawCardsToDo > cardLimit)
-        ? cardLimit
-        : rawCardsToDo;
+    final cardsToDo =
+        (cardLimit > 0 && rawCardsToDo > cardLimit) ? cardLimit : rawCardsToDo;
     final signToWord = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
     final wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
     final typesValid = numEnabledFlashcardTypes > 0;
@@ -235,9 +235,10 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         builder: (ctx) {
           return StatefulBuilder(builder: (ctx, setSheet) {
             final cs = Theme.of(ctx).colorScheme;
-            final selected = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
-                    [KEY_FAVOURITES_ENTRIES])
-                .toSet();
+            final selected =
+                (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+                        [KEY_FAVOURITES_ENTRIES])
+                    .toSet();
 
             void toggle(String key) {
               final s = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
@@ -301,7 +302,9 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
             final List<EntryList> community =
                 (sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)
                     ? const <EntryList>[]
-                    : <EntryList>[...communityEntryListManager.getEntryLists().values];
+                    : <EntryList>[
+                        ...communityEntryListManager.getEntryLists().values
+                      ];
 
             return SafeArea(
               child: SingleChildScrollView(
@@ -352,8 +355,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       ));
     }
     if (sourceRows.isEmpty) {
-      sourceRows
-          .add(HearthRow(title: l.revisionNoListsChosen, onTap: openSourcesPicker));
+      sourceRows.add(
+          HearthRow(title: l.revisionNoListsChosen, onTap: openSourcesPicker));
     }
 
     // The "Revision settings" card rows — currently the app-specific extras
@@ -473,30 +476,32 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 },
               ),
               const SizedBox(height: 18),
-              Text(l.flashcardsCardLimitLabel,
-                  style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface)),
-              const SizedBox(height: 6),
               // How many cards a session serves at most. 0 = no limit, and the
-              // choice is remembered across sessions.
-              Align(
-                alignment: Alignment.centerLeft,
-                child: DropdownButton<int>(
-                  value: cardLimit,
-                  items: [
-                    DropdownMenuItem(
-                        value: 0, child: Text(l.flashcardsCardLimitNone)),
-                    for (final n in const [10, 25, 50, 100])
-                      DropdownMenuItem(value: n, child: Text('$n')),
-                  ],
-                  onChanged: (v) {
-                    if (v == null) return;
-                    sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, v);
-                    setState(() {});
-                  },
-                ),
+              // choice is remembered across sessions. Label and dropdown sit
+              // together on the left.
+              Row(
+                children: [
+                  Text(l.flashcardsCardLimitLabel,
+                      style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface)),
+                  const SizedBox(width: 16),
+                  DropdownButton<int>(
+                    value: cardLimit,
+                    items: [
+                      DropdownMenuItem(
+                          value: 0, child: Text(l.flashcardsCardLimitNone)),
+                      for (final n in const [10, 25, 50, 100])
+                        DropdownMenuItem(value: n, child: Text('$n')),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) return;
+                      sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, v);
+                      setState(() {});
+                    },
+                  ),
+                ],
               ),
             ],
           ),

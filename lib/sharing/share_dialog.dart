@@ -229,8 +229,7 @@ Future<bool> showShareLinkDialog({
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: shareUrl));
                       if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(content: Text(l.shareLinkCopiedSnack)));
+                        showSnack(ctx, l.shareLinkCopiedSnack);
                       }
                     },
                     icon: const Icon(Icons.copy),

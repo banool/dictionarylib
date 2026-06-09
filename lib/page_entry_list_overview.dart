@@ -92,11 +92,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
           ),
         ));
       case SyncNotification.removedAsEditor:
-        messenger.showSnackBar(
-            SnackBar(content: Text(l.engineRemovedAsEditorSnack)));
+        showSnackVia(messenger, l.engineRemovedAsEditorSnack);
       case SyncNotification.snapshotCatchUp:
-        messenger.showSnackBar(
-            SnackBar(content: Text(l.engineSnapshotCatchUpSnack)));
+        showSnackVia(messenger, l.engineSnapshotCatchUpSnack);
     }
   }
 

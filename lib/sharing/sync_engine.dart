@@ -534,12 +534,33 @@ class SyncEngine {
   }
 
   void _markOrphaned(SyncedEntryList list, String reason) {
-    printAndLog('SyncEngine: ${list.listId} $reason — marking orphaned');
-    list.meta.orphaned = true;
-    // Pending ops on an orphaned list are unrecoverable — the server has
-    // removed the list, so there's no destination for them.
+    // Pending ops are unrecoverable either way — the server has removed the
+    // list, so there's no destination for them.
     list.meta.pendingOps.clear();
     _clearListState(list.listId);
+
+    if (_isEditableRole(list.meta.role)) {
+      // A list the user owns or edits whose share has gone from the server is
+      // a dead end — there's nothing left to sync, and leaving a "deleted by
+      // you" mirror around is just a zombie the user can't easily remove. So
+      // drop the share instead of orphaning it. `removeLocal` does the right
+      // thing per role: for an owner it keeps the underlying local source list
+      // (the user's own data, which predates the share) so it reverts to a
+      // plain local list; for an editor it deletes the local mirror entirely
+      // (it was only ever a copy of someone else's list).
+      printAndLog('SyncEngine: ${list.listId} $reason — '
+          'share gone, dropping ${list.meta.role.name} mirror');
+      unawaited(_manager.removeLocal(list.listId).catchError((e) =>
+          printAndLog('SyncEngine: removeLocal ${list.listId} failed: $e')));
+      sharing.bumpState();
+      return;
+    }
+
+    // Subscriber: keep a read-only snapshot flagged "deleted by its owner" so
+    // the user doesn't lose the signs they were following; they can unsubscribe
+    // to remove it.
+    printAndLog('SyncEngine: ${list.listId} $reason — marking orphaned');
+    list.meta.orphaned = true;
     unawaited(list.writeMeta().catchError(
         (e) => printAndLog('SyncEngine: writeMeta ${list.listId} failed: $e')));
     sharing.bumpState();

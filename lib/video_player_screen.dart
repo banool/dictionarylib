@@ -506,10 +506,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             builder: (context, constraints) {
               final videoAspectRatio =
                   playerData.aspectRatio ?? widget.fallbackAspectRatio;
-              // Reserve room for HearthVideoFrame's padding (6px each side) so
+              // Reserve room for HearthVideoFrame's padding (5px each side) so
               // the framed card fits within the carousel slide without
               // overflowing.
-              const frameTotal = 12.0;
+              const frameTotal = 10.0;
               // Equal breathing room above and below the framed video, so the
               // gaps match and the frame's drop shadow has room at the bottom.
               const verticalMargin = 15.0;
@@ -563,8 +563,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         aspectRatio: aspectRatio,
         autoPlay: false,
         // A higher fraction lets the centred video take more width, leaving a
-        // smaller peek of the adjacent slide on each side.
-        viewportFraction: 0.88,
+        // smaller peek of the adjacent slide on each side — and brings a
+        // landscape/square video close to the width of the save button below.
+        viewportFraction: 0.94,
         enableInfiniteScroll: false,
         initialPage: currentPage,
         onPageChanged: (index, reason) => onPageChanged(context, index),
@@ -669,10 +670,17 @@ class _FullScreenVideoPageState extends State<FullScreenVideoPage> {
   @override
   void dispose() {
     _player.dispose();
-    // Hand orientation back to the OS (bounded by the native supported set) so
-    // the rest of the app auto-rotates again — but only if we forced it.
     if (_didForceOrientation) {
-      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+      // Snap the underlying page back to portrait, then re-enable free rotation
+      // a moment later. Just restoring all orientations would leave the page
+      // stuck in landscape if the device was physically turned to watch the
+      // rotated video; forcing portrait first returns it to the app's normal
+      // orientation, and the delayed restore keeps auto-rotation working after.
+      SystemChrome.setPreferredOrientations(
+          const [DeviceOrientation.portraitUp]);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+      });
     }
     super.dispose();
   }

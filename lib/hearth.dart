@@ -197,11 +197,11 @@ class HearthVideoFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: cs.outlineVariant, width: 0.75),
+        border: Border.all(color: cs.outlineVariant, width: 0.5),
         boxShadow: [
           BoxShadow(
             // The scheme's shadow token is already brightness-appropriate
@@ -214,7 +214,7 @@ class HearthVideoFrame extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius - 6),
+        borderRadius: BorderRadius.circular(radius - 5),
         child: child,
       ),
     );

@@ -359,11 +359,18 @@ String? _tryMigrateLegacyMaster(String legacyMaster) {
 List<Review> readReviews() {
   List<String> encoded =
       sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
-  return encoded
-      .map(
-        (e) => decodeReview(e),
-      )
-      .toList();
+  // Decode defensively: a single malformed stored review (e.g. from an older
+  // encoding) must not throw and blank out the whole revision-progress page.
+  // Skip anything we can't parse rather than aborting the lot.
+  final out = <Review>[];
+  for (final e in encoded) {
+    try {
+      out.add(decodeReview(e));
+    } catch (err) {
+      printAndLog("Skipping undecodable stored review '$e': $err");
+    }
+  }
+  return out;
 }
 
 Future<void> writeReviews(List<Review> existing, List<Review> additional,

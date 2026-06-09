@@ -231,9 +231,13 @@ Future<bool> confirmAlert(
     // While an async confirm is in-flight the user shouldn't be able to
     // tap-outside-to-dismiss — that'd leave the task running with no UI.
     barrierDismissible: onConfirm == null,
-    builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+    // `running` lives here (in the showDialog builder, run once) rather than
+    // inside the StatefulBuilder's builder — otherwise every setLocal rebuild
+    // re-initialises it to false and the spinner never shows.
+    builder: (ctx) {
       bool running = false;
-      Future<void> handleConfirm() async {
+      return StatefulBuilder(builder: (ctx, setLocal) {
+        Future<void> handleConfirm() async {
         if (onConfirm == null) {
           confirmed = true;
           Navigator.of(ctx).pop();
@@ -247,7 +251,14 @@ Future<bool> confirmAlert(
         } catch (e) {
           if (ctx.mounted) setLocal(() => running = false);
           messenger.showSnackBar(SnackBar(
-            content: Text(errorMessage?.call(e) ?? e.toString()),
+            content: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => messenger.hideCurrentSnackBar(),
+              child: SizedBox(
+                width: double.infinity,
+                child: Text(errorMessage?.call(e) ?? e.toString()),
+              ),
+            ),
             backgroundColor: errorColor,
           ));
         }
@@ -273,7 +284,8 @@ Future<bool> confirmAlert(
           ),
         ],
       );
-    }),
+      });
+    },
   );
   return confirmed;
 }
@@ -343,11 +355,34 @@ void showSnack(
     content: GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => messenger.hideCurrentSnackBar(),
-      child: Text(message,
-          style: textColor != null ? TextStyle(color: textColor) : null),
+      // Full-width so the whole toast is a tap target, not just the text — a
+      // tap anywhere on it dismisses.
+      child: SizedBox(
+        width: double.infinity,
+        child: Text(message,
+            style: textColor != null ? TextStyle(color: textColor) : null),
+      ),
     ),
     backgroundColor: backgroundColor,
     duration: duration ?? const Duration(seconds: 4),
+  ));
+}
+
+/// Like [showSnack] but for callers that captured a [ScaffoldMessengerState]
+/// before an `await` (so they can't safely touch a possibly-unmounted
+/// `BuildContext`). Same tap-anywhere-to-dismiss behaviour.
+void showSnackVia(ScaffoldMessengerState messenger, String message,
+    {Color? backgroundColor}) {
+  messenger.showSnackBar(SnackBar(
+    content: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => messenger.hideCurrentSnackBar(),
+      child: SizedBox(
+        width: double.infinity,
+        child: Text(message),
+      ),
+    ),
+    backgroundColor: backgroundColor,
   ));
 }
 

@@ -292,9 +292,8 @@ class EntryListPageState extends State<EntryListPage> {
         }
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
-          messenger.showSnackBar(SnackBar(
-              content: Text(
-                  l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)))));
+          showSnackVia(
+              messenger, l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)));
           Navigator.of(context).pop();
         }
       });

@@ -114,7 +114,7 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
       } catch (e) {
         printAndLog("Failed to toggle video in list ${widget.list.key}: $e");
         if (mounted) {
-          messenger.showSnackBar(SnackBar(content: Text(failMessage)));
+          showSnackVia(messenger, failMessage);
         }
       }
       // Re-read membership either way so the checkbox reflects reality even if
