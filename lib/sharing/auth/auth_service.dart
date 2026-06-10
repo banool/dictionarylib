@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 import '../sharing_config.dart';
 import 'apple_sign_in.dart';
@@ -36,7 +37,8 @@ class AuthService {
   /// could never work, but NOT to hide buttons whose config might just
   /// be missing. Missing config surfaces as a localised
   /// [SignInErrorKind.notConfigured] error at sign-in time, not a
-  /// hidden button — same options on every supported platform.
+  /// hidden button. Facebook on Android is the one structural
+  /// exception — see the case below.
   ///
   /// Web is treated as unsupported for every provider for now. None
   /// of the SDKs we use are wired up for the browser flow, so showing
@@ -48,8 +50,15 @@ class AuthService {
       case AuthProvider.apple:
         return appleSignInAvailable();
       case AuthProvider.google:
-      case AuthProvider.facebook:
         return true;
+      case AuthProvider.facebook:
+        // Facebook is Limited Login (OIDC) only — the Worker deliberately
+        // has no classic Graph-token verification path. Limited Login is
+        // an iOS-only Facebook SDK feature, and the Android plugin
+        // ignores the tracking request and can only mint classic Graph
+        // tokens, so on Android the button would always fail server-side
+        // verification. Hide it there rather than offer a dead end.
+        return defaultTargetPlatform != TargetPlatform.android;
       case AuthProvider.test:
         // Not selectable from the dialog — never offered to end users,
         // only available via [signInWithTestToken] for integration tests.
