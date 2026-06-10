@@ -118,6 +118,37 @@ class ListsService {
     return synced;
   }
 
+  /// Owner-only: rename a shared list. Only the creator (owner role)
+  /// can rename; the new name propagates to editors (on their next
+  /// /sync) and subscribers (on their next R2 poll). The owner
+  /// wrapper's local display name is refreshed from the server's reply.
+  ///
+  /// Validates [newName] with the same rules as a local list name
+  /// (throwing [EntryListNameException] on empty / invalid / reserved)
+  /// so the rename dialog can surface a localised message; the server
+  /// re-validates as a backstop. Throws [SyncException] on a network /
+  /// server failure.
+  Future<void> renameSharedList(SyncedEntryList owned, String newName) async {
+    if (!sharing.isEnabled) {
+      throw StateError('sharing is not configured for this app');
+    }
+    if (owned.meta.role != ListRole.owner) {
+      // Only the creator can rename. The UI gates this with a toast; the
+      // guard here stops a stray caller pushing a non-owner's rename.
+      throw StateError('only the owner can rename a shared list');
+    }
+    // Validate the name (throws on empty / invalid chars / reserved).
+    // The derived key is discarded — shared lists are keyed by their
+    // server id, not a name-derived local key.
+    EntryList.getKeyFromName(newName);
+    final name = newName.trim();
+    final session = sharing.auth.store.current;
+    if (session == null) {
+      throw StateError('renameSharedList: not signed in');
+    }
+    await sharing.engine.renameOwned(owned.listId, name, session.sessionToken);
+  }
+
   /// Stop publishing a shared list. Deletes the server-side copy and
   /// removes the local owner wrapper; the local list — which still
   /// holds the entries — is untouched.

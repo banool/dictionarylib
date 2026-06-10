@@ -8,6 +8,7 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
+import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/sync_engine.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:flutter/material.dart';
@@ -466,7 +467,8 @@ Widget _getUserLists(
       leading: owned != null
           ? Icon(iconForSharedList(owned.meta))
           : el.getLeadingIcon(),
-      title: el.getName(context),
+      // Owner-shared lists show the share's (renamable) display name.
+      title: (owned ?? el).getName(context),
       // Shared lists show their sync status; plain lists show a word count.
       subtitle: owned != null
           ? _formatOwnedStatus(context, owned)
@@ -507,7 +509,6 @@ Widget _buildEditModeList(
   var i = 0;
   for (final e in userEntryListManager.getEntryLists().entries) {
     final el = e.value;
-    final name = el.getName(context);
     final isFavouritesLocal = el.key == KEY_FAVOURITES_ENTRIES;
     // Owner-shared lists can't be deleted directly: the local list is the
     // source of truth for the wrapper's entries, so dropping it would
@@ -542,27 +543,32 @@ Widget _buildEditModeList(
                 },
               )
             : null);
-    // Tapping a renamable list opens the rename dialog. Only plain owned
-    // lists qualify — favourites (fixed name) and owner-shared lists (whose
-    // local key backs the share) are left untappable, matching delete.
-    final canRename = canDelete;
+    // Tapping a list opens the rename dialog. Plain owned lists rename
+    // locally; owner-shared lists rename on the server too (only the
+    // creator — which is the user here, since owner-shares appear in My
+    // Lists). Favourites (fixed name) stays untappable.
+    final canRename = !isFavouritesLocal;
     Widget tile = HearthListRow(
       leading: el.getLeadingIcon(inEditMode: true),
-      title: name,
+      // Owner-shared lists show the share's display name (the renamable
+      // one), not the underlying local key's name.
+      title: (ownedShare ?? el).getName(context),
       trailing: trailing,
       showChevron: false,
       onTap: canRename
           ? () async {
-              final renamed = await applyRenameListDialog(context, el);
+              final renamed = ownedShare != null
+                  ? await applyRenameSharedListDialog(context, ownedShare)
+                  : await applyRenameListDialog(context, el);
               if (renamed) setState(() {});
             }
           : null,
     );
     if (isFavouritesLocal) {
-      tile = IgnorePointer(key: ValueKey(name), child: tile);
+      tile = IgnorePointer(key: ValueKey(el.key), child: tile);
     }
     tile = ReorderableDragStartListener(
-        key: ValueKey(name), index: i, child: tile);
+        key: ValueKey(el.key), index: i, child: tile);
     tiles.add(tile);
     i++;
   }
@@ -570,8 +576,10 @@ Widget _buildEditModeList(
     // Match the non-edit list's top/bottom padding so toggling edit mode
     // doesn't shift the content vertically.
     padding: const EdgeInsets.symmetric(vertical: 8),
-    header: Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 4),
+    // The reorder/rename hint sits below the last list rather than above
+    // the first, so it reads as a footnote and doesn't push the lists down.
+    footer: Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
       child: Text(
         DictLibLocalizations.of(context)!.listsReorderHint,
         textAlign: TextAlign.center,
@@ -676,11 +684,17 @@ Widget getCommunityLists(BuildContext context,
   );
 }
 
-// Returns true if [list] was renamed. Pre-fills the field with the current
-// name so the user edits rather than retypes. Favourites can't be renamed,
-// so callers should only offer this for renamable lists.
-Future<bool> applyRenameListDialog(BuildContext context, EntryList list) async {
-  final controller = TextEditingController(text: list.getName(context));
+/// Shared rename dialog. Pre-fills [currentName] (caret at the end),
+/// applies the same allowed-character rules as list creation, and calls
+/// [onRename] with the entered text on confirm. On a validation / sync
+/// failure it shows an error toast and stays unconfirmed. Returns true
+/// on success.
+Future<bool> _showRenameDialog(
+  BuildContext context, {
+  required String currentName,
+  required Future<void> Function(String newName) onRename,
+}) async {
+  final controller = TextEditingController(text: currentName);
   // Put the caret at the end so editing starts from the existing name.
   controller.selection =
       TextSelection.collapsed(offset: controller.text.length);
@@ -707,11 +721,19 @@ Future<bool> applyRenameListDialog(BuildContext context, EntryList list) async {
     var confirmed = await confirmAlert(context, body, title: l.listRenameList);
     if (confirmed) {
       try {
-        final newKey = EntryList.getKeyFromName(controller.text);
-        await userEntryListManager.renameEntryList(list.key, newKey);
+        await onRename(controller.text);
       } on EntryListNameException catch (e) {
         if (context.mounted) {
           showSnack(context, '${l.listFailedToRename}: ${e.localise(context)}.',
+              backgroundColor: Theme.of(context).colorScheme.error);
+        }
+        confirmed = false;
+      } on SyncException catch (e) {
+        if (context.mounted) {
+          showSnack(
+              context,
+              '${l.listFailedToRename}: '
+              '${localisedSyncErrorSimple(context, e, l.listFailedToRename)}',
               backgroundColor: Theme.of(context).colorScheme.error);
         }
         confirmed = false;
@@ -727,6 +749,45 @@ Future<bool> applyRenameListDialog(BuildContext context, EntryList list) async {
   } finally {
     disposeAfterFrame(controller);
   }
+}
+
+/// Returns true if [list] was renamed. Pre-fills the field with the
+/// current name. Favourites can't be renamed, so callers should only
+/// offer this for renamable lists.
+Future<bool> applyRenameListDialog(BuildContext context, EntryList list) {
+  return _showRenameDialog(
+    context,
+    currentName: list.getName(context),
+    onRename: (newName) async {
+      final newKey = EntryList.getKeyFromName(newName);
+      await userEntryListManager.renameEntryList(list.key, newKey);
+    },
+  );
+}
+
+/// Returns true if the owner-shared list was renamed. Renames on the
+/// server (which syncs the new name to editors + subscribers) and
+/// refreshes the local owner wrapper.
+Future<bool> applyRenameSharedListDialog(
+    BuildContext context, SyncedEntryList owned) {
+  return _showRenameDialog(
+    context,
+    currentName: owned.getName(context),
+    onRename: (newName) => listsService.renameSharedList(owned, newName),
+  );
+}
+
+/// Rename a shared list from a surface that any member can reach (e.g.
+/// the list page): owners get the rename dialog, anyone else (an editor)
+/// gets a toast — only the creator can rename. Returns true if renamed.
+Future<bool> attemptRenameSharedList(
+    BuildContext context, SyncedEntryList list) async {
+  final l = DictLibLocalizations.of(context)!;
+  if (list.meta.role != ListRole.owner) {
+    showSnack(context, l.listRenameOnlyCreator);
+    return false;
+  }
+  return applyRenameSharedListDialog(context, list);
 }
 
 // Returns true if a new list was created.

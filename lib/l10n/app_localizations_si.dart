@@ -309,6 +309,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listRenameList => 'Rename List';
 
   @override
+  String get listRenameOnlyCreator => 'Only the creator can rename this list.';
+
+  @override
   String get listMyLists => 'මගේ ලැයිස්තු';
 
   @override

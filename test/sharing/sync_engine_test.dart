@@ -1093,4 +1093,126 @@ void main() {
           reason: 'engine should give up after 5 collision retries');
     });
   });
+
+  group('SyncEngine.renameOwned', () {
+    test('PUTs the new name and adopts it from the response snapshot',
+        () async {
+      final ctx = _makeEngine((req) async {
+        if (req.method == 'PUT' &&
+            req.url.path.endsWith('/v1/lists/listidaaaaa1')) {
+          return http.Response(
+            jsonEncode(snapshotJson(
+              listId: 'listidaaaaa1',
+              displayName: 'Renamed Cats',
+              entries: ['apple'],
+              lastSeq: 8,
+              updatedAt: 1700000200,
+            )),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('', 404);
+      });
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+
+      await ctx.engine
+          .renameOwned(list.listId, 'Renamed Cats', 'fake-session-jwt');
+
+      final put = ctx.requests.singleWhere((r) => r.method == 'PUT');
+      expect(jsonDecode(put.body), {'displayName': 'Renamed Cats'});
+      // The owner wrapper adopts the authoritative name + cursor.
+      expect(list.meta.displayName, 'Renamed Cats');
+      expect(list.meta.lastKnownSeq, 8);
+      expect(list.meta.serverUpdatedAt, 1700000200);
+    });
+
+    test('throws for a non-owner role and sends no request', () async {
+      final ctx = _makeEngine((req) async => http.Response('', 404));
+      await ctx.manager.insert(SyncedEntryList.editor(
+        meta: SyncedListMeta(
+          listId: 'editoraaaaaa',
+          displayName: 'Editing',
+          role: ListRole.editor,
+          lastKnownSeq: 1,
+          etag: null,
+          lastSyncedAt: 1,
+          serverUpdatedAt: 1,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+      expect(
+          () => ctx.engine
+              .renameOwned('editoraaaaaa', 'Nope', 'fake-session-jwt'),
+          throwsA(isA<StateError>()));
+      expect(ctx.requests, isEmpty);
+    });
+  });
+
+  group('SyncEngine — displayName sync-down', () {
+    test('a /sync response displayName updates the editor mirror name',
+        () async {
+      // The owner renamed the list; the editor learns the new name from
+      // the displayName echoed on their next /sync (no dedicated op).
+      final ctx = _makeEngine((req) async {
+        if (req.url.path.endsWith('/sync')) {
+          return http.Response(
+            jsonEncode({
+              'appliedSeq': 1,
+              'applied': <Map<String, dynamic>>[],
+              'missedOps': <Map<String, dynamic>>[],
+              'snapshot': null,
+              'members': {
+                'owner': {'userId': 'apple:other', 'displayName': 'Owner'},
+                'editors': [
+                  {
+                    'userId': 'apple:test-user',
+                    'displayName': 'Test User',
+                    'addedAt': 1,
+                    'addedBy': 'apple:other',
+                  }
+                ],
+              },
+              'wasSnapshotCatchUp': false,
+              'displayName': 'Renamed By Owner',
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('', 404);
+      });
+      await ctx.manager.insert(SyncedEntryList.editor(
+        meta: SyncedListMeta(
+          listId: 'editoraaaaaa',
+          displayName: 'Old Name',
+          role: ListRole.editor,
+          lastKnownSeq: 1,
+          etag: null,
+          lastSyncedAt: 1,
+          serverUpdatedAt: 1,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+      final list = ctx.manager.get('editoraaaaaa')!;
+
+      await ctx.engine.syncAll();
+
+      expect(list.meta.displayName, 'Renamed By Owner');
+    });
+
+    test('a /sync response without displayName leaves the local name alone',
+        () async {
+      // Back-compat: an older server omits the field. The client must
+      // keep its current name rather than blanking it.
+      final ctx = _makeEngine((req) async => stubSyncApplyAll(req));
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      final before = list.meta.displayName;
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+      await ctx.engine.pushAllDirty();
+      expect(list.meta.displayName, before);
+    });
+  });
 }

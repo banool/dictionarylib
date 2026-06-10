@@ -447,6 +447,12 @@ class SyncResponse {
   /// not set the field; fall back to `snapshot != null`.
   final bool wasSnapshotCatchUp;
 
+  /// The list's current display name, echoed on every /sync so a rename
+  /// by the owner reaches editors on their next sync. Null when talking
+  /// to an older server that doesn't send it — the client then leaves
+  /// its local name untouched.
+  final String? displayName;
+
   SyncResponse({
     required this.appliedSeq,
     required this.applied,
@@ -454,6 +460,7 @@ class SyncResponse {
     required this.snapshot,
     required this.members,
     required this.wasSnapshotCatchUp,
+    required this.displayName,
   });
   factory SyncResponse.fromJson(Map<String, dynamic> json) {
     final snapshotRaw = json['snapshot'];
@@ -471,6 +478,7 @@ class SyncResponse {
       snapshot: snapshot,
       members: MembersBlock.fromJson(json['members'] as Map<String, dynamic>),
       wasSnapshotCatchUp: json['wasSnapshotCatchUp'] as bool? ?? snapshot != null,
+      displayName: json['displayName'] as String?,
     );
   }
 }
@@ -731,6 +739,31 @@ class SyncApi {
       headers: {..._baseHeaders(), 'authorization': 'Bearer $sessionToken'},
     );
     if (resp.statusCode == 204) return;
+    throw SyncException.fromResponse(resp);
+  }
+
+  /// Owner-only: rename a shared list. Returns the updated snapshot so
+  /// the caller can refresh its local display name + cursor. The server
+  /// rejects non-owners with 403 and reserved / over-long names with 400.
+  Future<ListSnapshot> renameList({
+    required String listId,
+    required String displayName,
+    required String sessionToken,
+  }) async {
+    final resp = await _request(
+      method: 'PUT',
+      url: _listUrl(listId),
+      headers: {
+        ..._baseHeaders(),
+        'content-type': 'application/json',
+        'authorization': 'Bearer $sessionToken',
+      },
+      body: jsonEncode({'displayName': displayName}),
+    );
+    if (resp.statusCode == 200) {
+      return ListSnapshot.fromJson(
+          jsonDecode(resp.body) as Map<String, dynamic>);
+    }
     throw SyncException.fromResponse(resp);
   }
 

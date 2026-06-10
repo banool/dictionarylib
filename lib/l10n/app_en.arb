@@ -116,6 +116,7 @@
     "listFailedToRename": "Failed to rename list",
     "listNewList": "New List",
     "listRenameList": "Rename List",
+    "listRenameOnlyCreator": "Only the creator can rename this list.",
     "listMyLists": "My Lists",
     "listCommunity": "Community",
     "listSortAdded": "Added",

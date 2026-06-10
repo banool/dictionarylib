@@ -196,6 +196,87 @@ void main() {
     });
   });
 
+  group('renameSharedList', () {
+    /// Share a fresh local list owned by the test user and return its
+    /// owner wrapper. The fake server echoes the create + serves the
+    /// rename PUT back as an updated snapshot.
+    Future<SyncedEntryList> shareCats() async {
+      await userEntryListManager.createEntryList('cats_words');
+      final source = userEntryListManager.getEntryLists()['cats_words']!;
+      return listsService.shareList(
+        sourceList: source,
+        displayName: 'Cats',
+        sessionToken: 'fake-session-jwt',
+      );
+    }
+
+    test('owner rename PUTs the new name and updates the wrapper', () async {
+      final requests = installFakeSharing((req) async {
+        if (req.method == 'POST' && req.url.path == '/v1/lists') {
+          return stubCreateResponse(req);
+        }
+        if (req.method == 'PUT') {
+          final body = jsonDecode(req.body) as Map<String, dynamic>;
+          return http.Response(
+            jsonEncode(snapshotJson(
+              listId: 'ownedlist001',
+              displayName: body['displayName'] as String,
+              entries: const <String>[],
+              lastSeq: 3,
+            )),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('', 404);
+      });
+      final owned = await shareCats();
+
+      await listsService.renameSharedList(owned, 'Kittens');
+
+      final put = requests.singleWhere((r) => r.method == 'PUT');
+      expect(jsonDecode(put.body), {'displayName': 'Kittens'});
+      expect(owned.meta.displayName, 'Kittens');
+      expect(owned.getName(), 'Kittens');
+    });
+
+    test('a non-owner (editor) rename throws and sends no PUT', () async {
+      final requests = installFakeSharing((_) async => http.Response('', 404));
+      await sharing.lists.insert(SyncedEntryList.editor(
+        meta: SyncedListMeta(
+          listId: 'editor010000',
+          displayName: 'Editing',
+          role: ListRole.editor,
+          lastKnownSeq: 1,
+          etag: null,
+          lastSyncedAt: 1,
+          serverUpdatedAt: 1,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+      final editor = sharing.lists.get('editor010000')!;
+      await expectLater(listsService.renameSharedList(editor, 'Nope'),
+          throwsA(isA<StateError>()));
+      expect(requests.where((r) => r.method == 'PUT'), isEmpty);
+    });
+
+    test('a reserved name is rejected client-side before any PUT', () async {
+      final requests = installFakeSharing((req) async {
+        if (req.method == 'POST' && req.url.path == '/v1/lists') {
+          return stubCreateResponse(req);
+        }
+        return http.Response('', 404);
+      });
+      final owned = await shareCats();
+      await expectLater(listsService.renameSharedList(owned, 'Favourites'),
+          throwsA(isA<EntryListNameException>()));
+      expect(requests.where((r) => r.method == 'PUT'), isEmpty);
+      // The wrapper keeps its original name.
+      expect(owned.meta.displayName, 'Cats');
+    });
+  });
+
   group('favouritesList', () {
     test('returns the local list when favourites is not shared', () async {
       installFakeSharing((_) async => http.Response('', 404));

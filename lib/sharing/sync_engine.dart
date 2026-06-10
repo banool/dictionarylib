@@ -420,10 +420,16 @@ class SyncEngine {
       list.applyOpToSavedVideos(op.type, op.args);
     }
 
-    // 4. Update cursor + member cache + sync timestamp.
+    // 4. Update cursor + member cache + sync timestamp. The response
+    // echoes the list's current display name on every /sync, so an
+    // owner's rename reaches editors here without a dedicated op. Guard
+    // on non-null so an older server (no field) leaves the name alone.
     list.meta.lastKnownSeq = response.appliedSeq;
     list.meta.lastSyncedAt = _nowSecs();
     list.meta.cachedMembers = response.members;
+    if (response.displayName != null) {
+      list.meta.displayName = response.displayName!;
+    }
 
     // 5. Persist in ack-order: entries first, then meta. Awaited so
     // we don't return until the new state is durable.
@@ -823,6 +829,34 @@ class SyncEngine {
     }
     _clearListState(listId);
     await _manager.removeLocal(listId);
+  }
+
+  /// Owner-only: rename a shared list. PUTs the new display name to the
+  /// server, then adopts the authoritative name + cursor from the
+  /// returned snapshot. Editors pick the new name up on their next
+  /// /sync (it's echoed in the response); subscribers on their next R2
+  /// poll. Held under the per-list lock so it can't interleave with a
+  /// concurrent flush for the same list.
+  Future<void> renameOwned(
+      String listId, String displayName, String sessionToken) async {
+    final list = _manager.get(listId);
+    if (list == null || list.meta.role != ListRole.owner) {
+      throw StateError('renameOwned: $listId is not owner-role');
+    }
+    await _stateOf(listId).lock.synchronized(() async {
+      final snapshot = await _api.renameList(
+          listId: listId,
+          displayName: displayName,
+          sessionToken: sessionToken);
+      final current = _manager.get(listId);
+      if (current == null) return;
+      current.meta.displayName = snapshot.displayName;
+      current.meta.serverUpdatedAt = snapshot.updatedAt;
+      current.meta.lastKnownSeq = snapshot.lastSeq;
+      current.meta.cachedMembers = snapshot.members;
+      await current.writeMeta();
+      sharing.bumpState();
+    });
   }
 
   /// Stop sharing as owner — delete on the server, remove locally.
