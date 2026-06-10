@@ -233,13 +233,12 @@
 
     "settingsSharing": "Sharing",
     "settingsSignIn": "Sign in to share lists",
-    "settingsSignedInAs": "Signed in with {provider}",
-    "@settingsSignedInAs": {
+    "settingsSignOut": "Sign out (signed in with {provider})",
+    "@settingsSignOut": {
         "placeholders": {
             "provider": { "type": "String" }
         }
     },
-    "settingsSignOut": "Sign out",
     "settingsSignOutConfirmTitle": "Sign out?",
     "settingsSignOutConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
     "settingsDeleteAccount": "Delete account",

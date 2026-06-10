@@ -167,9 +167,10 @@ class SettingsPageState extends State<SettingsPage> {
               if (mounted) setState(() {});
             })
           else ...[
-            HearthRow(
-                title: l.settingsSignedInAs(session.provider.label(l))),
-            navRow(l.settingsSignOut, onTap: () async {
+            // One row instead of a separate "Signed in with X" label row —
+            // the provider rides along in the sign-out button's own label.
+            navRow(l.settingsSignOut(session.provider.label(l)),
+                onTap: () async {
               final pendingLists = shareState.lists.editableLists
                   .where((x) => x.meta.pendingOps.isNotEmpty)
                   .toList();

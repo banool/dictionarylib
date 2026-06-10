@@ -511,12 +511,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsSignIn => 'Sign in to share lists';
 
   @override
-  String settingsSignedInAs(String provider) {
-    return 'Signed in with $provider';
+  String settingsSignOut(String provider) {
+    return 'Sign out (signed in with $provider)';
   }
-
-  @override
-  String get settingsSignOut => 'Sign out';
 
   @override
   String get settingsSignOutConfirmTitle => 'Sign out?';

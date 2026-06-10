@@ -515,12 +515,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsSignIn => 'ලැයිස්තු බෙදා ගැනීමට පුරනය වන්න';
 
   @override
-  String settingsSignedInAs(String provider) {
-    return '$provider සමඟ පුරනය වී ඇත';
+  String settingsSignOut(String provider) {
+    return 'පිටවන්න ($provider සමඟ පුරනය වී ඇත)';
   }
-
-  @override
-  String get settingsSignOut => 'පිටවන්න';
 
   @override
   String get settingsSignOutConfirmTitle => 'පිටවන්නද?';

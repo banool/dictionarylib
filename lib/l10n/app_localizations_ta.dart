@@ -524,12 +524,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsSignIn => 'பட்டியல்களைப் பகிர உள்நுழையவும்';
 
   @override
-  String settingsSignedInAs(String provider) {
-    return '$provider மூலம் உள்நுழைந்துள்ளீர்கள்';
+  String settingsSignOut(String provider) {
+    return 'வெளியேறு ($provider மூலம் உள்நுழைந்துள்ளீர்கள்)';
   }
-
-  @override
-  String get settingsSignOut => 'வெளியேறு';
 
   @override
   String get settingsSignOutConfirmTitle => 'வெளியேறவா?';

@@ -1013,17 +1013,11 @@ abstract class DictLibLocalizations {
   /// **'Sign in to share lists'**
   String get settingsSignIn;
 
-  /// No description provided for @settingsSignedInAs.
-  ///
-  /// In en, this message translates to:
-  /// **'Signed in with {provider}'**
-  String settingsSignedInAs(String provider);
-
   /// No description provided for @settingsSignOut.
   ///
   /// In en, this message translates to:
-  /// **'Sign out'**
-  String get settingsSignOut;
+  /// **'Sign out (signed in with {provider})'**
+  String settingsSignOut(String provider);
 
   /// No description provided for @settingsSignOutConfirmTitle.
   ///
