@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../common.dart';
 import 'auth/auth_api.dart';
 import 'auth/auth_service.dart';
 import 'auth/auth_store.dart';
@@ -114,12 +115,17 @@ class Sharing with ChangeNotifier {
   /// consumers don't have to reach into `sharing.engine.notifications`.
   Stream<SyncNotification> get engineNotifications => engine.notifications;
 
-  /// Sign the current user out: drop every list's pending-op queue (so a
-  /// follow-up sign-in by a different account can't push the previous user's
-  /// queued edits under the new identity), then drop the account-bound list
-  /// mirrors (owned + editor) so the new account doesn't inherit the previous
-  /// user's lists. Anonymous subscriptions, and the underlying local lists
-  /// that owner mirrors wrap, are kept.
+  /// Sign the current user out. First makes a best-effort, time-boxed
+  /// attempt to push any queued edits — the session is still valid at
+  /// this point, so flushing here is safe and means a routine sign-out
+  /// doesn't silently discard offline work. Whatever fails to land
+  /// (offline, server down) is then dropped: the queue must not survive
+  /// into a different account's session, because a follow-up sign-in by
+  /// someone else would push the previous user's edits under the new
+  /// identity. Finally the account-bound list mirrors (owned + editor)
+  /// are dropped so the next account doesn't inherit them. Anonymous
+  /// subscriptions, and the underlying local lists that owner mirrors
+  /// wrap, are kept.
   ///
   /// Call this instead of `auth.signOut()` directly. The latter is
   /// reserved for the engine's own 401-handling path
@@ -127,6 +133,11 @@ class Sharing with ChangeNotifier {
   /// (it preserves pending ops across an expiry so the next sign-in
   /// by the same user resumes the flush).
   Future<void> signOut() async {
+    try {
+      await engine.pushAllDirty().timeout(const Duration(seconds: 10));
+    } catch (e) {
+      printAndLog('Sharing.signOut: best-effort flush failed: $e');
+    }
     await engine.clearAllPendingOps();
     await auth.signOut();
     // Drop account-bound list mirrors (owned + editor) so the next account to

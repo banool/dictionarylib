@@ -304,8 +304,9 @@ void main() {
       expect(list.meta.pendingOps, isEmpty);
     });
 
-    test('404/410 on an owned list drops the share but keeps the local list',
-        () async {
+    test(
+        'repeated 404s on an owned list eventually drop the share but keep '
+        'the local list', () async {
       final ctx = _makeEngine((req) async {
         return http.Response(
             jsonEncode({
@@ -315,8 +316,18 @@ void main() {
       });
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
       ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
-      await ctx.engine.pushAllDirty();
 
+      // A 404 is ambiguous (config drift / transient miss), so the first
+      // two leave the share and its queue fully intact.
+      await ctx.engine.pushAllDirty();
+      await ctx.engine.pushAllDirty();
+      expect(ctx.manager.hasList(list.listId), isTrue,
+          reason: 'mirror must survive transient 404s');
+      expect(list.meta.pendingOps, isNotEmpty,
+          reason: 'queued edits must survive transient 404s');
+
+      // The third consecutive 404 is treated as authoritative.
+      await ctx.engine.pushAllDirty();
       // The share is gone server-side, so rather than leave a "deleted by you"
       // zombie the owner mirror is dropped...
       expect(ctx.manager.hasList(list.listId), isFalse);
@@ -324,6 +335,131 @@ void main() {
       // simply reverts to a plain local list.
       expect(userEntryListManager.getEntryLists().containsKey('cats_words'),
           isTrue);
+    });
+
+    test('410 (gone) drops the share immediately — it is authoritative',
+        () async {
+      final ctx = _makeEngine((req) async {
+        return http.Response(
+            jsonEncode({
+              'error': {'code': 'GONE', 'message': 'deleted'}
+            }),
+            410);
+      });
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+      await ctx.engine.pushAllDirty();
+
+      expect(ctx.manager.hasList(list.listId), isFalse);
+      expect(userEntryListManager.getEntryLists().containsKey('cats_words'),
+          isTrue);
+    });
+
+    test('an editor mirror and its queue survive transient 404s', () async {
+      final ctx = _makeEngine((req) async {
+        return http.Response(
+            jsonEncode({
+              'error': {'code': 'NOT_FOUND', 'message': 'gone'}
+            }),
+            404);
+      });
+      await ctx.manager.insert(SyncedEntryList.editor(
+        meta: SyncedListMeta(
+          listId: 'editor404aaa',
+          displayName: 'Editing',
+          role: ListRole.editor,
+          lastKnownSeq: 1,
+          etag: null,
+          lastSyncedAt: 1700000000,
+          serverUpdatedAt: 1700000000,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet.of({_v('apple')}),
+      ));
+      ctx.engine.enqueueAddVideo('editor404aaa', _v('banana'));
+
+      await ctx.engine.pushAllDirty();
+      await ctx.engine.pushAllDirty();
+
+      final mirror = ctx.manager.get('editor404aaa');
+      expect(mirror, isNotNull,
+          reason: 'editor mirror must survive transient 404s');
+      expect(mirror!.meta.pendingOps, isNotEmpty);
+
+      // The third consecutive 404 deletes the editor mirror (it was only
+      // ever a copy of someone else's list).
+      await ctx.engine.pushAllDirty();
+      expect(ctx.manager.hasList('editor404aaa'), isFalse);
+    });
+
+    test('a successful sync resets the consecutive-404 counter', () async {
+      var calls = 0;
+      final ctx = _makeEngine((req) async {
+        calls++;
+        if (calls == 3) return stubSyncApplyAll(req);
+        return http.Response(
+            jsonEncode({
+              'error': {'code': 'NOT_FOUND', 'message': 'gone'}
+            }),
+            404);
+      });
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+
+      await ctx.engine.pushAllDirty(); // 404 #1.
+      await ctx.engine.pushAllDirty(); // 404 #2.
+      await ctx.engine.pushAllDirty(); // Success — resets the counter.
+      ctx.engine.enqueueAddVideo(list.listId, _v('cherry'));
+      await ctx.engine.pushAllDirty(); // 404 #1 again.
+      await ctx.engine.pushAllDirty(); // 404 #2 again.
+
+      expect(ctx.manager.hasList(list.listId), isTrue,
+          reason: 'the success in between must reset the 404 streak');
+    });
+
+    test(
+        'stale-cursor 400 re-adopts server state, keeps the queue, and '
+        'reflushes', () async {
+      final notifications = <SyncNotification>[];
+      var stateGets = 0;
+      final ctx = _makeEngine((req) async {
+        if (req.method == 'GET' && req.url.path.endsWith('/state')) {
+          stateGets++;
+          return http.Response(
+              jsonEncode(snapshotJson(
+                listId: 'listidaaaaa1',
+                displayName: 'Cats',
+                entries: ['apple'],
+                lastSeq: 2,
+              )),
+              200);
+        }
+        return http.Response(
+            jsonEncode({
+              'error': {
+                'code': 'INVALID_BODY',
+                'message': 'lastKnownSeq is ahead of the server',
+                'details': {'reason': 'stale_cursor'},
+              }
+            }),
+            400);
+      });
+      ctx.engine.notifications.listen(notifications.add);
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      // Simulate a cursor from before the server lost state.
+      list.meta.lastKnownSeq = 99;
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+
+      await ctx.engine.pushAllDirty();
+
+      expect(stateGets, 1, reason: 'recovery must fetch /state');
+      expect(list.meta.lastKnownSeq, 2,
+          reason: 'cursor must be re-adopted from the authoritative snapshot');
+      expect(list.meta.pendingOps, isNotEmpty,
+          reason: 'queued edits must survive the cursor reset');
+      // Server state (apple) plus the still-pending local edit (banana).
+      expect(list.savedVideos, containsAll({_v('apple'), _v('banana')}));
+      expect(notifications, contains(SyncNotification.snapshotCatchUp));
     });
 
     test('no session → flush is a no-op, ops stay queued', () async {

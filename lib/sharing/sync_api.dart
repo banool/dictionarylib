@@ -51,6 +51,13 @@ int _parseLastModifiedSeconds(http.Response resp) {
 /// rather than reading this literal.
 const String _forbidReasonWrongApp = 'wrong_app';
 
+/// Discriminator string the worker stamps on the 400's `details.reason`
+/// when a /sync is rejected because the client's `lastKnownSeq` is ahead
+/// of the server (server-side data loss, restore-from-backup, listId
+/// reuse). Mirrors `STALE_CURSOR_REASON` in
+/// `lists/workers/src/list_do.ts` — keep in lockstep.
+const String _invalidBodyReasonStaleCursor = 'stale_cursor';
+
 /// Error envelope returned by the API.
 class SyncException implements Exception {
   final SyncErrorKind kind;
@@ -66,6 +73,16 @@ class SyncException implements Exception {
   bool get isWrongAppForbid =>
       kind == SyncErrorKind.forbidden &&
       details?['reason'] == _forbidReasonWrongApp;
+
+  /// True if this is the server telling us our sync cursor is ahead of
+  /// its own op log — i.e. the server lost state relative to what this
+  /// client saw. The engine self-heals by re-adopting the authoritative
+  /// state via /state and re-sending the pending queue; dropping the
+  /// ops (the generic invalidBody handling) would silently discard the
+  /// user's edits on every flush forever.
+  bool get isStaleCursor =>
+      kind == SyncErrorKind.invalidBody &&
+      details?['reason'] == _invalidBodyReasonStaleCursor;
 
   @override
   String toString() => 'SyncException($kind, $message)';

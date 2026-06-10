@@ -46,6 +46,14 @@ class _PerListState {
   Timer? debounceTimer;
   int? backoffSeconds;
 
+  /// Consecutive 404 (notFound) responses for this list. A 404 is
+  /// ambiguous — server-side config drift or a transient miss can
+  /// produce one for a list that still exists — so the engine only
+  /// orphans/destroys local state after several in a row (see
+  /// [SyncEngine._notFoundOrphanThreshold]). Reset on any successful
+  /// round-trip.
+  int consecutiveNotFound = 0;
+
   void cancelTimer() {
     debounceTimer?.cancel();
     debounceTimer = null;
@@ -158,6 +166,15 @@ class SyncEngine {
   /// With 60 bits per key, collisions should be unobservable; failures
   /// here mean something else is wrong.
   static const int _createKeyMaxAttempts = 5;
+
+  /// How many consecutive 404s a list must accumulate before the engine
+  /// treats it as genuinely gone. A 410 (gone) is authoritative — the
+  /// owner tombstoned the list — and skips the threshold entirely. A
+  /// 404 is not: an APP_ID config drift on a deploy resolves every list
+  /// to a fresh empty DO and would otherwise mass-delete editor mirrors
+  /// (and their queued edits) over a server-side mistake, the same
+  /// failure class the wrong-app 403 guard exists for.
+  static const int _notFoundOrphanThreshold = 3;
 
   SyncEngine({
     required SyncApi api,
@@ -368,6 +385,7 @@ class SyncEngine {
         );
         await _applySyncResponse(list, batch, response);
         _stateOf(listId).backoffSeconds = null;
+        _stateOf(listId).consecutiveNotFound = 0;
         // If new ops landed during the request OR we sent a partial
         // batch, schedule another flush so we keep draining.
         if (list.meta.pendingOps.isNotEmpty && !list.meta.orphaned) {
@@ -457,6 +475,13 @@ class SyncEngine {
   Future<void> _handleSyncError(
       SyncedEntryList list, SyncException e, List<PendingOp> batch) async {
     final listId = list.listId;
+    // The stale-cursor 400 is recoverable (server lost state relative
+    // to our cursor); handle it before the generic invalidBody branch
+    // would destroy the queue.
+    if (e.isStaleCursor) {
+      await _recoverFromStaleCursor(list);
+      return;
+    }
     switch (e.kind) {
       case SyncErrorKind.unauthorized:
         printAndLog('SyncEngine: $listId 401 on sync — dropping session');
@@ -494,7 +519,7 @@ class SyncEngine {
             printAndLog('SyncEngine: post-demote pull $listId failed: $err')));
       case SyncErrorKind.notFound:
       case SyncErrorKind.gone:
-        _markOrphaned(list, '${e.kind} on sync');
+        await _handleNotFoundOrGone(list, e.kind, 'sync');
       case SyncErrorKind.rateLimited:
         _scheduleBackoffRetry(list, _parseRetryAfter(e.details?['retryAfter']));
       case SyncErrorKind.network:
@@ -522,6 +547,80 @@ class SyncEngine {
     }
   }
 
+  /// Self-heal from a stale-cursor rejection: the server's `last_seq`
+  /// is behind our persisted `lastKnownSeq` (server-side data loss,
+  /// restore-from-backup, listId reuse). Re-adopt the authoritative
+  /// state via /state, re-apply the still-pending queue on top, and
+  /// schedule a flush so the queued edits land against the fresh
+  /// cursor. Without this the generic invalidBody handling would drop
+  /// every future edit forever — the poison is the cursor, not the ops.
+  Future<void> _recoverFromStaleCursor(SyncedEntryList list) async {
+    final listId = list.listId;
+    final session = _auth.store.current;
+    if (session == null) return;
+    printAndLog('SyncEngine: $listId cursor ahead of server '
+        '(lastKnownSeq=${list.meta.lastKnownSeq}) — re-adopting server state');
+    try {
+      final snapshot = await _api.getState(
+          listId: listId, sessionToken: session.sessionToken);
+      _adoptSnapshot(list, snapshot);
+      // Re-apply the queued local edits so they survive the reset and
+      // get re-sent against the fresh cursor.
+      for (final op in list.meta.pendingOps) {
+        list.applyOpToSavedVideos(op.type, op.args);
+      }
+      try {
+        await list.writeAllAfterServerAck();
+      } catch (e) {
+        printAndLog('SyncEngine: writeAll $listId failed: $e');
+      }
+      // Reuse the catch-up notification: the user's view was replaced
+      // wholesale by server state with local edits re-applied on top.
+      _notifications.add(SyncNotification.snapshotCatchUp);
+      sharing.bumpState();
+      if (list.meta.pendingOps.isNotEmpty) _scheduleFlush(listId);
+    } on SyncException catch (err) {
+      if (err.kind == SyncErrorKind.notFound ||
+          err.kind == SyncErrorKind.gone) {
+        // The list truly has no state on the (fresh) server.
+        await _handleNotFoundOrGone(list, err.kind, 'stale-cursor recovery');
+        return;
+      }
+      printAndLog(
+          'SyncEngine: stale-cursor recovery for $listId failed: $err');
+      _scheduleBackoffRetry(list, null);
+    }
+  }
+
+  /// Decide what to do about a notFound/gone response for [list].
+  ///
+  /// 410 GONE is authoritative — the server only returns it for a
+  /// tombstoned list (explicit owner delete or account deletion) — so
+  /// it orphans immediately. 404 NOT_FOUND is ambiguous (config drift,
+  /// transient R2 miss on the subscriber path) and destroying an editor
+  /// mirror plus its queued edits over one is unrecoverable, so 404
+  /// only orphans after [_notFoundOrphanThreshold] consecutive
+  /// occurrences; until then the engine backs off and retries with all
+  /// local state preserved.
+  Future<void> _handleNotFoundOrGone(
+      SyncedEntryList list, SyncErrorKind kind, String context) async {
+    if (kind == SyncErrorKind.gone) {
+      await _markOrphaned(list, 'gone on $context');
+      return;
+    }
+    final state = _stateOf(list.listId);
+    state.consecutiveNotFound++;
+    if (state.consecutiveNotFound < _notFoundOrphanThreshold) {
+      printAndLog('SyncEngine: ${list.listId} 404 on $context '
+          '(${state.consecutiveNotFound}/$_notFoundOrphanThreshold) — '
+          'backing off before treating the list as gone');
+      _scheduleBackoffRetry(list, null);
+      return;
+    }
+    await _markOrphaned(
+        list, '$_notFoundOrphanThreshold consecutive 404s on $context');
+  }
+
   int? _parseRetryAfter(dynamic raw) {
     if (raw == null) return null;
     return int.tryParse(raw.toString());
@@ -534,11 +633,22 @@ class SyncEngine {
     if (next > _maxBackoff.inSeconds) next = _maxBackoff.inSeconds;
     state.backoffSeconds = next;
     state.cancelTimer();
-    state.debounceTimer =
-        Timer(Duration(seconds: next), () => _flushOps(list.listId));
+    // Dispatch by role at fire time: editable lists retry the /sync
+    // flush, subscribers retry the R2 pull. Without the role check a
+    // subscriber's retry would hit _flushOps's role guard and silently
+    // do nothing, leaving the list stale until the next full syncAll.
+    state.debounceTimer = Timer(Duration(seconds: next), () {
+      final current = _manager.get(list.listId);
+      if (current == null) return;
+      if (_isEditableRole(current.meta.role)) {
+        _flushOps(list.listId);
+      } else {
+        _pullSubscribed(list.listId);
+      }
+    });
   }
 
-  void _markOrphaned(SyncedEntryList list, String reason) {
+  Future<void> _markOrphaned(SyncedEntryList list, String reason) async {
     // Pending ops are unrecoverable either way — the server has removed the
     // list, so there's no destination for them.
     list.meta.pendingOps.clear();
@@ -555,8 +665,11 @@ class SyncEngine {
       // (it was only ever a copy of someone else's list).
       printAndLog('SyncEngine: ${list.listId} $reason — '
           'share gone, dropping ${list.meta.role.name} mirror');
-      unawaited(_manager.removeLocal(list.listId).catchError((e) =>
-          printAndLog('SyncEngine: removeLocal ${list.listId} failed: $e')));
+      try {
+        await _manager.removeLocal(list.listId);
+      } catch (e) {
+        printAndLog('SyncEngine: removeLocal ${list.listId} failed: $e');
+      }
       sharing.bumpState();
       return;
     }
@@ -566,8 +679,11 @@ class SyncEngine {
     // to remove it.
     printAndLog('SyncEngine: ${list.listId} $reason — marking orphaned');
     list.meta.orphaned = true;
-    unawaited(list.writeMeta().catchError(
-        (e) => printAndLog('SyncEngine: writeMeta ${list.listId} failed: $e')));
+    try {
+      await list.writeMeta();
+    } catch (e) {
+      printAndLog('SyncEngine: writeMeta ${list.listId} failed: $e');
+    }
     sharing.bumpState();
   }
 
@@ -585,6 +701,9 @@ class SyncEngine {
       try {
         final result =
             await _api.getList(local.listId, ifNoneMatch: local.meta.etag);
+        final state = _stateOf(listId);
+        state.backoffSeconds = null;
+        state.consecutiveNotFound = 0;
         if (result is FetchNotModified) {
           local.meta.lastSyncedAt = _nowSecs();
           await local.writeMeta();
@@ -606,7 +725,10 @@ class SyncEngine {
         sharing.bumpState();
       } on SyncException catch (e) {
         if (e.kind == SyncErrorKind.notFound || e.kind == SyncErrorKind.gone) {
-          _markOrphaned(local, '${e.kind} on pull');
+          // A fresh subscriber pull can transiently 404 (R2 propagation
+          // right after publish), so 404s go through the same
+          // threshold-and-backoff treatment as the sync path.
+          await _handleNotFoundOrGone(local, e.kind, 'pull');
           return;
         }
         printAndLog('SyncEngine: pull ${local.listId} error: $e');
