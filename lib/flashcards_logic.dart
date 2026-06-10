@@ -52,6 +52,9 @@ class DolphinInformation {
   DolphinInformation({
     required this.dolphin,
     required this.masterToVideoMap,
+    required this.masters,
+    required this.seedReviews,
+    required this.sessionReviews,
   });
 
   DolphinSR dolphin;
@@ -60,6 +63,25 @@ class DolphinInformation {
   /// resolved [SubEntry] and parent [Entry]. The flashcard page reads
   /// from this to render the right video.
   Map<String, ResolvedSavedVideo> masterToVideoMap;
+
+  /// The exact masters this [dolphin] was built from. Retained so the
+  /// session can rebuild a fresh [DolphinSR] from scratch (the package
+  /// throws if you re-add masters to a non-empty instance, so any
+  /// rebuild needs the original list to hand to a new instance).
+  final List<Master> masters;
+
+  /// The exact seed reviews used to randomise card order when no real
+  /// history exists. Retained verbatim — they're built from a shuffle
+  /// plus staggered epoch timestamps, so a deterministic rebuild can
+  /// only reproduce the same ordering by re-applying these exact
+  /// reviews rather than regenerating them. See
+  /// [getDolphinInformationFromVideos].
+  final List<Review> seedReviews;
+
+  /// The persisted reviews (already filtered to this build's masters /
+  /// combinations) that were applied on top of [seedReviews]. Retained
+  /// so a rebuild doesn't have to re-filter the caller's raw history.
+  final List<Review> sessionReviews;
 }
 
 /// Resolved view of a [SavedVideo] — the saved video itself plus the
@@ -215,19 +237,79 @@ DolphinInformation getDolphinInformationFromVideos(
   // crashes on unknown masters. Don't write the filtered set back; the
   // dropped reviews may still be valid for a future session that
   // includes their masters.
-  final masterLookup = {for (final m in masters) m.id!: m};
-  final filteredReviews = <Review>[];
-  for (final r in reviews) {
-    final m = masterLookup[r.master!];
-    if (m == null) continue;
-    if (!m.combinations!.contains(r.combination!)) continue;
-    filteredReviews.add(r);
-  }
+  final filteredReviews = filterReviewsToMasters(reviews, masters);
   printAndLog(
       "Added ${filteredReviews.length} total reviews to Dolphin (excluding seed reviews)");
   dolphin.addReviews(filteredReviews);
   return DolphinInformation(
-      dolphin: dolphin, masterToVideoMap: masterToVideoMap);
+    dolphin: dolphin,
+    masterToVideoMap: masterToVideoMap,
+    masters: masters,
+    seedReviews: seedReviews,
+    sessionReviews: filteredReviews,
+  );
+}
+
+/// Keep only the reviews whose master id is in [masters] and whose
+/// combination that master actually defines. DolphinSR throws when a
+/// review references an unknown master or combination, so any review
+/// list handed to it must be filtered first.
+List<Review> filterReviewsToMasters(
+    List<Review> reviews, List<Master> masters) {
+  final masterLookup = {for (final m in masters) m.id!: m};
+  final filtered = <Review>[];
+  for (final r in reviews) {
+    final m = masterLookup[r.master!];
+    if (m == null) continue;
+    if (!m.combinations!.contains(r.combination!)) continue;
+    filtered.add(r);
+  }
+  return filtered;
+}
+
+/// Rebuild a fresh [DolphinSR] from scratch so its in-session state
+/// reflects exactly one review per card. The package mutates card
+/// state cumulatively on every `addReviews` call and refuses to re-add
+/// masters to a populated instance, so re-rating a card can't be undone
+/// in place — the only correct fix is to discard the old instance and
+/// replay the canonical review set.
+///
+/// [di] supplies the original masters and the exact seed reviews used
+/// to build it (so card ordering stays deterministic). [sessionAnswers]
+/// is the latest review per card from the live session (typically
+/// `answers.values`).
+///
+/// Reviews are sorted by timestamp before being applied: DolphinSR's
+/// `applyToCardState` throws if a review predates a card's current
+/// `lastReviewed`, and seed reviews use 1970-era epochs while persisted
+/// and session reviews use real timestamps, so ascending-ts order is
+/// the only safe order. The returned [DolphinInformation] carries the
+/// same masters / seed reviews / persisted reviews so it too can be
+/// rebuilt.
+DolphinInformation rebuildDolphin(
+    DolphinInformation di, Iterable<Review> sessionAnswers) {
+  final dolphin = DolphinSR();
+  dolphin.addMasters(di.masters);
+  dolphin.addReviews(di.seedReviews);
+
+  // Apply persisted history plus the session's latest-per-card answers,
+  // filtered to this build's masters and sorted ascending by ts. The
+  // session answers are already one-per-card (the page keys them by
+  // card), so there are no phantom duplicates to reconcile here.
+  final replay = <Review>[
+    ...di.sessionReviews,
+    ...filterReviewsToMasters(sessionAnswers.toList(), di.masters),
+  ];
+  replay.sort((a, b) => a.ts!.compareTo(b.ts!));
+  dolphin.addReviews(replay);
+
+  return DolphinInformation(
+    dolphin: dolphin,
+    masterToVideoMap: di.masterToVideoMap,
+    masters: di.masters,
+    seedReviews: di.seedReviews,
+    sessionReviews: di.sessionReviews,
+  );
 }
 
 const String KEY_STORED_REVIEWS = "stored_reviews";
