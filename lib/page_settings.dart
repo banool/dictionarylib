@@ -14,7 +14,6 @@ import 'globals.dart';
 import 'hearth.dart';
 import 'l10n/app_localizations.dart';
 import 'lists_service.dart';
-import 'page_privacy_policy.dart';
 import 'page_settings_help_en.dart';
 import 'theme.dart';
 import 'sharing/auth/auth_store.dart';
@@ -32,8 +31,8 @@ class SettingsPage extends StatefulWidget {
     required this.appName,
     required this.iOSAppId,
     required this.androidAppId,
-    required this.showPrivacyPolicy,
-    this.privacyPolicyEmail = PRIVACY_POLICY_EMAIL,
+    required this.privacyPolicyUrl,
+    required this.termsOfServiceUrl,
   });
 
   final String appName;
@@ -43,11 +42,12 @@ class SettingsPage extends StatefulWidget {
   final String reportAppProblemUrl;
   final String iOSAppId;
   final String androidAppId;
-  final bool showPrivacyPolicy;
 
-  /// Address shown in the privacy policy's Contact Us section. Defaults to the
-  /// shared [PRIVACY_POLICY_EMAIL]; an app can override it (Auslan uses its own).
-  final String privacyPolicyEmail;
+  /// The privacy policy and terms of service are hosted on the app's website
+  /// (the single source of truth) rather than rendered in-app; these are the
+  /// URLs the Legal section links out to.
+  final String privacyPolicyUrl;
+  final String termsOfServiceUrl;
 
   @override
   SettingsPageState createState() => SettingsPageState();
@@ -55,21 +55,6 @@ class SettingsPage extends StatefulWidget {
 
 class SettingsPageState extends State<SettingsPage> {
   bool checkingForNewData = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.showPrivacyPolicy) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => PrivacyPolicyPage(
-                    appName: widget.appName,
-                    email: widget.privacyPolicyEmail)));
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -284,13 +269,15 @@ class SettingsPageState extends State<SettingsPage> {
                         widget.buildLegalInformationChildren),
               ));
         }),
+        // The privacy policy and terms of service live on the website so
+        // there's a single source of truth; just link out to them.
         navRow(l.settingsSeePrivacyPolicy, onTap: () async {
-          await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PrivacyPolicyPage(
-                    appName: widget.appName, email: widget.privacyPolicyEmail),
-              ));
+          await launchUrl(Uri.parse(widget.privacyPolicyUrl),
+              mode: LaunchMode.externalApplication);
+        }),
+        navRow(l.settingsSeeTermsOfService, onTap: () async {
+          await launchUrl(Uri.parse(widget.termsOfServiceUrl),
+              mode: LaunchMode.externalApplication);
         }),
       ]),
       ...section(l.settingsHelp, [

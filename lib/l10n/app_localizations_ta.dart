@@ -261,6 +261,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsSeePrivacyPolicy => 'தனியுரிமைக் கொள்கையைப் பார்க்கவும்';
 
   @override
+  String get settingsSeeTermsOfService => 'See terms of service';
+
+  @override
   String get settingsBackgroundLogs => 'பின்னணி பதிவுகள்';
 
   @override
