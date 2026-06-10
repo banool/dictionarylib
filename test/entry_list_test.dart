@@ -48,6 +48,59 @@ void main() {
             reason: '$name should be rejected as reserved');
       }
     });
+
+    test('rejects names containing characters outside the allowed set', () {
+      // Regression for the old `[,.-_!]` class, where the unescaped dash
+      // formed the range U+002E–U+005F and silently admitted these. They
+      // must all be rejected as invalidChars now that the dash is literal.
+      for (final name in const [
+        'a/b',
+        'a:b',
+        'a@b',
+        'a<b',
+        'a[b',
+        'a^b',
+        'a;b',
+        'a=b',
+        r'a\b',
+      ]) {
+        expect(
+          () => EntryList.getKeyFromName(name),
+          throwsA(isA<EntryListNameException>().having(
+              (e) => e.kind, 'kind', EntryListNameError.invalidChars)),
+          reason: '$name contains a disallowed character',
+        );
+      }
+    });
+
+    test('accepts the literal punctuation in the allowed set', () {
+      // Dash, underscore, dot, comma and exclamation mark are all allowed
+      // literals, as are Unicode letters and digits.
+      for (final name in const [
+        'a-b',
+        'a_b',
+        'a.b',
+        'a,b!',
+        'Café déjà', // Unicode letters with diacritics.
+        'Числа 123', // Cyrillic letters and digits.
+        'list 42',
+      ]) {
+        expect(
+          () => EntryList.getKeyFromName(name),
+          returnsNormally,
+          reason: '$name only uses allowed characters',
+        );
+      }
+    });
+
+    test('a literal underscore in a typed name displays as a space (lossy)', () {
+      // Documents the deliberately-lossy '_'<->' ' round-trip: a typed
+      // underscore is stored as an underscore in the key, which
+      // getNameFromKey then maps back to a space.
+      final key = EntryList.getKeyFromName('a_b');
+      expect(key, 'a_b_words');
+      expect(EntryList.getNameFromKey(key), 'a b');
+    });
   });
 
   group('EntryList persistence', () {

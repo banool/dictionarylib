@@ -95,10 +95,14 @@ class EntryListNameException implements Exception {
 /// container preserves per-video insertion order.
 class EntryList {
   // TODO: Confirm that this works as intended for Sinhala and Tamil.
-  // The pattern checks for all Unicode letters and numbers, spaces, comma, dot, dash, underscore, and exclamation mark.
-  // If any other special character is present, it will not match and hence, the function will return false.
+  // The pattern allows all Unicode letters and numbers, whitespace, and the
+  // literal punctuation comma, dot, underscore, exclamation mark, and dash.
+  // The dash sits last in the class so it is a literal dash and not a range —
+  // putting it between '.' and '_' would form the range U+002E–U+005F, which
+  // would silently admit '/ : ; < = > ? @ [ \ ] ^' and more. If any other
+  // special character is present the pattern won't match and validation fails.
   static final validNameCharacters =
-      RegExp(r'^[\p{L}\p{N}\s,.-_!]*$', unicode: true);
+      RegExp(r'^[\p{L}\p{N}\s,._!-]*' '\u0024', unicode: true);
 
   String key;
 
@@ -218,6 +222,14 @@ class EntryList {
   /// User-derived names are stored case-/separator-preserving in the
   /// key itself, so no l10n applies — every locale shows the name the
   /// user typed.
+  ///
+  /// Lossy round-trip warning: [getKeyFromName] stores spaces as
+  /// underscores, and this method maps *every* underscore in the key
+  /// back to a space. So a name the user typed with a literal
+  /// underscore (e.g. `a_b`) is indistinguishable from a space (`a b`)
+  /// in the key and will display as a space. This is deliberately left
+  /// as-is — changing the storage-key format would require migrating
+  /// every existing on-disk list key.
   static String getNameFromKey(String key, [BuildContext? context]) {
     if (key == KEY_FAVOURITES_ENTRIES) {
       if (context != null) {
