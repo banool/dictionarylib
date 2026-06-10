@@ -13,7 +13,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'theme.dart' show kRadiusCard, kRadiusChip, kRadiusPill;
+import 'theme.dart' show kRadiusBox, kRadiusCard, kRadiusChip, kRadiusPill;
 
 /// An uppercase section label, e.g. "RECENT" or "REVISION SOURCES". Optionally
 /// shows a trailing widget (such as a "Clear" text button) on the right.
@@ -61,7 +61,23 @@ class HearthCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
 
-  const HearthCard({required this.child, this.padding, this.onTap, super.key});
+  /// Border colour. Defaults to the subtle `outlineVariant`. Pass an accent
+  /// (e.g. the scheme primary) to highlight the card — the News page uses this
+  /// for an unseen "NEW" advisory.
+  final Color? borderColor;
+
+  /// Border width. Defaults to 1; pair with [borderColor] for a heavier accent
+  /// border.
+  final double borderWidth;
+
+  const HearthCard({
+    required this.child,
+    this.padding,
+    this.onTap,
+    this.borderColor,
+    this.borderWidth = 1,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +94,8 @@ class HearthCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(kRadiusCard),
-            border: Border.all(color: cs.outlineVariant),
+            border: Border.all(
+                color: borderColor ?? cs.outlineVariant, width: borderWidth),
           ),
           child: content,
         ),
@@ -236,15 +253,11 @@ class HearthDots extends StatelessWidget {
   /// A muted colour (e.g. onSurfaceVariant) reads as secondary.
   final Color? activeColor;
 
-  /// Colour of the inactive dots. Defaults to the scheme outline.
-  final Color? inactiveColor;
-
   const HearthDots({
     required this.count,
     required this.index,
     this.size = 6,
     this.activeColor,
-    this.inactiveColor,
     super.key,
   });
 
@@ -252,7 +265,7 @@ class HearthDots extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final onColor = activeColor ?? cs.primary;
-    final offColor = inactiveColor ?? cs.outline;
+    final offColor = cs.outline;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
@@ -278,14 +291,12 @@ class HearthRing extends StatelessWidget {
   final double percent; // 0..1
   final double size;
   final double stroke;
-  final Color? color;
   final String? centerLabel;
 
   const HearthRing({
     required this.percent,
     this.size = 132,
     this.stroke = 12,
-    this.color,
     this.centerLabel,
     super.key,
   });
@@ -294,7 +305,7 @@ class HearthRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final ringColor = color ?? cs.tertiary;
+    final ringColor = cs.tertiary;
     return SizedBox(
       width: size,
       height: size,
@@ -396,7 +407,7 @@ class HearthStatTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kRadiusBox),
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
@@ -495,8 +506,8 @@ class HearthRow extends StatelessWidget {
 
 /// A thin divider matching the design's faint row separators, inset to align
 /// with [HearthRow] content.
-class HearthRowDivider extends StatelessWidget {
-  const HearthRowDivider({super.key});
+class _HearthRowDivider extends StatelessWidget {
+  const _HearthRowDivider();
 
   @override
   Widget build(BuildContext context) {
@@ -511,8 +522,8 @@ class HearthRowDivider extends StatelessWidget {
 }
 
 /// The canonical "settings group": a [HearthCard] wrapping [rows] separated by
-/// hairline [HearthRowDivider]s. Used by the settings and flashcards-landing
-/// screens so the grouped-rows look stays in one place.
+/// hairline dividers. Used by the settings and flashcards-landing screens so
+/// the grouped-rows look stays in one place.
 class HearthRowGroup extends StatelessWidget {
   final List<Widget> rows;
   final EdgeInsetsGeometry? padding;
@@ -523,7 +534,7 @@ class HearthRowGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final kids = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
-      if (i > 0) kids.add(const HearthRowDivider());
+      if (i > 0) kids.add(const _HearthRowDivider());
       kids.add(rows[i]);
     }
     return HearthCard(padding: padding, child: Column(children: kids));

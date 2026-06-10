@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'hearth.dart';
+
 class HelpPage extends StatelessWidget {
   final String title;
   final Map<String, List<String>> items;
@@ -15,13 +17,7 @@ class HelpPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
         // A rounded, outlined card containing an expand/collapse FAQ entry —
         // the answer reveals inline rather than in a dialog.
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: cs.outlineVariant),
-          ),
+        child: HearthCard(
           child: ExpansionTile(
             // Drop the default top/bottom divider lines so the card reads
             // as one clean surface.

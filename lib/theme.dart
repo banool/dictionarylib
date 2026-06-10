@@ -172,6 +172,7 @@ class _HearthTokens {
 // (see hearth.dart) can reuse the exact same values instead of re-hardcoding
 // them, keeping the radii in one place.
 const double kRadiusCard = 20;
+const double kRadiusBox = 16; // Stat tiles and the revision ring box.
 const double kRadiusButton = 14;
 const double kRadiusChip = 12;
 const double kRadiusPill = 999;

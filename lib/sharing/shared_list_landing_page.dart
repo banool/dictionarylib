@@ -5,7 +5,7 @@ import '../globals.dart';
 import '../l10n/app_localizations.dart';
 import '../lists_service.dart';
 import '../page_entry_list.dart';
-import 'auth/auth_store.dart';
+import '../theme.dart' show kRadiusCard;
 import 'auth/sign_in_dialog.dart';
 import 'sync_api.dart';
 import 'synced_entry_list.dart';
@@ -107,17 +107,13 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     if (!sharing.isEnabled) return;
     final l = DictLibLocalizations.of(context)!;
 
-    // Ensure we're signed in.
-    AuthSession? session = sharing.auth.store.current;
-    if (session == null) {
-      session = await showSignInDialog(context,
-          contextMessage: l.signInDialogContextInvite);
-      // The sign-in dialog is an async gap: the user may have backed out of
-      // this page (or it was torn down by a rebuild) while it was up. Bail
-      // before touching state if we're no longer mounted or the sign-in
-      // didn't produce a session.
-      if (!mounted || session == null) return;
-    }
+    // Ensure we're signed in. [ensureSession] also covers the async-gap
+    // unmount: the user may have backed out of this page (or a rebuild tore
+    // it down) while the sign-in dialog was up — it returns null in that case
+    // so we bail before touching state.
+    final session =
+        await ensureSession(context, contextMessage: l.signInDialogContextInvite);
+    if (session == null) return;
 
     setState(() {
       _future = _doAccept();
@@ -255,7 +251,7 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(kRadiusCard),
               ),
               child: Icon(icon, size: 34, color: cs.onSurfaceVariant),
             ),

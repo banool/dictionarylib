@@ -269,15 +269,11 @@ class _ListMembersPageState extends State<ListMembersPage> {
                   ? FilledButton.icon(
                       onPressed: _invitingInflight ? null : _invite,
                       icon: _invitingInflight
-                          ? SizedBox(
-                              width: 14,
-                              height: 14,
-                              // onPrimary so the spinner shows on the filled
-                              // button background in both themes.
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary))
+                          // onPrimary so the spinner shows on the filled
+                          // button background in both themes.
+                          ? buttonSpinner(context,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.onPrimary)
                           : const Icon(Icons.person_add),
                       label: Text(l.shareLinkInviteEditorButton),
                     )
@@ -309,17 +305,13 @@ class _ListMembersPageState extends State<ListMembersPage> {
                   child: FilledButton.tonalIcon(
                     onPressed: _leavingInflight ? null : _leaveList,
                     icon: _leavingInflight
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            // onSecondaryContainer matches the tonal button's
-                            // foreground so the spinner shows in both themes.
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSecondaryContainer),
-                          )
+                        // onSecondaryContainer matches the tonal button's
+                        // foreground so the spinner shows in both themes.
+                        ? buttonSpinner(context,
+                            size: 18,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer)
                         : const Icon(Icons.logout),
                     label: Text(l.membersPageLeaveButton),
                   ),
@@ -387,16 +379,10 @@ class _ListMembersPageState extends State<ListMembersPage> {
               // Removal in flight for this editor — swap the button for a
               // spinner sized to match the IconButton's tap target so the
               // row doesn't jump.
-              ? const SizedBox(
+              ? SizedBox(
                   width: 48,
                   height: 48,
-                  child: Center(
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
+                  child: Center(child: buttonSpinner(context, size: 18)),
                 )
               : IconButton(
                   icon: const Icon(Icons.person_remove_outlined),

@@ -18,6 +18,7 @@ export 'page_news.dart';
 export 'page_search.dart';
 export 'revision.dart';
 export 'page_settings.dart';
+export 'top_level_scaffold.dart';
 export 'theme.dart';
 export 'hearth.dart';
 export 'sharing/auth/auth_service.dart';

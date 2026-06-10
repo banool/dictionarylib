@@ -88,13 +88,10 @@ Future<SyncedEntryList?> showShareDialog({
           // Ensure we have a session. If the user hasn't signed in yet
           // (or their stored session is unreachable for some reason),
           // pop the sign-in dialog and continue once they're back. Any
-          // failure / cancel there aborts the share cleanly.
-          var session = sharing.auth.store.current;
-          if (session == null) {
-            if (!ctx.mounted) return;
-            session = await showSignInDialog(ctx);
-            if (session == null || !ctx.mounted) return;
-          }
+          // failure / cancel there (or an unmount across the gap) aborts
+          // the share cleanly.
+          final session = await ensureSession(ctx);
+          if (session == null) return;
 
           setLocal(() {
             submitting = true;
@@ -164,17 +161,11 @@ Future<SyncedEntryList?> showShareDialog({
             ),
             FilledButton(
               onPressed: submitting ? null : doShare,
+              // onPrimary so the spinner shows on the filled button background
+              // in both light and dark themes.
               child: submitting
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      // Match the button's foreground (onPrimary) so the
-                      // spinner is visible on the filled background in both
-                      // light and dark themes — the default progress colour
-                      // is `primary`, i.e. the button's own background.
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Theme.of(ctx).colorScheme.onPrimary))
+                  ? buttonSpinner(ctx,
+                      color: Theme.of(ctx).colorScheme.onPrimary)
                   : Text(l.shareDialogShareButton),
             ),
           ],
@@ -473,12 +464,10 @@ Future<SyncedEntryList?> showSubscribeDialog(
           final payload = invite!;
           // Accepting registers the user as an editor, which the server ties
           // to an account — ensure we're signed in first.
-          var session = sharing.auth.store.current;
-          if (session == null) {
-            if (!ctx.mounted) return;
-            session = await showSignInDialog(ctx,
-                contextMessage: l.signInDialogContextInvite);
-            if (session == null || !ctx.mounted) return;
+          if (await ensureSession(ctx,
+                  contextMessage: l.signInDialogContextInvite) ==
+              null) {
+            return;
           }
           setLocal(() {
             submitting = true;
@@ -558,12 +547,8 @@ Future<SyncedEntryList?> showSubscribeDialog(
               onPressed:
                   submitting ? null : (isInvite ? doAcceptInvite : doSubscribe),
               child: submitting
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Theme.of(ctx).colorScheme.onPrimary))
+                  ? buttonSpinner(ctx,
+                      color: Theme.of(ctx).colorScheme.onPrimary)
                   : Text(isInvite
                       ? l.subscribeInviteAcceptButton
                       : l.subscribeDialogSubscribeButton),

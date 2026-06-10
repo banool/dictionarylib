@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Stores the user's session JWT in secure storage (Keychain on iOS,
 /// EncryptedSharedPreferences on Android) and broadcasts changes.
 ///
@@ -128,8 +130,8 @@ class AuthSession {
 
   /// Local timestamp of when this session was issued (`millisSinceEpoch`).
   /// We treat sessions as opaque on the client — the server is the
-  /// authority on expiry — but record this so the UI can show "signed
-  /// in 3 days ago".
+  /// authority on expiry. Nothing renders this today; it is retained in
+  /// case a future UI wants to show e.g. "signed in 3 days ago".
   final int signedInAtMillis;
 
   const AuthSession({
@@ -172,4 +174,22 @@ enum AuthProvider {
   /// value lets the settings UI label the session as "Test session" instead
   /// of impersonating a real provider, which keeps debug builds honest.
   test,
+}
+
+extension AuthProviderLabel on AuthProvider {
+  /// The provider's human-readable, localised name (e.g. "Apple", "Google",
+  /// "Test session"). Shared by the sign-in dialog's "last used" hint and the
+  /// settings "signed in as" row so the two never drift.
+  String label(DictLibLocalizations l) {
+    switch (this) {
+      case AuthProvider.apple:
+        return l.providerApple;
+      case AuthProvider.google:
+        return l.providerGoogle;
+      case AuthProvider.facebook:
+        return l.providerFacebook;
+      case AuthProvider.test:
+        return l.providerTest;
+    }
+  }
 }

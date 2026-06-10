@@ -103,14 +103,10 @@ class _AdvisoryCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: isNew ? cs.primary : cs.outlineVariant,
-              width: isNew ? 1.5 : 1),
-        ),
+      child: HearthCard(
+        // An unseen advisory gets a heavier accent border to draw the eye.
+        borderColor: isNew ? cs.primary : null,
+        borderWidth: isNew ? 1.5 : 1,
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

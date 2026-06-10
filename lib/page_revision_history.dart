@@ -6,6 +6,7 @@ import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/page_flashcards_landing.dart';
 import 'package:dictionarylib/revision.dart';
+import 'package:dictionarylib/theme.dart' show kRadiusBox, kRadiusCard;
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
@@ -81,7 +82,13 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
                 break;
             }
 
-            // Determine the longest streak.
+            // Determine the longest streak. The gap is measured in hours and
+            // rounded to days, so it takes more than ~36h between reviews to
+            // break a streak (a 36h gap rounds to 2 days > 1; anything up to
+            // 36h rounds to <= 1 and counts as consecutive). This is a
+            // deliberate grace window rather than strict calendar days, so an
+            // evening session followed by a late next-evening session still
+            // counts as a streak.
             int daysSincePreviousDateTime =
                 (r.ts!.difference(previousDateTime).inHours / 24).round();
             if (daysSincePreviousDateTime > 1 || i == reviews.length) {
@@ -212,7 +219,7 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cs.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(kRadiusCard),
       ),
       child: Row(
         children: [
@@ -222,7 +229,7 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: cs.surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(kRadiusBox),
             ),
             child: Icon(Icons.local_fire_department,
                 size: 28, color: cs.primary),
@@ -258,7 +265,7 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kRadiusBox),
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(

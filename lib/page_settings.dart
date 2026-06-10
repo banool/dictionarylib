@@ -168,8 +168,7 @@ class SettingsPageState extends State<SettingsPage> {
             })
           else ...[
             HearthRow(
-                title: l.settingsSignedInAs(
-                    _providerLabel(l, session.provider))),
+                title: l.settingsSignedInAs(session.provider.label(l))),
             navRow(l.settingsSignOut, onTap: () async {
               final pendingLists = shareState.lists.editableLists
                   .where((x) => x.meta.pendingOps.isNotEmpty)
@@ -489,19 +488,6 @@ class BackgroundLogsPage extends StatelessWidget {
                                       1.8 //You can set your custom height here
                                   )))),
                 ])));
-  }
-}
-
-String _providerLabel(DictLibLocalizations l, AuthProvider provider) {
-  switch (provider) {
-    case AuthProvider.apple:
-      return l.providerApple;
-    case AuthProvider.google:
-      return l.providerGoogle;
-    case AuthProvider.facebook:
-      return l.providerFacebook;
-    case AuthProvider.test:
-      return l.providerTest;
   }
 }
 

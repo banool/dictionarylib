@@ -73,6 +73,33 @@ void main() {
     userEntryListManager = UserEntryListManager.fromStartup();
   });
 
+  /// Helper: build an owner-mode list with the given local key + initial
+  /// keys, pre-installed in the manager so tests can skip the createOwned
+  /// round-trip. Shared by every group below.
+  Future<SyncedEntryList> setUpOwnedList(
+      SyncEngine engine, SyncedEntryListManager manager,
+      {String localKey = 'cats_words',
+      List<String> initialKeys = const ['apple'],
+      String listId = 'listidaaaaa1'}) async {
+    final source = await _localListWith(localKey, initialKeys);
+    final list = SyncedEntryList.owner(
+      meta: SyncedListMeta(
+        listId: listId,
+        displayName: 'My Cats',
+        role: ListRole.owner,
+        lastKnownSeq: 1,
+        etag: null,
+        lastSyncedAt: 1700000000,
+        serverUpdatedAt: 1700000000,
+        orphaned: false,
+        sourceLocalKey: localKey,
+      ),
+      source: source,
+    );
+    await manager.insert(list);
+    return list;
+  }
+
   group('SyncEngine.createOwned', () {
     test('POSTs entries + returns an owner wrapper with the local source',
         () async {
@@ -147,31 +174,6 @@ void main() {
   });
 
   group('SyncEngine — op queue + /sync flush', () {
-    /// Helper: create an owner-mode synced list pre-installed in the
-    /// engine's manager. Skips the create-list round-trip.
-    Future<SyncedEntryList> setUpOwnedList(
-        SyncEngine engine, SyncedEntryListManager manager,
-        {String localKey = 'cats_words',
-        List<String> initialKeys = const ['apple']}) async {
-      final source = await _localListWith(localKey, initialKeys);
-      final list = SyncedEntryList.owner(
-        meta: SyncedListMeta(
-          listId: 'listidaaaaa1',
-          displayName: 'My Cats',
-          role: ListRole.owner,
-          lastKnownSeq: 1,
-          etag: null,
-          lastSyncedAt: 1700000000,
-          serverUpdatedAt: 1700000000,
-          orphaned: false,
-          sourceLocalKey: localKey,
-        ),
-        source: source,
-      );
-      await manager.insert(list);
-      return list;
-    }
-
     test('enqueueAddEntry queues a pending op and persists meta', () async {
       final ctx = _makeEngine((req) async => stubSyncApplyAll(req));
       final list = await setUpOwnedList(ctx.engine, ctx.manager);
@@ -672,34 +674,6 @@ void main() {
       expect(list.meta.lastSyncedAt, greaterThan(1700000000));
     });
   });
-
-  /// Helper: build an owner-mode list with the given local key + initial
-  /// keys, pre-installed in the manager so tests can skip the
-  /// createOwned round-trip. Duplicated outside the inner group so the
-  /// new test groups below can reach it.
-  Future<SyncedEntryList> setUpOwnedList(
-      SyncEngine engine, SyncedEntryListManager manager,
-      {String localKey = 'cats_words',
-      List<String> initialKeys = const ['apple'],
-      String listId = 'listidaaaaa1'}) async {
-    final source = await _localListWith(localKey, initialKeys);
-    final list = SyncedEntryList.owner(
-      meta: SyncedListMeta(
-        listId: listId,
-        displayName: 'My Cats',
-        role: ListRole.owner,
-        lastKnownSeq: 1,
-        etag: null,
-        lastSyncedAt: 1700000000,
-        serverUpdatedAt: 1700000000,
-        orphaned: false,
-        sourceLocalKey: localKey,
-      ),
-      source: source,
-    );
-    await manager.insert(list);
-    return list;
-  }
 
   group('SyncEngine — per-list lock serialisation', () {
     test('enqueueAddEntry during an in-flight flush is sent in a follow-up '

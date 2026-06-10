@@ -420,6 +420,21 @@ List<Widget> buildActionButtons(List<Widget> actions) {
   return actions;
 }
 
+/// A small in-button progress spinner, sized to sit inside a button without
+/// resizing it, used while an async button action is in flight.
+///
+/// On a filled/tonal button the default progress colour (`primary`) is the
+/// button's own background and so is invisible, so callers should pass the
+/// button's foreground (e.g. `onPrimary`, `onSecondaryContainer`) as [color].
+/// Pass null on a plain/text button to inherit the theme's indicator colour.
+Widget buttonSpinner(BuildContext context, {double size = 16, Color? color}) {
+  return SizedBox(
+    width: size,
+    height: size,
+    child: CircularProgressIndicator(strokeWidth: 2, color: color),
+  );
+}
+
 extension StripString on String {
   String lstrip(String pattern) {
     return replaceFirst(RegExp('^$pattern*'), '');

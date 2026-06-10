@@ -61,6 +61,24 @@ Future<AuthSession?> showSignInDialog(BuildContext context,
   return future;
 }
 
+/// Return the current session, or prompt sign-in and return the freshly
+/// created one. Returns null if there is no session and the user cancelled
+/// the dialog, OR if [context] is no longer mounted after the dialog's async
+/// gap — so callers can simply `if (session == null) return;` to bail safely.
+///
+/// Dedupes the "get session or show the sign-in dialog, bail if unmounted"
+/// preamble shared by the share / accept-invite flows. [contextMessage] frames
+/// the dialog for the situation (see [showSignInDialog]).
+Future<AuthSession?> ensureSession(BuildContext context,
+    {String? contextMessage}) async {
+  final existing = sharing.auth.store.current;
+  if (existing != null) return existing;
+  if (!context.mounted) return null;
+  final session = await showSignInDialog(context, contextMessage: contextMessage);
+  if (session == null || !context.mounted) return null;
+  return session;
+}
+
 Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
   if (!sharing.isEnabled) return null;
 
@@ -130,7 +148,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
             if (_lastProviderHint() case final last?) ...[
               const SizedBox(height: 10),
               Text(
-                l.signInLastUsedHint(_providerDisplayName(l, last)),
+                l.signInLastUsedHint(last.label(l)),
                 style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(ctx).colorScheme.onSurfaceVariant),
@@ -200,11 +218,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
             // hiding the provider's logo. Disabled meanwhile so a stray tap
             // can't tear down the in-flight request.
             child: inflight != null
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? buttonSpinner(ctx)
                 : Text(l.alertCancel),
           ),
         ],
@@ -289,19 +303,6 @@ AuthProvider? _lastProviderHint() {
     if (p.name == name && p != AuthProvider.test) return p;
   }
   return null;
-}
-
-String _providerDisplayName(DictLibLocalizations l, AuthProvider provider) {
-  switch (provider) {
-    case AuthProvider.apple:
-      return l.providerApple;
-    case AuthProvider.google:
-      return l.providerGoogle;
-    case AuthProvider.facebook:
-      return l.providerFacebook;
-    case AuthProvider.test:
-      return l.providerTest;
-  }
 }
 
 String _localiseProviderError(DictLibLocalizations l, SignInErrorKind kind) {

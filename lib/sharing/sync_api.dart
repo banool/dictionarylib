@@ -17,6 +17,19 @@ import 'sharing_config.dart';
 ///   - v2: `entries: string[]` of entry keys (whole-entry saves).
 ///   - v3: `entries: SavedVideoDto[]` (per-video saves). Op args
 ///     `{key}` become `{entry, video}`.
+///
+/// FOUR INDEPENDENT "SCHEMA VERSION" AXES — do not assume they move together:
+///   1. Local prefs list schema — `listSchemaVersion` (currently 2) in
+///      `entry_list.dart`: how saved videos are stored in SharedPreferences.
+///   2. Local meta blob schema — `sharedSchemaVersion` (currently 2) in
+///      `sharing/synced_entry_list.dart`: the persisted per-list meta /
+///      pending-ops blob.
+///   3. Wire schema — this `supportedSchemaVersion` (currently 3), mirrored
+///      by the worker: the shape of payloads on the network.
+///   4. DO SQLite storage — `DO_SCHEMA_VERSION` (currently 2) in
+///      `lists/workers/src/list_do.ts`: the Durable Object's on-disk tables.
+/// They share the word "version" and happen to overlap in number, but each
+/// migrates on its own schedule. Bumping one does NOT imply bumping the others.
 const int supportedSchemaVersion = 3;
 
 /// Mirror of the server's `MAX_DISPLAY_NAME_LEN` (see
