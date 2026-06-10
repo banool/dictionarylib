@@ -6,8 +6,6 @@ import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_entry_list_help_en.dart';
-import 'package:dictionarylib/page_entry_list_overview.dart'
-    show attemptRenameSharedList;
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/list_members_page.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
@@ -466,40 +464,10 @@ class EntryListPageState extends State<EntryListPage> {
         ? [entryList]
         : const <SyncedEntryList>[];
 
-    // The app-bar title doubles as a rename affordance for shared lists
-    // the user can edit: owners get the rename dialog, editors get a
-    // "only the creator can rename" toast. Plain local + subscriber
-    // lists keep a static title.
+    // Lists are renamed from the lists overview page only, so the app-bar
+    // title is always a static label here.
     Widget titleWidget = Text(widget.entryList.getName(context),
         overflow: TextOverflow.ellipsis);
-    if (entryList is SyncedEntryList &&
-        !entryList.meta.orphaned &&
-        (entryList.meta.role == ListRole.owner ||
-            entryList.meta.role == ListRole.editor)) {
-      titleWidget = InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () async {
-          final renamed = await attemptRenameSharedList(context, entryList);
-          if (renamed && mounted) setState(() {});
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(entryList.getName(context),
-                    overflow: TextOverflow.ellipsis),
-              ),
-              const SizedBox(width: 6),
-              Icon(Icons.edit,
-                  size: 15,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(

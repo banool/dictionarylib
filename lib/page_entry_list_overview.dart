@@ -777,19 +777,6 @@ Future<bool> applyRenameSharedListDialog(
   );
 }
 
-/// Rename a shared list from a surface that any member can reach (e.g.
-/// the list page): owners get the rename dialog, anyone else (an editor)
-/// gets a toast — only the creator can rename. Returns true if renamed.
-Future<bool> attemptRenameSharedList(
-    BuildContext context, SyncedEntryList list) async {
-  final l = DictLibLocalizations.of(context)!;
-  if (list.meta.role != ListRole.owner) {
-    showSnack(context, l.listRenameOnlyCreator);
-    return false;
-  }
-  return applyRenameSharedListDialog(context, list);
-}
-
 // Returns true if a new list was created.
 Future<bool> applyCreateListDialog(BuildContext context) async {
   final controller = TextEditingController();

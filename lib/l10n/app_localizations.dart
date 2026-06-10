@@ -635,12 +635,6 @@ abstract class DictLibLocalizations {
   /// **'Rename List'**
   String get listRenameList;
 
-  /// No description provided for @listRenameOnlyCreator.
-  ///
-  /// In en, this message translates to:
-  /// **'Only the creator can rename this list.'**
-  String get listRenameOnlyCreator;
-
   /// No description provided for @listMyLists.
   ///
   /// In en, this message translates to:
