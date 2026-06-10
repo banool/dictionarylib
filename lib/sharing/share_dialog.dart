@@ -188,16 +188,27 @@ Future<SyncedEntryList?> showShareDialog({
 }
 
 /// Shown after a share succeeds, or when the user re-opens an existing
-/// share via the share icon — gives the user the public URL with
-/// copy/share/QR options. Returns true if the user pressed the destructive
-/// "Stop sharing" button (shown only when [showUnshareButton] is true);
-/// the caller is responsible for actually performing the unshare so the
+/// share via the share icon — gives the user a URL with copy/share/QR
+/// options. Also backs the "invite an editor" dialog (which is the same
+/// shape — a link to copy/share/QR), via the [title] / [body] / [footnote]
+/// overrides. Returns true if the user pressed the destructive "Stop
+/// sharing" button (shown only when [showUnshareButton] is true); the
+/// caller is responsible for actually performing the unshare so the
 /// confirmation prompt lives in one place.
 Future<bool> showShareLinkDialog({
   required BuildContext context,
   required String shareUrl,
   required String displayName,
   bool showUnshareButton = false,
+
+  /// Title override. Defaults to the subscribe-link title.
+  String? title,
+
+  /// Body text override. Defaults to the subscribe-link body.
+  String? body,
+
+  /// Optional note shown under the URL, e.g. an invite link's expiry.
+  String? footnote,
 }) async {
   var unshareRequested = false;
   await showDialog<void>(
@@ -205,15 +216,21 @@ Future<bool> showShareLinkDialog({
     builder: (ctx) {
       final l = DictLibLocalizations.of(ctx)!;
       return AlertDialog(
-        title: Text(l.shareLinkDialogTitle),
+        title: Text(title ?? l.shareLinkDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l.shareLinkDialogBody(displayName)),
+            Text(body ?? l.shareLinkDialogBody(displayName)),
             const SizedBox(height: 12),
             SelectableText(shareUrl,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+            if (footnote != null) ...[
+              const SizedBox(height: 8),
+              Text(footnote,
+                  style:
+                      TextStyle(color: Theme.of(ctx).hintColor, fontSize: 12)),
+            ],
           ],
         ),
         actionsPadding:
@@ -357,6 +374,16 @@ Future<SyncedEntryList?> showSubscribeDialog(
   final inputCtl = TextEditingController();
   String? error;
   bool submitting = false;
+  // Set once the pasted text is recognised as an editor-invite link
+  // (`?invite=<token>`). The dialog then switches from "subscribe" to
+  // "accept invitation" mode: it explains this is an invite rather than a
+  // plain subscribe, and offers an Accept button instead of silently
+  // subscribing the user as a non-editor.
+  SharePayload? invite;
+  // Best-effort display name for the invite copy ("…edit \"Animals 101\"…").
+  // Null until the public list preview resolves; the copy falls back to a
+  // generic phrasing in the meantime.
+  String? inviteName;
 
   try {
     return await showDialog<SyncedEntryList?>(
@@ -364,39 +391,65 @@ Future<SyncedEntryList?> showSubscribeDialog(
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
         final l = DictLibLocalizations.of(ctx)!;
+
+        // Already have this list — open it and say so. The snackbar shows on
+        // the app-level messenger so it survives the dialog closing.
+        void openExisting(SyncedEntryList existing) {
+          final role = existing.meta.role;
+          showSnack(
+              ctx,
+              role == ListRole.owner
+                  ? l.alreadyOwnerSnack
+                  : role == ListRole.editor
+                      ? l.alreadyEditorSnack
+                      : l.alreadySubscribedSnack);
+          if (role == ListRole.subscriber) {
+            unawaited(sharing.engine.refreshSubscriber(existing.meta.listId));
+          }
+          Navigator.of(ctx).pop(existing);
+        }
+
+        // Best-effort fetch of the list's display name so the invite copy can
+        // name it. Fire-and-forget; failure just leaves the generic phrasing.
+        Future<void> fetchInviteName(String listId) async {
+          try {
+            final res = await sharing.api.getList(listId);
+            if (res is FetchOk) {
+              setLocal(() => inviteName = res.list.displayName);
+            }
+          } catch (_) {/* keep the generic copy */}
+        }
+
         Future<void> doSubscribe() async {
           final parsed = parseShareInput(inputCtl.text, sharing.config);
           if (parsed == null) {
             setLocal(() => error = l.subscribeInvalidInput);
             return;
           }
-          // Invite URL pasted into the subscribe dialog. Refuse loudly
-          // — silently subscribing as a non-editor would consume the
-          // user's expectation of joining as editor. They should tap
-          // the link directly to land on the invite landing page.
+          final existing = sharing.lists.get(parsed.listId);
+          // Invite link pasted into the subscribe dialog. Rather than
+          // rejecting it (or silently subscribing as a non-editor), switch
+          // the dialog into accept-invite mode so the user understands what
+          // the link is and can opt in.
           if (parsed.isInvite) {
-            setLocal(() => error = l.subscribeInputIsInviteUrl);
+            // Already owner/editor → no point accepting; just open it.
+            if (existing != null &&
+                (existing.meta.role == ListRole.owner ||
+                    existing.meta.role == ListRole.editor)) {
+              openExisting(existing);
+              return;
+            }
+            setLocal(() {
+              invite = parsed;
+              inviteName = existing?.meta.displayName;
+              error = null;
+            });
+            if (inviteName == null) unawaited(fetchInviteName(parsed.listId));
             return;
           }
-          final listId = parsed.listId;
-          // Already subscribed → just open it. Fire-and-forget a refresh
-          // so the user sees fresh state when the entry list page builds.
-          final existing = sharing.lists.get(listId);
+          // Plain subscribe path. Already have it → just open it.
           if (existing != null) {
-            // Already have this list — open it and say so. The snackbar shows
-            // on the app-level messenger so it survives the dialog closing.
-            final role = existing.meta.role;
-            showSnack(
-                ctx,
-                role == ListRole.owner
-                    ? l.alreadyOwnerSnack
-                    : role == ListRole.editor
-                        ? l.alreadyEditorSnack
-                        : l.alreadySubscribedSnack);
-            if (role == ListRole.subscriber) {
-              unawaited(sharing.engine.refreshSubscriber(listId));
-            }
-            Navigator.of(ctx).pop(existing);
+            openExisting(existing);
             return;
           }
           setLocal(() {
@@ -404,7 +457,7 @@ Future<SyncedEntryList?> showSubscribeDialog(
             error = null;
           });
           try {
-            final list = await sharing.engine.subscribe(listId);
+            final list = await sharing.engine.subscribe(parsed.listId);
             if (ctx.mounted) Navigator.of(ctx).pop(list);
           } on SyncException catch (e) {
             setLocal(() {
@@ -416,34 +469,85 @@ Future<SyncedEntryList?> showSubscribeDialog(
           }
         }
 
+        Future<void> doAcceptInvite() async {
+          final payload = invite!;
+          // Accepting registers the user as an editor, which the server ties
+          // to an account — ensure we're signed in first.
+          var session = sharing.auth.store.current;
+          if (session == null) {
+            if (!ctx.mounted) return;
+            session = await showSignInDialog(ctx,
+                contextMessage: l.signInDialogContextInvite);
+            if (session == null || !ctx.mounted) return;
+          }
+          setLocal(() {
+            submitting = true;
+            error = null;
+          });
+          try {
+            final list = await sharing.engine.acceptInvite(
+                listId: payload.listId, token: payload.inviteToken!);
+            if (ctx.mounted) Navigator.of(ctx).pop(list);
+          } on SyncException catch (e) {
+            setLocal(() {
+              submitting = false;
+              // 403/404/410 on an invite means expired or already used.
+              error = (e.kind == SyncErrorKind.forbidden ||
+                      e.kind == SyncErrorKind.notFound ||
+                      e.kind == SyncErrorKind.gone)
+                  ? l.acceptInviteLandingExpired
+                  : l.acceptInviteLandingFailed(e.message);
+            });
+          }
+        }
+
+        final isInvite = invite != null;
         return AlertDialog(
-          title: Text(l.subscribeDialogTitle),
+          title: Text(
+              isInvite ? l.acceptInviteLandingTitle : l.subscribeDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l.subscribeDialogBody, style: const TextStyle(fontSize: 13)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: inputCtl,
-                decoration: InputDecoration(
-                  labelText: l.subscribeDialogUrlLabel,
-                  errorText: error,
-                  // Use a real example URL for this app so the user sees
-                  // exactly what a valid share link looks like — including
-                  // the format of the trailing list ID.
-                  hintText: sharing.config.shareUrlFor(exampleListId),
-                ),
-                autofocus: true,
-                enabled: !submitting,
-                autocorrect: false,
-                textInputAction: TextInputAction.go,
-                onSubmitted: (_) => doSubscribe(),
-                onChanged: (_) {
-                  if (error != null) setLocal(() => error = null);
-                },
-              ),
-            ],
+            children: isInvite
+                ? [
+                    Text(
+                      inviteName == null
+                          ? l.subscribeInviteDetectedUnknown
+                          : l.subscribeInviteDetected(inviteName!),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    if (error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(error!,
+                          style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.error,
+                              fontSize: 13)),
+                    ],
+                  ]
+                : [
+                    Text(l.subscribeDialogBody,
+                        style: const TextStyle(fontSize: 13)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: inputCtl,
+                      decoration: InputDecoration(
+                        labelText: l.subscribeDialogUrlLabel,
+                        errorText: error,
+                        // Use a real example URL for this app so the user sees
+                        // exactly what a valid share link looks like —
+                        // including the format of the trailing list ID.
+                        hintText: sharing.config.shareUrlFor(exampleListId),
+                      ),
+                      autofocus: true,
+                      enabled: !submitting,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.go,
+                      onSubmitted: (_) => doSubscribe(),
+                      onChanged: (_) {
+                        if (error != null) setLocal(() => error = null);
+                      },
+                    ),
+                  ],
           ),
           actions: [
             TextButton(
@@ -451,7 +555,8 @@ Future<SyncedEntryList?> showSubscribeDialog(
               child: Text(l.alertCancel),
             ),
             FilledButton(
-              onPressed: submitting ? null : doSubscribe,
+              onPressed:
+                  submitting ? null : (isInvite ? doAcceptInvite : doSubscribe),
               child: submitting
                   ? SizedBox(
                       width: 16,
@@ -459,7 +564,9 @@ Future<SyncedEntryList?> showSubscribeDialog(
                       child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Theme.of(ctx).colorScheme.onPrimary))
-                  : Text(l.subscribeDialogSubscribeButton),
+                  : Text(isInvite
+                      ? l.subscribeInviteAcceptButton
+                      : l.subscribeDialogSubscribeButton),
             ),
           ],
         );
@@ -469,4 +576,3 @@ Future<SyncedEntryList?> showSubscribeDialog(
     disposeAfterFrame(inputCtl);
   }
 }
-

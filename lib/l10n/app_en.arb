@@ -244,7 +244,14 @@
     "alreadyOwnerSnack": "You own this list.",
     "alreadyEditorSnack": "You're an editor of this list.",
     "subscribeInvalidInput": "Not a valid share link or list ID.",
-    "subscribeInputIsInviteUrl": "That's an invite link — tap it from your phone to join as editor instead of subscribing.",
+    "subscribeInviteDetected": "This is an editor invite link, not a regular subscribe link. Accept it to edit \"{displayName}\" alongside the creator.",
+    "@subscribeInviteDetected": {
+        "placeholders": {
+            "displayName": { "type": "String" }
+        }
+    },
+    "subscribeInviteDetectedUnknown": "This is an editor invite link, not a regular subscribe link. Accept it to become an editor of this list.",
+    "subscribeInviteAcceptButton": "Accept invitation",
     "subscribeNotFound": "No list with that key exists.",
 
     "sharedListLandingLoading": "Loading shared list",
@@ -347,24 +354,24 @@
 
     "ownedStatusOrphaned": "Shared — deleted by you",
     "ownedStatusSharedBy": "Shared by you",
-    "ownedStatusPendingSyncSuffix": "pending sync",
-    "ownedStatusSyncedSuffix": "synced",
+    "ownedStatusPendingSyncSuffix": "Pending sync",
+    "ownedStatusSyncedSuffix": "Synced",
     "subscribedStatusOrphaned": "Removed by owner",
     "subscribedStatusFallback": "Subscribed",
-    "syncedJustNow": "synced just now",
-    "syncedMinutesAgo": "synced {count}m ago",
+    "syncedJustNow": "Synced just now",
+    "syncedMinutesAgo": "Synced {count}m ago",
     "@syncedMinutesAgo": {
         "placeholders": {
             "count": { "type": "int" }
         }
     },
-    "syncedHoursAgo": "synced {count}h ago",
+    "syncedHoursAgo": "Synced {count}h ago",
     "@syncedHoursAgo": {
         "placeholders": {
             "count": { "type": "int" }
         }
     },
-    "syncedDaysAgo": "synced {count}d ago",
+    "syncedDaysAgo": "Synced {count}d ago",
     "@syncedDaysAgo": {
         "placeholders": {
             "count": { "type": "int" }
@@ -390,7 +397,7 @@
             "count": { "type": "int" }
         }
     },
-    "subscribedStatusSyncedAndUpdated": "synced {sync} · updated {updated}",
+    "subscribedStatusSyncedAndUpdated": "Synced {sync} · Updated {updated}",
     "@subscribedStatusSyncedAndUpdated": {
         "placeholders": {
             "sync": { "type": "String" },

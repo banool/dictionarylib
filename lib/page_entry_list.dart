@@ -97,11 +97,11 @@ class EntryListPageState extends State<EntryListPage> {
               if (widget.entryList.containsAllVideosOf(e)) e
           };
           final available = entriesGlobal.difference(fullySaved);
-          entriesSearched = searchList(context, currentSearchTerm,
-              EntryType.values, available, {});
+          entriesSearched = searchList(
+              context, currentSearchTerm, EntryType.values, available, {});
         } else {
-          entriesSearched = searchList(context, currentSearchTerm,
-              EntryType.values, unique, unique);
+          entriesSearched = searchList(
+              context, currentSearchTerm, EntryType.values, unique, unique);
         }
       } else {
         entriesSearched = unique.toList();
@@ -160,6 +160,33 @@ class EntryListPageState extends State<EntryListPage> {
     setState(() {
       search();
     });
+  }
+
+  /// The shared list to force-sync on pull-to-refresh, or null when this
+  /// isn't a shared list. An owner views their *local* list with a
+  /// separate owner-mode share wrapper ([ListsService.ownedShareFor]);
+  /// editors/subscribers view the [SyncedEntryList] directly.
+  SyncedEntryList? get _syncedForRefresh {
+    final list = widget.entryList;
+    if (list is SyncedEntryList) return list;
+    return listsService.ownedShareFor(list);
+  }
+
+  /// Pull-to-refresh handler: force a sync of the shared list, then
+  /// rebuild. The [RefreshIndicator] owns the spinner, so on success we
+  /// just fall back to the normal view; failures surface a snack.
+  Future<void> _pullToRefresh(SyncedEntryList synced) async {
+    try {
+      await listsService.refreshSyncedList(synced);
+    } on SyncException catch (e) {
+      if (mounted) {
+        showSnack(
+            context,
+            DictLibLocalizations.of(context)!
+                .subscribedSyncFailedSnack(e.message));
+      }
+    }
+    if (mounted) search();
   }
 
   Future<void> _openMembersPage(SyncedEntryList list) async {
@@ -292,8 +319,8 @@ class EntryListPageState extends State<EntryListPage> {
         }
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
-          showSnackVia(
-              messenger, l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)));
+          showSnackVia(messenger,
+              l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)));
           Navigator.of(context).pop();
         }
       });
@@ -482,8 +509,7 @@ class EntryListPageState extends State<EntryListPage> {
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.max,
           children: [
-            if (bannerLists.isNotEmpty)
-              SignInResumeBanner(lists: bannerLists),
+            if (bannerLists.isNotEmpty) SignInResumeBanner(lists: bannerLists),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Form(
@@ -517,19 +543,31 @@ class EntryListPageState extends State<EntryListPage> {
             Expanded(
                 child: Padding(
               padding: const EdgeInsets.only(left: 8),
-              child: listWidget(
-                context,
-                entriesSearched,
-                refreshEntries,
-                widget.navigateToEntryPage,
-                entryList: widget.entryList,
-                deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
-                    ? removeEntry
-                    : null,
-                addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
-                    ? addEntry
-                    : null,
-              ),
+              child: () {
+                final synced = _syncedForRefresh;
+                final list = listWidget(
+                  context,
+                  entriesSearched,
+                  refreshEntries,
+                  widget.navigateToEntryPage,
+                  entryList: widget.entryList,
+                  deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
+                      ? removeEntry
+                      : null,
+                  addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
+                      ? addEntry
+                      : null,
+                  // Pull-to-refresh only makes sense for shared lists; a
+                  // short list still needs to be draggable for the gesture.
+                  alwaysScrollable: synced != null,
+                );
+                // Shared lists (any role) get swipe-down-to-sync.
+                if (synced == null) return list;
+                return RefreshIndicator(
+                  onRefresh: () => _pullToRefresh(synced),
+                  child: list,
+                );
+              }(),
             )),
           ],
         ),
@@ -551,8 +589,14 @@ Widget listWidget(
   EntryList? entryList,
   Future<void> Function(Entry)? deleteEntryFn,
   Future<void> Function(Entry)? addEntryFn,
+
+  /// Force the list to always be draggable even when its content is
+  /// shorter than the viewport — needed so a wrapping [RefreshIndicator]
+  /// (pull-to-refresh on shared lists) can trigger on a short list.
+  bool alwaysScrollable = false,
 }) {
   return ListView.builder(
+    physics: alwaysScrollable ? const AlwaysScrollableScrollPhysics() : null,
     itemCount: entriesSearched.length,
     itemBuilder: (context, index) {
       Entry entry = entriesSearched[index]!;
@@ -647,8 +691,8 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onSurface)),
-        if (subtitle != null) Padding(
-            padding: const EdgeInsets.only(top: 2), child: subtitle),
+        if (subtitle != null)
+          Padding(padding: const EdgeInsets.only(top: 2), child: subtitle),
       ],
     ),
     onPressed: () async {

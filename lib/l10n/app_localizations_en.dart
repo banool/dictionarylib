@@ -571,8 +571,16 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get subscribeInvalidInput => 'Not a valid share link or list ID.';
 
   @override
-  String get subscribeInputIsInviteUrl =>
-      'That\'s an invite link — tap it from your phone to join as editor instead of subscribing.';
+  String subscribeInviteDetected(String displayName) {
+    return 'This is an editor invite link, not a regular subscribe link. Accept it to edit \"$displayName\" alongside the creator.';
+  }
+
+  @override
+  String get subscribeInviteDetectedUnknown =>
+      'This is an editor invite link, not a regular subscribe link. Accept it to become an editor of this list.';
+
+  @override
+  String get subscribeInviteAcceptButton => 'Accept invitation';
 
   @override
   String get subscribeNotFound => 'No list with that key exists.';
@@ -751,10 +759,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get ownedStatusSharedBy => 'Shared by you';
 
   @override
-  String get ownedStatusPendingSyncSuffix => 'pending sync';
+  String get ownedStatusPendingSyncSuffix => 'Pending sync';
 
   @override
-  String get ownedStatusSyncedSuffix => 'synced';
+  String get ownedStatusSyncedSuffix => 'Synced';
 
   @override
   String get subscribedStatusOrphaned => 'Removed by owner';
@@ -763,21 +771,21 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get subscribedStatusFallback => 'Subscribed';
 
   @override
-  String get syncedJustNow => 'synced just now';
+  String get syncedJustNow => 'Synced just now';
 
   @override
   String syncedMinutesAgo(int count) {
-    return 'synced ${count}m ago';
+    return 'Synced ${count}m ago';
   }
 
   @override
   String syncedHoursAgo(int count) {
-    return 'synced ${count}h ago';
+    return 'Synced ${count}h ago';
   }
 
   @override
   String syncedDaysAgo(int count) {
-    return 'synced ${count}d ago';
+    return 'Synced ${count}d ago';
   }
 
   @override
@@ -800,7 +808,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String subscribedStatusSyncedAndUpdated(String sync, String updated) {
-    return 'synced $sync · updated $updated';
+    return 'Synced $sync · Updated $updated';
   }
 
   @override

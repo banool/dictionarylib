@@ -1215,4 +1215,93 @@ void main() {
       expect(list.meta.displayName, before);
     });
   });
+
+  // Pull-to-refresh on a shared list routes through refreshList. The
+  // editor/owner case is the fix for "a co-editor I just accepted only
+  // shows up after an app restart": a pull-only /sync refreshes the
+  // cached member directory.
+  group('SyncEngine.refreshList', () {
+    test('editor list does a /sync that refreshes the member directory',
+        () async {
+      final ctx = _makeEngine((req) async => stubSyncApplyAll(req, members: {
+            'owner': {'userId': 'apple:test-user', 'displayName': 'Alice'},
+            'editors': [
+              {
+                'userId': 'apple:bob',
+                'displayName': 'Bob',
+                'addedAt': 1700000000,
+                'addedBy': 'apple:test-user',
+              },
+            ],
+          }));
+      await ctx.manager.insert(SyncedEntryList.editor(
+        meta: SyncedListMeta(
+          listId: 'editlist0001',
+          displayName: 'Shared',
+          role: ListRole.editor,
+          lastKnownSeq: 1,
+          etag: null,
+          lastSyncedAt: 1700000000,
+          serverUpdatedAt: 1700000000,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+      // Precondition: the stale state the creator's device is stuck in
+      // until a sync actually runs — no cached members yet.
+      expect(ctx.manager.get('editlist0001')!.meta.cachedMembers, isNull);
+
+      await ctx.engine.refreshList('editlist0001');
+
+      expect(ctx.requests.any((r) => r.url.path.endsWith('/sync')), isTrue,
+          reason: 'an editor refresh must hit /sync');
+      final members = ctx.manager.get('editlist0001')!.meta.cachedMembers;
+      expect(members, isNotNull);
+      expect(members!.editors.map((e) => e.userId), contains('apple:bob'),
+          reason: 'the just-added co-editor should now be visible');
+    });
+
+    test('subscriber list re-pulls the public payload', () async {
+      final ctx = _makeEngine((req) async => http.Response(
+            jsonEncode(snapshotJson(
+                listId: 'sublist00001',
+                displayName: 'Fresh name',
+                entries: ['apple', 'banana'])),
+            200,
+            headers: {'content-type': 'application/json', 'etag': '"v2"'},
+          ));
+      await ctx.manager.insert(SyncedEntryList.subscriber(
+        meta: SyncedListMeta(
+          listId: 'sublist00001',
+          displayName: 'Stale name',
+          role: ListRole.subscriber,
+          lastKnownSeq: 0,
+          etag: null,
+          lastSyncedAt: 1700000000,
+          serverUpdatedAt: 1700000000,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+
+      await ctx.engine.refreshList('sublist00001');
+
+      expect(
+          ctx.requests.any((r) =>
+              r.method == 'GET' &&
+              r.url.path.endsWith('/v1/lists/sublist00001')),
+          isTrue,
+          reason: 'a subscriber refresh re-pulls the public payload');
+      final list = ctx.manager.get('sublist00001')!;
+      expect(list.meta.displayName, 'Fresh name');
+      expect(list.savedVideos.map((v) => v.entryKey).toSet(),
+          {'apple', 'banana'});
+    });
+
+    test('unknown list id is a no-op (no request)', () async {
+      final ctx = _makeEngine((req) async => stubSyncApplyAll(req));
+      await ctx.engine.refreshList('doesnotexist1');
+      expect(ctx.requests, isEmpty);
+    });
+  });
 }

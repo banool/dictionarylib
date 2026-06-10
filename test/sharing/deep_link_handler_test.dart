@@ -229,6 +229,35 @@ void main() {
     });
   });
 
+  group('SharePayload.toRouteLocation', () {
+    test('plain share link maps to /share/<id>', () {
+      final p = extractSharePayload(
+          Uri.parse('https://share.auslandictionary.org/l/$_key'), _config);
+      expect(p!.toRouteLocation(), '/share/$_key');
+    });
+
+    test(
+        'custom-scheme invite link maps to /share/<id>?invite=<tok>, never the '
+        'raw auslan:// URI GoRouter has no route for', () {
+      // Regression for "GoException: no routes for location:
+      // auslan://share/<id>?invite=<tok>". The inbound deep link must be
+      // rewritten to the GoRouter `/share/:listId` location; routing the raw
+      // custom-scheme URI threw because no route matches it.
+      final p = extractSharePayload(
+          Uri.parse('auslan://share/$_key?invite=tok123'), _config);
+      final loc = p!.toRouteLocation();
+      expect(loc, '/share/$_key?invite=tok123');
+      expect(loc.startsWith('/share/'), isTrue);
+      expect(loc.contains('://'), isFalse,
+          reason: 'the router location must not carry the deep-link scheme');
+    });
+
+    test('invite token is query-encoded', () {
+      const p = SharePayload(listId: 'abc', inviteToken: 'a&b');
+      expect(p.toRouteLocation(), '/share/abc?invite=a%26b');
+    });
+  });
+
   group('DeepLinkHandler — cold-start replay + dedupe', () {
     /// Cold-start sequence: handler is constructed before the app UI
     /// subscribes. `start()` parses the initial link and parks it in

@@ -167,6 +167,14 @@ class ListsService {
     await sharing.engine.refreshSubscriber(list.listId);
   }
 
+  /// Force a refresh of any shared [list] from the server now, whatever
+  /// the viewer's role (owner/editor/subscriber). Backs the pull-to-
+  /// refresh on the shared-list and members pages.
+  Future<void> refreshSyncedList(SyncedEntryList list) async {
+    if (!sharing.isEnabled) return;
+    await sharing.engine.refreshList(list.listId);
+  }
+
   /// Subscriber-only: stop following a list someone else owns. The local
   /// mirror is removed.
   Future<void> unsubscribeList(SyncedEntryList list) async {
@@ -195,7 +203,8 @@ class ListsService {
   /// server-supplied display name can't be turned into a valid local
   /// storage key. Optional so test code can call this without a
   /// widget tree; pass a real context from real callers.
-  Future<ImportOwnedListsResult> importOwnedLists({BuildContext? context}) async {
+  Future<ImportOwnedListsResult> importOwnedLists(
+      {BuildContext? context}) async {
     if (!sharing.isEnabled) {
       throw StateError('sharing is not configured for this app');
     }
@@ -305,7 +314,10 @@ class ListsService {
       local.savedVideos.addAll(snapshot.entries);
       await local.write();
       await sharing.lists.insert(SyncedEntryList.ownerFromSnapshot(
-          snapshot: snapshot, source: local, localKey: localKey, nowSecs: nowSecs));
+          snapshot: snapshot,
+          source: local,
+          localKey: localKey,
+          nowSecs: nowSecs));
       imported++;
     }
 

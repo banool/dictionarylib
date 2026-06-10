@@ -18,6 +18,21 @@ class SharePayload {
 
   bool get isInvite => inviteToken != null && inviteToken!.isNotEmpty;
 
+  /// The GoRouter location this payload maps to: `/share/<listId>`, with
+  /// the invite token carried through as a query parameter when present.
+  ///
+  /// Host apps forward incoming deep links to
+  /// `router.push(payload.toRouteLocation())`. The raw inbound URI (e.g.
+  /// `auslan://share/<id>?invite=<tok>`) must never reach the router
+  /// directly — there's no route for the custom scheme / host, so it would
+  /// throw "no routes for location". This is also why the app disables
+  /// Flutter's built-in deep linking (Android `flutter_deeplinking_enabled`
+  /// / iOS `FlutterDeepLinkingEnabled`), leaving this package as the sole
+  /// deep-link entry point.
+  String toRouteLocation() => isInvite
+      ? '/share/$listId?invite=${Uri.encodeQueryComponent(inviteToken!)}'
+      : '/share/$listId';
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

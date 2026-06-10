@@ -353,9 +353,8 @@ class SyncEngine {
       // Snapshot the queue. New ops added during the request go to the
       // tail and will be picked up by the next flush iteration.
       final fullQueueLen = list.meta.pendingOps.length;
-      final batchLen = fullQueueLen > _maxOpsPerBatch
-          ? _maxOpsPerBatch
-          : fullQueueLen;
+      final batchLen =
+          fullQueueLen > _maxOpsPerBatch ? _maxOpsPerBatch : fullQueueLen;
       final batch = list.meta.pendingOps.sublist(0, batchLen);
       final opsForWire = batch.map((o) => o.toJson()).toList();
 
@@ -606,8 +605,7 @@ class SyncEngine {
         }
         sharing.bumpState();
       } on SyncException catch (e) {
-        if (e.kind == SyncErrorKind.notFound ||
-            e.kind == SyncErrorKind.gone) {
+        if (e.kind == SyncErrorKind.notFound || e.kind == SyncErrorKind.gone) {
           _markOrphaned(local, '${e.kind} on pull');
           return;
         }
@@ -829,6 +827,10 @@ class SyncEngine {
     }
     _clearListState(listId);
     await _manager.removeLocal(listId);
+    // Notify listeners (e.g. the lists overview / "Shared with me" tab) so
+    // the list we just left disappears immediately instead of lingering
+    // until the next rebuild.
+    sharing.bumpState();
   }
 
   /// Owner-only: rename a shared list. PUTs the new display name to the
@@ -845,9 +847,7 @@ class SyncEngine {
     }
     await _stateOf(listId).lock.synchronized(() async {
       final snapshot = await _api.renameList(
-          listId: listId,
-          displayName: displayName,
-          sessionToken: sessionToken);
+          listId: listId, displayName: displayName, sessionToken: sessionToken);
       final current = _manager.get(listId);
       if (current == null) return;
       current.meta.displayName = snapshot.displayName;
@@ -886,6 +886,25 @@ class SyncEngine {
     final list = _manager.get(listId);
     if (list == null || list.meta.role != ListRole.subscriber) return;
     await _pullSubscribed(listId);
+  }
+
+  /// Force a full sync of a single shared list, whatever the viewer's
+  /// role — drives the pull-to-refresh on the shared-list and members
+  /// pages.
+  ///
+  /// Owner/editor lists go through /sync. Even with an empty op queue
+  /// this is a pull: it folds in other editors' missedOps and refreshes
+  /// the member directory (`meta.cachedMembers`), so a co-editor who was
+  /// just added via an invite shows up immediately instead of only after
+  /// an app restart. Subscribers re-pull the public payload from R2.
+  Future<void> refreshList(String listId) async {
+    final list = _manager.get(listId);
+    if (list == null) return;
+    if (_isEditableRole(list.meta.role)) {
+      await _flushAndDrain(listId);
+    } else {
+      await _pullSubscribed(listId);
+    }
   }
 
   /// Subscriber stops following. Server-side state untouched.

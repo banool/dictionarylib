@@ -1091,11 +1091,23 @@ abstract class DictLibLocalizations {
   /// **'Not a valid share link or list ID.'**
   String get subscribeInvalidInput;
 
-  /// No description provided for @subscribeInputIsInviteUrl.
+  /// No description provided for @subscribeInviteDetected.
   ///
   /// In en, this message translates to:
-  /// **'That\'s an invite link — tap it from your phone to join as editor instead of subscribing.'**
-  String get subscribeInputIsInviteUrl;
+  /// **'This is an editor invite link, not a regular subscribe link. Accept it to edit \"{displayName}\" alongside the creator.'**
+  String subscribeInviteDetected(String displayName);
+
+  /// No description provided for @subscribeInviteDetectedUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an editor invite link, not a regular subscribe link. Accept it to become an editor of this list.'**
+  String get subscribeInviteDetectedUnknown;
+
+  /// No description provided for @subscribeInviteAcceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept invitation'**
+  String get subscribeInviteAcceptButton;
 
   /// No description provided for @subscribeNotFound.
   ///
@@ -1406,13 +1418,13 @@ abstract class DictLibLocalizations {
   /// No description provided for @ownedStatusPendingSyncSuffix.
   ///
   /// In en, this message translates to:
-  /// **'pending sync'**
+  /// **'Pending sync'**
   String get ownedStatusPendingSyncSuffix;
 
   /// No description provided for @ownedStatusSyncedSuffix.
   ///
   /// In en, this message translates to:
-  /// **'synced'**
+  /// **'Synced'**
   String get ownedStatusSyncedSuffix;
 
   /// No description provided for @subscribedStatusOrphaned.
@@ -1430,25 +1442,25 @@ abstract class DictLibLocalizations {
   /// No description provided for @syncedJustNow.
   ///
   /// In en, this message translates to:
-  /// **'synced just now'**
+  /// **'Synced just now'**
   String get syncedJustNow;
 
   /// No description provided for @syncedMinutesAgo.
   ///
   /// In en, this message translates to:
-  /// **'synced {count}m ago'**
+  /// **'Synced {count}m ago'**
   String syncedMinutesAgo(int count);
 
   /// No description provided for @syncedHoursAgo.
   ///
   /// In en, this message translates to:
-  /// **'synced {count}h ago'**
+  /// **'Synced {count}h ago'**
   String syncedHoursAgo(int count);
 
   /// No description provided for @syncedDaysAgo.
   ///
   /// In en, this message translates to:
-  /// **'synced {count}d ago'**
+  /// **'Synced {count}d ago'**
   String syncedDaysAgo(int count);
 
   /// No description provided for @agoJustNow.
@@ -1478,7 +1490,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @subscribedStatusSyncedAndUpdated.
   ///
   /// In en, this message translates to:
-  /// **'synced {sync} · updated {updated}'**
+  /// **'Synced {sync} · Updated {updated}'**
   String subscribedStatusSyncedAndUpdated(String sync, String updated);
 
   /// No description provided for @shareLinkInviteEditorButton.
