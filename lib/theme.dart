@@ -177,6 +177,60 @@ const double kRadiusButton = 14;
 const double kRadiusChip = 12;
 const double kRadiusPill = 999;
 
+/* ========================= LARGE-SCREEN SIZING ========================= */
+
+// Phone layouts render at the same logical sizes on a 13" tablet, which
+// makes the whole UI read as tiny: hairline search field, edge-to-edge
+// list rows with small text, oceans of empty space. The two knobs below
+// fix that WITHOUT touching the phone experience: text (and the
+// text-driven component metrics) scales up, and top-level page content
+// is centred at a readable measure instead of stretching edge to edge.
+
+/// Shortest-side breakpoint above which a display is treated as a
+/// tablet / large screen (Material's conventional 600dp).
+const double kLargeScreenBreakpoint = 600;
+
+/// How much text is scaled up on large screens, composed with whatever
+/// accessibility scaling the user has set at the OS level.
+const double kLargeScreenTextScale = 1.25;
+
+/// Maximum width top-level page content stretches to on large screens.
+const double kLargeScreenContentMaxWidth = 760;
+
+/// True when the display is tablet-sized (independent of orientation).
+bool isLargeScreen(BuildContext context) =>
+    MediaQuery.sizeOf(context).shortestSide >= kLargeScreenBreakpoint;
+
+/// MaterialApp.builder hook: applies [kLargeScreenTextScale] on large
+/// screens, on top of the user's accessibility text scaling. Returns
+/// phones unchanged.
+Widget largeScreenTextScaleBuilder(BuildContext context, Widget? child) {
+  if (child == null) return const SizedBox.shrink();
+  final mq = MediaQuery.of(context);
+  if (mq.size.shortestSide < kLargeScreenBreakpoint) return child;
+  final accessibilityFactor = mq.textScaler.scale(1.0);
+  return MediaQuery(
+    data: mq.copyWith(
+        textScaler:
+            TextScaler.linear(accessibilityFactor * kLargeScreenTextScale)),
+    child: child,
+  );
+}
+
+/// Centre [child] at a readable measure on large screens; a no-op on
+/// phones. Wrap page bodies (not whole scaffolds) so app bars and nav
+/// bars keep their natural full-width treatment.
+Widget constrainContentWidth(BuildContext context, Widget child,
+    {double maxWidth = kLargeScreenContentMaxWidth}) {
+  if (!isLargeScreen(context)) return child;
+  return Center(
+    child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: child,
+    ),
+  );
+}
+
 /* ============================ HEARTH THEME ============================ */
 
 ColorScheme _hearthScheme(Brightness b, _HearthTokens t) {

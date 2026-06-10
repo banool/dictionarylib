@@ -12,6 +12,7 @@ import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
+import 'package:dictionarylib/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
@@ -548,7 +549,10 @@ class EntryListPageState extends State<EntryListPage> {
         actions: buildActionButtons(actions),
       ),
       floatingActionButton: floatingActionButton,
-      body: Padding(
+      // Centred at a readable measure on tablets; unchanged on phones.
+      body: constrainContentWidth(
+        context,
+        Padding(
         padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -615,6 +619,7 @@ class EntryListPageState extends State<EntryListPage> {
               }(),
             )),
           ],
+        ),
         ),
       ),
     );

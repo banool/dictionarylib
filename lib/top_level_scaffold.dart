@@ -82,7 +82,9 @@ class TopLevelScaffold extends StatelessWidget {
           centerTitle: !hearth,
           bottom: underAppBar,
           surfaceTintColor: Colors.transparent),
-      body: body,
+      // On tablets the tab pages centre their content at a readable
+      // measure instead of stretching phone rows across the full panel.
+      body: constrainContentWidth(context, body),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: BottomNavigationBar(
         items: items,
