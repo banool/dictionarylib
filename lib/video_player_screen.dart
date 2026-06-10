@@ -163,6 +163,7 @@ class VideoPlayerScreen extends StatefulWidget {
     this.initialPage = 0,
     this.onPageChanged,
     this.expandOnTap = false,
+    this.isActive = true,
   });
 
   final List<String> mediaLinks;
@@ -182,6 +183,13 @@ class VideoPlayerScreen extends StatefulWidget {
   /// Used by callers that render UI keyed to the currently-visible
   /// video (e.g. the per-video bookmark button on the entry page).
   final void Function(int)? onPageChanged;
+
+  /// Whether this player is on the currently-visible page. Callers that keep
+  /// several [VideoPlayerScreen]s alive at once (e.g. the entry page's
+  /// kept-alive sub-entry [PageView]) flip this so off-screen players pause
+  /// instead of looping in the background. The players are kept alive (never
+  /// disposed) so swiping back is instant — see [didUpdateWidget].
+  final bool isActive;
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -206,6 +214,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   /// BuildContext) after media_kit resets the rate when playback starts.
   double _playbackRate = 1.0;
 
+  /// How many videos on either side of [currentPage] keep a live player. The
+  /// neighbours are pre-created so an adjacent swipe is instant; everything
+  /// further out is created on demand once the carousel lands near it. A
+  /// 7-video sub-entry therefore holds at most three mpv instances until the
+  /// user browses past the neighbours, instead of seven up front.
+  static const int _neighbourRadius = 1;
+
   @override
   void initState() {
     super.initState();
@@ -223,27 +238,55 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       currentPage = widget.initialPage;
     }
 
-    // Create players and controllers immediately (synchronously) so that
-    // the Video widgets can be in the tree when we open the media.
-    // This is important for Android where the texture surface needs to be
-    // set up before opening media.
-    for (int idx = 0; idx < widget.mediaLinks.length; idx++) {
-      final mediaLink = widget.mediaLinks[idx];
-      // Skip non-video files
-      if (mediaLink.endsWith(".jpg")) continue;
+    // Create only the current page and its immediate neighbours up front so a
+    // multi-video sub-entry doesn't allocate one mpv instance per recording
+    // before the user has even swiped. The rest are created lazily as the
+    // carousel approaches them (see [onPageChanged]).
+    _ensurePlayersAround(currentPage);
+  }
 
-      // Create Player and VideoController following media-kit README:
-      // https://github.com/media-kit/media-kit
-      final player = Player();
-      final controller = VideoController(player);
-      players[idx] = _PlayerData(player: player, controller: controller);
-
-      // Open the media asynchronously after the widget is in the tree.
-      // Use addPostFrameCallback to ensure Video widget is mounted first.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _openMedia(mediaLink, idx);
-      });
+  /// Create players (synchronously) for [page] and its neighbours within
+  /// [_neighbourRadius] that don't exist yet, opening each via a post-frame
+  /// callback. Already-created players are left untouched so swiping back is
+  /// instant.
+  void _ensurePlayersAround(int page) {
+    if (widget.mediaLinks.isEmpty) return;
+    final last = widget.mediaLinks.length - 1;
+    final lower = (page - _neighbourRadius).clamp(0, last);
+    final upper = (page + _neighbourRadius).clamp(0, last);
+    for (int idx = lower; idx <= upper; idx++) {
+      _ensurePlayer(idx);
     }
+  }
+
+  /// Create the player+controller for [idx] if it doesn't exist yet, then open
+  /// its media after the next frame. Skips non-video (.jpg) files and indices
+  /// that already have a player.
+  ///
+  /// The player and controller are created *synchronously* so the [Video]
+  /// widget can be in the tree before [Player.open] runs — this is what the
+  /// Android texture-surface ordering requires. The actual open is deferred to
+  /// a post-frame callback for the same reason. Lazily-created players follow
+  /// the exact same pattern as the eagerly-created ones used to.
+  void _ensurePlayer(int idx) {
+    if (idx < 0 || idx >= widget.mediaLinks.length) return;
+    final mediaLink = widget.mediaLinks[idx];
+    // Skip non-video files.
+    if (mediaLink.endsWith(".jpg")) return;
+    // Keep already-created players.
+    if (players.containsKey(idx)) return;
+
+    // Create Player and VideoController following media-kit README:
+    // https://github.com/media-kit/media-kit
+    final player = Player();
+    final controller = VideoController(player);
+    players[idx] = _PlayerData(player: player, controller: controller);
+
+    // Open the media asynchronously after the widget is in the tree.
+    // Use addPostFrameCallback to ensure Video widget is mounted first.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _openMedia(mediaLink, idx);
+    });
   }
 
   @override
@@ -258,6 +301,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       _playbackRate = getDoubleFromPlaybackSpeed(speed.playbackSpeed);
       for (final pd in players.values) {
         if (pd.isReady) pd.player.setRate(_playbackRate);
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(VideoPlayerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // React to the active/inactive signal from a caller that keeps several
+    // players alive (the kept-alive sub-entry PageView). When we go offscreen,
+    // pause every player so background videos don't loop; when we come back,
+    // resume just the visible one. Players are never disposed here, so swiping
+    // back is instant.
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        players[currentPage]?.player.play();
+      } else {
+        for (final pd in players.values) {
+          pd.player.pause();
+        }
       }
     }
   }
@@ -299,18 +361,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         }
         if (mediaLink.endsWith(".bak")) {
           printAndLog("Building video controller with custom .bak behaviour");
-          HttpClient httpClient = HttpClient();
-          var request = await httpClient.getUrl(Uri.parse(mediaLink));
-          var response = await request.close();
-          if (response.statusCode != 200) {
-            throw "Failed to load $mediaLink with custom .bak behaviour: $response";
-          }
           String dir = (await getTemporaryDirectory()).path;
-          var bytes = await consolidateHttpClientResponseBytes(response);
           String newFileName = mediaLink.split("/").last.replaceAll(".bak", "");
           File file = File("$dir/$newFileName");
-          await file.writeAsBytes(bytes);
-          mediaSource = file.path;
+          // Reuse the previously-downloaded temp file if it's already here
+          // instead of re-fetching the .bak over the network every open.
+          if (await file.exists()) {
+            mediaSource = file.path;
+          } else {
+            HttpClient httpClient = HttpClient();
+            var request = await httpClient.getUrl(Uri.parse(mediaLink));
+            var response = await request.close();
+            if (response.statusCode != 200) {
+              throw "Failed to load $mediaLink with custom .bak behaviour: $response";
+            }
+            var bytes = await consolidateHttpClientResponseBytes(response);
+            await file.writeAsBytes(bytes);
+            mediaSource = file.path;
+          }
         } else {
           mediaSource = mediaLink;
         }
@@ -423,6 +491,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   }
 
   void onPageChanged(BuildContext context, int newPage) {
+    // The carousel has landed near [newPage], so make sure it and its
+    // neighbours have players (creating any that were never allocated up
+    // front). Already-created players are kept.
+    _ensurePlayersAround(newPage);
     setState(() {
       for (var playerData in players.values) {
         playerData.player.pause();
@@ -440,7 +512,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     // user follows an external link). On return, resume the visible video so it
     // never stays stuck paused. Players that aren't ready yet auto-play once
     // they load (see the build-time initial play/pause), so guard on isReady.
-    if (state == AppLifecycleState.resumed) {
+    //
+    // Every VideoPlayerScreen is a global lifecycle observer, so without gating
+    // an app resume would tell *every* live player — including off-screen
+    // kept-alive sub-entry pages and players sitting under a covering route —
+    // to start playing. Only resume when this player is the active one and its
+    // route is on top.
+    if (state == AppLifecycleState.resumed && widget.isActive) {
+      if (ModalRoute.of(context)?.isCurrent != true) return;
       final pd = players[currentPage];
       if (pd != null && pd.isReady) pd.player.play();
     }
@@ -517,10 +596,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           // Set the initial play/pause state once per player. Playback speed is
           // applied via didChangeDependencies (live changes) and the
           // playing-stream listener (the open/play rate reset) — not here — so
-          // there's no per-build work or timed retries.
+          // there's no per-build work or timed retries. Only auto-play the
+          // current page when this screen is active; an off-screen kept-alive
+          // page stays paused until it becomes active (see didUpdateWidget).
           if (playerData.isReady && !playerData.initialPlaybackSet) {
             playerData.initialPlaybackSet = true;
-            if (idx == currentPage) {
+            if (idx == currentPage && widget.isActive) {
               playerData.player.play();
             } else {
               playerData.player.pause();
@@ -567,7 +648,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                       // Loading indicator on initial load only, not on loop.
                       controls: (state) => getLoadingVideoControls(
                           state, playerData.hasPlayedOnce),
-                      fit: BoxFit.fill,
+                      // Letterbox while the real dimensions are still loading
+                      // (we size the box from fallbackAspectRatio until then)
+                      // rather than stretching a wrong-ratio video with fill.
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
