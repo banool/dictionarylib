@@ -112,7 +112,11 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     if (session == null) {
       session = await showSignInDialog(context,
           contextMessage: l.signInDialogContextInvite);
-      if (session == null) return;
+      // The sign-in dialog is an async gap: the user may have backed out of
+      // this page (or it was torn down by a rebuild) while it was up. Bail
+      // before touching state if we're no longer mounted or the sign-in
+      // didn't produce a session.
+      if (!mounted || session == null) return;
     }
 
     setState(() {

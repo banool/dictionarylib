@@ -41,6 +41,11 @@ class SearchPageState extends State<SearchPage> {
   List<Entry?> entriesSearched = [];
   int currentNavBarIndex = 0;
 
+  /// Guards the [widget.navigateToFirstMatch] jump so it fires at most once.
+  /// Without it, popping back to this page (or any rebuild) re-schedules the
+  /// post-frame navigation and traps the user on the entry page.
+  bool _navigatedToFirstMatchOnce = false;
+
   String? searchTerm;
 
   final _searchFieldController = TextEditingController();
@@ -140,15 +145,19 @@ class SearchPageState extends State<SearchPage> {
     }
 
     // Navigate to the first match if words have been searched and the page
-    // was built with that setting enabled.
-    if (widget.navigateToFirstMatch ?? false) {
-      if (entriesSearched.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          printAndLog(
-              "Navigating to first match because navigateToFirstMatch was set");
-          widget.navigateToEntryPage(context, entriesSearched[0]!, true);
-        });
-      }
+    // was built with that setting enabled. Guarded to fire at most once (and
+    // only while mounted) so popping back here doesn't re-push the entry page
+    // in a loop — mirrors the advisory once-guard above.
+    if ((widget.navigateToFirstMatch ?? false) &&
+        !_navigatedToFirstMatchOnce &&
+        entriesSearched.isNotEmpty) {
+      _navigatedToFirstMatchOnce = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        printAndLog(
+            "Navigating to first match because navigateToFirstMatch was set");
+        widget.navigateToEntryPage(context, entriesSearched[0]!, true);
+      });
     }
 
     final l = DictLibLocalizations.of(context)!;

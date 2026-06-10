@@ -109,7 +109,14 @@ class TopLevelScaffold extends StatelessWidget {
     final GoRouter route = GoRouter.of(context);
     final String path = route.routeInformationProvider.value.uri.path;
     var routes = getRoutes();
-    return routes.indexOf(path);
+    final i = routes.indexOf(path);
+    // When a non-tab route is pushed on top (e.g. the `/share/:id` landing
+    // page), the four tab pages stay mounted underneath and rebuild on
+    // theme/locale/sharing changes — but the current location isn't one of
+    // the tab routes, so `indexOf` returns -1. A negative `currentIndex`
+    // asserts in debug and throws a RangeError in release inside
+    // BottomNavigationBar, so clamp it to the first tab.
+    return i < 0 ? 0 : i;
   }
 
   void onItemTapped(int index, BuildContext context) {

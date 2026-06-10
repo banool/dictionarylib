@@ -54,7 +54,10 @@ const String KEY_LAST_AUTH_PROVIDER = "last_auth_provider";
 // AppThemeVariant in theme.dart.
 const String KEY_THEME_VARIANT = "theme_variant";
 
-const int DEFAULT_THEME_MODE = 1; // Light.
+// Follow the OS light/dark setting until the user pins one explicitly.
+// Index into ThemeMode.values (0 = system, 1 = light, 2 = dark). Keep in
+// sync with the startup read in the app's root widget.
+const int DEFAULT_THEME_MODE = 0; // System.
 
 /// Defer disposing [controller] until after the current frame so any widget
 /// still holding a reference (typically a `TextField` inside a closing

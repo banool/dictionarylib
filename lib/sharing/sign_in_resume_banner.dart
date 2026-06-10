@@ -43,11 +43,13 @@ class _SignInResumeBannerState extends State<SignInResumeBanner> {
     if (lists.isEmpty) return const SizedBox.shrink();
     final hasPending = lists.any((l) => l.meta.pendingOps.isNotEmpty);
     final l = DictLibLocalizations.of(context)!;
-    final message = hasPending
-        ? (lists.length == 1
-            ? l.expiredSessionBanner
-            : l.overviewResumeSignInWithPending)
-        : l.overviewResumeSignInIdle;
+    // Always use the neutral "you have unsynced edits" copy when there are
+    // pending ops. The old single-list branch claimed "your session
+    // expired", which is misleading after a deliberate sign-out (the common
+    // case) — the session didn't expire, the user signed out. The neutral
+    // copy is correct in both situations.
+    final message =
+        hasPending ? l.overviewResumeSignInWithPending : l.overviewResumeSignInIdle;
     return MaterialBanner(
       content: Text(message),
       leading: Icon(
@@ -68,9 +70,7 @@ class _SignInResumeBannerState extends State<SignInResumeBanner> {
             if (session != null) unawaited(sharing.engine.syncAll());
             if (mounted) setState(() {});
           },
-          child: Text(hasPending
-              ? l.expiredSessionBannerAction
-              : l.overviewResumeSignInButton),
+          child: Text(l.overviewResumeSignInButton),
         ),
       ],
     );

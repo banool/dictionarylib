@@ -202,35 +202,35 @@ class _ListMembersPageState extends State<ListMembersPage> {
       _leavingInflight = true;
       _generalError = null;
     });
+    var left = false;
     try {
       await sharing.engine.leaveAsEditor(widget.list.listId);
+      left = true;
     } on SyncException catch (e) {
       if (mounted) {
         final ll = DictLibLocalizations.of(context)!;
-        setState(() {
-          _leavingInflight = false;
-          _generalError = localisedSyncErrorSimple(
-              context, e, ll.leaveListFailed(e.message));
-        });
+        setState(() => _generalError = localisedSyncErrorSimple(
+            context, e, ll.leaveListFailed(e.message)));
       }
-      return;
     } on StateError {
       if (mounted) {
-        setState(() {
-          _leavingInflight = false;
-          _generalError =
-              DictLibLocalizations.of(context)!.shareErrorUnauthorized;
-        });
+        setState(() => _generalError =
+            DictLibLocalizations.of(context)!.shareErrorUnauthorized);
       }
-      return;
+    } finally {
+      // Always release the leave-button spinner while we're still mounted, so
+      // it can't latch on if the leave failed (or if the navigation below
+      // ends up a no-op). On the success path the page is torn down anyway,
+      // but a mounted-guarded reset here is harmless and removes the previous
+      // reliance on the success navigation always unmounting us.
+      if (mounted) setState(() => _leavingInflight = false);
     }
-    if (!mounted) return;
+    if (!left || !mounted) return;
     // We've left the list and dropped the local mirror — this members page
     // and the entry-list page beneath it now both show a list we're no
     // longer part of. Pop every pushed page and land back on the top-level
     // lists overview. (Capture the router before popping; this page's
-    // context is defunct once popUntil runs.) The success path doesn't reset
-    // _leavingInflight because the page is being torn down.
+    // context is defunct once popUntil runs.)
     final router = GoRouter.of(context);
     Navigator.of(context).popUntil((route) => route.isFirst);
     router.go(LISTS_ROUTE);

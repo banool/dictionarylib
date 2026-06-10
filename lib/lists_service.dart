@@ -285,6 +285,19 @@ class ListsService {
         skipped++;
         continue;
       }
+      final existing = sharing.lists.get(result.listId);
+      // Invariant established by the pre-filter above: any `existing` that
+      // reaches here is NOT already in the owner role (owner-role matches
+      // were skipped before we fetched). So reaching the reuse branch means
+      // we're re-homing a list the device tracked in some *other* role.
+      // Even so, never clobber a record that still has queued local ops —
+      // overwriting its entries here would silently drop those pending
+      // edits. Skip it (counted as skipped) and leave it for a normal /sync
+      // to reconcile.
+      if (existing != null && existing.meta.pendingOps.isNotEmpty) {
+        skipped++;
+        continue;
+      }
       // Reuse an existing local source if we already have one for this
       // listId (re-running the import after, say, a clear-then-restore
       // shouldn't orphan the user's data). When [existing] points at a
@@ -293,7 +306,6 @@ class ListsService {
       // local key and create one.
       String localKey;
       EntryList local;
-      final existing = sharing.lists.get(result.listId);
       final reusableSourceKey = existing?.meta.sourceLocalKey;
       final reusableSource = reusableSourceKey == null
           ? null

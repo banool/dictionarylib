@@ -129,15 +129,37 @@ class EntryListPageState extends State<EntryListPage> {
   /// Edit-mode "add this entry" — adds every video of the entry, then
   /// the row falls out of the search results since it's no longer in
   /// the "available to add" set.
+  ///
+  /// The mutation is optimistic: for a shared list it enqueues a sync op
+  /// and can throw if that fails. On failure the list reverts itself, we
+  /// log + show a snack, and the `finally` re-runs [search] so the UI
+  /// reflects the rolled-back state. (Capture the messenger + localised
+  /// message before the await so we never touch a possibly-unmounted
+  /// BuildContext.)
   Future<void> addEntry(Entry entry) async {
-    await widget.entryList.addAllVideosOfEntry(entry);
-    setState(() {
-      search();
-    });
+    final messenger = ScaffoldMessenger.of(context);
+    final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
+        "Couldn't update your lists. Please try again.";
+    try {
+      await widget.entryList.addAllVideosOfEntry(entry);
+    } catch (e) {
+      printAndLog("Failed to add entry to list ${widget.entryList.key}: $e");
+      if (mounted) showSnackVia(messenger, failMessage);
+    } finally {
+      if (mounted) {
+        setState(() {
+          search();
+        });
+      }
+    }
   }
 
   /// Edit-mode "remove this entry" — removes every video the user had
   /// saved for the entry, after a confirm when more than one is saved.
+  ///
+  /// Same optimistic-then-revert handling as [addEntry]: a failed sync-op
+  /// enqueue reverts the local mirror, so we log + snack and re-run
+  /// [search] in `finally` to redraw the rolled-back state.
   Future<void> removeEntry(Entry entry) async {
     final videos = widget.entryList.videosForEntry(entry);
     if (videos.length > 1) {
@@ -150,10 +172,23 @@ class EntryListPageState extends State<EntryListPage> {
       );
       if (!confirmed) return;
     }
-    await widget.entryList.removeAllVideosOfEntry(entry);
-    setState(() {
-      search();
-    });
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
+        "Couldn't update your lists. Please try again.";
+    try {
+      await widget.entryList.removeAllVideosOfEntry(entry);
+    } catch (e) {
+      printAndLog(
+          "Failed to remove entry from list ${widget.entryList.key}: $e");
+      if (mounted) showSnackVia(messenger, failMessage);
+    } finally {
+      if (mounted) {
+        setState(() {
+          search();
+        });
+      }
+    }
   }
 
   Future<void> refreshEntries() async {
@@ -223,8 +258,12 @@ class EntryListPageState extends State<EntryListPage> {
         );
         if (!mounted) return;
         if (wantsUnshare) {
-          setState(() => _actionInflight = false);
-          await _onUnsharePressed();
+          // Call the guard-free unshare body directly — we're already inside
+          // `_runGuarded`, so re-entering it (the old `_onUnsharePressed`
+          // call) would have bailed; that's why this used to reset
+          // `_actionInflight` by hand first. Sharing one body avoids the
+          // fragile manual toggle.
+          await _doUnshare();
           return;
         }
         if (freshlyShared) {
@@ -239,20 +278,26 @@ class EntryListPageState extends State<EntryListPage> {
         }
       });
 
-  Future<void> _onUnsharePressed() => _runGuarded(() async {
-        final owned = listsService.ownedShareFor(widget.entryList);
-        if (owned == null) return;
-        final l = DictLibLocalizations.of(context)!;
-        final confirmed = await confirmAlert(
-          context,
-          Text(l.unshareConfirmBody),
-          title: l.unshareConfirmTitle,
-          onConfirm: () => listsService.unshareList(owned),
-          errorMessage: (e) =>
-              e is SyncException ? l.unshareFailed(e.message) : e.toString(),
-        );
-        if (confirmed && mounted) setState(() {});
-      });
+  /// The unshare confirm + action, with no `_actionInflight` management of
+  /// its own. The only caller is the share dialog's "stop sharing" branch,
+  /// which is already running inside [_runGuarded]; calling this directly
+  /// (rather than the old self-guarding `_onUnsharePressed`) is what lets
+  /// [_onSharePressed] stop hand-toggling `_actionInflight` to dodge the
+  /// re-entrancy guard.
+  Future<void> _doUnshare() async {
+    final owned = listsService.ownedShareFor(widget.entryList);
+    if (owned == null) return;
+    final l = DictLibLocalizations.of(context)!;
+    final confirmed = await confirmAlert(
+      context,
+      Text(l.unshareConfirmBody),
+      title: l.unshareConfirmTitle,
+      onConfirm: () => listsService.unshareList(owned),
+      errorMessage: (e) =>
+          e is SyncException ? l.unshareFailed(e.message) : e.toString(),
+    );
+    if (confirmed && mounted) setState(() {});
+  }
 
   Future<void> _onSyncNowPressed() => _runGuarded(() async {
         final list = widget.entryList;

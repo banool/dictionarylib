@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -156,8 +157,12 @@ class SettingsPageState extends State<SettingsPage> {
           if (session == null)
             navRow(l.settingsSignIn, onTap: () async {
               final result = await showSignInDialog(context);
-              if (result != null && context.mounted) {
-                await offerImportOwnedLists(context);
+              if (result != null) {
+                // Kick a sync fire-and-forget so any edits queued while
+                // signed out drain immediately — same nudge the resume
+                // banner and expiry-snack sign-in paths give.
+                unawaited(sharing.engine.syncAll());
+                if (context.mounted) await offerImportOwnedLists(context);
               }
               if (mounted) setState(() {});
             })
@@ -172,12 +177,13 @@ class SettingsPageState extends State<SettingsPage> {
               final body = pendingLists.isNotEmpty
                   ? l.settingsSignOutConfirmBodyWithPending(pendingLists.length)
                   : l.settingsSignOutConfirmBody;
+              // Pass [onConfirm] so the dialog keeps itself open with the
+              // built-in spinner while sign-out runs (it does a best-effort
+              // flush of queued edits first, so it isn't instant).
               final confirmed = await confirmAlert(context, Text(body),
-                  title: l.settingsSignOutConfirmTitle);
-              if (confirmed) {
-                await shareState.signOut();
-                if (mounted) setState(() {});
-              }
+                  title: l.settingsSignOutConfirmTitle,
+                  onConfirm: () => shareState.signOut());
+              if (confirmed && mounted) setState(() {});
             }),
             navRow(l.settingsDeleteAccount, onTap: () async {
               final confirmed = await confirmAlert(
@@ -291,7 +297,7 @@ class SettingsPageState extends State<SettingsPage> {
         }),
         navRow(l.settingsReportAppIssueEmail, onTap: () async {
           var mailto = Mailto(
-              to: ['d@dport.me'],
+              to: ['daniel@dport.me'],
               subject: l.reportIssueEmailSubject(widget.appName),
               body:
                   'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n');
@@ -500,7 +506,6 @@ String _providerLabel(DictLibLocalizations l, AuthProvider provider) {
 }
 
 String _getThemeModeString(BuildContext context) {
-  // Default to light mode.
   var themeMode =
       sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE;
   switch (themeMode) {
