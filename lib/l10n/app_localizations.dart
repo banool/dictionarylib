@@ -137,29 +137,11 @@ abstract class DictLibLocalizations {
   /// **'Search for a word'**
   String get searchHintText;
 
-  /// No description provided for @nFlashcardsSelected.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{cards} =1{cards} other{cards}}'**
-  String nFlashcardsSelected(num count);
-
-  /// No description provided for @nFlashcardsDue.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{cards} =1{cards} other{cards}}'**
-  String nFlashcardsDue(num count);
-
   /// No description provided for @flashcardsRevisionSources.
   ///
   /// In en, this message translates to:
   /// **'Revision Sources'**
   String get flashcardsRevisionSources;
-
-  /// No description provided for @flashcardsSelectListsToRevise.
-  ///
-  /// In en, this message translates to:
-  /// **'Select lists to revise'**
-  String get flashcardsSelectListsToRevise;
 
   /// No description provided for @flashcardsSelectLists.
   ///
@@ -191,77 +173,11 @@ abstract class DictLibLocalizations {
   /// **'Revision Settings'**
   String get flashcardsRevisionSettings;
 
-  /// No description provided for @flashcardsSelectRevisionStrategy.
-  ///
-  /// In en, this message translates to:
-  /// **'Select revision strategy'**
-  String get flashcardsSelectRevisionStrategy;
-
-  /// No description provided for @flashcardsStrategy.
-  ///
-  /// In en, this message translates to:
-  /// **'Strategy'**
-  String get flashcardsStrategy;
-
-  /// No description provided for @flashcardsSelectSignRegions.
-  ///
-  /// In en, this message translates to:
-  /// **'Select sign regions'**
-  String get flashcardsSelectSignRegions;
-
-  /// No description provided for @flashcardsRegions.
-  ///
-  /// In en, this message translates to:
-  /// **'Regions'**
-  String get flashcardsRegions;
-
   /// No description provided for @flashcardsStart.
   ///
   /// In en, this message translates to:
   /// **'Start'**
   String get flashcardsStart;
-
-  /// No description provided for @flashcardsOnlyOneCard.
-  ///
-  /// In en, this message translates to:
-  /// **'Show only one set of cards per word'**
-  String get flashcardsOnlyOneCard;
-
-  /// No description provided for @flashcardsRevisionLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'Revision Language'**
-  String get flashcardsRevisionLanguage;
-
-  /// No description provided for @flashcardsAllOfSriLanka.
-  ///
-  /// In en, this message translates to:
-  /// **'All of Sri Lanka'**
-  String get flashcardsAllOfSriLanka;
-
-  /// No description provided for @flashcardsNorthEast.
-  ///
-  /// In en, this message translates to:
-  /// **'North East'**
-  String get flashcardsNorthEast;
-
-  /// No description provided for @flashcardsNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get flashcardsNext;
-
-  /// No description provided for @flashcardsForgot.
-  ///
-  /// In en, this message translates to:
-  /// **'Forgot'**
-  String get flashcardsForgot;
-
-  /// No description provided for @flashcardsGotIt.
-  ///
-  /// In en, this message translates to:
-  /// **'Got it!'**
-  String get flashcardsGotIt;
 
   /// No description provided for @flashcardsCardUnavailable.
   ///
@@ -269,47 +185,17 @@ abstract class DictLibLocalizations {
   /// **'A card was unavailable and was skipped.'**
   String get flashcardsCardUnavailable;
 
-  /// No description provided for @flashcardsWhatIsSignForWord.
-  ///
-  /// In en, this message translates to:
-  /// **'What is the sign for this word?'**
-  String get flashcardsWhatIsSignForWord;
-
-  /// No description provided for @flashcardsWhatDoesSignMean.
-  ///
-  /// In en, this message translates to:
-  /// **'What does this sign mean?'**
-  String get flashcardsWhatDoesSignMean;
-
-  /// No description provided for @flashcardsOpenDictionaryEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'Open dictionary entry'**
-  String get flashcardsOpenDictionaryEntry;
-
   /// No description provided for @flashcardsSuccessRate.
   ///
   /// In en, this message translates to:
   /// **'Success Rate'**
   String get flashcardsSuccessRate;
 
-  /// No description provided for @flashcardsTotalCards.
-  ///
-  /// In en, this message translates to:
-  /// **'Total Cards'**
-  String get flashcardsTotalCards;
-
   /// No description provided for @flashcardsSuccessfulCards.
   ///
   /// In en, this message translates to:
   /// **'Successful Cards'**
   String get flashcardsSuccessfulCards;
-
-  /// No description provided for @flashcardsIncorrectCards.
-  ///
-  /// In en, this message translates to:
-  /// **'Incorrect Cards'**
-  String get flashcardsIncorrectCards;
 
   /// No description provided for @flashcardsTotalReviews.
   ///
@@ -329,35 +215,11 @@ abstract class DictLibLocalizations {
   /// **'Unique Words'**
   String get flashcardsUniqueWords;
 
-  /// No description provided for @flashcardsLongestStreak.
-  ///
-  /// In en, this message translates to:
-  /// **'Longest Streak'**
-  String get flashcardsLongestStreak;
-
-  /// No description provided for @flashcardsStatsCollectedSince.
-  ///
-  /// In en, this message translates to:
-  /// **'Stats collected since'**
-  String get flashcardsStatsCollectedSince;
-
-  /// No description provided for @flashcardsRevisionSummaryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Revision Summary'**
-  String get flashcardsRevisionSummaryTitle;
-
   /// No description provided for @flashcardsRevisionProgressTitle.
   ///
   /// In en, this message translates to:
   /// **'Revision Progress'**
   String get flashcardsRevisionProgressTitle;
-
-  /// No description provided for @flashcardsRevisionStategyToShow.
-  ///
-  /// In en, this message translates to:
-  /// **'Revision strategy to show stats for'**
-  String get flashcardsRevisionStategyToShow;
 
   /// No description provided for @setPlaybackSpeedTo.
   ///
@@ -376,18 +238,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Give feedback on App Store'**
   String get settingsAppStoreFeedback;
-
-  /// No description provided for @na.
-  ///
-  /// In en, this message translates to:
-  /// **'N/A'**
-  String get na;
-
-  /// No description provided for @settingsLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'Language'**
-  String get settingsLanguage;
 
   /// No description provided for @settingsRevision.
   ///
@@ -587,24 +437,6 @@ abstract class DictLibLocalizations {
   /// **'You need to restart the app for this change to take effect'**
   String get settingsRestartApp;
 
-  /// No description provided for @listFavourites.
-  ///
-  /// In en, this message translates to:
-  /// **'Favourites'**
-  String get listFavourites;
-
-  /// No description provided for @listNameCannotBeEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'List name cannot be empty'**
-  String get listNameCannotBeEmpty;
-
-  /// No description provided for @listNameInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid name, this should have been caught already'**
-  String get listNameInvalid;
-
   /// No description provided for @listEnterNewName.
   ///
   /// In en, this message translates to:
@@ -701,30 +533,6 @@ abstract class DictLibLocalizations {
   /// **'Save this video to…'**
   String get savedVideoSheetTitle;
 
-  /// No description provided for @wordAlreadyFavourited.
-  ///
-  /// In en, this message translates to:
-  /// **'Already favourited!'**
-  String get wordAlreadyFavourited;
-
-  /// No description provided for @wordFavouriteThisWord.
-  ///
-  /// In en, this message translates to:
-  /// **'Favourite this word'**
-  String get wordFavouriteThisWord;
-
-  /// No description provided for @wordNoDefinitions.
-  ///
-  /// In en, this message translates to:
-  /// **'No definitions data available for this word / phrase'**
-  String get wordNoDefinitions;
-
-  /// No description provided for @wordDataMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Data missing'**
-  String get wordDataMissing;
-
   /// No description provided for @entryTypeWords.
   ///
   /// In en, this message translates to:
@@ -748,12 +556,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Select Entry Types'**
   String get entrySelectEntryTypes;
-
-  /// No description provided for @relatedWords.
-  ///
-  /// In en, this message translates to:
-  /// **'Related words'**
-  String get relatedWords;
 
   /// No description provided for @alertCareful.
   ///
@@ -779,23 +581,11 @@ abstract class DictLibLocalizations {
   /// **'OK'**
   String get alertOk;
 
-  /// No description provided for @startupFailureMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.'**
-  String get startupFailureMessage;
-
   /// No description provided for @unexpectedErrorLoadingVideo.
   ///
   /// In en, this message translates to:
   /// **'Unexpected error loading media'**
   String get unexpectedErrorLoadingVideo;
-
-  /// No description provided for @deviceDefault.
-  ///
-  /// In en, this message translates to:
-  /// **'Device Default'**
-  String get deviceDefault;
 
   /// No description provided for @shareDialogTitle.
   ///
@@ -1283,41 +1073,11 @@ abstract class DictLibLocalizations {
   /// **'Couldn\'t delete your account: {message}'**
   String settingsDeleteAccountFailed(String message);
 
-  /// No description provided for @alertSave.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get alertSave;
-
-  /// No description provided for @alertDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get alertDone;
-
   /// No description provided for @listNameAllowedChars.
   ///
   /// In en, this message translates to:
   /// **'No special characters besides these are allowed: , . - _ !'**
   String get listNameAllowedChars;
-
-  /// No description provided for @forceUpgradeMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You are using an unsupported version ({version}) of the app, please update.'**
-  String forceUpgradeMessage(String version);
-
-  /// No description provided for @forceUpgradeButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Update'**
-  String get forceUpgradeButton;
-
-  /// No description provided for @privacyPolicyPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Privacy Policy'**
-  String get privacyPolicyPageTitle;
 
   /// No description provided for @importOwnedListsPromptTitle.
   ///
@@ -1679,12 +1439,6 @@ abstract class DictLibLocalizations {
   /// **'Couldn\'t leave list: {message}'**
   String leaveListFailed(String message);
 
-  /// No description provided for @membersPageSubtitleFor.
-  ///
-  /// In en, this message translates to:
-  /// **'Members of \"{name}\"'**
-  String membersPageSubtitleFor(String name);
-
   /// No description provided for @signInDialogContextInvite.
   ///
   /// In en, this message translates to:
@@ -1721,17 +1475,11 @@ abstract class DictLibLocalizations {
   /// **'Sign in'**
   String get overviewResumeSignInButton;
 
-  /// No description provided for @expiredSessionBanner.
+  /// No description provided for @flashcardsSaveFailed.
   ///
   /// In en, this message translates to:
-  /// **'Your session expired. Sign in again to push your edits.'**
-  String get expiredSessionBanner;
-
-  /// No description provided for @expiredSessionBannerAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in'**
-  String get expiredSessionBannerAction;
+  /// **'Couldn\'t save your revision progress.'**
+  String get flashcardsSaveFailed;
 
   /// No description provided for @engineSessionExpiredSnack.
   ///
@@ -1829,12 +1577,6 @@ abstract class DictLibLocalizations {
   /// **'Issue with {appName}'**
   String reportIssueEmailSubject(String appName);
 
-  /// No description provided for @forkPartialDrop.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied {copied} of {total} entries — {dropped} signs are no longer in the dictionary.'**
-  String forkPartialDrop(int copied, int total, int dropped);
-
   /// No description provided for @signInTestUserButton.
   ///
   /// In en, this message translates to:
@@ -1925,18 +1667,6 @@ abstract class DictLibLocalizations {
   /// **'Check the spelling, or try a related word. Some signs are listed under a different English word.'**
   String get searchNoMatchBody;
 
-  /// No description provided for @searchReportMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Report a missing word'**
-  String get searchReportMissing;
-
-  /// No description provided for @searchReportMissingThanks.
-  ///
-  /// In en, this message translates to:
-  /// **'Thanks — we\'ll look into adding it.'**
-  String get searchReportMissingThanks;
-
   /// No description provided for @newsEmptyTitle.
   ///
   /// In en, this message translates to:
@@ -2014,12 +1744,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Longest run yet — keep it going!'**
   String get revisionStreakSubtitle;
-
-  /// No description provided for @revisionBuildSessionHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Build a study session. Pick what to revise, then start.'**
-  String get revisionBuildSessionHeader;
 
   /// No description provided for @revisionSignCount.
   ///
@@ -2159,12 +1883,6 @@ abstract class DictLibLocalizations {
   /// **'Variation {index} of {count}'**
   String wordVariationWithHint(int index, int count);
 
-  /// No description provided for @wordVariation.
-  ///
-  /// In en, this message translates to:
-  /// **'Variation {index} of {count}'**
-  String wordVariation(int index, int count);
-
   /// No description provided for @videoIndicator.
   ///
   /// In en, this message translates to:
@@ -2176,12 +1894,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'See also'**
   String get seeAlso;
-
-  /// No description provided for @revealAnswer.
-  ///
-  /// In en, this message translates to:
-  /// **'Reveal answer'**
-  String get revealAnswer;
 
   /// No description provided for @tapToReveal.
   ///

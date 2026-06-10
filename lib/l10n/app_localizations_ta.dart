@@ -27,45 +27,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get searchHintText => 'ஒரு வார்த்தையை கண்டுபிடி';
 
   @override
-  String nFlashcardsSelected(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cards',
-      one: 'cards',
-      zero: 'cards',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String nFlashcardsDue(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cards',
-      one: 'cards',
-      zero: 'cards',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get flashcardsRevisionSources => 'திருத்த ஆதாரங்கள்';
-
-  @override
-  String get flashcardsSelectListsToRevise =>
-      'மாற்றியமைக்க பட்டியல்களைத் தேர்ந்தெடுக்கவும்';
 
   @override
   String get flashcardsSelectLists => 'பட்டியலைத் தேர்ந்தெடு';
@@ -77,74 +39,23 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsSignToWord => 'கையெழுத்து -> சொல்';
 
   @override
-  String get flashcardsWordToSign => 'சொல் -> அl;டையாளம்';
+  String get flashcardsWordToSign => 'சொல் -> அடையாளம்';
 
   @override
   String get flashcardsRevisionSettings => 'மீள்திருத்த அமைப்புகள்';
 
   @override
-  String get flashcardsSelectRevisionStrategy =>
-      'மீள்திருத்த முறையைத் தேர்ந்தெடு';
-
-  @override
-  String get flashcardsStrategy => 'மூலோபாயம்';
-
-  @override
-  String get flashcardsSelectSignRegions => 'சிக்னல் மண்டலங்களைத் தேர்ந்தெடு';
-
-  @override
-  String get flashcardsRegions => 'பிராந்தியங்கள்';
-
-  @override
   String get flashcardsStart => 'தொடங்கு';
 
   @override
-  String get flashcardsOnlyOneCard =>
-      'ஒரு வார்த்தைக்கு ஒரு செட் கார்டுகளை மட்டும் காட்டு';
-
-  @override
-  String get flashcardsRevisionLanguage => 'திருத்த மொழி';
-
-  @override
-  String get flashcardsAllOfSriLanka => 'முழு இலங்கையும்';
-
-  @override
-  String get flashcardsNorthEast => 'வட கிழக்கு';
-
-  @override
-  String get flashcardsNext => 'அடுத்தது';
-
-  @override
-  String get flashcardsForgot => 'மறந்துவிட்டேன்';
-
-  @override
-  String get flashcardsGotIt => 'கண்டறியப்பட்டது!';
-
-  @override
   String get flashcardsCardUnavailable =>
-      'A card was unavailable and was skipped.';
-
-  @override
-  String get flashcardsWhatIsSignForWord =>
-      'இந்த வார்த்தைக்கான சைகை மொழி என்ன?';
-
-  @override
-  String get flashcardsWhatDoesSignMean => 'இந்த சிக்னல் எதையாவது குறிக்கிறதா?';
-
-  @override
-  String get flashcardsOpenDictionaryEntry => 'திறந்த அகராதி சொல்லகராதி';
+      'ஒரு அட்டை கிடைக்கவில்லை, அது தவிர்க்கப்பட்டது.';
 
   @override
   String get flashcardsSuccessRate => 'வெற்றி விகிதம்';
 
   @override
-  String get flashcardsTotalCards => 'முழு அட்டை';
-
-  @override
   String get flashcardsSuccessfulCards => 'வெற்றி அட்டை';
-
-  @override
-  String get flashcardsIncorrectCards => 'தவறான அட்டை';
 
   @override
   String get flashcardsTotalReviews => 'மொத்த மதிப்புரைகள்';
@@ -156,21 +67,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsUniqueWords => 'தனித்துவமான வார்த்தைகள்';
 
   @override
-  String get flashcardsLongestStreak => 'நீண்ட செயல்முறை';
-
-  @override
-  String get flashcardsStatsCollectedSince =>
-      'தற்போது உள்ளிடப்பட்டுள்ள புள்ளி விவரங்கள்';
-
-  @override
-  String get flashcardsRevisionSummaryTitle => 'திருத்தச் சுருக்கம்';
-
-  @override
   String get flashcardsRevisionProgressTitle => 'திருத்த முன்னேற்றம்';
-
-  @override
-  String get flashcardsRevisionStategyToShow =>
-      'புள்ளிவிவரங்களைக் காட்ட திருத்த உத்தியைக் காட்டு';
 
   @override
   String get setPlaybackSpeedTo => 'பிளேபேக் வேகத்தை அமைக்கவும்';
@@ -180,12 +77,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get settingsAppStoreFeedback => 'App Store கருத்தை வழங்கவும்';
-
-  @override
-  String get na => 'N/A';
-
-  @override
-  String get settingsLanguage => 'மொழி';
 
   @override
   String get settingsRevision => 'திருத்தம்';
@@ -261,7 +152,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsSeePrivacyPolicy => 'தனியுரிமைக் கொள்கையைப் பார்க்கவும்';
 
   @override
-  String get settingsSeeTermsOfService => 'See terms of service';
+  String get settingsSeeTermsOfService => 'சேவை விதிமுறைகளைப் பார்க்கவும்';
 
   @override
   String get settingsBackgroundLogs => 'பின்னணி பதிவுகள்';
@@ -296,29 +187,19 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'இந்த மாற்றம் செயல்பட பயன்பாட்டை மீண்டும் துவக்க வேண்டும்';
 
   @override
-  String get listFavourites => 'பிடித்த';
-
-  @override
-  String get listNameCannotBeEmpty => 'பட்டியல் பெயர் காலியாக இருக்க முடியாது';
-
-  @override
-  String get listNameInvalid =>
-      'தவறான பெயர், இது ஏற்கனவே எடுக்கப்பட்டிருக்க வேண்டும்';
-
-  @override
   String get listEnterNewName => 'புதிய பெயர் பட்டியலைச் செருகு';
 
   @override
   String get listFailedToMake => 'புதிய பட்டியலை உருவாக்க முடியவில்லை';
 
   @override
-  String get listFailedToRename => 'Failed to rename list';
+  String get listFailedToRename => 'பட்டியலை மறுபெயரிட முடியவில்லை';
 
   @override
   String get listNewList => 'புதிய பட்டியல்கள்';
 
   @override
-  String get listRenameList => 'Rename List';
+  String get listRenameList => 'பட்டியலை மறுபெயரிடு';
 
   @override
   String get listMyLists => 'எனது பட்டியல்கள்';
@@ -327,10 +208,10 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get listCommunity => 'சமூக';
 
   @override
-  String get listSortAdded => 'Added';
+  String get listSortAdded => 'சேர்க்கப்பட்டது';
 
   @override
-  String get listSortAlpha => 'A-Z';
+  String get listSortAlpha => 'அ-ஃ';
 
   @override
   String get listConfirmListDelete =>
@@ -347,38 +228,25 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos saved',
-      one: '1 video saved',
+      other: '$count வீடியோக்கள் சேமிக்கப்பட்டன',
+      one: '1 வீடியோ சேமிக்கப்பட்டது',
     );
     return '$_temp0';
   }
 
   @override
-  String get listRemoveAllVideosTitle => 'Remove from list?';
+  String get listRemoveAllVideosTitle => 'பட்டியலில் இருந்து அகற்றவா?';
 
   @override
   String listRemoveAllVideosBody(int count, String word) {
-    return 'Remove all $count saved videos of \"$word\" from this list?';
+    return '\"$word\" இன் சேமிக்கப்பட்ட $count வீடியோக்களையும் இந்தப் பட்டியலில் இருந்து அகற்றவா?';
   }
 
   @override
-  String get savedVideoSheetTitle => 'Save this video to…';
+  String get savedVideoSheetTitle => 'இந்த வீடியோவை இங்கே சேமி…';
 
   @override
-  String get wordAlreadyFavourited => 'ஏற்கனவே பிடித்தது!';
-
-  @override
-  String get wordFavouriteThisWord => 'இந்த வார்த்தை பிடித்தது';
-
-  @override
-  String get wordNoDefinitions =>
-      'இந்த வார்த்தை/சொற்றொடருக்கு வரையறை தரவு எதுவும் இல்லை';
-
-  @override
-  String get wordDataMissing => 'காணாமல் தரவு';
-
-  @override
-  String get entryTypeWords => 'சொற்கள்';
+  String get entryTypeWords => 'சொற்கள்';
 
   @override
   String get entryTypePhrases => 'வாக்கியங்கள்';
@@ -388,9 +256,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get entrySelectEntryTypes => 'நுழைவு வகைகளைத் தேர்ந்தெடு';
-
-  @override
-  String get relatedWords => 'சம்பந்தமான வார்த்தைகள்';
 
   @override
   String get alertCareful => 'கவனமாக!';
@@ -405,145 +270,141 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get alertOk => 'OK';
 
   @override
-  String get startupFailureMessage =>
-      'பயன்பாடு சரியாகத் தொடங்குவதில் தோல்வி. தயவுசெய்து, முதலில், நீங்கள் பயன்பாட்டின் சமீபத்திய பதிப்பைப் பயன்படுத்துகிறீர்கள் என்பதை உறுதிப்படுத்திக் கொள்ளுங்கள். நீங்கள் இருந்தால், இந்தப் பிழையின் நகலுடன் daniel@dport.me ஐ மின்னஞ்சல் செய்யவும்.';
-
-  @override
   String get unexpectedErrorLoadingVideo => 'எதிர்பாராத பிழை ஏற்றுதல்';
 
   @override
-  String get deviceDefault => 'சாதனங்களை வழங்கு';
-
-  @override
-  String get shareDialogTitle => 'Share this list';
+  String get shareDialogTitle => 'இந்தப் பட்டியலைப் பகிர்';
 
   @override
   String get shareDialogBody =>
-      'Pick a display name for your list. Anyone with the share link can subscribe and follow your edits.';
+      'உங்கள் பட்டியலுக்கு ஒரு காட்சிப் பெயரைத் தேர்ந்தெடுக்கவும். பகிர்வு இணைப்பு உள்ள எவரும் குழுசேர்ந்து உங்கள் திருத்தங்களைப் பின்தொடரலாம்.';
 
   @override
-  String get shareDialogDisplayNameLabel => 'Display name';
+  String get shareDialogDisplayNameLabel => 'காட்சிப் பெயர்';
 
   @override
-  String get shareDialogDisplayNameHelper => 'Emojis welcome 🎉';
+  String get shareDialogDisplayNameHelper => 'எமோஜிகள் வரவேற்கப்படுகின்றன 🎉';
 
   @override
-  String get shareDialogShareButton => 'Share';
+  String get shareDialogShareButton => 'பகிர்';
 
   @override
-  String get shareValidationRequired => 'Required';
+  String get shareValidationRequired => 'தேவை';
 
   @override
   String shareValidationMaxLen(int count) {
-    return 'At most $count characters';
+    return 'அதிகபட்சம் $count எழுத்துகள்';
   }
 
   @override
   String shareValidationReservedName(String name) {
-    return '\"$name\" is reserved — pick a different name';
+    return '\"$name\" ஒதுக்கப்பட்டுள்ளது — வேறு பெயரைத் தேர்ந்தெடுக்கவும்';
   }
 
   @override
   String get shareNetworkError =>
-      'Couldn\'t reach the server. Check your connection and try again.';
+      'சேவையகத்தை அடைய முடியவில்லை. உங்கள் இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get shareErrorUnauthorized =>
-      'Your session has expired. Please sign in again.';
+      'உங்கள் அமர்வு காலாவதியாகிவிட்டது. மீண்டும் உள்நுழையவும்.';
 
   @override
-  String get shareErrorForbidden => 'You don\'t have permission to do that.';
+  String get shareErrorForbidden => 'அதைச் செய்ய உங்களுக்கு அனுமதி இல்லை.';
 
   @override
-  String get shareErrorGone => 'This list has been deleted by its owner.';
+  String get shareErrorGone =>
+      'இந்தப் பட்டியல் அதன் உரிமையாளரால் நீக்கப்பட்டது.';
 
   @override
   String get shareErrorPayloadTooLarge =>
-      'That change is too big. Try again with a smaller batch.';
+      'அந்த மாற்றம் மிகப் பெரியது. சிறிய தொகுதியுடன் மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get shareErrorRateLimited =>
-      'Slow down — too many requests. Try again in a moment.';
+      'மெதுவாக — அதிகமான கோரிக்கைகள். சிறிது நேரத்தில் மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get shareErrorServer =>
-      'The server is having trouble. Try again later.';
+      'சேவையகத்தில் சிக்கல் உள்ளது. பின்னர் மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get unshareToDeleteTooltip =>
-      'Stop sharing this list before deleting it.';
+      'இந்தப் பட்டியலை நீக்குவதற்கு முன் அதைப் பகிர்வதை நிறுத்துங்கள்.';
 
   @override
-  String get shareTooManyEntriesTitle => 'List is too big to share';
+  String get shareTooManyEntriesTitle => 'பகிர பட்டியல் மிகப் பெரியது';
 
   @override
   String shareTooManyEntriesBody(int count, int max) {
-    return 'This list has $count entries, but shared lists are capped at $max. Remove some entries and try again.';
+    return 'இந்தப் பட்டியலில் $count உள்ளீடுகள் உள்ளன, ஆனால் பகிரப்பட்ட பட்டியல்கள் $max வரை மட்டுமே வரம்பிடப்படுகின்றன. சில உள்ளீடுகளை அகற்றி மீண்டும் முயற்சிக்கவும்.';
   }
 
   @override
-  String get shareLinkDialogTitle => 'List shared';
+  String get shareLinkDialogTitle => 'பட்டியல் பகிரப்பட்டது';
 
   @override
   String shareLinkDialogBody(String displayName) {
-    return 'Anyone with this link can subscribe to \"$displayName\":';
+    return 'இந்த இணைப்பு உள்ள எவரும் \"$displayName\" இல் குழுசேரலாம்:';
   }
 
   @override
-  String get shareLinkCopiedSnack => 'Link copied to clipboard';
+  String get shareLinkCopiedSnack =>
+      'இணைப்பு கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது';
 
   @override
-  String get shareLinkCopyButton => 'Copy';
+  String get shareLinkCopyButton => 'நகலெடு';
 
   @override
-  String get shareLinkShareButton => 'Share';
+  String get shareLinkShareButton => 'பகிர்';
 
   @override
-  String get shareLinkQrButton => 'QR code';
+  String get shareLinkQrButton => 'QR குறியீடு';
 
   @override
-  String get shareLinkDoneButton => 'Done';
+  String get shareLinkDoneButton => 'முடிந்தது';
 
   @override
-  String get qrCodeDialogBody => 'Other people can scan this to subscribe.';
+  String get qrCodeDialogBody => 'மற்றவர்கள் குழுசேர இதை ஸ்கேன் செய்யலாம்.';
 
   @override
-  String get qrCodeDialogClose => 'Close';
+  String get qrCodeDialogClose => 'மூடு';
 
   @override
-  String get signInDialogTitle => 'Sign in to share';
+  String get signInDialogTitle => 'பகிர உள்நுழையவும்';
 
   @override
   String get signInDialogBody =>
-      'To share a list, sign in below. We only use this to prove that you\'re the one editing it later — we don\'t collect any personal information.';
+      'ஒரு பட்டியலைப் பகிர நீங்கள் உள்நுழைய வேண்டும்.';
 
   @override
   String signInLastUsedHint(String provider) {
-    return 'Last time, you signed in with $provider.';
+    return 'கடந்த முறை, நீங்கள் $provider மூலம் உள்நுழைந்தீர்கள்.';
   }
 
   @override
-  String get signInWithApple => 'Continue with Apple';
+  String get signInWithApple => 'Apple உடன் தொடரவும்';
 
   @override
-  String get signInWithGoogle => 'Continue with Google';
+  String get signInWithGoogle => 'Google உடன் தொடரவும்';
 
   @override
-  String get signInWithFacebook => 'Continue with Facebook';
+  String get signInWithFacebook => 'Facebook உடன் தொடரவும்';
 
   @override
-  String get signInFailed => 'Sign-in failed. Please try again.';
+  String get signInFailed =>
+      'உள்நுழைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get signInCancelled => 'Sign-in cancelled.';
+  String get signInCancelled => 'உள்நுழைவு ரத்து செய்யப்பட்டது.';
 
   @override
   String get signInProviderNotConfigured =>
-      'This sign-in option isn\'t available on this device.';
+      'இந்த உள்நுழைவு விருப்பம் இந்தச் சாதனத்தில் கிடைக்கவில்லை.';
 
   @override
   String get signInProviderNoCredential =>
-      'Sign-in didn\'t return a valid response. Please try again.';
+      'உள்நுழைவு செல்லுபடியாகும் பதிலை வழங்கவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
   String get providerApple => 'Apple';
@@ -555,511 +416,487 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get providerFacebook => 'Facebook';
 
   @override
-  String get providerTest => 'Test session';
+  String get providerTest => 'சோதனை அமர்வு';
 
   @override
-  String get subscribeDialogTitle => 'Subscribe to a shared list';
+  String get subscribeDialogTitle => 'பகிரப்பட்ட பட்டியலுக்கு குழுசேரவும்';
 
   @override
   String get subscribeDialogBody =>
-      'Paste either a share link or just the list ID at the end of one.';
+      'ஒரு பகிர்வு இணைப்பு / பட்டியல் ID ஐ ஒட்டவும்.';
 
   @override
-  String get subscribeDialogUrlLabel => 'Share URL';
+  String get subscribeDialogUrlLabel => 'பகிர்வு URL';
 
   @override
-  String get subscribeDialogSubscribeButton => 'Subscribe';
+  String get subscribeDialogSubscribeButton => 'குழுசேர்';
 
   @override
   String get alreadySubscribedSnack =>
-      'You\'re already subscribed to this list.';
+      'நீங்கள் ஏற்கனவே இந்தப் பட்டியலுக்கு குழுசேர்ந்துள்ளீர்கள்.';
 
   @override
-  String get alreadyOwnerSnack => 'You own this list.';
+  String get alreadyOwnerSnack => 'இந்தப் பட்டியல் உங்களுடையது.';
 
   @override
-  String get alreadyEditorSnack => 'You\'re an editor of this list.';
+  String get alreadyEditorSnack => 'நீங்கள் இந்தப் பட்டியலின் ஒரு திருத்துநர்.';
 
   @override
-  String get subscribeInvalidInput => 'Not a valid share link or list ID.';
+  String get subscribeInvalidInput =>
+      'செல்லுபடியாகும் பகிர்வு இணைப்பு அல்லது பட்டியல் ID அல்ல.';
 
   @override
   String subscribeInviteDetected(String displayName) {
-    return 'This is an editor invite link, not a regular subscribe link. Accept it to edit \"$displayName\" alongside the creator.';
+    return 'இது வழக்கமான குழுசேர் இணைப்பு அல்ல, ஒரு திருத்துநர் அழைப்பு இணைப்பாகும். உருவாக்கியவருடன் சேர்ந்து \"$displayName\" ஐத் திருத்த இதை ஏற்றுக்கொள்ளுங்கள்.';
   }
 
   @override
   String get subscribeInviteDetectedUnknown =>
-      'This is an editor invite link, not a regular subscribe link. Accept it to become an editor of this list.';
+      'இது வழக்கமான குழுசேர் இணைப்பு அல்ல, ஒரு திருத்துநர் அழைப்பு இணைப்பாகும். இந்தப் பட்டியலின் திருத்துநராக மாற இதை ஏற்றுக்கொள்ளுங்கள்.';
 
   @override
-  String get subscribeInviteAcceptButton => 'Accept invitation';
+  String get subscribeInviteAcceptButton => 'அழைப்பை ஏற்றுக்கொள்';
 
   @override
-  String get subscribeNotFound => 'No list with that key exists.';
+  String get subscribeNotFound => 'அந்த விசையுடன் எந்தப் பட்டியலும் இல்லை.';
 
   @override
-  String get sharedListLandingLoading => 'Loading shared list';
+  String get sharedListLandingLoading => 'பகிரப்பட்ட பட்டியலை ஏற்றுகிறது';
 
   @override
-  String get sharedListLandingDefaultError => 'Couldn\'t load this list.';
+  String get sharedListLandingDefaultError =>
+      'இந்தப் பட்டியலை ஏற்ற முடியவில்லை.';
 
   @override
   String get sharedListLandingNotFound =>
-      'This shared list doesn\'t exist or has been deleted by its owner.';
+      'இந்தப் பகிரப்பட்ட பட்டியல் இல்லை அல்லது அதன் உரிமையாளரால் நீக்கப்பட்டது.';
 
   @override
-  String get sharedListLandingTryAgain => 'Try again';
+  String get sharedListLandingTryAgain => 'மீண்டும் முயற்சிக்கவும்';
 
   @override
   String get unshareConfirmBody =>
-      'Stop sharing this list? Subscribers will no longer be able to see it.';
+      'இந்தப் பட்டியலைப் பகிர்வதை நிறுத்தவா? குழுசேர்ந்தவர்கள் இனி அதைப் பார்க்க முடியாது.';
 
   @override
-  String get unshareConfirmTitle => 'Stop sharing?';
+  String get unshareConfirmTitle => 'பகிர்வதை நிறுத்தவா?';
 
   @override
   String unshareFailed(String message) {
-    return 'Failed to stop sharing: $message';
+    return 'பகிர்வதை நிறுத்த முடியவில்லை: $message';
   }
 
   @override
-  String get unsubscribeConfirmBody => 'Unsubscribe from this list?';
+  String get unsubscribeConfirmBody => 'இந்தப் பட்டியலில் இருந்து குழுவிலகவா?';
 
   @override
-  String get unsubscribeConfirmTitle => 'Unsubscribe?';
+  String get unsubscribeConfirmTitle => 'குழுவிலகவா?';
 
   @override
   String copyToMyListsSnack(String name) {
-    return 'Copied to \"$name\"';
+    return '\"$name\" இல் நகலெடுக்கப்பட்டது';
   }
 
   @override
-  String get subscribedSyncNowMenuItem => 'Sync now';
+  String get subscribedSyncNowMenuItem => 'இப்போது ஒத்திசை';
 
   @override
-  String get subscribedCopyLinkMenuItem => 'Copy link';
+  String get subscribedCopyLinkMenuItem => 'இணைப்பை நகலெடு';
 
   @override
-  String get subscribedSyncInProgress => 'Syncing…';
+  String get subscribedSyncInProgress => 'ஒத்திசைக்கிறது…';
 
   @override
-  String get subscribedSyncDoneSnack => 'Up to date';
+  String get subscribedSyncDoneSnack => 'புதுப்பித்த நிலையில்';
 
   @override
   String subscribedSyncFailedSnack(String message) {
-    return 'Sync failed: $message';
+    return 'ஒத்திசைவு தோல்வியடைந்தது: $message';
   }
 
   @override
-  String get subscribedCopyMenuItem => 'Duplicate';
+  String get subscribedCopyMenuItem => 'நகலெடு';
 
   @override
-  String get settingsSharing => 'Sharing';
+  String get settingsSharing => 'பகிர்வு';
 
   @override
-  String get settingsSignIn => 'Sign in to share lists';
+  String get settingsSignIn => 'பட்டியல்களைப் பகிர உள்நுழையவும்';
 
   @override
   String settingsSignedInAs(String provider) {
-    return 'Signed in with $provider';
+    return '$provider மூலம் உள்நுழைந்துள்ளீர்கள்';
   }
 
   @override
-  String get settingsSignOut => 'Sign out';
+  String get settingsSignOut => 'வெளியேறு';
 
   @override
-  String get settingsSignOutConfirmTitle => 'Sign out?';
+  String get settingsSignOutConfirmTitle => 'வெளியேறவா?';
 
   @override
   String get settingsSignOutConfirmBody =>
-      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
+      'இந்தச் சாதனத்தில்:\n  • நீங்கள் பகிர்விலிருந்து வெளியேறியுள்ளீர்கள்.\n  • நீங்கள் பகிர்ந்த பட்டியல்கள் இங்கிருந்து நிர்வகிக்கப்படுவது நிறுத்தப்படும் — உள்ளூர் பட்டியல்கள் அவற்றின் உள்ளீடுகளைத் தக்க வைத்துக்கொள்கின்றன.\n\nஉங்கள் பகிரப்பட்ட பட்டியல்கள் சேவையகத்தில் இருக்கும். அவற்றை மீண்டும் திருத்த எந்தச் சாதனத்திலும் மீண்டும் உள்நுழையவும்.';
 
   @override
-  String get settingsDeleteAccount => 'Delete account';
+  String get settingsDeleteAccount => 'கணக்கை நீக்கு';
 
   @override
-  String get settingsDeleteAccountConfirmTitle => 'Delete account?';
+  String get settingsDeleteAccountConfirmTitle => 'கணக்கை நீக்கவா?';
 
   @override
-  String get settingsDeleteAccountConfirmButton => 'Delete account';
+  String get settingsDeleteAccountConfirmButton => 'கணக்கை நீக்கு';
 
   @override
   String get settingsDeleteAccountConfirmBody =>
-      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
+      'இது உங்கள் கணக்கையும், உங்களுக்காக நாங்கள் சேமிக்கும் அனைத்தையும் நிரந்தரமாக நீக்குகிறது:\n  • நீங்கள் பகிர்ந்த ஒவ்வொரு பட்டியலும் சேவையகத்திலிருந்து நீக்கப்படும் — குழுசேர்ந்த எவரும் தங்கள் சாதனத்தில் ஏற்கனவே உள்ள நகலைத் தக்க வைத்துக்கொள்வார்கள், ஆனால் அது புதுப்பிப்பதை நிறுத்தி, அகற்றப்பட்டதாகக் குறிக்கப்படும்.\n  • மற்றவர்களின் பட்டியல்களில் இருந்து நீங்கள் திருத்துநராக அகற்றப்படுவீர்கள்.\n  • கோப்பில் உள்ள ஏதேனும் தனிப்பட்ட தகவலை (உங்கள் பெயர்) நாங்கள் நீக்குகிறோம்.\n\nஇந்தச் சாதனத்தில் உள்ள பட்டியல்கள் அவற்றின் உள்ளீடுகளைத் தக்க வைத்துக்கொள்கின்றன; பகிர்வு மட்டுமே அகற்றப்படுகிறது. இதைச் செயல்தவிர்க்க முடியாது.';
 
   @override
-  String get settingsDeleteAccountRunning => 'Deleting account…';
+  String get settingsDeleteAccountRunning => 'கணக்கை நீக்குகிறது…';
 
   @override
   String settingsDeleteAccountFailed(String message) {
-    return 'Couldn\'t delete your account: $message';
+    return 'உங்கள் கணக்கை நீக்க முடியவில்லை: $message';
   }
-
-  @override
-  String get alertSave => 'Save';
-
-  @override
-  String get alertDone => 'Done';
 
   @override
   String get listNameAllowedChars =>
-      'No special characters besides these are allowed: , . - _ !';
-
-  @override
-  String forceUpgradeMessage(String version) {
-    return 'You are using an unsupported version ($version) of the app, please update.';
-  }
-
-  @override
-  String get forceUpgradeButton => 'Update';
-
-  @override
-  String get privacyPolicyPageTitle => 'Privacy Policy';
+      'இவற்றைத் தவிர வேறு சிறப்பு எழுத்துகள் அனுமதிக்கப்படவில்லை: , . - _ !';
 
   @override
   String get importOwnedListsPromptTitle =>
-      'Import lists you\'ve shared before?';
+      'நீங்கள் முன்பு பகிர்ந்த பட்டியல்களை இறக்குமதி செய்யவா?';
 
   @override
   String get importOwnedListsPromptBody =>
-      'We\'ll ask the server which lists you\'re signed in to manage and import them as new local lists. Your existing local lists are untouched. Any name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). After import, your device is the source of truth — further edits stay local and push to the server in the background.';
+      'நீங்கள் நிர்வகிக்க உள்நுழைந்துள்ள பட்டியல்கள் எவை என்பதை சேவையகத்திடம் கேட்டு, அவற்றைப் புதிய உள்ளூர் பட்டியல்களாக இறக்குமதி செய்வோம். உங்கள் தற்போதைய உள்ளூர் பட்டியல்கள் தொடப்படாது. ஏதேனும் பெயர் மோதல்களுக்கு எண் பின்னொட்டு வழங்கப்படும் (உதா. \"Cats\" → \"Cats 2\"). இறக்குமதிக்குப் பிறகு, உங்கள் சாதனமே உண்மையின் மூலமாகும் — மேலதிக திருத்தங்கள் உள்ளூரில் இருந்து, பின்னணியில் சேவையகத்திற்குத் தள்ளப்படும்.';
 
   @override
-  String get importOwnedListsActionImport => 'Import';
+  String get importOwnedListsActionImport => 'இறக்குமதி செய்';
 
   @override
-  String get importOwnedListsActionSkip => 'Skip';
+  String get importOwnedListsActionSkip => 'தவிர்';
 
   @override
-  String get importOwnedListsRunning => 'Importing your shared lists…';
+  String get importOwnedListsRunning =>
+      'உங்கள் பகிரப்பட்ட பட்டியல்களை இறக்குமதி செய்கிறது…';
 
   @override
   String importOwnedListsFailed(String message) {
-    return 'Couldn\'t import lists: $message';
+    return 'பட்டியல்களை இறக்குமதி செய்ய முடியவில்லை: $message';
   }
 
   @override
-  String get importOwnedListsResultNone => 'No shared lists found.';
+  String get importOwnedListsResultNone =>
+      'பகிரப்பட்ட பட்டியல்கள் எதுவும் இல்லை.';
 
   @override
   String importOwnedListsResultDone(int imported, int total) {
-    return 'Imported $imported of $total list(s).';
+    return '$total பட்டியல்களில் $imported இறக்குமதி செய்யப்பட்டது.';
   }
 
   @override
-  String get duplicateConfirmTitle => 'Duplicate list?';
+  String get duplicateConfirmTitle => 'பட்டியலை நகலெடுக்கவா?';
 
   @override
   String get duplicateConfirmBody =>
-      'This makes a personal, private copy of the list. It won\'t update when the original owner edits theirs.';
+      'இது பட்டியலின் தனிப்பட்ட, அந்தரங்க நகலை உருவாக்குகிறது. மூல உரிமையாளர் தங்களுடையதைத் திருத்தும்போது இது புதுப்பிக்கப்படாது.';
 
   @override
-  String get duplicateConfirmAction => 'Duplicate';
+  String get duplicateConfirmAction => 'நகலெடு';
 
   @override
-  String get duplicateFallbackName => 'Duplicated list';
+  String get duplicateFallbackName => 'நகலெடுக்கப்பட்ட பட்டியல்';
 
   @override
-  String get listSharedWithMeTab => 'Subscribed';
+  String get listSharedWithMeTab => 'குழுசேர்ந்த';
 
   @override
   String get listSharedWithMeEmpty =>
-      'Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.';
+      'இங்கே இன்னும் எதுவும் இல்லை.\n\nபகிரப்பட்ட பட்டியலுக்கு குழுசேர மேலே உள்ள கிளவுட்-பதிவிறக்க ஐகானைத் தட்டவும், அல்லது வேறு ஒருவரின் பகிர்வு/அழைப்பு இணைப்பைத் திறக்கவும்.';
 
   @override
-  String get ownedStatusOrphaned => 'Shared — deleted by you';
+  String get ownedStatusOrphaned => 'பகிரப்பட்டது — உங்களால் நீக்கப்பட்டது';
 
   @override
-  String get ownedStatusSharedBy => 'Shared by you';
+  String get ownedStatusSharedBy => 'உங்களால் பகிரப்பட்டது';
 
   @override
-  String get ownedStatusPendingSyncSuffix => 'Pending sync';
+  String get ownedStatusPendingSyncSuffix => 'ஒத்திசைவு நிலுவையில்';
 
   @override
-  String get ownedStatusSyncedSuffix => 'Synced';
+  String get ownedStatusSyncedSuffix => 'ஒத்திசைக்கப்பட்டது';
 
   @override
-  String get subscribedStatusOrphaned => 'Removed by owner';
+  String get subscribedStatusOrphaned => 'உரிமையாளரால் அகற்றப்பட்டது';
 
   @override
-  String get subscribedStatusFallback => 'Subscribed';
+  String get subscribedStatusFallback => 'குழுசேர்ந்த';
 
   @override
-  String get syncedJustNow => 'Synced just now';
+  String get syncedJustNow => 'இப்போதே ஒத்திசைக்கப்பட்டது';
 
   @override
   String syncedMinutesAgo(int count) {
-    return 'Synced ${count}m ago';
+    return '$count நிமிடங்களுக்கு முன் ஒத்திசைக்கப்பட்டது';
   }
 
   @override
   String syncedHoursAgo(int count) {
-    return 'Synced ${count}h ago';
+    return '$count மணி நேரத்திற்கு முன் ஒத்திசைக்கப்பட்டது';
   }
 
   @override
   String syncedDaysAgo(int count) {
-    return 'Synced ${count}d ago';
+    return '$count நாட்களுக்கு முன் ஒத்திசைக்கப்பட்டது';
   }
 
   @override
-  String get agoJustNow => 'just now';
+  String get agoJustNow => 'இப்போதே';
 
   @override
   String agoMinutes(int count) {
-    return '${count}m ago';
+    return '$count நிமிடங்களுக்கு முன்';
   }
 
   @override
   String agoHours(int count) {
-    return '${count}h ago';
+    return '$count மணி நேரத்திற்கு முன்';
   }
 
   @override
   String agoDays(int count) {
-    return '${count}d ago';
+    return '$count நாட்களுக்கு முன்';
   }
 
   @override
   String subscribedStatusSyncedAndUpdated(String sync, String updated) {
-    return 'Synced $sync · Updated $updated';
+    return 'ஒத்திசைக்கப்பட்டது $sync · புதுப்பிக்கப்பட்டது $updated';
   }
 
   @override
-  String get shareLinkInviteEditorButton => 'Invite an editor';
+  String get shareLinkInviteEditorButton => 'ஒரு திருத்துநரை அழை';
 
   @override
-  String get inviteEditorDialogTitle => 'Invite an editor';
+  String get inviteEditorDialogTitle => 'ஒரு திருத்துநரை அழை';
 
   @override
   String get inviteEditorDialogBody =>
-      'Send this link to the person you want to add as an editor. They\'ll need to sign in to accept; once they do, they can add and remove entries on your list.';
+      'திருத்துநராகச் சேர்க்க விரும்பும் நபருக்கு இந்த இணைப்பை அனுப்பவும். ஏற்க அவர்கள் உள்நுழைய வேண்டும்; அவ்வாறு செய்தவுடன், அவர்கள் உங்கள் பட்டியலில் உள்ளீடுகளைச் சேர்க்கவும் அகற்றவும் முடியும்.';
 
   @override
   String get inviteEditorExpiresIn =>
-      'Expires in 7 days. Each link can only be used once, you must create a new link per editor you want to invite.';
+      '7 நாட்களில் காலாவதியாகும். ஒவ்வொரு இணைப்பையும் ஒருமுறை மட்டுமே பயன்படுத்த முடியும், நீங்கள் அழைக்க விரும்பும் ஒவ்வொரு திருத்துநருக்கும் புதிய இணைப்பை உருவாக்க வேண்டும்.';
 
   @override
   String inviteEditorFailed(String message) {
-    return 'Couldn\'t create an invite: $message';
+    return 'அழைப்பை உருவாக்க முடியவில்லை: $message';
   }
 
   @override
-  String get acceptInviteLandingTitle => 'Accept invite';
+  String get acceptInviteLandingTitle => 'அழைப்பை ஏற்றுக்கொள்';
 
   @override
   String acceptInviteLandingSignedOut(String displayName) {
-    return 'Sign in to accept this invite. After you sign in, you\'ll be able to edit \"$displayName\" alongside the creator.';
+    return 'இந்த அழைப்பை ஏற்க உள்நுழையவும். உள்நுழைந்த பிறகு, உருவாக்கியவருடன் சேர்ந்து \"$displayName\" ஐத் திருத்த முடியும்.';
   }
 
   @override
   String get acceptInviteLandingUnknownList =>
-      'This invite is for a list we couldn\'t preview yet. Sign in to continue.';
+      'இந்த அழைப்பு நாங்கள் இன்னும் முன்னோட்டம் காட்ட முடியாத ஒரு பட்டியலுக்கானது. தொடர உள்நுழையவும்.';
 
   @override
-  String get acceptInviteLandingSignInButton => 'Sign in to accept';
+  String get acceptInviteLandingSignInButton => 'ஏற்க உள்நுழையவும்';
 
   @override
-  String get acceptInviteLandingAccepting => 'Joining…';
+  String get acceptInviteLandingAccepting => 'இணைகிறது…';
 
   @override
   String acceptInviteLandingFailed(String message) {
-    return 'Couldn\'t accept the invite: $message';
+    return 'அழைப்பை ஏற்க முடியவில்லை: $message';
   }
 
   @override
   String get acceptInviteLandingExpired =>
-      'This invite has expired or has already been used. Ask the list\'s creator for a new one.';
+      'இந்த அழைப்பு காலாவதியாகிவிட்டது அல்லது ஏற்கனவே பயன்படுத்தப்பட்டது. புதிய ஒன்றுக்காக பட்டியலின் உருவாக்கியவரிடம் கேட்கவும்.';
 
   @override
   String acceptInviteLandingSignedIn(String displayName) {
-    return 'Join \"$displayName\" as an editor.';
+    return 'திருத்துநராக \"$displayName\" இல் இணையுங்கள்.';
   }
 
   @override
-  String get acceptInviteLandingAcceptButton => 'Accept invite';
+  String get acceptInviteLandingAcceptButton => 'அழைப்பை ஏற்றுக்கொள்';
 
   @override
-  String get acceptInviteLandingOpenList => 'Open list';
+  String get acceptInviteLandingOpenList => 'பட்டியலைத் திற';
 
   @override
   String acceptInviteLandingAlreadyOwner(String displayName) {
-    return 'You\'re the creator of \"$displayName\" — no need to accept your own invite.';
+    return 'நீங்கள் \"$displayName\" இன் உருவாக்கியவர் — உங்கள் சொந்த அழைப்பை ஏற்க வேண்டிய அவசியமில்லை.';
   }
 
   @override
   String acceptInviteLandingAlreadyEditor(String displayName) {
-    return 'You already edit \"$displayName\".';
+    return 'நீங்கள் ஏற்கனவே \"$displayName\" ஐத் திருத்துகிறீர்கள்.';
   }
 
   @override
-  String get membersPageTitle => 'Members';
+  String get membersPageTitle => 'உறுப்பினர்கள்';
 
   @override
-  String get membersPageYou => 'You';
+  String get membersPageYou => 'நீங்கள்';
 
   @override
-  String get membersPageCreator => 'Creator';
+  String get membersPageCreator => 'உருவாக்கியவர்';
 
   @override
-  String get membersPageEditors => 'Editors';
+  String get membersPageEditors => 'திருத்துநர்கள்';
 
   @override
   String get membersPageNoEditors =>
-      'No other editors yet. Tap \"Invite an editor\" to add one.';
+      'இன்னும் வேறு திருத்துநர்கள் இல்லை. ஒருவரைச் சேர்க்க \"ஒரு திருத்துநரை அழை\" என்பதைத் தட்டவும்.';
 
   @override
-  String get membersPageRemoveEditor => 'Remove';
+  String get membersPageRemoveEditor => 'அகற்று';
 
   @override
   String membersPageRemoveEditorConfirmTitle(String name) {
-    return 'Remove $name?';
+    return '$name ஐ அகற்றவா?';
   }
 
   @override
   String get membersPageRemoveEditorConfirmBody =>
-      'They will no longer be able to edit this list. Any of their pending offline edits will be discarded.';
+      'அவர்களால் இனி இந்தப் பட்டியலைத் திருத்த முடியாது. அவர்களின் நிலுவையில் உள்ள ஆஃப்லைன் திருத்தங்கள் எதுவும் நிராகரிக்கப்படும்.';
 
   @override
-  String get membersPageLeaveButton => 'Leave this list';
+  String get membersPageLeaveButton => 'இந்தப் பட்டியலிலிருந்து வெளியேறு';
 
   @override
-  String get membersPageLeaveConfirmTitle => 'Leave this list?';
+  String get membersPageLeaveConfirmTitle =>
+      'இந்தப் பட்டியலிலிருந்து வெளியேறவா?';
 
   @override
   String get membersPageLeaveConfirmBody =>
-      'You won\'t be able to make changes anymore. The list itself stays available to read from your share link.';
+      'உங்களால் இனி மாற்றங்கள் செய்ய முடியாது. பட்டியல் உங்கள் பகிர்வு இணைப்பிலிருந்து படிக்கக் கிடைக்கும்.';
 
   @override
   String membersPageEditorAddedBy(String name) {
-    return 'Added by $name';
+    return '$name ஆல் சேர்க்கப்பட்டது';
   }
 
   @override
   String membersPageNameYou(String name) {
-    return '$name (you)';
+    return '$name (நீங்கள்)';
   }
 
   @override
   String leaveListFailed(String message) {
-    return 'Couldn\'t leave list: $message';
-  }
-
-  @override
-  String membersPageSubtitleFor(String name) {
-    return 'Members of \"$name\"';
+    return 'பட்டியலிலிருந்து வெளியேற முடியவில்லை: $message';
   }
 
   @override
   String get signInDialogContextInvite =>
-      'Sign in to accept the invite. You\'ll be able to edit the list once you do.';
+      'அழைப்பை ஏற்க உள்நுழையவும். அவ்வாறு செய்தவுடன் பட்டியலைத் திருத்த முடியும்.';
 
   @override
   String get signInDialogContextResume =>
-      'Sign in again to push your queued edits.';
+      'உங்கள் வரிசையில் உள்ள திருத்தங்களைத் தள்ள மீண்டும் உள்நுழையவும்.';
 
   @override
   String settingsSignOutConfirmBodyWithPending(int count) {
-    return 'You have unsynced edits on $count list(s). Signing out won\'t push them to the server. Are you sure?';
+    return 'உங்களிடம் $count பட்டியல்களில் ஒத்திசைக்கப்படாத திருத்தங்கள் உள்ளன. வெளியேறுவது அவற்றைச் சேவையகத்திற்குத் தள்ளாது. நிச்சயமாகவா?';
   }
 
   @override
   String get overviewResumeSignInIdle =>
-      'Sign in to sync your shared lists across devices.';
+      'உங்கள் பகிரப்பட்ட பட்டியல்களைச் சாதனங்களுக்கிடையில் ஒத்திசைக்க உள்நுழையவும்.';
 
   @override
   String get overviewResumeSignInWithPending =>
-      'You have unsynced edits. Sign in again to push them.';
+      'உங்களிடம் ஒத்திசைக்கப்படாத திருத்தங்கள் உள்ளன. அவற்றைத் தள்ள மீண்டும் உள்நுழையவும்.';
 
   @override
-  String get overviewResumeSignInButton => 'Sign in';
+  String get overviewResumeSignInButton => 'உள்நுழை';
 
   @override
-  String get expiredSessionBanner =>
-      'Your session expired. Sign in again to push your edits.';
+  String get flashcardsSaveFailed =>
+      'உங்கள் மீள்பார்வை முன்னேற்றத்தைச் சேமிக்க முடியவில்லை.';
 
   @override
-  String get expiredSessionBannerAction => 'Sign in';
+  String get engineSessionExpiredSnack => 'வெளியேறியது — மீண்டும் உள்நுழையவும்';
 
   @override
-  String get engineSessionExpiredSnack => 'Signed out — please sign in again';
-
-  @override
-  String get engineSessionExpiredSnackAction => 'Sign in';
+  String get engineSessionExpiredSnackAction => 'உள்நுழை';
 
   @override
   String get engineRemovedAsEditorSnack =>
-      'You\'re no longer an editor of this list';
+      'நீங்கள் இனி இந்தப் பட்டியலின் திருத்துநர் அல்ல';
 
   @override
   String get engineSnapshotCatchUpSnack =>
-      'This list changed a lot while you were offline — review your recent edits.';
+      'நீங்கள் ஆஃப்லைனில் இருந்தபோது இந்தப் பட்டியல் நிறையை மாறியது — உங்கள் சமீபத்திய திருத்தங்களை மதிப்பாய்வு செய்யவும்.';
 
   @override
-  String get importedListFallbackName => 'Imported list';
+  String get importedListFallbackName => 'இறக்குமதி செய்யப்பட்ட பட்டியல்';
 
   @override
-  String get favouritesListName => 'Favourites';
+  String get favouritesListName => 'பிடித்தவை';
 
   @override
-  String get listNameErrorEmpty => 'List name cannot be empty';
+  String get listNameErrorEmpty => 'பட்டியல் பெயர் காலியாக இருக்க முடியாது';
 
   @override
-  String get listNameErrorInvalid => 'Invalid list name';
+  String get listNameErrorInvalid => 'தவறான பட்டியல் பெயர்';
 
   @override
   String listNameErrorReserved(String name) {
-    return 'List name \"$name\" is reserved';
+    return 'பட்டியல் பெயர் \"$name\" ஒதுக்கப்பட்டுள்ளது';
   }
 
   @override
   String get listNameErrorAlreadyExists =>
-      'A list with that name already exists';
+      'அந்தப் பெயருடன் ஒரு பட்டியல் ஏற்கனவே உள்ளது';
 
   @override
-  String get legalInformationPageTitle => 'Legal Information';
+  String get legalInformationPageTitle => 'சட்டத் தகவல்';
 
   @override
-  String get buildInformationPageTitle => 'Build Information';
+  String get buildInformationPageTitle => 'உருவாக்கத் தகவல்';
 
   @override
-  String get backgroundLogsPageTitle => 'Background Logs';
+  String get backgroundLogsPageTitle => 'பின்னணி பதிவுகள்';
 
   @override
-  String get backgroundLogsCopyButton => 'Copy logs to clipboard';
+  String get backgroundLogsCopyButton => 'பதிவுகளை கிளிப்போர்டுக்கு நகலெடு';
 
   @override
-  String get backgroundLogsCopiedSnack => 'Logs copied to clipboard';
+  String get backgroundLogsCopiedSnack =>
+      'பதிவுகள் கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டன';
 
   @override
   String reportIssueEmailSubject(String appName) {
-    return 'Issue with $appName';
+    return '$appName இல் சிக்கல்';
   }
 
   @override
-  String forkPartialDrop(int copied, int total, int dropped) {
-    return 'Copied $copied of $total entries — $dropped signs are no longer in the dictionary.';
-  }
+  String get signInTestUserButton => 'சோதனைப் பயனராக உள்நுழை (debug)';
 
   @override
-  String get signInTestUserButton => 'Sign in as test user (debug)';
-
-  @override
-  String get signInTestPromptTitle => 'Test sign-in';
+  String get signInTestPromptTitle => 'சோதனை உள்நுழைவு';
 
   @override
   String get signInTestPromptBody =>
-      'Mints a session on the worker\'s test provider. Debug builds only. Use this to drive the shared-lists feature without a real provider account.';
+      'சேவையகத்தின் சோதனை வழங்குநரில் ஒரு அமர்வை உருவாக்குகிறது. Debug பதிப்புகள் மட்டுமே. உண்மையான வழங்குநர் கணக்கு இல்லாமல் பகிரப்பட்ட பட்டியல்கள் அம்சத்தை இயக்க இதைப் பயன்படுத்தவும்.';
 
   @override
-  String get signInTestUserIdLabel => 'User id (test:<slug>)';
+  String get signInTestUserIdLabel => 'பயனர் id (test:<slug>)';
 
   @override
-  String get signInTestDisplayNameLabel => 'Display name';
+  String get signInTestDisplayNameLabel => 'காட்சிப் பெயர்';
 
   @override
-  String get signInTestPromptConfirm => 'Sign in';
+  String get signInTestPromptConfirm => 'உள்நுழை';
 
   @override
   String get searchRecent => 'சமீபத்தியவை';
@@ -1075,7 +912,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get signOfTheDayInfo =>
-      'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.';
+      'இன்றைய சைகை என்பது நீங்கள் உருவாக்கிய அல்லது குழுசேர்ந்த பட்டியல்களில் இருந்து ஒரு சீரற்ற வார்த்தையாகும். இது நாளுக்கு ஒருமுறை மாறுகிறது.';
 
   @override
   String searchResultCount(int count) {
@@ -1099,13 +936,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   @override
   String get searchNoMatchBody =>
       'எழுத்துப்பிழையைச் சரிபார்க்கவும், அல்லது தொடர்புடைய சொல்லை முயற்சிக்கவும். சில சைகைகள் வேறு ஆங்கிலச் சொல்லின் கீழ் பட்டியலிடப்பட்டுள்ளன.';
-
-  @override
-  String get searchReportMissing => 'Report a missing word';
-
-  @override
-  String get searchReportMissingThanks =>
-      'Thanks — we\'ll look into adding it.';
 
   @override
   String get newsEmptyTitle => 'இன்னும் அறிவிப்புகள் இல்லை';
@@ -1134,7 +964,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get listsReorderHint =>
-      'Drag a list to reorder it, or tap it to rename. Favourites stays pinned to the top.';
+      'ஒரு பட்டியலை மறுவரிசைப்படுத்த இழுக்கவும், அல்லது பெயர்மாற்ற அதைத் தட்டவும். பிடித்தவை மேலே நிலைத்திருக்கும்.';
 
   @override
   String listWordCount(int count) {
@@ -1167,10 +997,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get revisionStreakSubtitle => 'இதுவரை நீளமான தொடர் — தொடரவும்!';
-
-  @override
-  String get revisionBuildSessionHeader =>
-      'ஒரு படிப்பு அமர்வை உருவாக்குங்கள். எதை மீள்பார்வை செய்வது என்பதைத் தேர்ந்து, பிறகு தொடங்குங்கள்.';
 
   @override
   String revisionSignCount(int count) {
@@ -1206,16 +1032,16 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsStrategyLabel => 'உத்தி';
 
   @override
-  String get flashcardsCardLimitLabel => 'Card limit';
+  String get flashcardsCardLimitLabel => 'அட்டை வரம்பு';
 
   @override
-  String get flashcardsCardLimitNone => 'No limit';
+  String get flashcardsCardLimitNone => 'வரம்பு இல்லை';
 
   @override
-  String get revisionPreviousCard => 'Previous card';
+  String get revisionPreviousCard => 'முந்தைய அட்டை';
 
   @override
-  String get revisionNextCard => 'Next card';
+  String get revisionNextCard => 'அடுத்த அட்டை';
 
   @override
   String get revisionDueNow => 'இப்போது நிலுவையில்';
@@ -1254,20 +1080,15 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get regionSheetStatesTerritories => 'மாநிலங்கள் & பிரதேசங்கள்';
 
   @override
-  String get regionSheetRecommended => 'Recommended';
+  String get regionSheetRecommended => 'பரிந்துரைக்கப்பட்டது';
 
   @override
   String get regionSheetUnknownExplanation =>
-      'Most signs aren\'t tagged with a region, so leaving this on keeps them in your revision.';
+      'பெரும்பாலான சைகைகளுக்கு பகுதி குறிச்சொல் இல்லை, எனவே இதை இயக்கி வைப்பது அவற்றை உங்கள் திருத்தத்தில் வைத்திருக்கும்.';
 
   @override
   String wordVariationWithHint(int index, int count) {
     return 'மாறுபாடு $index/$count · ஒப்பிட ஸ்வைப் செய்யவும்';
-  }
-
-  @override
-  String wordVariation(int index, int count) {
-    return 'மாறுபாடு $index/$count';
   }
 
   @override
@@ -1277,9 +1098,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get seeAlso => 'இதையும் பார்க்கவும்';
-
-  @override
-  String get revealAnswer => 'Reveal answer';
 
   @override
   String get tapToReveal => 'வெளிப்படுத்த தட்டவும்';

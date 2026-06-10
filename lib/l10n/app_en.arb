@@ -8,73 +8,30 @@
 
     "searchHintText": "Search for a word",
 
-    "nFlashcardsSelected": "{count, plural, =0{cards} =1{cards} other{cards}}",
-    "@nFlashcardsSelected": {
-        "placeholders": {
-            "count": {
-                "type": "num",
-                "format": "compact"
-            }
-        }
-    },
-    "nFlashcardsDue": "{count, plural, =0{cards} =1{cards} other{cards}}",
-    "@nFlashcardsDue": {
-        "placeholders": {
-            "count": {
-                "type": "num",
-                "format": "compact"
-            }
-        }
-    },
     "flashcardsRevisionSources": "Revision Sources",
-    "flashcardsSelectListsToRevise": "Select lists to revise",
     "flashcardsSelectLists": "Select Lists",
     "flashcardsTypes": "Flashcard Types",
     "flashcardsSignToWord": "Sign → Word",
     "flashcardsWordToSign": "Word → Sign",
     "flashcardsRevisionSettings": "Revision Settings",
-    "flashcardsSelectRevisionStrategy": "Select revision strategy",
-    "flashcardsStrategy": "Strategy",
-    "flashcardsSelectSignRegions": "Select sign regions",
-    "flashcardsRegions": "Regions",
     "flashcardsStart": "Start",
-    "flashcardsOnlyOneCard": "Show only one set of cards per word",
 
-    "flashcardsRevisionLanguage": "Revision Language",
-    "flashcardsAllOfSriLanka": "All of Sri Lanka",
-    "flashcardsNorthEast": "North East",
-
-    "flashcardsNext": "Next",
-    "flashcardsForgot": "Forgot",
-    "flashcardsGotIt": "Got it!",
     "flashcardsCardUnavailable": "A card was unavailable and was skipped.",
 
-    "flashcardsWhatIsSignForWord": "What is the sign for this word?",
-    "flashcardsWhatDoesSignMean": "What does this sign mean?",
-    "flashcardsOpenDictionaryEntry": "Open dictionary entry",
-
     "flashcardsSuccessRate": "Success Rate",
-    "flashcardsTotalCards": "Total Cards",
     "flashcardsSuccessfulCards": "Successful Cards",
-    "flashcardsIncorrectCards": "Incorrect Cards",
 
     "flashcardsTotalReviews": "Total Reviews",
     "flashcardsUnsuccessfulCards": "Unsuccessful Cards",
     "flashcardsUniqueWords": "Unique Words",
-    "flashcardsLongestStreak": "Longest Streak",
-    "flashcardsStatsCollectedSince": "Stats collected since",
 
-    "flashcardsRevisionSummaryTitle": "Revision Summary",
     "flashcardsRevisionProgressTitle": "Revision Progress",
-    "flashcardsRevisionStategyToShow": "Revision strategy to show stats for",
 
     "setPlaybackSpeedTo": "Set playback speed to",
 
     "settingsPlayStoreFeedback": "Give feedback on Play Store",
     "settingsAppStoreFeedback": "Give feedback on App Store",
-    "na": "N/A",
 
-    "settingsLanguage": "Language",
     "settingsRevision": "Revision",
     "settingsHideRevision": "Hide revision feature",
     "settingsHideCommunityLists": "Hide community lists",
@@ -109,9 +66,6 @@
     "settingsUseSystemHttpProxy": "Use system HTTP proxy",
     "settingsRestartApp": "You need to restart the app for this change to take effect",
 
-    "listFavourites": "Favourites",
-    "listNameCannotBeEmpty": "List name cannot be empty",
-    "listNameInvalid": "Invalid name, this should have been caught already",
     "listEnterNewName": "Enter new list name",
     "listFailedToMake": "Failed to make new list",
     "listFailedToRename": "Failed to rename list",
@@ -143,27 +97,17 @@
 
     "savedVideoSheetTitle": "Save this video to…",
 
-    "wordAlreadyFavourited": "Already favourited!",
-    "wordFavouriteThisWord": "Favourite this word",
-
-    "wordNoDefinitions": "No definitions data available for this word / phrase",
-    "wordDataMissing": "Data missing",
-
     "entryTypeWords": "Words",
     "entryTypePhrases": "Phrases",
     "entryTypeFingerspelling": "Fingerspelling",
     "entrySelectEntryTypes": "Select Entry Types",
-
-    "relatedWords": "Related words",
 
     "alertCareful": "Careful!",
     "alertCancel": "Cancel",
     "alertConfirm": "Confirm",
     "alertOk": "OK",
 
-    "startupFailureMessage": "Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.",
     "unexpectedErrorLoadingVideo": "Unexpected error loading media",
-    "deviceDefault": "Device Default",
 
     "shareDialogTitle": "Share this list",
     "shareDialogBody": "Pick a display name for your list. Anyone with the share link can subscribe and follow your edits.",
@@ -310,20 +254,7 @@
         }
     },
 
-    "alertSave": "Save",
-    "alertDone": "Done",
-
     "listNameAllowedChars": "No special characters besides these are allowed: , . - _ !",
-
-    "forceUpgradeMessage": "You are using an unsupported version ({version}) of the app, please update.",
-    "@forceUpgradeMessage": {
-        "placeholders": {
-            "version": { "type": "String" }
-        }
-    },
-    "forceUpgradeButton": "Update",
-
-    "privacyPolicyPageTitle": "Privacy Policy",
 
     "importOwnedListsPromptTitle": "Import your shared lists?",
     "importOwnedListsPromptBody": "We'll fetch any shared lists tied to this account — both the ones you created and the ones you've been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you're online.",
@@ -489,12 +420,6 @@
             "message": { "type": "String" }
         }
     },
-    "membersPageSubtitleFor": "Members of \"{name}\"",
-    "@membersPageSubtitleFor": {
-        "placeholders": {
-            "name": { "type": "String" }
-        }
-    },
 
     "signInDialogContextInvite": "Sign in to accept the invite. You'll be able to edit the list once you do.",
     "signInDialogContextResume": "Sign in again to push your queued edits.",
@@ -510,8 +435,7 @@
     "overviewResumeSignInWithPending": "You have unsynced edits. Sign in again to push them.",
     "overviewResumeSignInButton": "Sign in",
 
-    "expiredSessionBanner": "Your session expired. Sign in again to push your edits.",
-    "expiredSessionBannerAction": "Sign in",
+    "flashcardsSaveFailed": "Couldn't save your revision progress.",
 
     "engineSessionExpiredSnack": "Signed out — please sign in again",
     "engineSessionExpiredSnackAction": "Sign in",
@@ -544,15 +468,6 @@
         }
     },
 
-    "forkPartialDrop": "Copied {copied} of {total} entries — {dropped} signs are no longer in the dictionary.",
-    "@forkPartialDrop": {
-        "placeholders": {
-            "copied": { "type": "int" },
-            "total": { "type": "int" },
-            "dropped": { "type": "int" }
-        }
-    },
-
     "signInTestUserButton": "Sign in as test user (debug)",
     "signInTestPromptTitle": "Test sign-in",
     "signInTestPromptBody": "Mints a session on the worker's test provider. Debug builds only. Use this to drive the shared-lists feature without a real provider account.",
@@ -568,12 +483,9 @@
     "searchResultCount": "{count, plural, =1{1 result} other{{count} results}}",
     "@searchResultCount": { "placeholders": { "count": { "type": "int" } } },
     "entryTypePhrase": "Phrase",
-    "entryTypeFingerspelling": "Fingerspelling",
     "searchNoMatchTitle": "No signs for \"{query}\"",
     "@searchNoMatchTitle": { "placeholders": { "query": { "type": "String" } } },
     "searchNoMatchBody": "Check the spelling, or try a related word. Some signs are listed under a different English word.",
-    "searchReportMissing": "Report a missing word",
-    "searchReportMissingThanks": "Thanks — we'll look into adding it.",
     "newsEmptyTitle": "No announcements yet",
     "newsEmptyBody": "App news and tips will show up here.",
     "newsErrorTitle": "Couldn't load news",
@@ -589,7 +501,6 @@
     "revisionStreak": "{days, plural, =1{1-day streak} other{{days}-day streak}}",
     "@revisionStreak": { "placeholders": { "days": { "type": "int" } } },
     "revisionStreakSubtitle": "Longest run yet — keep it going!",
-    "revisionBuildSessionHeader": "Build a study session. Pick what to revise, then start.",
     "revisionSignCount": "{count, plural, =1{1 sign} other{{count} signs}}",
     "@revisionSignCount": { "placeholders": { "count": { "type": "int" } } },
     "revisionNoListsChosen": "No lists chosen yet",
@@ -616,12 +527,9 @@
     "regionSheetUnknownExplanation": "Most signs aren't tagged with a region, so leaving this on keeps them in your revision.",
     "wordVariationWithHint": "Variation {index} of {count}",
     "@wordVariationWithHint": { "placeholders": { "index": { "type": "int" }, "count": { "type": "int" } } },
-    "wordVariation": "Variation {index} of {count}",
-    "@wordVariation": { "placeholders": { "index": { "type": "int" }, "count": { "type": "int" } } },
     "videoIndicator": "Video {index} of {count}",
     "@videoIndicator": { "placeholders": { "index": { "type": "int" }, "count": { "type": "int" } } },
     "seeAlso": "See also",
-    "revealAnswer": "Reveal answer",
     "tapToReveal": "Tap to reveal",
     "openDictionaryEntry": "Open dictionary entry",
     "ratingForgot": "Forgot",

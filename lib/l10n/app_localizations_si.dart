@@ -27,44 +27,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get searchHintText => 'වචනයක් සොයන්න';
 
   @override
-  String nFlashcardsSelected(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cards',
-      one: 'cards',
-      zero: 'cards',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String nFlashcardsDue(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cards',
-      one: 'cards',
-      zero: 'cards',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get flashcardsRevisionSources => 'සංශෝධන මූලාශ්‍ර';
-
-  @override
-  String get flashcardsSelectListsToRevise => 'සංශෝධනය කිරීමට ලැයිස්තු තෝරන්න';
 
   @override
   String get flashcardsSelectLists => 'ලැයිස්තු තෝරන්න';
@@ -82,65 +45,16 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get flashcardsRevisionSettings => 'සංශෝධන සැකසුම්';
 
   @override
-  String get flashcardsSelectRevisionStrategy => 'සංශෝධන ක්‍රමය තෝරන්න';
-
-  @override
-  String get flashcardsStrategy => 'උපාය මාර්ගය';
-
-  @override
-  String get flashcardsSelectSignRegions => 'සංඥා කලාප තෝරන්න';
-
-  @override
-  String get flashcardsRegions => 'කළාප';
-
-  @override
   String get flashcardsStart => 'ආරම්භ කරන්න';
 
   @override
-  String get flashcardsOnlyOneCard => 'වචනයකට කාඩ් කට්ටලයක් පමණින් පෙන්වන්න';
-
-  @override
-  String get flashcardsRevisionLanguage => 'සංශෝධන භාෂාව';
-
-  @override
-  String get flashcardsAllOfSriLanka => 'මුළු ලංකාවම';
-
-  @override
-  String get flashcardsNorthEast => 'උතුරු නැගෙනහිර';
-
-  @override
-  String get flashcardsNext => 'මීළඟ';
-
-  @override
-  String get flashcardsForgot => 'අමතක වුනා';
-
-  @override
-  String get flashcardsGotIt => 'සොයා ගත්තා!';
-
-  @override
-  String get flashcardsCardUnavailable =>
-      'A card was unavailable and was skipped.';
-
-  @override
-  String get flashcardsWhatIsSignForWord => 'මෙම වචනය සඳහා සංඥා භාෂාව කුමක්ද?';
-
-  @override
-  String get flashcardsWhatDoesSignMean => 'මෙම සංඥාවේ අර්ථයකුමද?';
-
-  @override
-  String get flashcardsOpenDictionaryEntry => 'ශබ්දකෝෂය වචන මාලාව විවෘත කරන්න';
+  String get flashcardsCardUnavailable => 'කාඩ්පතක් නොතිබූ අතර එය මඟ හැරියා.';
 
   @override
   String get flashcardsSuccessRate => 'සාර්ථකත්ව අනුපාතය';
 
   @override
-  String get flashcardsTotalCards => 'සම්පූර්ණ කාඩ්';
-
-  @override
   String get flashcardsSuccessfulCards => 'සාර්ථක කාඩ්';
-
-  @override
-  String get flashcardsIncorrectCards => 'වැරදි කාඩ්';
 
   @override
   String get flashcardsTotalReviews => 'මුළු සමාලෝචන';
@@ -152,20 +66,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get flashcardsUniqueWords => 'අනන්‍ය වචන';
 
   @override
-  String get flashcardsLongestStreak => 'දිගම ක්‍රියාවලිය';
-
-  @override
-  String get flashcardsStatsCollectedSince => 'සංඛ්‍යාන දැනට ඇතුලත් කර ඇත';
-
-  @override
-  String get flashcardsRevisionSummaryTitle => 'සංශෝධන සාරාංශය';
-
-  @override
   String get flashcardsRevisionProgressTitle => 'සංශෝධන ප්‍රගතිය';
-
-  @override
-  String get flashcardsRevisionStategyToShow =>
-      'සංඛ්‍යාලේඛන පෙන්වීමට සඳහා සංශෝධන උපාය මාර්ගය පෙන්වන්න';
 
   @override
   String get setPlaybackSpeedTo => 'ප්‍රතිවාදන වේගය සකසන්න';
@@ -175,12 +76,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get settingsAppStoreFeedback => 'App Store ප්‍රතිචාරය දෙන්න';
-
-  @override
-  String get na => 'නොදනී';
-
-  @override
-  String get settingsLanguage => 'භාෂාව';
 
   @override
   String get settingsRevision => 'සංශෝධන';
@@ -253,7 +148,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsSeePrivacyPolicy => 'පෞද්ගලිකත්ව ප්රතිපත්තිය බලන්න';
 
   @override
-  String get settingsSeeTermsOfService => 'See terms of service';
+  String get settingsSeeTermsOfService => 'සේවා කොන්දේසි බලන්න';
 
   @override
   String get settingsBackgroundLogs => 'පසුබිම් ලොග';
@@ -287,29 +182,19 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'මෙම වෙනස ක්‍රියාත්මක වීමට යෙදුම නැවත ආරම්භ කළ යුතුය';
 
   @override
-  String get listFavourites => 'ප්‍රියතම';
-
-  @override
-  String get listNameCannotBeEmpty => 'ලැයිස්තු නම හිස් විය නොහැක';
-
-  @override
-  String get listNameInvalid =>
-      'වලංගු නොවන නම, මෙය දැනටමත් අල්ලාගෙන තිබිය යුතුය';
-
-  @override
   String get listEnterNewName => 'නව නම ලැයිස්තු ඇතුළත් කරන්න';
 
   @override
   String get listFailedToMake => 'නව ලැයිස්තුව සාදා ගැනීමට අසාර්ථක විය';
 
   @override
-  String get listFailedToRename => 'Failed to rename list';
+  String get listFailedToRename => 'ලැයිස්තුව නැවත නම් කිරීමට අසාර්ථක විය';
 
   @override
   String get listNewList => 'නව ලැයිස්තු';
 
   @override
-  String get listRenameList => 'Rename List';
+  String get listRenameList => 'ලැයිස්තුව නැවත නම් කරන්න';
 
   @override
   String get listMyLists => 'මගේ ලැයිස්තු';
@@ -318,10 +203,10 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listCommunity => 'ප්රජාව';
 
   @override
-  String get listSortAdded => 'Added';
+  String get listSortAdded => 'එක් කළ';
 
   @override
-  String get listSortAlpha => 'A-Z';
+  String get listSortAlpha => 'අ-ෆ';
 
   @override
   String get listConfirmListDelete =>
@@ -338,35 +223,22 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos saved',
-      one: '1 video saved',
+      other: 'වීඩියෝ $countක් සුරැකිණි',
+      one: 'වීඩියෝ 1ක් සුරැකිණි',
     );
     return '$_temp0';
   }
 
   @override
-  String get listRemoveAllVideosTitle => 'Remove from list?';
+  String get listRemoveAllVideosTitle => 'ලැයිස්තුවෙන් ඉවත් කරන්නද?';
 
   @override
   String listRemoveAllVideosBody(int count, String word) {
-    return 'Remove all $count saved videos of \"$word\" from this list?';
+    return '\"$word\" හි සුරැකි වීඩියෝ $countම මෙම ලැයිස්තුවෙන් ඉවත් කරන්නද?';
   }
 
   @override
-  String get savedVideoSheetTitle => 'Save this video to…';
-
-  @override
-  String get wordAlreadyFavourited => 'දැනටමත් ප්‍රියතම!';
-
-  @override
-  String get wordFavouriteThisWord => 'මෙම වචනය ප්‍රියතම කරන්න';
-
-  @override
-  String get wordNoDefinitions =>
-      'මෙම වචනය / වාක්‍ය ඛණ්ඩය සඳහා නිර්වචන දත්ත නොමැත';
-
-  @override
-  String get wordDataMissing => 'දත්ත අතුරුදහන්';
+  String get savedVideoSheetTitle => 'මෙම වීඩියෝව මෙතැනට සුරකින්න…';
 
   @override
   String get entryTypeWords => 'වචන';
@@ -381,9 +253,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get entrySelectEntryTypes => 'ඇතුල්වීමේ වර්ග තෝරන්න';
 
   @override
-  String get relatedWords => 'අදාළ වචන';
-
-  @override
   String get alertCareful => 'පරිස්සමෙන්!';
 
   @override
@@ -396,145 +265,138 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get alertOk => 'OK';
 
   @override
-  String get startupFailureMessage =>
-      'යෙදුම නිවැරදිව ආරම්භ කිරීමට අසමත් විය. කරුණාකර, පළමුව, ඔබ යෙදුමේ නවතම අනුවාදය භාවිතා කරන බව සහතික කරන්න. ඔබ එසේ නම්, කරුණාකර මෙම දෝෂය පෙන්වන පුනරුපුවරුවක් සමග daniel@dport.me වෙත ඊමේල් කරන්න.';
-
-  @override
   String get unexpectedErrorLoadingVideo => 'අනපේක්ෂිත දෝෂය පූරණය කරමින්';
 
   @override
-  String get deviceDefault => 'ප්‍රදාන උපාංග';
-
-  @override
-  String get shareDialogTitle => 'Share this list';
+  String get shareDialogTitle => 'මෙම ලැයිස්තුව බෙදා ගන්න';
 
   @override
   String get shareDialogBody =>
-      'Pick a display name for your list. Anyone with the share link can subscribe and follow your edits.';
+      'ඔබගේ ලැයිස්තුව සඳහා පෙන්වන නමක් තෝරන්න. බෙදාගැනීමේ සබැඳිය ඇති ඕනෑම අයෙකුට දායක වී ඔබගේ සංස්කරණ අනුගමනය කළ හැක.';
 
   @override
-  String get shareDialogDisplayNameLabel => 'Display name';
+  String get shareDialogDisplayNameLabel => 'පෙන්වන නම';
 
   @override
-  String get shareDialogDisplayNameHelper => 'Emojis welcome 🎉';
+  String get shareDialogDisplayNameHelper => 'ඊමොජි පිළිගනිමු 🎉';
 
   @override
-  String get shareDialogShareButton => 'Share';
+  String get shareDialogShareButton => 'බෙදා ගන්න';
 
   @override
-  String get shareValidationRequired => 'Required';
+  String get shareValidationRequired => 'අවශ්‍යයි';
 
   @override
   String shareValidationMaxLen(int count) {
-    return 'At most $count characters';
+    return 'අක්ෂර $countක් දක්වා';
   }
 
   @override
   String shareValidationReservedName(String name) {
-    return '\"$name\" is reserved — pick a different name';
+    return '\"$name\" වෙන් කර ඇත — වෙනත් නමක් තෝරන්න';
   }
 
   @override
   String get shareNetworkError =>
-      'Couldn\'t reach the server. Check your connection and try again.';
+      'සේවාදායකය වෙත සම්බන්ධ විය නොහැකි විය. ඔබගේ සම්බන්ධතාවය පරීක්ෂා කර නැවත උත්සාහ කරන්න.';
 
   @override
   String get shareErrorUnauthorized =>
-      'Your session has expired. Please sign in again.';
+      'ඔබගේ සැසිය කල් ඉකුත් වී ඇත. කරුණාකර නැවත පුරනය වන්න.';
 
   @override
-  String get shareErrorForbidden => 'You don\'t have permission to do that.';
+  String get shareErrorForbidden => 'එය කිරීමට ඔබට අවසර නැත.';
 
   @override
-  String get shareErrorGone => 'This list has been deleted by its owner.';
+  String get shareErrorGone => 'මෙම ලැයිස්තුව එහි හිමිකරු විසින් මකා දමා ඇත.';
 
   @override
   String get shareErrorPayloadTooLarge =>
-      'That change is too big. Try again with a smaller batch.';
+      'එම වෙනස ඉතා විශාලයි. කුඩා කාණ්ඩයකින් නැවත උත්සාහ කරන්න.';
 
   @override
   String get shareErrorRateLimited =>
-      'Slow down — too many requests. Try again in a moment.';
+      'සෙමින් — ඉල්ලීම් ඉතා වැඩියි. මොහොතකින් නැවත උත්සාහ කරන්න.';
 
   @override
   String get shareErrorServer =>
-      'The server is having trouble. Try again later.';
+      'සේවාදායකයේ ගැටලුවක් ඇත. පසුව නැවත උත්සාහ කරන්න.';
 
   @override
   String get unshareToDeleteTooltip =>
-      'Stop sharing this list before deleting it.';
+      'මෙම ලැයිස්තුව මැකීමට පෙර එය බෙදා ගැනීම නවත්වන්න.';
 
   @override
-  String get shareTooManyEntriesTitle => 'List is too big to share';
+  String get shareTooManyEntriesTitle => 'බෙදා ගැනීමට ලැයිස්තුව ඉතා විශාලයි';
 
   @override
   String shareTooManyEntriesBody(int count, int max) {
-    return 'This list has $count entries, but shared lists are capped at $max. Remove some entries and try again.';
+    return 'මෙම ලැයිස්තුවේ ඇතුළත් කිරීම් $countක් ඇත, නමුත් බෙදාගත් ලැයිස්තු $maxකට සීමා වේ. සමහර ඇතුළත් කිරීම් ඉවත් කර නැවත උත්සාහ කරන්න.';
   }
 
   @override
-  String get shareLinkDialogTitle => 'List shared';
+  String get shareLinkDialogTitle => 'ලැයිස්තුව බෙදා ගන්නා ලදී';
 
   @override
   String shareLinkDialogBody(String displayName) {
-    return 'Anyone with this link can subscribe to \"$displayName\":';
+    return 'මෙම සබැඳිය ඇති ඕනෑම අයෙකුට \"$displayName\" වෙත දායක විය හැක:';
   }
 
   @override
-  String get shareLinkCopiedSnack => 'Link copied to clipboard';
+  String get shareLinkCopiedSnack => 'සබැඳිය පසුරු පුවරුවට පිටපත් කරන ලදී';
 
   @override
-  String get shareLinkCopyButton => 'Copy';
+  String get shareLinkCopyButton => 'පිටපත් කරන්න';
 
   @override
-  String get shareLinkShareButton => 'Share';
+  String get shareLinkShareButton => 'බෙදා ගන්න';
 
   @override
-  String get shareLinkQrButton => 'QR code';
+  String get shareLinkQrButton => 'QR කේතය';
 
   @override
-  String get shareLinkDoneButton => 'Done';
+  String get shareLinkDoneButton => 'හරි';
 
   @override
-  String get qrCodeDialogBody => 'Other people can scan this to subscribe.';
+  String get qrCodeDialogBody => 'දායක වීමට අන් අයට මෙය ස්කෑන් කළ හැක.';
 
   @override
-  String get qrCodeDialogClose => 'Close';
+  String get qrCodeDialogClose => 'වසන්න';
 
   @override
-  String get signInDialogTitle => 'Sign in to share';
+  String get signInDialogTitle => 'බෙදා ගැනීමට පුරනය වන්න';
 
   @override
-  String get signInDialogBody =>
-      'To share a list, sign in below. We only use this to prove that you\'re the one editing it later — we don\'t collect any personal information.';
+  String get signInDialogBody => 'ලැයිස්තුවක් බෙදා ගැනීමට ඔබ පුරනය විය යුතුය.';
 
   @override
   String signInLastUsedHint(String provider) {
-    return 'Last time, you signed in with $provider.';
+    return 'පසුගිය වර, ඔබ $provider සමඟ පුරනය විය.';
   }
 
   @override
-  String get signInWithApple => 'Continue with Apple';
+  String get signInWithApple => 'Apple සමඟ දිගටම';
 
   @override
-  String get signInWithGoogle => 'Continue with Google';
+  String get signInWithGoogle => 'Google සමඟ දිගටම';
 
   @override
-  String get signInWithFacebook => 'Continue with Facebook';
+  String get signInWithFacebook => 'Facebook සමඟ දිගටම';
 
   @override
-  String get signInFailed => 'Sign-in failed. Please try again.';
+  String get signInFailed =>
+      'පුරනය වීම අසාර්ථක විය. කරුණාකර නැවත උත්සාහ කරන්න.';
 
   @override
-  String get signInCancelled => 'Sign-in cancelled.';
+  String get signInCancelled => 'පුරනය වීම අවලංගු කරන ලදී.';
 
   @override
   String get signInProviderNotConfigured =>
-      'This sign-in option isn\'t available on this device.';
+      'මෙම පුරනය වීමේ විකල්පය මෙම උපාංගයේ නොමැත.';
 
   @override
   String get signInProviderNoCredential =>
-      'Sign-in didn\'t return a valid response. Please try again.';
+      'පුරනය වීම වලංගු ප්‍රතිචාරයක් ලබා දුන්නේ නැත. කරුණාකර නැවත උත්සාහ කරන්න.';
 
   @override
   String get providerApple => 'Apple';
@@ -546,511 +408,483 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get providerFacebook => 'Facebook';
 
   @override
-  String get providerTest => 'Test session';
+  String get providerTest => 'පරීක්ෂණ සැසිය';
 
   @override
-  String get subscribeDialogTitle => 'Subscribe to a shared list';
+  String get subscribeDialogTitle => 'බෙදාගත් ලැයිස්තුවකට දායක වන්න';
 
   @override
   String get subscribeDialogBody =>
-      'Paste either a share link or just the list ID at the end of one.';
+      'බෙදාගැනීමේ සබැඳියක් / ලැයිස්තු ID එකක් අලවන්න.';
 
   @override
-  String get subscribeDialogUrlLabel => 'Share URL';
+  String get subscribeDialogUrlLabel => 'බෙදාගැනීමේ URL';
 
   @override
-  String get subscribeDialogSubscribeButton => 'Subscribe';
+  String get subscribeDialogSubscribeButton => 'දායක වන්න';
 
   @override
-  String get alreadySubscribedSnack =>
-      'You\'re already subscribed to this list.';
+  String get alreadySubscribedSnack => 'ඔබ දැනටමත් මෙම ලැයිස්තුවට දායක වී ඇත.';
 
   @override
-  String get alreadyOwnerSnack => 'You own this list.';
+  String get alreadyOwnerSnack => 'ඔබ මෙම ලැයිස්තුවේ හිමිකරුය.';
 
   @override
-  String get alreadyEditorSnack => 'You\'re an editor of this list.';
+  String get alreadyEditorSnack => 'ඔබ මෙම ලැයිස්තුවේ සංස්කාරකවරයෙකි.';
 
   @override
-  String get subscribeInvalidInput => 'Not a valid share link or list ID.';
+  String get subscribeInvalidInput =>
+      'වලංගු බෙදාගැනීමේ සබැඳියක් හෝ ලැයිස්තු ID එකක් නොවේ.';
 
   @override
   String subscribeInviteDetected(String displayName) {
-    return 'This is an editor invite link, not a regular subscribe link. Accept it to edit \"$displayName\" alongside the creator.';
+    return 'මෙය නිත්‍ය දායක වීමේ සබැඳියක් නොව සංස්කාරක ආරාධනා සබැඳියකි. නිර්මාතෘ සමඟ \"$displayName\" සංස්කරණය කිරීමට එය පිළිගන්න.';
   }
 
   @override
   String get subscribeInviteDetectedUnknown =>
-      'This is an editor invite link, not a regular subscribe link. Accept it to become an editor of this list.';
+      'මෙය නිත්‍ය දායක වීමේ සබැඳියක් නොව සංස්කාරක ආරාධනා සබැඳියකි. මෙම ලැයිස්තුවේ සංස්කාරකවරයෙකු වීමට එය පිළිගන්න.';
 
   @override
-  String get subscribeInviteAcceptButton => 'Accept invitation';
+  String get subscribeInviteAcceptButton => 'ආරාධනය පිළිගන්න';
 
   @override
-  String get subscribeNotFound => 'No list with that key exists.';
+  String get subscribeNotFound => 'එම යතුර සහිත ලැයිස්තුවක් නොමැත.';
 
   @override
-  String get sharedListLandingLoading => 'Loading shared list';
+  String get sharedListLandingLoading => 'බෙදාගත් ලැයිස්තුව පූරණය වෙමින්';
 
   @override
-  String get sharedListLandingDefaultError => 'Couldn\'t load this list.';
+  String get sharedListLandingDefaultError =>
+      'මෙම ලැයිස්තුව පූරණය කළ නොහැකි විය.';
 
   @override
   String get sharedListLandingNotFound =>
-      'This shared list doesn\'t exist or has been deleted by its owner.';
+      'මෙම බෙදාගත් ලැයිස්තුව නොපවතී හෝ එහි හිමිකරු විසින් මකා දමා ඇත.';
 
   @override
-  String get sharedListLandingTryAgain => 'Try again';
+  String get sharedListLandingTryAgain => 'නැවත උත්සාහ කරන්න';
 
   @override
   String get unshareConfirmBody =>
-      'Stop sharing this list? Subscribers will no longer be able to see it.';
+      'මෙම ලැයිස්තුව බෙදා ගැනීම නවත්වන්නද? දායකයින්ට තවදුරටත් එය දැකිය නොහැක.';
 
   @override
-  String get unshareConfirmTitle => 'Stop sharing?';
+  String get unshareConfirmTitle => 'බෙදා ගැනීම නවත්වන්නද?';
 
   @override
   String unshareFailed(String message) {
-    return 'Failed to stop sharing: $message';
+    return 'බෙදා ගැනීම නැවැත්වීමට අසාර්ථක විය: $message';
   }
 
   @override
-  String get unsubscribeConfirmBody => 'Unsubscribe from this list?';
+  String get unsubscribeConfirmBody => 'මෙම ලැයිස්තුවෙන් දායකත්වය ඉවත් කරන්නද?';
 
   @override
-  String get unsubscribeConfirmTitle => 'Unsubscribe?';
+  String get unsubscribeConfirmTitle => 'දායකත්වය ඉවත් කරන්නද?';
 
   @override
   String copyToMyListsSnack(String name) {
-    return 'Copied to \"$name\"';
+    return '\"$name\" වෙත පිටපත් කරන ලදී';
   }
 
   @override
-  String get subscribedSyncNowMenuItem => 'Sync now';
+  String get subscribedSyncNowMenuItem => 'දැන් සමමුහුර්ත කරන්න';
 
   @override
-  String get subscribedCopyLinkMenuItem => 'Copy link';
+  String get subscribedCopyLinkMenuItem => 'සබැඳිය පිටපත් කරන්න';
 
   @override
-  String get subscribedSyncInProgress => 'Syncing…';
+  String get subscribedSyncInProgress => 'සමමුහුර්ත වෙමින්…';
 
   @override
-  String get subscribedSyncDoneSnack => 'Up to date';
+  String get subscribedSyncDoneSnack => 'යාවත්කාලීනයි';
 
   @override
   String subscribedSyncFailedSnack(String message) {
-    return 'Sync failed: $message';
+    return 'සමමුහුර්ත වීම අසාර්ථක විය: $message';
   }
 
   @override
-  String get subscribedCopyMenuItem => 'Duplicate';
+  String get subscribedCopyMenuItem => 'අනුපිටපත් කරන්න';
 
   @override
-  String get settingsSharing => 'Sharing';
+  String get settingsSharing => 'බෙදා ගැනීම';
 
   @override
-  String get settingsSignIn => 'Sign in to share lists';
+  String get settingsSignIn => 'ලැයිස්තු බෙදා ගැනීමට පුරනය වන්න';
 
   @override
   String settingsSignedInAs(String provider) {
-    return 'Signed in with $provider';
+    return '$provider සමඟ පුරනය වී ඇත';
   }
 
   @override
-  String get settingsSignOut => 'Sign out';
+  String get settingsSignOut => 'පිටවන්න';
 
   @override
-  String get settingsSignOutConfirmTitle => 'Sign out?';
+  String get settingsSignOutConfirmTitle => 'පිටවන්නද?';
 
   @override
   String get settingsSignOutConfirmBody =>
-      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
+      'මෙම උපාංගයේ:\n  • ඔබ බෙදා ගැනීමෙන් පිටව ඇත.\n  • ඔබ බෙදාගත් ලැයිස්තු මෙතැනින් කළමනාකරණය වීම නැවතේ — දේශීය ලැයිස්තු ඒවායේ ඇතුළත් කිරීම් රඳවා ගනී.\n\nඔබගේ බෙදාගත් ලැයිස්තු සේවාදායකයේ පවතී. ඒවා නැවත සංස්කරණය කිරීමට ඕනෑම උපාංගයකින් නැවත පුරනය වන්න.';
 
   @override
-  String get settingsDeleteAccount => 'Delete account';
+  String get settingsDeleteAccount => 'ගිණුම මකන්න';
 
   @override
-  String get settingsDeleteAccountConfirmTitle => 'Delete account?';
+  String get settingsDeleteAccountConfirmTitle => 'ගිණුම මකන්නද?';
 
   @override
-  String get settingsDeleteAccountConfirmButton => 'Delete account';
+  String get settingsDeleteAccountConfirmButton => 'ගිණුම මකන්න';
 
   @override
   String get settingsDeleteAccountConfirmBody =>
-      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
+      'මෙය ඔබගේ ගිණුම සහ අප ඔබ වෙනුවෙන් ගබඩා කරන සියල්ල ස්ථිරවම මකා දමයි:\n  • ඔබ බෙදාගත් සෑම ලැයිස්තුවක්ම සේවාදායකයෙන් මකා දැමේ — දායක වූ ඕනෑම අයෙකු ඔවුන්ගේ උපාංගයේ ඇති පිටපත රඳවා ගනී, නමුත් එය යාවත්කාලීන වීම නවතින අතර ඉවත් කළ ලෙස සලකුණු වේ.\n  • අන් අයගේ ලැයිස්තුවලින් ඔබ සංස්කාරකවරයෙකු ලෙස ඉවත් කරනු ලැබේ.\n  • අප සතු ඕනෑම පුද්ගලික තොරතුරක් (ඔබගේ නම) අප මකා දමයි.\n\nමෙම උපාංගයේ ඇති ලැයිස්තු ඒවායේ ඇතුළත් කිරීම් රඳවා ගනී; බෙදා ගැනීම පමණක් ඉවත් වේ. මෙය නැවත හැරවිය නොහැක.';
 
   @override
-  String get settingsDeleteAccountRunning => 'Deleting account…';
+  String get settingsDeleteAccountRunning => 'ගිණුම මකමින්…';
 
   @override
   String settingsDeleteAccountFailed(String message) {
-    return 'Couldn\'t delete your account: $message';
+    return 'ඔබගේ ගිණුම මැකීමට නොහැකි විය: $message';
   }
-
-  @override
-  String get alertSave => 'Save';
-
-  @override
-  String get alertDone => 'Done';
 
   @override
   String get listNameAllowedChars =>
-      'No special characters besides these are allowed: , . - _ !';
-
-  @override
-  String forceUpgradeMessage(String version) {
-    return 'You are using an unsupported version ($version) of the app, please update.';
-  }
-
-  @override
-  String get forceUpgradeButton => 'Update';
-
-  @override
-  String get privacyPolicyPageTitle => 'Privacy Policy';
+      'මේවා හැර වෙනත් විශේෂ අක්ෂර අවසර නැත: , . - _ !';
 
   @override
   String get importOwnedListsPromptTitle =>
-      'Import lists you\'ve shared before?';
+      'ඔබ කලින් බෙදාගත් ලැයිස්තු ආයාත කරන්නද?';
 
   @override
   String get importOwnedListsPromptBody =>
-      'We\'ll ask the server which lists you\'re signed in to manage and import them as new local lists. Your existing local lists are untouched. Any name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). After import, your device is the source of truth — further edits stay local and push to the server in the background.';
+      'ඔබ කළමනාකරණය කිරීමට පුරනය වී ඇති ලැයිස්තු මොනවාදැයි අපි සේවාදායකයෙන් විමසා ඒවා නව දේශීය ලැයිස්තු ලෙස ආයාත කරමු. ඔබගේ පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත. ඕනෑම නම ගැටුමකට සංඛ්‍යාත්මක උපසර්ගයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ආයාතයෙන් පසු, ඔබගේ උපාංගය සත්‍යයේ මූලාශ්‍රය වේ — තවදුරටත් සංස්කරණ දේශීයව රැඳී පසුබිමින් සේවාදායකයට තල්ලු වේ.';
 
   @override
-  String get importOwnedListsActionImport => 'Import';
+  String get importOwnedListsActionImport => 'ආයාත කරන්න';
 
   @override
-  String get importOwnedListsActionSkip => 'Skip';
+  String get importOwnedListsActionSkip => 'මඟ හරින්න';
 
   @override
-  String get importOwnedListsRunning => 'Importing your shared lists…';
+  String get importOwnedListsRunning => 'ඔබගේ බෙදාගත් ලැයිස්තු ආයාත කරමින්…';
 
   @override
   String importOwnedListsFailed(String message) {
-    return 'Couldn\'t import lists: $message';
+    return 'ලැයිස්තු ආයාත කිරීමට නොහැකි විය: $message';
   }
 
   @override
-  String get importOwnedListsResultNone => 'No shared lists found.';
+  String get importOwnedListsResultNone => 'බෙදාගත් ලැයිස්තු හමු නොවීය.';
 
   @override
   String importOwnedListsResultDone(int imported, int total) {
-    return 'Imported $imported of $total list(s).';
+    return 'ලැයිස්තු $totalකින් $importedක් ආයාත කරන ලදී.';
   }
 
   @override
-  String get duplicateConfirmTitle => 'Duplicate list?';
+  String get duplicateConfirmTitle => 'ලැයිස්තුව අනුපිටපත් කරන්නද?';
 
   @override
   String get duplicateConfirmBody =>
-      'This makes a personal, private copy of the list. It won\'t update when the original owner edits theirs.';
+      'මෙය ලැයිස්තුවේ පුද්ගලික, පෞද්ගලික පිටපතක් සාදයි. මුල් හිමිකරු තමන්ගේ ලැයිස්තුව සංස්කරණය කරන විට මෙය යාවත්කාලීන නොවේ.';
 
   @override
-  String get duplicateConfirmAction => 'Duplicate';
+  String get duplicateConfirmAction => 'අනුපිටපත් කරන්න';
 
   @override
-  String get duplicateFallbackName => 'Duplicated list';
+  String get duplicateFallbackName => 'අනුපිටපත් කළ ලැයිස්තුව';
 
   @override
-  String get listSharedWithMeTab => 'Subscribed';
+  String get listSharedWithMeTab => 'දායක වූ';
 
   @override
   String get listSharedWithMeEmpty =>
-      'Nothing here yet.\n\nTap the cloud-download icon up top to subscribe to a shared list, or open a share/invite link from someone else.';
+      'තවම මෙහි කිසිවක් නැත.\n\nබෙදාගත් ලැයිස්තුවකට දායක වීමට ඉහළ ඇති වලාකුළු-බාගත අයිකනය තට්ටු කරන්න, නැතහොත් වෙනත් අයෙකුගේ බෙදාගැනීමේ/ආරාධනා සබැඳියක් විවෘත කරන්න.';
 
   @override
-  String get ownedStatusOrphaned => 'Shared — deleted by you';
+  String get ownedStatusOrphaned => 'බෙදාගත් — ඔබ විසින් මකා දමන ලදී';
 
   @override
-  String get ownedStatusSharedBy => 'Shared by you';
+  String get ownedStatusSharedBy => 'ඔබ විසින් බෙදාගත්';
 
   @override
-  String get ownedStatusPendingSyncSuffix => 'Pending sync';
+  String get ownedStatusPendingSyncSuffix => 'සමමුහුර්තය පොරොත්තුවෙන්';
 
   @override
-  String get ownedStatusSyncedSuffix => 'Synced';
+  String get ownedStatusSyncedSuffix => 'සමමුහුර්ත විය';
 
   @override
-  String get subscribedStatusOrphaned => 'Removed by owner';
+  String get subscribedStatusOrphaned => 'හිමිකරු විසින් ඉවත් කරන ලදී';
 
   @override
-  String get subscribedStatusFallback => 'Subscribed';
+  String get subscribedStatusFallback => 'දායක වූ';
 
   @override
-  String get syncedJustNow => 'Synced just now';
+  String get syncedJustNow => 'මේ දැන් සමමුහුර්ත විය';
 
   @override
   String syncedMinutesAgo(int count) {
-    return 'Synced ${count}m ago';
+    return 'මිනිත්තු $countකට පෙර සමමුහුර්ත විය';
   }
 
   @override
   String syncedHoursAgo(int count) {
-    return 'Synced ${count}h ago';
+    return 'පැය $countකට පෙර සමමුහුර්ත විය';
   }
 
   @override
   String syncedDaysAgo(int count) {
-    return 'Synced ${count}d ago';
+    return 'දින $countකට පෙර සමමුහුර්ත විය';
   }
 
   @override
-  String get agoJustNow => 'just now';
+  String get agoJustNow => 'මේ දැන්';
 
   @override
   String agoMinutes(int count) {
-    return '${count}m ago';
+    return 'මිනිත්තු $countකට පෙර';
   }
 
   @override
   String agoHours(int count) {
-    return '${count}h ago';
+    return 'පැය $countකට පෙර';
   }
 
   @override
   String agoDays(int count) {
-    return '${count}d ago';
+    return 'දින $countකට පෙර';
   }
 
   @override
   String subscribedStatusSyncedAndUpdated(String sync, String updated) {
-    return 'Synced $sync · Updated $updated';
+    return 'සමමුහුර්ත $sync · යාවත්කාලීන $updated';
   }
 
   @override
-  String get shareLinkInviteEditorButton => 'Invite an editor';
+  String get shareLinkInviteEditorButton => 'සංස්කාරකවරයෙකු ආරාධනා කරන්න';
 
   @override
-  String get inviteEditorDialogTitle => 'Invite an editor';
+  String get inviteEditorDialogTitle => 'සංස්කාරකවරයෙකු ආරාධනා කරන්න';
 
   @override
   String get inviteEditorDialogBody =>
-      'Send this link to the person you want to add as an editor. They\'ll need to sign in to accept; once they do, they can add and remove entries on your list.';
+      'ඔබට සංස්කාරකවරයෙකු ලෙස එක් කිරීමට අවශ්‍ය පුද්ගලයාට මෙම සබැඳිය යවන්න. පිළිගැනීමට ඔවුන් පුරනය විය යුතුය; එසේ කළ පසු, ඔවුන්ට ඔබගේ ලැයිස්තුවට ඇතුළත් කිරීම් එක් කිරීමට සහ ඉවත් කිරීමට හැක.';
 
   @override
   String get inviteEditorExpiresIn =>
-      'Expires in 7 days. Each link can only be used once, you must create a new link per editor you want to invite.';
+      'දින 7කින් කල් ඉකුත් වේ. එක් එක් සබැඳිය එක් වරක් පමණක් භාවිතා කළ හැක, ඔබට ආරාධනා කිරීමට අවශ්‍ය එක් එක් සංස්කාරකවරයා සඳහා නව සබැඳියක් සෑදිය යුතුය.';
 
   @override
   String inviteEditorFailed(String message) {
-    return 'Couldn\'t create an invite: $message';
+    return 'ආරාධනයක් සෑදීමට නොහැකි විය: $message';
   }
 
   @override
-  String get acceptInviteLandingTitle => 'Accept invite';
+  String get acceptInviteLandingTitle => 'ආරාධනය පිළිගන්න';
 
   @override
   String acceptInviteLandingSignedOut(String displayName) {
-    return 'Sign in to accept this invite. After you sign in, you\'ll be able to edit \"$displayName\" alongside the creator.';
+    return 'මෙම ආරාධනය පිළිගැනීමට පුරනය වන්න. පුරනය වූ පසු, ඔබට නිර්මාතෘ සමඟ \"$displayName\" සංස්කරණය කළ හැක.';
   }
 
   @override
   String get acceptInviteLandingUnknownList =>
-      'This invite is for a list we couldn\'t preview yet. Sign in to continue.';
+      'මෙම ආරාධනය අපට තවම පෙරදසුන් කළ නොහැකි ලැයිස්තුවක් සඳහා වේ. දිගටම කරගෙන යාමට පුරනය වන්න.';
 
   @override
-  String get acceptInviteLandingSignInButton => 'Sign in to accept';
+  String get acceptInviteLandingSignInButton => 'පිළිගැනීමට පුරනය වන්න';
 
   @override
-  String get acceptInviteLandingAccepting => 'Joining…';
+  String get acceptInviteLandingAccepting => 'එක් වෙමින්…';
 
   @override
   String acceptInviteLandingFailed(String message) {
-    return 'Couldn\'t accept the invite: $message';
+    return 'ආරාධනය පිළිගැනීමට නොහැකි විය: $message';
   }
 
   @override
   String get acceptInviteLandingExpired =>
-      'This invite has expired or has already been used. Ask the list\'s creator for a new one.';
+      'මෙම ආරාධනය කල් ඉකුත් වී ඇත හෝ දැනටමත් භාවිතා කර ඇත. නව එකක් සඳහා ලැයිස්තුවේ නිර්මාතෘගෙන් ඉල්ලන්න.';
 
   @override
   String acceptInviteLandingSignedIn(String displayName) {
-    return 'Join \"$displayName\" as an editor.';
+    return 'සංස්කාරකවරයෙකු ලෙස \"$displayName\" වෙත එක් වන්න.';
   }
 
   @override
-  String get acceptInviteLandingAcceptButton => 'Accept invite';
+  String get acceptInviteLandingAcceptButton => 'ආරාධනය පිළිගන්න';
 
   @override
-  String get acceptInviteLandingOpenList => 'Open list';
+  String get acceptInviteLandingOpenList => 'ලැයිස්තුව විවෘත කරන්න';
 
   @override
   String acceptInviteLandingAlreadyOwner(String displayName) {
-    return 'You\'re the creator of \"$displayName\" — no need to accept your own invite.';
+    return 'ඔබ \"$displayName\" හි නිර්මාතෘය — ඔබගේම ආරාධනය පිළිගැනීමට අවශ්‍ය නැත.';
   }
 
   @override
   String acceptInviteLandingAlreadyEditor(String displayName) {
-    return 'You already edit \"$displayName\".';
+    return 'ඔබ දැනටමත් \"$displayName\" සංස්කරණය කරයි.';
   }
 
   @override
-  String get membersPageTitle => 'Members';
+  String get membersPageTitle => 'සාමාජිකයින්';
 
   @override
-  String get membersPageYou => 'You';
+  String get membersPageYou => 'ඔබ';
 
   @override
-  String get membersPageCreator => 'Creator';
+  String get membersPageCreator => 'නිර්මාතෘ';
 
   @override
-  String get membersPageEditors => 'Editors';
+  String get membersPageEditors => 'සංස්කාරකයින්';
 
   @override
   String get membersPageNoEditors =>
-      'No other editors yet. Tap \"Invite an editor\" to add one.';
+      'තවම වෙනත් සංස්කාරකයින් නැත. එක් අයෙකු එක් කිරීමට \"සංස්කාරකවරයෙකු ආරාධනා කරන්න\" තට්ටු කරන්න.';
 
   @override
-  String get membersPageRemoveEditor => 'Remove';
+  String get membersPageRemoveEditor => 'ඉවත් කරන්න';
 
   @override
   String membersPageRemoveEditorConfirmTitle(String name) {
-    return 'Remove $name?';
+    return '$name ඉවත් කරන්නද?';
   }
 
   @override
   String get membersPageRemoveEditorConfirmBody =>
-      'They will no longer be able to edit this list. Any of their pending offline edits will be discarded.';
+      'ඔවුන්ට තවදුරටත් මෙම ලැයිස්තුව සංස්කරණය කළ නොහැක. ඔවුන්ගේ ඕනෑම නොසම්බන්ධිත නොසම්පුර්ණ සංස්කරණයක් ඉවත දමනු ලැබේ.';
 
   @override
-  String get membersPageLeaveButton => 'Leave this list';
+  String get membersPageLeaveButton => 'මෙම ලැයිස්තුවෙන් ඉවත් වන්න';
 
   @override
-  String get membersPageLeaveConfirmTitle => 'Leave this list?';
+  String get membersPageLeaveConfirmTitle => 'මෙම ලැයිස්තුවෙන් ඉවත් වන්නද?';
 
   @override
   String get membersPageLeaveConfirmBody =>
-      'You won\'t be able to make changes anymore. The list itself stays available to read from your share link.';
+      'ඔබට තවදුරටත් වෙනස්කම් කළ නොහැක. ලැයිස්තුව ඔබගේ බෙදාගැනීමේ සබැඳියෙන් කියවීමට ඉතිරිව පවතී.';
 
   @override
   String membersPageEditorAddedBy(String name) {
-    return 'Added by $name';
+    return '$name විසින් එක් කරන ලදී';
   }
 
   @override
   String membersPageNameYou(String name) {
-    return '$name (you)';
+    return '$name (ඔබ)';
   }
 
   @override
   String leaveListFailed(String message) {
-    return 'Couldn\'t leave list: $message';
-  }
-
-  @override
-  String membersPageSubtitleFor(String name) {
-    return 'Members of \"$name\"';
+    return 'ලැයිස්තුවෙන් ඉවත් වීමට නොහැකි විය: $message';
   }
 
   @override
   String get signInDialogContextInvite =>
-      'Sign in to accept the invite. You\'ll be able to edit the list once you do.';
+      'ආරාධනය පිළිගැනීමට පුරනය වන්න. එසේ කළ පසු ඔබට ලැයිස්තුව සංස්කරණය කළ හැක.';
 
   @override
   String get signInDialogContextResume =>
-      'Sign in again to push your queued edits.';
+      'ඔබගේ පෝලිමේ ඇති සංස්කරණ තල්ලු කිරීමට නැවත පුරනය වන්න.';
 
   @override
   String settingsSignOutConfirmBodyWithPending(int count) {
-    return 'You have unsynced edits on $count list(s). Signing out won\'t push them to the server. Are you sure?';
+    return 'ඔබට ලැයිස්තු $countක නොසමමුහුර්ත සංස්කරණ ඇත. පිටවීමෙන් ඒවා සේවාදායකයට තල්ලු නොකරයි. ඔබට විශ්වාසද?';
   }
 
   @override
   String get overviewResumeSignInIdle =>
-      'Sign in to sync your shared lists across devices.';
+      'ඔබගේ බෙදාගත් ලැයිස්තු උපාංග හරහා සමමුහුර්ත කිරීමට පුරනය වන්න.';
 
   @override
   String get overviewResumeSignInWithPending =>
-      'You have unsynced edits. Sign in again to push them.';
+      'ඔබට නොසමමුහුර්ත සංස්කරණ ඇත. ඒවා තල්ලු කිරීමට නැවත පුරනය වන්න.';
 
   @override
-  String get overviewResumeSignInButton => 'Sign in';
+  String get overviewResumeSignInButton => 'පුරනය වන්න';
 
   @override
-  String get expiredSessionBanner =>
-      'Your session expired. Sign in again to push your edits.';
+  String get flashcardsSaveFailed =>
+      'ඔබගේ පුනරීක්ෂණ ප්‍රගතිය සුරැකීමට නොහැකි විය.';
 
   @override
-  String get expiredSessionBannerAction => 'Sign in';
+  String get engineSessionExpiredSnack => 'පිටව ඇත — කරුණාකර නැවත පුරනය වන්න';
 
   @override
-  String get engineSessionExpiredSnack => 'Signed out — please sign in again';
-
-  @override
-  String get engineSessionExpiredSnackAction => 'Sign in';
+  String get engineSessionExpiredSnackAction => 'පුරනය වන්න';
 
   @override
   String get engineRemovedAsEditorSnack =>
-      'You\'re no longer an editor of this list';
+      'ඔබ තවදුරටත් මෙම ලැයිස්තුවේ සංස්කාරකයෙකු නොවේ';
 
   @override
   String get engineSnapshotCatchUpSnack =>
-      'This list changed a lot while you were offline — review your recent edits.';
+      'ඔබ නොබැඳිව සිටියදී මෙම ලැයිස්තුව බොහෝ සෙයින් වෙනස් විය — ඔබගේ මෑත සංස්කරණ සමාලෝචනය කරන්න.';
 
   @override
-  String get importedListFallbackName => 'Imported list';
+  String get importedListFallbackName => 'ආයාත කළ ලැයිස්තුව';
 
   @override
-  String get favouritesListName => 'Favourites';
+  String get favouritesListName => 'ප්‍රියතම';
 
   @override
-  String get listNameErrorEmpty => 'List name cannot be empty';
+  String get listNameErrorEmpty => 'ලැයිස්තු නම හිස් විය නොහැක';
 
   @override
-  String get listNameErrorInvalid => 'Invalid list name';
+  String get listNameErrorInvalid => 'වලංගු නොවන ලැයිස්තු නම';
 
   @override
   String listNameErrorReserved(String name) {
-    return 'List name \"$name\" is reserved';
+    return 'ලැයිස්තු නම \"$name\" වෙන් කර ඇත';
   }
 
   @override
   String get listNameErrorAlreadyExists =>
-      'A list with that name already exists';
+      'එම නම සහිත ලැයිස්තුවක් දැනටමත් පවතී';
 
   @override
-  String get legalInformationPageTitle => 'Legal Information';
+  String get legalInformationPageTitle => 'නීතික තොරතුරු';
 
   @override
-  String get buildInformationPageTitle => 'Build Information';
+  String get buildInformationPageTitle => 'ගොඩනැගීමේ තොරතුරු';
 
   @override
-  String get backgroundLogsPageTitle => 'Background Logs';
+  String get backgroundLogsPageTitle => 'පසුබිම් ලොග';
 
   @override
-  String get backgroundLogsCopyButton => 'Copy logs to clipboard';
+  String get backgroundLogsCopyButton => 'ලොග පසුරු පුවරුවට පිටපත් කරන්න';
 
   @override
-  String get backgroundLogsCopiedSnack => 'Logs copied to clipboard';
+  String get backgroundLogsCopiedSnack => 'ලොග පසුරු පුවරුවට පිටපත් කරන ලදී';
 
   @override
   String reportIssueEmailSubject(String appName) {
-    return 'Issue with $appName';
+    return '$appName සමඟ ඇති ගැටලුව';
   }
 
   @override
-  String forkPartialDrop(int copied, int total, int dropped) {
-    return 'Copied $copied of $total entries — $dropped signs are no longer in the dictionary.';
-  }
+  String get signInTestUserButton =>
+      'පරීක්ෂණ පරිශීලකයෙකු ලෙස පුරනය වන්න (debug)';
 
   @override
-  String get signInTestUserButton => 'Sign in as test user (debug)';
-
-  @override
-  String get signInTestPromptTitle => 'Test sign-in';
+  String get signInTestPromptTitle => 'පරීක්ෂණ පුරනය වීම';
 
   @override
   String get signInTestPromptBody =>
-      'Mints a session on the worker\'s test provider. Debug builds only. Use this to drive the shared-lists feature without a real provider account.';
+      'සේවාදායකයේ පරීක්ෂණ සැපයුම්කරු මත සැසියක් සාදයි. Debug නිර්මාණ පමණි. සැබෑ සැපයුම්කරු ගිණුමක් නොමැතිව බෙදාගත් ලැයිස්තු විශේෂාංගය ක්‍රියාත්මක කිරීමට මෙය භාවිතා කරන්න.';
 
   @override
-  String get signInTestUserIdLabel => 'User id (test:<slug>)';
+  String get signInTestUserIdLabel => 'පරිශීලක id (test:<slug>)';
 
   @override
-  String get signInTestDisplayNameLabel => 'Display name';
+  String get signInTestDisplayNameLabel => 'පෙන්වන නම';
 
   @override
-  String get signInTestPromptConfirm => 'Sign in';
+  String get signInTestPromptConfirm => 'පුරනය වන්න';
 
   @override
   String get searchRecent => 'මෑත';
@@ -1066,7 +900,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get signOfTheDayInfo =>
-      'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.';
+      'අද දවසේ සංඥාව ඔබ සාදා ඇති හෝ දායක වී ඇති ලැයිස්තුවලින් අහඹු වචනයකි. එය දිනකට වරක් වෙනස් වේ.';
 
   @override
   String searchResultCount(int count) {
@@ -1090,13 +924,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String get searchNoMatchBody =>
       'අක්ෂර වින්‍යාසය පරීක්ෂා කරන්න, නැතහොත් සම්බන්ධ වචනයක් උත්සාහ කරන්න. සමහර සංඥා වෙනත් ඉංග්‍රීසි වචනයක් යටතේ ඇත.';
-
-  @override
-  String get searchReportMissing => 'Report a missing word';
-
-  @override
-  String get searchReportMissingThanks =>
-      'Thanks — we\'ll look into adding it.';
 
   @override
   String get newsEmptyTitle => 'තවම නිවේදන නැත';
@@ -1125,7 +952,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get listsReorderHint =>
-      'Drag a list to reorder it, or tap it to rename. Favourites stays pinned to the top.';
+      'ලැයිස්තුවක් නැවත පිළිවෙළට ඇදගෙන යන්න, නැතහොත් නැවත නම් කිරීමට එය තට්ටු කරන්න. ප්‍රියතම ඉහළින් රඳවා තැබේ.';
 
   @override
   String listWordCount(int count) {
@@ -1161,10 +988,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'මේ දක්වා දිගම ධාවනය — දිගටම කරගෙන යන්න!';
 
   @override
-  String get revisionBuildSessionHeader =>
-      'අධ්‍යයන සැසියක් සාදන්න. පුණරීක්ෂණය කළ යුතු දේ තෝරා, පසුව ආරම්භ කරන්න.';
-
-  @override
   String revisionSignCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1195,16 +1018,16 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get flashcardsStrategyLabel => 'උපාය මාර්ගය';
 
   @override
-  String get flashcardsCardLimitLabel => 'Card limit';
+  String get flashcardsCardLimitLabel => 'කාඩ් සීමාව';
 
   @override
-  String get flashcardsCardLimitNone => 'No limit';
+  String get flashcardsCardLimitNone => 'සීමාවක් නැත';
 
   @override
-  String get revisionPreviousCard => 'Previous card';
+  String get revisionPreviousCard => 'පෙර කාඩ්පත';
 
   @override
-  String get revisionNextCard => 'Next card';
+  String get revisionNextCard => 'ඊළඟ කාඩ්පත';
 
   @override
   String get revisionDueNow => 'දැන් නියමිතයි';
@@ -1243,20 +1066,15 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get regionSheetStatesTerritories => 'ප්‍රාන්ත සහ ප්‍රදේශ';
 
   @override
-  String get regionSheetRecommended => 'Recommended';
+  String get regionSheetRecommended => 'නිර්දේශිත';
 
   @override
   String get regionSheetUnknownExplanation =>
-      'Most signs aren\'t tagged with a region, so leaving this on keeps them in your revision.';
+      'බොහෝ සංඥා කලාපයකට ටැග් කර නැත, එබැවින් මෙය සක්‍රීයව තැබීමෙන් ඒවා ඔබගේ සංශෝධනයේ රඳවා ගනී.';
 
   @override
   String wordVariationWithHint(int index, int count) {
     return 'විචලනය $index/$count · සැසඳීමට ස්වයිප් කරන්න';
-  }
-
-  @override
-  String wordVariation(int index, int count) {
-    return 'විචලනය $index/$count';
   }
 
   @override
@@ -1266,9 +1084,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get seeAlso => 'මෙයත් බලන්න';
-
-  @override
-  String get revealAnswer => 'Reveal answer';
 
   @override
   String get tapToReveal => 'හෙළි කිරීමට තට්ටු කරන්න';

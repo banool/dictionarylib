@@ -27,44 +27,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get searchHintText => 'Search for a word';
 
   @override
-  String nFlashcardsSelected(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cards',
-      one: 'cards',
-      zero: 'cards',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String nFlashcardsDue(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cards',
-      one: 'cards',
-      zero: 'cards',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get flashcardsRevisionSources => 'Revision Sources';
-
-  @override
-  String get flashcardsSelectListsToRevise => 'Select lists to revise';
 
   @override
   String get flashcardsSelectLists => 'Select Lists';
@@ -82,65 +45,17 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get flashcardsRevisionSettings => 'Revision Settings';
 
   @override
-  String get flashcardsSelectRevisionStrategy => 'Select revision strategy';
-
-  @override
-  String get flashcardsStrategy => 'Strategy';
-
-  @override
-  String get flashcardsSelectSignRegions => 'Select sign regions';
-
-  @override
-  String get flashcardsRegions => 'Regions';
-
-  @override
   String get flashcardsStart => 'Start';
-
-  @override
-  String get flashcardsOnlyOneCard => 'Show only one set of cards per word';
-
-  @override
-  String get flashcardsRevisionLanguage => 'Revision Language';
-
-  @override
-  String get flashcardsAllOfSriLanka => 'All of Sri Lanka';
-
-  @override
-  String get flashcardsNorthEast => 'North East';
-
-  @override
-  String get flashcardsNext => 'Next';
-
-  @override
-  String get flashcardsForgot => 'Forgot';
-
-  @override
-  String get flashcardsGotIt => 'Got it!';
 
   @override
   String get flashcardsCardUnavailable =>
       'A card was unavailable and was skipped.';
 
   @override
-  String get flashcardsWhatIsSignForWord => 'What is the sign for this word?';
-
-  @override
-  String get flashcardsWhatDoesSignMean => 'What does this sign mean?';
-
-  @override
-  String get flashcardsOpenDictionaryEntry => 'Open dictionary entry';
-
-  @override
   String get flashcardsSuccessRate => 'Success Rate';
 
   @override
-  String get flashcardsTotalCards => 'Total Cards';
-
-  @override
   String get flashcardsSuccessfulCards => 'Successful Cards';
-
-  @override
-  String get flashcardsIncorrectCards => 'Incorrect Cards';
 
   @override
   String get flashcardsTotalReviews => 'Total Reviews';
@@ -152,20 +67,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get flashcardsUniqueWords => 'Unique Words';
 
   @override
-  String get flashcardsLongestStreak => 'Longest Streak';
-
-  @override
-  String get flashcardsStatsCollectedSince => 'Stats collected since';
-
-  @override
-  String get flashcardsRevisionSummaryTitle => 'Revision Summary';
-
-  @override
   String get flashcardsRevisionProgressTitle => 'Revision Progress';
-
-  @override
-  String get flashcardsRevisionStategyToShow =>
-      'Revision strategy to show stats for';
 
   @override
   String get setPlaybackSpeedTo => 'Set playback speed to';
@@ -175,12 +77,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsAppStoreFeedback => 'Give feedback on App Store';
-
-  @override
-  String get na => 'N/A';
-
-  @override
-  String get settingsLanguage => 'Language';
 
   @override
   String get settingsRevision => 'Revision';
@@ -285,16 +181,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'You need to restart the app for this change to take effect';
 
   @override
-  String get listFavourites => 'Favourites';
-
-  @override
-  String get listNameCannotBeEmpty => 'List name cannot be empty';
-
-  @override
-  String get listNameInvalid =>
-      'Invalid name, this should have been caught already';
-
-  @override
   String get listEnterNewName => 'Enter new list name';
 
   @override
@@ -354,19 +240,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get savedVideoSheetTitle => 'Save this video to…';
 
   @override
-  String get wordAlreadyFavourited => 'Already favourited!';
-
-  @override
-  String get wordFavouriteThisWord => 'Favourite this word';
-
-  @override
-  String get wordNoDefinitions =>
-      'No definitions data available for this word / phrase';
-
-  @override
-  String get wordDataMissing => 'Data missing';
-
-  @override
   String get entryTypeWords => 'Words';
 
   @override
@@ -377,9 +250,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get entrySelectEntryTypes => 'Select Entry Types';
-
-  @override
-  String get relatedWords => 'Related words';
 
   @override
   String get alertCareful => 'Careful!';
@@ -394,14 +264,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get alertOk => 'OK';
 
   @override
-  String get startupFailureMessage =>
-      'Failed to start the app correctly. First, please confirm you are using the latest version of the app. If you are, please email daniel@dport.me with a screenshot showing this error.';
-
-  @override
   String get unexpectedErrorLoadingVideo => 'Unexpected error loading media';
-
-  @override
-  String get deviceDefault => 'Device Default';
 
   @override
   String get shareDialogTitle => 'Share this list';
@@ -684,25 +547,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
-  String get alertSave => 'Save';
-
-  @override
-  String get alertDone => 'Done';
-
-  @override
   String get listNameAllowedChars =>
       'No special characters besides these are allowed: , . - _ !';
-
-  @override
-  String forceUpgradeMessage(String version) {
-    return 'You are using an unsupported version ($version) of the app, please update.';
-  }
-
-  @override
-  String get forceUpgradeButton => 'Update';
-
-  @override
-  String get privacyPolicyPageTitle => 'Privacy Policy';
 
   @override
   String get importOwnedListsPromptTitle => 'Import your shared lists?';
@@ -932,11 +778,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
-  String membersPageSubtitleFor(String name) {
-    return 'Members of \"$name\"';
-  }
-
-  @override
   String get signInDialogContextInvite =>
       'Sign in to accept the invite. You\'ll be able to edit the list once you do.';
 
@@ -961,11 +802,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get overviewResumeSignInButton => 'Sign in';
 
   @override
-  String get expiredSessionBanner =>
-      'Your session expired. Sign in again to push your edits.';
-
-  @override
-  String get expiredSessionBannerAction => 'Sign in';
+  String get flashcardsSaveFailed => 'Couldn\'t save your revision progress.';
 
   @override
   String get engineSessionExpiredSnack => 'Signed out — please sign in again';
@@ -1020,11 +857,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   @override
   String reportIssueEmailSubject(String appName) {
     return 'Issue with $appName';
-  }
-
-  @override
-  String forkPartialDrop(int copied, int total, int dropped) {
-    return 'Copied $copied of $total entries — $dropped signs are no longer in the dictionary.';
   }
 
   @override
@@ -1086,13 +918,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'Check the spelling, or try a related word. Some signs are listed under a different English word.';
 
   @override
-  String get searchReportMissing => 'Report a missing word';
-
-  @override
-  String get searchReportMissingThanks =>
-      'Thanks — we\'ll look into adding it.';
-
-  @override
   String get newsEmptyTitle => 'No announcements yet';
 
   @override
@@ -1151,10 +976,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get revisionStreakSubtitle => 'Longest run yet — keep it going!';
-
-  @override
-  String get revisionBuildSessionHeader =>
-      'Build a study session. Pick what to revise, then start.';
 
   @override
   String revisionSignCount(int count) {
@@ -1246,20 +1067,12 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
-  String wordVariation(int index, int count) {
-    return 'Variation $index of $count';
-  }
-
-  @override
   String videoIndicator(int index, int count) {
     return 'Video $index of $count';
   }
 
   @override
   String get seeAlso => 'See also';
-
-  @override
-  String get revealAnswer => 'Reveal answer';
 
   @override
   String get tapToReveal => 'Tap to reveal';
