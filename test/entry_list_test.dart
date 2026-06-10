@@ -451,5 +451,80 @@ void main() {
       expect(userEntryListManager.getEntryLists().keys.toList(),
           [KEY_FAVOURITES_ENTRIES, 'b_words', 'a_words']);
     });
+
+    test('renameEntryList moves the list + its videos, keeping position',
+        () async {
+      userEntryListManager = UserEntryListManager.fromStartup();
+      await userEntryListManager.createEntryList('a_words');
+      await userEntryListManager.createEntryList('b_words');
+      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      await userEntryListManager.getEntryLists()['a_words']!.addVideo(v);
+
+      await userEntryListManager.renameEntryList('a_words', 'cats_words');
+
+      final lists = userEntryListManager.getEntryLists();
+      // Renamed in place: new key sits where the old one was, old key gone.
+      expect(lists.keys.toList(),
+          [KEY_FAVOURITES_ENTRIES, 'cats_words', 'b_words']);
+      expect(lists.containsKey('a_words'), isFalse);
+      // The saved video came along, and the object's own key was updated.
+      expect(lists['cats_words']!.containsVideo(v), isTrue);
+      expect(lists['cats_words']!.key, 'cats_words');
+      // Storage moved to the new key; the old key + its schema flag are gone.
+      expect(sharedPreferences.getStringList('cats_words'), [v.toStorage()]);
+      expect(sharedPreferences.getStringList('a_words'), isNull);
+      expect(sharedPreferences.getInt('a_words_schemaVersion'), isNull);
+      // The persisted index reflects the rename.
+      expect(sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS),
+          [KEY_FAVOURITES_ENTRIES, 'cats_words', 'b_words']);
+    });
+
+    test('renameEntryList survives a reload from prefs', () async {
+      userEntryListManager = UserEntryListManager.fromStartup();
+      await userEntryListManager.createEntryList('a_words');
+      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      await userEntryListManager.getEntryLists()['a_words']!.addVideo(v);
+      await userEntryListManager.renameEntryList('a_words', 'cats_words');
+
+      userEntryListManager = UserEntryListManager.fromStartup();
+      final lists = userEntryListManager.getEntryLists();
+      expect(lists.keys.toList(), [KEY_FAVOURITES_ENTRIES, 'cats_words']);
+      expect(lists['cats_words']!.containsVideo(v), isTrue);
+    });
+
+    test('renameEntryList rejects a name that already exists', () async {
+      userEntryListManager = UserEntryListManager.fromStartup();
+      await userEntryListManager.createEntryList('a_words');
+      await userEntryListManager.createEntryList('b_words');
+      expect(() => userEntryListManager.renameEntryList('a_words', 'b_words'),
+          throwsA(isA<EntryListNameException>()));
+      // The source list is left untouched.
+      expect(userEntryListManager.getEntryLists().containsKey('a_words'), isTrue);
+    });
+
+    test('renameEntryList refuses to rename favourites', () async {
+      userEntryListManager = UserEntryListManager.fromStartup();
+      await userEntryListManager.createEntryList('cats_words');
+      expect(
+          () => userEntryListManager.renameEntryList(
+              KEY_FAVOURITES_ENTRIES, 'renamed_words'),
+          throwsA(isA<EntryListNameException>()));
+      // Favourites stays put under its fixed key, in its place.
+      expect(userEntryListManager.getEntryLists().keys.first,
+          KEY_FAVOURITES_ENTRIES);
+      expect(sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS)?.first,
+          KEY_FAVOURITES_ENTRIES);
+    });
+
+    test('renameEntryList is a no-op when the name is unchanged', () async {
+      userEntryListManager = UserEntryListManager.fromStartup();
+      await userEntryListManager.createEntryList('cats_words');
+      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      await userEntryListManager.getEntryLists()['cats_words']!.addVideo(v);
+      await userEntryListManager.renameEntryList('cats_words', 'cats_words');
+      expect(userEntryListManager.getEntryLists()['cats_words']!.containsVideo(v),
+          isTrue);
+      expect(sharedPreferences.getStringList('cats_words'), [v.toStorage()]);
+    });
   });
 }

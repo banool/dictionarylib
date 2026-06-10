@@ -427,6 +427,12 @@ class HearthRow extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? iconColor;
 
+  /// Horizontal inset of the row's content. Defaults to 15 (the grouped-card
+  /// look). Callers that place rows inside a wider container — e.g. a dialog
+  /// where the title sits at the Material 24dp inset — can bump this so the
+  /// text lines up with that container's other content.
+  final double horizontalPadding;
+
   const HearthRow({
     this.icon,
     required this.title,
@@ -434,6 +440,7 @@ class HearthRow extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.iconColor,
+    this.horizontalPadding = 15,
     super.key,
   });
 
@@ -444,7 +451,7 @@ class HearthRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         // A uniform minimum row height so rows with a tall trailing (Switch /
         // Checkbox, whose tap target is ~48dp) are the same height as plain
         // rows (chevron / value). Multi-line subtitles can still grow past it.
@@ -547,7 +554,9 @@ Future<T?> showHearthPicker<T>({
       return AlertDialog(
         title: Text(title),
         // Zero horizontal content padding so each HearthRow's own inset + ripple
-        // span the dialog width.
+        // span the dialog width. The rows use the 24dp Material inset (matching
+        // the title's default titlePadding) so option labels line up under the
+        // title rather than sitting outdented to its left.
         contentPadding: const EdgeInsets.symmetric(vertical: 8),
         content: SizedBox(
           width: double.maxFinite,
@@ -557,6 +566,7 @@ Future<T?> showHearthPicker<T>({
               for (final o in options)
                 HearthRow(
                   title: o.label,
+                  horizontalPadding: 24,
                   onTap: () => Navigator.of(ctx).pop(o.value),
                   trailing: o.value == selected
                       ? Icon(Icons.check, color: cs.primary)

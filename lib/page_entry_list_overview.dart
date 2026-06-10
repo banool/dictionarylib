@@ -542,11 +542,21 @@ Widget _buildEditModeList(
                 },
               )
             : null);
+    // Tapping a renamable list opens the rename dialog. Only plain owned
+    // lists qualify — favourites (fixed name) and owner-shared lists (whose
+    // local key backs the share) are left untappable, matching delete.
+    final canRename = canDelete;
     Widget tile = HearthListRow(
       leading: el.getLeadingIcon(inEditMode: true),
       title: name,
       trailing: trailing,
       showChevron: false,
+      onTap: canRename
+          ? () async {
+              final renamed = await applyRenameListDialog(context, el);
+              if (renamed) setState(() {});
+            }
+          : null,
     );
     if (isFavouritesLocal) {
       tile = IgnorePointer(key: ValueKey(name), child: tile);
@@ -664,6 +674,59 @@ Widget getCommunityLists(BuildContext context,
     padding: const EdgeInsets.symmetric(vertical: 8),
     children: tiles,
   );
+}
+
+// Returns true if [list] was renamed. Pre-fills the field with the current
+// name so the user edits rather than retypes. Favourites can't be renamed,
+// so callers should only offer this for renamable lists.
+Future<bool> applyRenameListDialog(BuildContext context, EntryList list) async {
+  final controller = TextEditingController(text: list.getName(context));
+  // Put the caret at the end so editing starts from the existing name.
+  controller.selection =
+      TextSelection.collapsed(offset: controller.text.length);
+  try {
+    final l = DictLibLocalizations.of(context)!;
+    final body = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l.listNameAllowedChars),
+        const Padding(padding: EdgeInsets.only(top: 10)),
+        TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: l.listEnterNewName),
+          autofocus: true,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(EntryList.validNameCharacters),
+          ],
+          textInputAction: TextInputAction.send,
+          keyboardType: TextInputType.visiblePassword,
+          textCapitalization: TextCapitalization.words,
+        ),
+      ],
+    );
+    var confirmed = await confirmAlert(context, body, title: l.listRenameList);
+    if (confirmed) {
+      try {
+        final newKey = EntryList.getKeyFromName(controller.text);
+        await userEntryListManager.renameEntryList(list.key, newKey);
+      } on EntryListNameException catch (e) {
+        if (context.mounted) {
+          showSnack(context, '${l.listFailedToRename}: ${e.localise(context)}.',
+              backgroundColor: Theme.of(context).colorScheme.error);
+        }
+        confirmed = false;
+      } catch (e) {
+        if (context.mounted) {
+          showSnack(context, '${l.listFailedToRename}: $e.',
+              backgroundColor: Theme.of(context).colorScheme.error);
+        }
+        confirmed = false;
+      }
+    }
+    return confirmed;
+  } finally {
+    disposeAfterFrame(controller);
+  }
 }
 
 // Returns true if a new list was created.

@@ -300,7 +300,13 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listFailedToMake => 'නව ලැයිස්තුව සාදා ගැනීමට අසාර්ථක විය';
 
   @override
+  String get listFailedToRename => 'Failed to rename list';
+
+  @override
   String get listNewList => 'නව ලැයිස්තු';
+
+  @override
+  String get listRenameList => 'Rename List';
 
   @override
   String get listMyLists => 'මගේ ලැයිස්තු';
@@ -1108,7 +1114,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get listsReorderHint =>
-      'Drag a list to reorder it. Favourites stays pinned to the top.';
+      'Drag a list to reorder it, or tap it to rename. Favourites stays pinned to the top.';
 
   @override
   String listWordCount(int count) {
@@ -1224,6 +1230,13 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get regionSheetStatesTerritories => 'ප්‍රාන්ත සහ ප්‍රදේශ';
+
+  @override
+  String get regionSheetRecommended => 'Recommended';
+
+  @override
+  String get regionSheetUnknownExplanation =>
+      'Most signs aren\'t tagged with a region, so leaving this on keeps them in your revision.';
 
   @override
   String wordVariationWithHint(int index, int count) {

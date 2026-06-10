@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:dictionarylib/entry_list.dart';
@@ -50,6 +51,79 @@ void main() {
 
       final names = listsService.myLists.map((l) => l.getName()).toList();
       expect(names, ['Favourites', 'cats']);
+    });
+  });
+
+  group('writableLists', () {
+    SyncedListMeta meta(String id, String name, ListRole role,
+            {bool orphaned = false}) =>
+        SyncedListMeta(
+          listId: id,
+          displayName: name,
+          role: role,
+          lastKnownSeq: 1,
+          etag: null,
+          lastSyncedAt: 1,
+          serverUpdatedAt: 1,
+          orphaned: orphaned,
+        );
+
+    test('matches the local user lists when sharing is disabled', () async {
+      // sharing defaults to disabled in setUp.
+      await userEntryListManager.createEntryList('cats_words');
+      expect(listsService.writableLists.map((l) => l.key).toList(),
+          listsService.myLists.map((l) => l.key).toList());
+    });
+
+    test(
+        'is the local user lists plus editor lists, excluding subscriber + '
+        'orphaned lists', () async {
+      // This is the divergence behind the "saved to N lists" bug: an editor
+      // list is a save target (the sheet shows it) but the old myLists-only
+      // count missed it. writableLists is the single source both now use.
+      installFakeSharing((_) async => http.Response('', 404));
+      await userEntryListManager.createEntryList('cats_words');
+
+      await sharing.lists.insert(SyncedEntryList.editor(
+        meta: meta('editor010000', 'Editing', ListRole.editor),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+      // A read-only subscription and an orphaned editor list must NOT be
+      // offered as save targets.
+      await sharing.lists.insert(SyncedEntryList.subscriber(
+        meta: meta('sub010000000', 'Following', ListRole.subscriber),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+      await sharing.lists.insert(SyncedEntryList.editor(
+        meta: meta('editor020000', 'Gone', ListRole.editor, orphaned: true),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+
+      final names = listsService.writableLists.map((l) => l.getName()).toList();
+      expect(names, ['Favourites', 'cats', 'Editing'],
+          reason: 'writable = local user lists + non-orphaned editor lists');
+    });
+
+    test('routes an owner-shared local list through its wrapper', () async {
+      installFakeSharing((req) async {
+        if (req.method == 'POST' && req.url.path == '/v1/lists') {
+          return stubCreateResponse(req);
+        }
+        return http.Response('', 404);
+      });
+      await userEntryListManager.createEntryList('cats_words');
+      final source = userEntryListManager.getEntryLists()['cats_words']!;
+      await listsService.shareList(
+        sourceList: source,
+        displayName: 'Cats',
+        sessionToken: 'fake-session-jwt',
+      );
+      // The 'cats' row is the owner wrapper (so a toggle enqueues a sync op),
+      // not the bare local list.
+      final cats =
+          listsService.writableLists.firstWhere((l) => l.key == 'cats_words');
+      expect(cats, isA<SyncedEntryList>());
+      expect((cats as SyncedEntryList).meta.role, ListRole.owner);
     });
   });
 

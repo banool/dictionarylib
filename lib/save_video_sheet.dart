@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'common.dart';
 import 'entry_list.dart';
-import 'globals.dart';
 import 'l10n/app_localizations.dart';
 import 'lists_service.dart';
 import 'saved_video.dart';
@@ -40,16 +39,10 @@ class _SaveVideoSheet extends StatelessWidget {
     final l = DictLibLocalizations.of(context);
     final title = l?.savedVideoSheetTitle ?? 'Save this video to…';
 
-    final rows = <EntryList>[];
-    for (final el in listsService.myLists) {
-      rows.add(listsService.ownedShareFor(el) ?? el);
-    }
-    if (sharing.isEnabled) {
-      for (final el in sharing.lists.editorLists) {
-        if (el.meta.orphaned) continue;
-        rows.add(el);
-      }
-    }
+    // The lists a video can be saved into — the same set the word-page
+    // bookmark counts against (see ListsService.writableLists), so the
+    // sheet and the "saved to N lists" label always agree.
+    final rows = listsService.writableLists;
 
     return SafeArea(
       child: Padding(

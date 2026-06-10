@@ -611,11 +611,23 @@ abstract class DictLibLocalizations {
   /// **'Failed to make new list'**
   String get listFailedToMake;
 
+  /// No description provided for @listFailedToRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to rename list'**
+  String get listFailedToRename;
+
   /// No description provided for @listNewList.
   ///
   /// In en, this message translates to:
   /// **'New List'**
   String get listNewList;
+
+  /// No description provided for @listRenameList.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename List'**
+  String get listRenameList;
 
   /// No description provided for @listMyLists.
   ///
@@ -1952,7 +1964,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @listsReorderHint.
   ///
   /// In en, this message translates to:
-  /// **'Drag a list to reorder it. Favourites stays pinned to the top.'**
+  /// **'Drag a list to reorder it, or tap it to rename. Favourites stays pinned to the top.'**
   String get listsReorderHint;
 
   /// No description provided for @listWordCount.
@@ -2110,6 +2122,18 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'States & territories'**
   String get regionSheetStatesTerritories;
+
+  /// No description provided for @regionSheetRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get regionSheetRecommended;
+
+  /// No description provided for @regionSheetUnknownExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Most signs aren\'t tagged with a region, so leaving this on keeps them in your revision.'**
+  String get regionSheetUnknownExplanation;
 
   /// No description provided for @wordVariationWithHint.
   ///

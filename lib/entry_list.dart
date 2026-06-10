@@ -436,6 +436,45 @@ class UserEntryListManager implements EntryListManager {
     await writeEntryListKeys();
   }
 
+  /// Rename the list stored under [oldKey] to [newKey], preserving its
+  /// saved videos and its position in the overview. The favourites list
+  /// can't be renamed (its key is fixed). Throws
+  /// [EntryListNameException] with [EntryListNameError.alreadyExists] if a
+  /// list with [newKey] already exists.
+  ///
+  /// Moves the persisted entries (and schema-version flag) from [oldKey]
+  /// to [newKey] on disk so nothing is stranded under the old key.
+  Future<void> renameEntryList(String oldKey, String newKey) async {
+    if (oldKey == newKey) return;
+    if (oldKey == KEY_FAVOURITES_ENTRIES) {
+      throw EntryListNameException(
+          EntryListNameError.reserved, EntryList.getNameFromKey(oldKey));
+    }
+    if (_entryLists.containsKey(newKey)) {
+      throw EntryListNameException(
+          EntryListNameError.alreadyExists, EntryList.getNameFromKey(newKey));
+    }
+    final existing = _entryLists[oldKey];
+    if (existing == null) return;
+    // Rebuild the map preserving insertion order, swapping the key in place
+    // so the renamed list stays exactly where it was in the overview.
+    final rebuilt = LinkedHashMap<String, EntryList>();
+    for (final e in _entryLists.entries) {
+      if (e.key == oldKey) {
+        existing.key = newKey;
+        rebuilt[newKey] = existing;
+      } else {
+        rebuilt[e.key] = e.value;
+      }
+    }
+    _entryLists = rebuilt;
+    // Persist the entries under the new key, then clear the old key.
+    await existing.write();
+    await sharedPreferences.remove(oldKey);
+    await sharedPreferences.remove(_listSchemaVersionKey(oldKey));
+    await writeEntryListKeys();
+  }
+
   Future<void> writeEntryListKeys() async {
     await sharedPreferences.setStringList(
         KEY_ENTRY_LIST_KEYS, _entryLists.keys.toList());

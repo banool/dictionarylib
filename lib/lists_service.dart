@@ -53,6 +53,30 @@ class ListsService {
     return ownedShareFor(local) ?? local;
   }
 
+  /// Every list a video can be saved into, in the order the save sheet
+  /// shows them: the local user lists (each routed through its owner-mode
+  /// wrapper when shared, so toggles enqueue sync ops) followed by the
+  /// editor-mode shared lists. Read-only subscriber lists and the
+  /// separate community lists are excluded — you can't save into either.
+  ///
+  /// Single source of truth for "which lists hold this video": both the
+  /// save sheet and the word-page "saved to N lists" count build from
+  /// this, so the count can never drift from what the sheet lets you
+  /// toggle (e.g. an editor list the count used to miss).
+  List<EntryList> get writableLists {
+    final out = <EntryList>[];
+    for (final el in myLists) {
+      out.add(ownedShareFor(el) ?? el);
+    }
+    if (sharing.isEnabled) {
+      for (final el in sharing.lists.editorLists) {
+        if (el.meta.orphaned) continue;
+        out.add(el);
+      }
+    }
+    return out;
+  }
+
   /// The owner-side sync metadata for [list] if it's been shared from this
   /// device, else null. UI surfaces a "shared by you" badge / unshare menu
   /// when this is non-null.
