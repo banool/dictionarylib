@@ -1,0 +1,67 @@
+name: Dart
+
+# CI for the Flutter package itself. The worker has its own workflow
+# (api.yml); this one covers the Dart/Flutter test suite plus the
+# multi-device integration suite, which runs the real client stack
+# against a local `wrangler dev` instance of the share worker.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      # The multi-device suite auto-skips here (no worker running); the
+      # integration job below runs it for real.
+      - run: flutter test
+
+  multi-device:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: bun install --frozen-lockfile
+        working-directory: lists/workers
+      - name: Start wrangler dev (local mode)
+        run: nohup bunx wrangler dev --env dev > /tmp/wrangler-dev.log 2>&1 &
+        working-directory: lists/workers
+      - name: Wait for the worker to come up
+        run: |
+          set -e
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8787/v1/health > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "wrangler dev never became healthy"
+          cat /tmp/wrangler-dev.log
+          exit 1
+      # The worker's own HTTP-level integration suite (auto-skips when no
+      # server is reachable, so running it here is what actually
+      # exercises it).
+      - run: bun test test/integration/
+        working-directory: lists/workers
+      # The Dart-level multi-device suite: a real SyncEngine stack as
+      # device A plus a raw-HTTP device B converging through the worker.
+      - run: flutter pub get
+      - run: flutter test test/sharing/multi_device_sync_test.dart
+      - name: Dump worker log on failure
+        if: failure()
+        run: cat /tmp/wrangler-dev.log
