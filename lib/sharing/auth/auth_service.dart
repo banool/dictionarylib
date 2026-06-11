@@ -10,6 +10,28 @@ import 'auth_store.dart';
 import 'facebook_sign_in.dart';
 import 'google_sign_in.dart';
 
+/// Master on/off switch for each social login provider, applied
+/// CLIENT-SIDE. Flip an entry to `false` to retire that provider on the
+/// client: [AuthService.isProviderAvailable] returns false for it, so the
+/// sign-in dialog never renders its button (and no other call site can
+/// kick off its flow).
+///
+/// KEEP IN SYNC WITH THE SERVER. The matching server-side switch is
+/// `PROVIDER_ENABLED` in `dictionarylib/lists/workers/src/providers.ts`.
+/// To turn a provider off, set it `false` in BOTH places: this flag hides
+/// the button, and the server flag is the authoritative gate that rejects
+/// the provider's credential even if an old client build or a hand-crafted
+/// request still posts it to `/v1/auth/sign-in`.
+///
+/// [AuthProvider.test] is deliberately absent — it's never offered in the
+/// dialog and is gated separately (kDebugMode on the client; ENVIRONMENT +
+/// TEST_AUTH_TOKEN on the server, see `verifyTestToken`).
+const Map<AuthProvider, bool> _socialProviderEnabled = {
+  AuthProvider.apple: true,
+  AuthProvider.google: true,
+  AuthProvider.facebook: false,
+};
+
 /// Coordinates "tap a provider button → get a session" end-to-end:
 /// invokes the platform SDK, exchanges the resulting provider
 /// credential with the Worker, persists the session in [AuthStore].
@@ -40,11 +62,22 @@ class AuthService {
   /// hidden button. Facebook on Android is the one structural
   /// exception — see the case below.
   ///
+  /// First gate is the global per-provider kill switch
+  /// [_socialProviderEnabled]: a provider turned off there is hidden on
+  /// every platform regardless of runtime capability. Keep that switch in
+  /// sync with the server's `PROVIDER_ENABLED`
+  /// (`dictionarylib/lists/workers/src/providers.ts`).
+  ///
   /// Web is treated as unsupported for every provider for now. None
   /// of the SDKs we use are wired up for the browser flow, so showing
   /// buttons that always fail isn't useful. Re-enable per-provider
   /// here once the web embeds are tested.
   bool isProviderAvailable(AuthProvider provider) {
+    // Global per-provider kill switch — see [_socialProviderEnabled]. A
+    // disabled provider is hidden everywhere; the server enforces the same
+    // decision in `PROVIDER_ENABLED`. (`test` is not in the map, so it
+    // falls through to the platform checks below, which hide it anyway.)
+    if (_socialProviderEnabled[provider] == false) return false;
     if (kIsWeb) return false;
     switch (provider) {
       case AuthProvider.apple:
