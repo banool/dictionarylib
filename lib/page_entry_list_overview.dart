@@ -9,7 +9,6 @@ import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
-import 'package:dictionarylib/sharing/sync_engine.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,10 +43,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
   bool inEditMode = false;
 
-  /// Subscription to engine one-shot notifications (session expired,
-  /// removed as editor). Surfaced as snackbars while this page is alive.
-  StreamSubscription<SyncNotification>? _notificationSub;
-
   @override
   void initState() {
     super.initState();
@@ -62,40 +57,10 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
       // or a sign-out drops the session) so the unsynced banner reflects
       // the current state without the user pulling-to-refresh.
       sharing.addListener(_onSharingChanged);
-      // Surface engine one-shot events (401 → sessionExpired, 403 →
-      // removedAsEditor) as snackbars. Lives on this page because it's
-      // the main entry point post-share.
-      _notificationSub =
-          sharing.engineNotifications.listen(_onEngineNotification);
-    }
-  }
-
-  void _onEngineNotification(SyncNotification notification) {
-    if (!mounted) return;
-    final l = DictLibLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
-    switch (notification) {
-      case SyncNotification.sessionExpired:
-        messenger.showSnackBar(SnackBar(
-          content: Text(l.engineSessionExpiredSnack),
-          action: SnackBarAction(
-            label: l.engineSessionExpiredSnackAction,
-            onPressed: () async {
-              if (!sharing.isEnabled) return;
-              final session = await showSignInDialog(context,
-                  contextMessage: l.signInDialogContextResume);
-              if (session != null) {
-                unawaited(sharing.engine.syncAll().then((_) {
-                  if (mounted) setState(() {});
-                }));
-              }
-            },
-          ),
-        ));
-      case SyncNotification.removedAsEditor:
-        showSnackVia(messenger, l.engineRemovedAsEditorSnack);
-      case SyncNotification.snapshotCatchUp:
-        showSnackVia(messenger, l.engineSnapshotCatchUpSnack);
+      // Engine one-shot events (session expired, removed as editor, …)
+      // are surfaced app-wide by installEngineNotificationSnackbars —
+      // see engine_notification_listener.dart. Listening here too would
+      // double the snackbars.
     }
   }
 
@@ -168,7 +133,6 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
       WidgetsBinding.instance.removeObserver(this);
       sharing.removeListener(_onSharingChanged);
     }
-    _notificationSub?.cancel();
     tabController.removeListener(_onTabChange);
     tabController.dispose();
     super.dispose();
