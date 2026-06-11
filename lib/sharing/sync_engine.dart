@@ -156,7 +156,7 @@ class SyncEngine {
   static const Duration _maxBackoff = Duration(minutes: 5);
 
   /// Server-side cap on ops per /sync request (must match
-  /// `MAX_OPS_PER_BATCH` in `lists/workers/src/list_do.ts`). The
+  /// `MAX_OPS_PER_BATCH` in `lists/workers/src/validation.ts`). The
   /// engine chunks any pending queue larger than this into multiple
   /// sequential /sync calls so a long offline session can still
   /// drain.

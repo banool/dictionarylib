@@ -43,7 +43,8 @@ enum ListRole {
   owner,
 
   /// User has been added to the list as an editor by its owner. Can
-  /// add/remove entries and rename.
+  /// add/remove entries; renaming stays owner-only (enforced by the
+  /// worker).
   editor,
 
   /// User has subscribed via a share link. Read-only.
