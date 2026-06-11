@@ -176,7 +176,7 @@ class SearchPageState extends State<SearchPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
               Expanded(
@@ -371,10 +371,18 @@ class SearchPageState extends State<SearchPage> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
         if (recents.isNotEmpty) ...[
+          // Default section-label rhythm (20 above, 8 below) so this and
+          // the sign-of-the-day section breathe identically. The compact
+          // Clear button keeps the label row at text height.
           HearthSectionLabel(
-            padding: EdgeInsets.fromLTRB(4, 16, 4, 0),
             l.searchRecent,
             trailing: TextButton(
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               onPressed: () async {
                 await sharedPreferences.remove(KEY_RECENT_SEARCHES);
                 setState(() {});
@@ -384,7 +392,7 @@ class SearchPageState extends State<SearchPage> {
           ),
           Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 8,
             children: [
               for (final w in recents)
                 ActionChip(
@@ -447,7 +455,7 @@ class SearchPageState extends State<SearchPage> {
     final phrase = entry.getPhrase(locale) ?? "";
     final preview = widget.entryDefinitionPreview?.call(entry);
     return HearthCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       onTap: () => _openEntry(context, entry),
       child: Row(
         children: [
@@ -465,7 +473,7 @@ class SearchPageState extends State<SearchPage> {
                         .textTheme
                         .titleLarge
                         ?.copyWith(fontSize: 22)),
-                const SizedBox(height: 5),
+                const SizedBox(height: 6),
                 Text(
                   preview ??
                       DictLibLocalizations.of(context)!.signOfTheDayBlurb,
