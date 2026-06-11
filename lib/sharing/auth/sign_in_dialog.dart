@@ -306,11 +306,18 @@ Future<void> _attemptTestSignIn(
 
 /// The provider the user last successfully signed in with, or null if there's
 /// no record (or it was the debug-only test provider, which we never surface).
+/// A provider that is no longer offered (killswitched or platform-hidden) is
+/// also suppressed — a hint naming a provider with no button is just
+/// confusing.
 AuthProvider? _lastProviderHint() {
   final name = sharedPreferences.getString(KEY_LAST_AUTH_PROVIDER);
   if (name == null) return null;
   for (final p in AuthProvider.values) {
-    if (p.name == name && p != AuthProvider.test) return p;
+    if (p.name == name &&
+        p != AuthProvider.test &&
+        sharing.auth.isProviderAvailable(p)) {
+      return p;
+    }
   }
   return null;
 }

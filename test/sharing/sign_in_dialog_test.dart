@@ -1,3 +1,4 @@
+import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/sharing/auth/auth_store.dart';
@@ -80,5 +81,48 @@ void main() {
 
     expect(await firstFuture, isNull);
     expect(await secondFuture, isNull);
+  });
+
+  /// The "last time you signed in with X" hint must not name a provider
+  /// whose button is no longer offered (killswitched or platform-hidden) —
+  /// e.g. a pre-killswitch Facebook user should not be teased with a
+  /// provider they can't tap.
+  testWidgets('last-used hint is suppressed for unavailable providers',
+      (tester) async {
+    Future<void> openDialogWithLastProvider(String providerName) async {
+      await sharedPreferences.setString(KEY_LAST_AUTH_PROVIDER, providerName);
+      // Key the harness per case — otherwise the second pumpWidget updates
+      // the existing element in place and initState/onReady never refires.
+      await tester.pumpWidget(MaterialApp(
+        key: ValueKey(providerName),
+        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        supportedLocales: DictLibLocalizations.supportedLocales,
+        home: _CaptureContext(onReady: (ctx) {
+          showSignInDialog(ctx);
+        }),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    // Facebook is killswitched (and hidden on this host platform anyway),
+    // so the hint must not appear.
+    await openDialogWithLastProvider('facebook');
+    var l = DictLibLocalizations.of(
+        tester.element(find.byType(_CaptureContext).first))!;
+    expect(find.text(l.signInLastUsedHint(l.providerFacebook)), findsNothing,
+        reason: 'no hint for a provider with no button');
+    await tester.tap(find.text(l.alertCancel));
+    await tester.pumpAndSettle();
+
+    // Google is available, so the same record shows the hint.
+    await openDialogWithLastProvider('google');
+    l = DictLibLocalizations.of(
+        tester.element(find.byType(_CaptureContext).first))!;
+    expect(find.text(l.signInWithGoogle), findsOneWidget,
+        reason: 'sanity: the second dialog should be open');
+    expect(find.text(l.signInLastUsedHint(l.providerGoogle)), findsOneWidget,
+        reason: 'available providers keep the hint');
+    await tester.tap(find.text(l.alertCancel));
+    await tester.pumpAndSettle();
   });
 }

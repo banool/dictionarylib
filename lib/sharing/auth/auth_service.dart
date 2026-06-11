@@ -24,6 +24,12 @@ import 'microsoft_sign_in.dart';
 /// the provider's credential even if an old client build or a hand-crafted
 /// request still posts it to `/v1/auth/sign-in`.
 ///
+/// IMPORTANT: identities are scoped to the provider (`<provider>:<sub>`),
+/// so a user whose account lives on a disabled provider can never reach
+/// their owned lists again after signing out. Only retire a provider whose
+/// user base is empty or has been migrated. (Facebook was disabled while
+/// its sign-in had never worked broadly, so its user base was empty.)
+///
 /// [AuthProvider.test] is deliberately absent — it's never offered in the
 /// dialog and is gated separately (kDebugMode on the client; ENVIRONMENT +
 /// TEST_AUTH_TOKEN on the server, see `verifyTestToken`).
@@ -58,27 +64,16 @@ class AuthService {
 
   /// Provider availability hint — "can the runtime physically attempt
   /// this on this platform?" Used by the dialog to hide buttons that
-  /// could never work, but NOT to hide buttons whose config might just
-  /// be missing. Missing config surfaces as a localised
-  /// [SignInErrorKind.notConfigured] error at sign-in time, not a
-  /// hidden button. Facebook on Android is the one structural
-  /// exception — see the case below.
-  ///
-  /// First gate is the global per-provider kill switch
-  /// [_socialProviderEnabled]: a provider turned off there is hidden on
-  /// every platform regardless of runtime capability. Keep that switch in
-  /// sync with the server's `PROVIDER_ENABLED`
-  /// (`dictionarylib/lists/workers/src/providers.ts`).
+  /// could never work: the kill switch [_socialProviderEnabled] is checked
+  /// first, then per-provider structural/platform constraints below.
   ///
   /// Web is treated as unsupported for every provider for now. None
   /// of the SDKs we use are wired up for the browser flow, so showing
   /// buttons that always fail isn't useful. Re-enable per-provider
   /// here once the web embeds are tested.
   bool isProviderAvailable(AuthProvider provider) {
-    // Global per-provider kill switch — see [_socialProviderEnabled]. A
-    // disabled provider is hidden everywhere; the server enforces the same
-    // decision in `PROVIDER_ENABLED`. (`test` is not in the map, so it
-    // falls through to the platform checks below, which hide it anyway.)
+    // `test` is not in the kill-switch map; the platform checks below hide
+    // it anyway.
     if (_socialProviderEnabled[provider] == false) return false;
     if (kIsWeb) return false;
     switch (provider) {
@@ -95,11 +90,10 @@ class AuthService {
         // verification. Hide it there rather than offer a dead end.
         return defaultTargetPlatform != TargetPlatform.android;
       case AuthProvider.microsoft:
-        // MSAL works on iOS + Android, but needs the app's Azure client
-        // id. Treat a null `microsoftClientId` as "unconfigured for this
-        // app" and hide the button (rather than show one that always fails
-        // at sign-in time) — same spirit as the Facebook-on-Android case.
-        return _config.auth.microsoftClientId != null;
+        // Needs the Azure client id everywhere, plus at least one
+        // registered redirect URI on Android. Hide the button rather than
+        // offer a dead end when either is missing.
+        return microsoftPlatformConfigured(_config.auth);
       case AuthProvider.test:
         // Not selectable from the dialog — never offered to end users,
         // only available via [signInWithTestToken] for integration tests.
@@ -162,7 +156,7 @@ class AuthService {
       case AuthProvider.facebook:
         await signOutOfFacebook();
       case AuthProvider.microsoft:
-        await signOutOfMicrosoft();
+        await signOutOfMicrosoft(_config.auth);
       case AuthProvider.apple:
       case AuthProvider.test:
         break;

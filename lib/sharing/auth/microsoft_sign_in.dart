@@ -24,18 +24,33 @@ const String _msalAndroidConfigAsset = 'assets/msal_config.json';
 /// access token it returns is discarded.
 const List<String> _microsoftScopes = ['User.Read'];
 
-/// Pick the Android MSAL redirect URI matching the build's signing cert.
-/// Debug builds are signed with the local debug keystore (a different
-/// signature hash than the release/Play key), so when one is configured we
-/// use [SharingAuthConfig.microsoftAndroidDebugRedirectUri] in `kDebugMode`
-/// and fall back to the release [SharingAuthConfig.microsoftAndroidRedirectUri]
-/// otherwise. Lets `flutter run` / emulator builds sign in without swapping
-/// the production value.
-String? _androidRedirectUri(SharingAuthConfig auth) {
-  if (kDebugMode && auth.microsoftAndroidDebugRedirectUri != null) {
-    return auth.microsoftAndroidDebugRedirectUri;
+/// The Android MSAL redirect URIs to try, in priority order. The right URI
+/// is the one whose signature hash matches the cert the RUNNING build is
+/// signed with, which varies by install channel: debug keystore for
+/// `flutter run`, Play App Signing key for store installs, upload key for
+/// sideloaded release APKs (e.g. the GitHub-released artifact). MSAL
+/// validates URI-vs-signature at client creation, so [_ensurePca] walks
+/// this list until one matches.
+List<String> _androidRedirectUriCandidates(SharingAuthConfig auth) {
+  final debug = auth.microsoftAndroidDebugRedirectUri;
+  final release = auth.microsoftAndroidRedirectUri;
+  final upload = auth.microsoftAndroidUploadRedirectUri;
+  return [
+    if (kDebugMode && debug != null) debug,
+    if (release != null) release,
+    if (upload != null) upload,
+  ];
+}
+
+/// True when Microsoft sign-in has the platform config it needs on this
+/// device. [AuthService.isProviderAvailable] uses this to hide the button
+/// (rather than offer a dead end) on an unconfigured platform.
+bool microsoftPlatformConfigured(SharingAuthConfig auth) {
+  if (auth.microsoftClientId == null) return false;
+  if (!kIsWeb && Platform.isAndroid) {
+    return _androidRedirectUriCandidates(auth).isNotEmpty;
   }
-  return auth.microsoftAndroidRedirectUri;
+  return true;
 }
 
 /// Cached one-per-process MSAL client. Built lazily on first sign-in; a
@@ -53,33 +68,46 @@ Future<SingleAccountPca> _ensurePca(SharingAuthConfig auth) async {
     // wrapper total.
     throw ProviderSignInException(SignInErrorKind.notConfigured);
   }
-  final androidRedirectUri = _androidRedirectUri(auth);
-  if (!kIsWeb && Platform.isAndroid && androidRedirectUri == null) {
-    // Android can't complete the redirect without the registered URI.
+
+  // iOS derives its redirect URI from the bundle id automatically, so one
+  // creation attempt with no Android URI suffices there. Android must
+  // present the URI registered for the cert the running APK is actually
+  // signed with; MSAL checks that at creation (before any UI), so walk
+  // the candidates until one matches — a store install matches the first
+  // immediately, a sideloaded release APK falls through to the
+  // upload-key URI.
+  final isAndroid = !kIsWeb && Platform.isAndroid;
+  final redirectUris =
+      isAndroid ? _androidRedirectUriCandidates(auth) : <String?>[null];
+  if (redirectUris.isEmpty) {
+    // Android can't complete the redirect without a registered URI.
     throw ProviderSignInException(SignInErrorKind.notConfigured);
   }
 
-  try {
-    final pca = await SingleAccountPca.create(
-      clientId: clientId,
-      androidConfig: AndroidConfig(
-        configFilePath: _msalAndroidConfigAsset,
-        redirectUri: androidRedirectUri ?? '',
-      ),
-      // iOS derives its redirect URI from the bundle id automatically. AAD
-      // (Microsoft Entra ID) covers both work/school and personal accounts
-      // via the multi-tenant authority baked into the app registration.
-      appleConfig: AppleConfig(
-        authorityType: AuthorityType.aad,
-        broker: Broker.msAuthenticator,
-      ),
-    );
-    _pca = pca;
-    return pca;
-  } catch (e) {
-    printAndLog('microsoft sign-in: client init failed ($e)');
-    throw ProviderSignInException(SignInErrorKind.notConfigured);
+  for (final redirectUri in redirectUris) {
+    try {
+      final pca = await SingleAccountPca.create(
+        clientId: clientId,
+        androidConfig: AndroidConfig(
+          configFilePath: _msalAndroidConfigAsset,
+          redirectUri: redirectUri ?? '',
+        ),
+        // AAD (Microsoft Entra ID) covers both work/school and personal
+        // accounts via the multi-tenant authority baked into the app
+        // registration.
+        appleConfig: AppleConfig(
+          authorityType: AuthorityType.aad,
+          broker: Broker.msAuthenticator,
+        ),
+      );
+      _pca = pca;
+      return pca;
+    } catch (e) {
+      printAndLog('microsoft sign-in: client init failed for '
+          '${redirectUri ?? '<derived>'} ($e)');
+    }
   }
+  throw ProviderSignInException(SignInErrorKind.notConfigured);
 }
 
 /// Trigger the native MSAL sign-in flow and return the Microsoft v2.0 ID
@@ -118,11 +146,12 @@ Future<String> signInWithMicrosoft(SharingAuthConfig auth) async {
 
 /// Sign out of Microsoft client-side. Clears the cached MSAL account so the
 /// next [signInWithMicrosoft] prompts afresh; doesn't revoke the app's
-/// access on the Microsoft side.
-Future<void> signOutOfMicrosoft() async {
-  final pca = _pca;
-  if (pca == null) return;
+/// access on the Microsoft side. The MSAL account cache survives app
+/// restarts, so if no client exists in this process yet (signed in, then
+/// relaunched, then signed out) one is created just to clear it.
+Future<void> signOutOfMicrosoft(SharingAuthConfig auth) async {
   try {
+    final pca = _pca ?? await _ensurePca(auth);
     await pca.signOut();
   } catch (_) {
     // Best-effort — clearing our own session token is what matters.

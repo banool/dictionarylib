@@ -37,7 +37,7 @@ class SharingConfig {
 
   /// Optional: enables a "Test sign-in" affordance in the sign-in
   /// dialog so a developer can drive the shared-lists feature on
-  /// device without creating real Apple / Google / Facebook accounts.
+  /// device without creating real provider accounts.
   /// The affordance is additionally gated client-side by
   /// `kDebugMode` — release builds NEVER show it, regardless of
   /// config. Server-side, the test-provider sign-in is gated by
@@ -99,52 +99,49 @@ class SharingAuthConfig {
   /// is null.
   final String? appleRedirectUri;
 
-  /// Google OAuth client id used in the iOS and Android `google_sign_in`
-  /// flows. Matches one of the entries in the Worker's
-  /// `GOOGLE_AUDIENCES` env.
-  ///
-  /// On iOS, this is the **iOS client id** (`google_sign_in` uses the
-  /// reversed-client-id URL scheme registered in Info.plist).
-  /// On Android, this should be the **Web client id** (the package looks
-  /// it up automatically from `google-services.json` if present).
-  /// Setting this here is mainly for ID token `aud` purposes; the package
-  /// itself reads platform configs.
+  /// Google OAuth **Web application** client id, passed to `google_sign_in`
+  /// as the server client id — it becomes the minted ID token's `aud`, so
+  /// it must be listed in the Worker's `GOOGLE_AUDIENCES`. A Web-type id is
+  /// a hard requirement on Android: `google_sign_in` v7 goes through
+  /// Credential Manager, which rejects iOS/Android-type ids with a
+  /// developer-console error. (iOS additionally uses the iOS client id from
+  /// `GIDClientID` in Info.plist for the flow itself.) See
+  /// `dictionarylib/lists/MANUAL_SETUP.md` §2.
   final String googleServerClientId;
 
   /// Facebook app id (numeric string). Matches the Worker's
   /// `FACEBOOK_APP_ID`.
   final String facebookAppId;
 
-  /// Microsoft Entra (Azure AD) application (client) id from the Azure
-  /// Portal app registration. Matches the Worker's `MICROSOFT_CLIENT_ID`.
-  /// One id covers iOS + Android (MSAL uses a single app registration with
-  /// per-platform redirect URIs). Null hides "Continue with Microsoft" —
-  /// the provider is treated as unconfigured for this app, so the button
-  /// never shows rather than failing at sign-in time. See
-  /// `dictionarylib/lists/MANUAL_SETUP.md` §4.
+  /// Microsoft Entra (Azure AD) application (client) id. Matches the
+  /// Worker's `MICROSOFT_CLIENT_ID`. Null treats Microsoft as unconfigured
+  /// for this app, so the button never shows rather than failing at
+  /// sign-in time. Provisioning: `dictionarylib/lists/MANUAL_SETUP.md` §4.
   final String? microsoftClientId;
 
-  /// Android-only MSAL redirect URI:
-  /// `msauth://<android-package>/<base64-url-signature-hash>`. Registered
-  /// against the Azure app registration's Android platform config. The iOS
-  /// redirect URI is derived automatically by MSAL from the bundle id, so
-  /// only Android needs this set explicitly. Null leaves Microsoft sign-in
-  /// failing on Android with a localised "not configured" error (it still
-  /// works on iOS).
+  /// Android-only MSAL redirect URIs,
+  /// `msauth://<android-package>/<url-encoded-base64-signature-hash>`, one
+  /// per signing cert the app ships under (each registered in Azure and in
+  /// the manifest — see MANUAL_SETUP §4). iOS derives its redirect URI
+  /// from the bundle id and needs none of these. The sign-in wrapper picks
+  /// whichever matches the running build's actual signature:
   ///
-  /// This is the value used for release builds, so it must match the cert
-  /// the shipped app is signed with (the Play App Signing key for Play
-  /// Store builds). For debug builds, see [microsoftAndroidDebugRedirectUri].
+  ///   - [microsoftAndroidRedirectUri] — the Play App Signing key (what
+  ///     store installs run under). Tried first in non-debug builds.
+  ///   - [microsoftAndroidUploadRedirectUri] — the upload key, for
+  ///     sideloaded release artifacts (e.g. the GitHub-released APK).
+  ///     Tried when the Play URI doesn't match the signature.
+  ///   - [microsoftAndroidDebugRedirectUri] — the local debug keystore,
+  ///     tried first in `kDebugMode` so `flutter run` works untouched.
+  ///
+  /// With none set, Microsoft sign-in on Android fails with a localised
+  /// "not configured" error and the button is hidden.
   final String? microsoftAndroidRedirectUri;
 
-  /// Android-only MSAL redirect URI for DEBUG builds, whose APK is signed
-  /// with the local debug keystore (a different signature hash than the
-  /// release/Play key). When set, [signInWithMicrosoft] uses it instead of
-  /// [microsoftAndroidRedirectUri] whenever `kDebugMode` is true — so a
-  /// `flutter run` / emulator build can do Microsoft sign-in without
-  /// hand-swapping the production value. Null falls back to
-  /// [microsoftAndroidRedirectUri] in every build mode. Both hashes must be
-  /// registered as redirect URIs in the Azure app registration.
+  /// See [microsoftAndroidRedirectUri].
+  final String? microsoftAndroidUploadRedirectUri;
+
+  /// See [microsoftAndroidRedirectUri].
   final String? microsoftAndroidDebugRedirectUri;
 
   const SharingAuthConfig({
@@ -155,6 +152,7 @@ class SharingAuthConfig {
     this.appleRedirectUri,
     this.microsoftClientId,
     this.microsoftAndroidRedirectUri,
+    this.microsoftAndroidUploadRedirectUri,
     this.microsoftAndroidDebugRedirectUri,
   });
 }
@@ -166,7 +164,7 @@ class SharingAuthConfig {
 /// [SharingConfig.testSignIn]) that mints a session via the worker's
 /// gated test-provider path. Lets a developer drive the full
 /// shared-lists feature on device or simulator without creating a
-/// real Apple / Google / Facebook account.
+/// real provider account.
 ///
 /// Pair with `wrangler dev --env dev` for local-only testing, or
 /// with a staging deploy whose `TEST_AUTH_TOKEN` matches this value.

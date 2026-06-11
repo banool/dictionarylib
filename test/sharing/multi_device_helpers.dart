@@ -178,6 +178,50 @@ class RealDeviceStack {
   }
 }
 
+/// Typed view of the worker's GET /v1/lists/:id/state response — just the
+/// fields the suite asserts on. Decoding happens once, in
+/// [HttpDevice.state], so tests stay free of raw-JSON casts.
+class ServerListState {
+  final String displayName;
+
+  /// Entry keys in server position order.
+  final List<String> entryKeys;
+
+  /// Canonical user id (`provider:sub`) of the owner.
+  final String ownerUserId;
+
+  /// Canonical user ids of the editors.
+  final List<String> editorUserIds;
+
+  final int lastSeq;
+
+  const ServerListState({
+    required this.displayName,
+    required this.entryKeys,
+    required this.ownerUserId,
+    required this.editorUserIds,
+    required this.lastSeq,
+  });
+
+  factory ServerListState.fromJson(Map<String, dynamic> json) {
+    final members = json['members'] as Map<String, dynamic>;
+    return ServerListState(
+      displayName: json['displayName'] as String,
+      entryKeys: [
+        for (final e in json['entries'] as List<dynamic>)
+          (e as Map<String, dynamic>)['entry'] as String,
+      ],
+      ownerUserId:
+          (members['owner'] as Map<String, dynamic>)['userId'] as String,
+      editorUserIds: [
+        for (final e in members['editors'] as List<dynamic>)
+          (e as Map<String, dynamic>)['userId'] as String,
+      ],
+      lastSeq: json['lastSeq'] as int,
+    );
+  }
+}
+
 /// "Device B": a second identity speaking raw HTTP to the worker, with its
 /// own session token, client id, and per-list cursor. Mirrors the bun
 /// integration suite's `Client` helper.
@@ -244,8 +288,9 @@ class HttpDevice {
   }
 
   /// POST /v1/lists/:id/sync with add/remove ops built from short specs of
-  /// the form 'add:key' / 'remove:key'. Tracks this device's cursor.
-  Future<Map<String, dynamic>> sync(String listId, List<String> specs) async {
+  /// the form 'add:key' / 'remove:key'. Tracks this device's cursor and
+  /// returns the applied sequence number.
+  Future<int> sync(String listId, List<String> specs) async {
     final ops = [
       for (final spec in specs)
         () {
@@ -266,26 +311,23 @@ class HttpDevice {
     );
     _expect(resp, 200, 'sync');
     final body = jsonDecode(resp.body) as Map<String, dynamic>;
-    _cursor[listId] = body['appliedSeq'] as int;
-    return body;
+    final appliedSeq = body['appliedSeq'] as int;
+    _cursor[listId] = appliedSeq;
+    return appliedSeq;
   }
 
   /// GET /v1/lists/:id/state — authenticated snapshot (members included).
-  Future<Map<String, dynamic>> state(String listId) async {
+  Future<ServerListState> state(String listId) async {
     final resp =
         await http.get(_u('/v1/lists/$listId/state'), headers: _headers());
     _expect(resp, 200, 'state');
-    return jsonDecode(resp.body) as Map<String, dynamic>;
+    return ServerListState.fromJson(
+        jsonDecode(resp.body) as Map<String, dynamic>);
   }
 
   /// Entry keys currently in the list per the server, in position order.
-  Future<List<String>> entryKeys(String listId) async {
-    final snapshot = await state(listId);
-    return [
-      for (final e in (snapshot['entries'] as List<dynamic>))
-        (e as Map<String, dynamic>)['entry'] as String
-    ];
-  }
+  Future<List<String>> entryKeys(String listId) async =>
+      (await state(listId)).entryKeys;
 
   /// PUT /v1/lists/:id — owner-only rename.
   Future<void> rename(String listId, String displayName) async {

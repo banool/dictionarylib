@@ -209,11 +209,7 @@ Future<void> main() async {
 
       // Resolve device A's user id from the server's members block (the
       // client never stores its own user id locally).
-      final members =
-          (await owner.state(listId))['members'] as Map<String, dynamic>;
-      final editorUserId =
-          ((members['editors'] as List<dynamic>).single
-              as Map<String, dynamic>)['userId'] as String;
+      final editorUserId = (await owner.state(listId)).editorUserIds.single;
       await owner.removeEditor(listId, editorUserId);
 
       await deviceA.engine.pushAllDirty();
