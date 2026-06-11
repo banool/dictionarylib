@@ -170,6 +170,7 @@
     },
     "signInWithApple": "Continue with Apple",
     "signInWithGoogle": "Continue with Google",
+    "signInWithMicrosoft": "Continue with Microsoft",
     "signInWithFacebook": "Continue with Facebook",
     "signInFailed": "Sign-in failed. Please try again.",
     "signInCancelled": "Sign-in cancelled.",
@@ -177,6 +178,7 @@
     "signInProviderNoCredential": "Sign-in didn't return a valid response. Please try again.",
     "providerApple": "Apple",
     "providerGoogle": "Google",
+    "providerMicrosoft": "Microsoft",
     "providerFacebook": "Facebook",
     "providerTest": "Test session",
 

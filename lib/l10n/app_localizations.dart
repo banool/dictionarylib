@@ -779,6 +779,12 @@ abstract class DictLibLocalizations {
   /// **'Continue with Google'**
   String get signInWithGoogle;
 
+  /// No description provided for @signInWithMicrosoft.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Microsoft'**
+  String get signInWithMicrosoft;
+
   /// No description provided for @signInWithFacebook.
   ///
   /// In en, this message translates to:
@@ -820,6 +826,12 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Google'**
   String get providerGoogle;
+
+  /// No description provided for @providerMicrosoft.
+  ///
+  /// In en, this message translates to:
+  /// **'Microsoft'**
+  String get providerMicrosoft;
 
   /// No description provided for @providerFacebook.
   ///

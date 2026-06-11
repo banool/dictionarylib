@@ -133,6 +133,7 @@
     "signInLastUsedHint": "පසුගිය වර, ඔබ {provider} සමඟ පුරනය විය.",
     "signInWithApple": "Apple සමඟ දිගටම",
     "signInWithGoogle": "Google සමඟ දිගටම",
+    "signInWithMicrosoft": "Microsoft සමඟ දිගටම",
     "signInWithFacebook": "Facebook සමඟ දිගටම",
     "signInFailed": "පුරනය වීම අසාර්ථක විය. කරුණාකර නැවත උත්සාහ කරන්න.",
     "signInCancelled": "පුරනය වීම අවලංගු කරන ලදී.",
@@ -140,6 +141,7 @@
     "signInProviderNoCredential": "පුරනය වීම වලංගු ප්‍රතිචාරයක් ලබා දුන්නේ නැත. කරුණාකර නැවත උත්සාහ කරන්න.",
     "providerApple": "Apple",
     "providerGoogle": "Google",
+    "providerMicrosoft": "Microsoft",
     "providerFacebook": "Facebook",
     "providerTest": "පරීක්ෂණ සැසිය",
 

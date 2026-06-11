@@ -9,6 +9,7 @@ import 'auth_api.dart';
 import 'auth_store.dart';
 import 'facebook_sign_in.dart';
 import 'google_sign_in.dart';
+import 'microsoft_sign_in.dart';
 
 /// Master on/off switch for each social login provider, applied
 /// CLIENT-SIDE. Flip an entry to `false` to retire that provider on the
@@ -30,6 +31,7 @@ const Map<AuthProvider, bool> _socialProviderEnabled = {
   AuthProvider.apple: true,
   AuthProvider.google: true,
   AuthProvider.facebook: false,
+  AuthProvider.microsoft: true,
 };
 
 /// Coordinates "tap a provider button → get a session" end-to-end:
@@ -92,6 +94,12 @@ class AuthService {
         // tokens, so on Android the button would always fail server-side
         // verification. Hide it there rather than offer a dead end.
         return defaultTargetPlatform != TargetPlatform.android;
+      case AuthProvider.microsoft:
+        // MSAL works on iOS + Android, but needs the app's Azure client
+        // id. Treat a null `microsoftClientId` as "unconfigured for this
+        // app" and hide the button (rather than show one that always fails
+        // at sign-in time) — same spirit as the Facebook-on-Android case.
+        return _config.auth.microsoftClientId != null;
       case AuthProvider.test:
         // Not selectable from the dialog — never offered to end users,
         // only available via [signInWithTestToken] for integration tests.
@@ -124,6 +132,9 @@ class AuthService {
       case AuthProvider.google:
         return _api.signInWithGoogle(
             idToken: await signInWithGoogle(_config.auth));
+      case AuthProvider.microsoft:
+        return _api.signInWithMicrosoft(
+            idToken: await signInWithMicrosoft(_config.auth));
       case AuthProvider.facebook:
         return _api.signInWithFacebook(accessToken: await signInWithFacebook());
       case AuthProvider.test:
@@ -143,13 +154,15 @@ class AuthService {
     final session = _store.current;
     if (session == null) return;
     // Apple doesn't expose a sign-out on the device (the user manages
-    // it under Settings → Apple ID); Google and Facebook do. Test
-    // sessions are server-minted and have nothing to clear.
+    // it under Settings → Apple ID); Google, Facebook, and Microsoft do.
+    // Test sessions are server-minted and have nothing to clear.
     switch (session.provider) {
       case AuthProvider.google:
         await signOutOfGoogle(_config.auth);
       case AuthProvider.facebook:
         await signOutOfFacebook();
+      case AuthProvider.microsoft:
+        await signOutOfMicrosoft();
       case AuthProvider.apple:
       case AuthProvider.test:
         break;

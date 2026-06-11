@@ -14,9 +14,9 @@ import 'auth_store.dart';
 /// The optional `displayName` is the Apple-first-sign-in passthrough:
 /// Apple gives the user's name *only* on the very first sign-in, and
 /// we forward it so the server can persist it in
-/// `users/<userIdHash>.json` for the JWT `name` claim. Google and
-/// Facebook can leave it empty — the server pulls the name from those
-/// providers directly.
+/// `users/<userIdHash>.json` for the JWT `name` claim. Google, Facebook,
+/// and Microsoft can leave it empty — the server pulls the name from those
+/// providers' verified tokens directly.
 ///
 /// Errors surface as [SyncException] — same envelope as the rest of
 /// the sync API, so callers can localise via [localisedSyncError].
@@ -42,6 +42,10 @@ class AuthApi {
 
   Future<AuthSession> signInWithGoogle({required String idToken}) {
     return _signIn(AuthProvider.google, {'idToken': idToken});
+  }
+
+  Future<AuthSession> signInWithMicrosoft({required String idToken}) {
+    return _signIn(AuthProvider.microsoft, {'idToken': idToken});
   }
 
   Future<AuthSession> signInWithFacebook({required String accessToken}) {

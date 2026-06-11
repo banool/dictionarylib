@@ -22,7 +22,7 @@ import 'sign_in_exception.dart';
 Future<AuthSession?>? _inflightSignIn;
 final ValueNotifier<String?> _inflightContextMessage = ValueNotifier(null);
 
-/// Sign-in dialog with Apple / Google / Facebook buttons.
+/// Sign-in dialog with Apple / Google / Microsoft / Facebook buttons.
 ///
 /// [contextMessage] replaces the default "to share a list…" body so
 /// callers can frame the dialog for the situation (accepting an
@@ -169,6 +169,16 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                 icon: const FaIcon(FontAwesomeIcons.google),
                 onPressed: inflight == null
                     ? () => attempt(AuthProvider.google)
+                    : null,
+              ),
+            ],
+            if (sharing.auth.isProviderAvailable(AuthProvider.microsoft)) ...[
+              const SizedBox(height: 8),
+              _ProviderButton(
+                label: l.signInWithMicrosoft,
+                icon: const FaIcon(FontAwesomeIcons.microsoft),
+                onPressed: inflight == null
+                    ? () => attempt(AuthProvider.microsoft)
                     : null,
               ),
             ],

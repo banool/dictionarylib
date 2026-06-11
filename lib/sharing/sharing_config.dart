@@ -31,8 +31,8 @@ class SharingConfig {
 
   /// OAuth provider client identifiers. Required to sign in with each
   /// provider; the matching `aud` value(s) must be in the Worker's env
-  /// (`APPLE_AUDIENCES`, `GOOGLE_AUDIENCES`, `FACEBOOK_APP_ID`). See
-  /// `dictionarylib/lists/MANUAL_SETUP.md`.
+  /// (`APPLE_AUDIENCES`, `GOOGLE_AUDIENCES`, `FACEBOOK_APP_ID`,
+  /// `MICROSOFT_CLIENT_ID`). See `dictionarylib/lists/MANUAL_SETUP.md`.
   final SharingAuthConfig auth;
 
   /// Optional: enables a "Test sign-in" affordance in the sign-in
@@ -115,12 +115,47 @@ class SharingAuthConfig {
   /// `FACEBOOK_APP_ID`.
   final String facebookAppId;
 
+  /// Microsoft Entra (Azure AD) application (client) id from the Azure
+  /// Portal app registration. Matches the Worker's `MICROSOFT_CLIENT_ID`.
+  /// One id covers iOS + Android (MSAL uses a single app registration with
+  /// per-platform redirect URIs). Null hides "Continue with Microsoft" —
+  /// the provider is treated as unconfigured for this app, so the button
+  /// never shows rather than failing at sign-in time. See
+  /// `dictionarylib/lists/MANUAL_SETUP.md` §4.
+  final String? microsoftClientId;
+
+  /// Android-only MSAL redirect URI:
+  /// `msauth://<android-package>/<base64-url-signature-hash>`. Registered
+  /// against the Azure app registration's Android platform config. The iOS
+  /// redirect URI is derived automatically by MSAL from the bundle id, so
+  /// only Android needs this set explicitly. Null leaves Microsoft sign-in
+  /// failing on Android with a localised "not configured" error (it still
+  /// works on iOS).
+  ///
+  /// This is the value used for release builds, so it must match the cert
+  /// the shipped app is signed with (the Play App Signing key for Play
+  /// Store builds). For debug builds, see [microsoftAndroidDebugRedirectUri].
+  final String? microsoftAndroidRedirectUri;
+
+  /// Android-only MSAL redirect URI for DEBUG builds, whose APK is signed
+  /// with the local debug keystore (a different signature hash than the
+  /// release/Play key). When set, [signInWithMicrosoft] uses it instead of
+  /// [microsoftAndroidRedirectUri] whenever `kDebugMode` is true — so a
+  /// `flutter run` / emulator build can do Microsoft sign-in without
+  /// hand-swapping the production value. Null falls back to
+  /// [microsoftAndroidRedirectUri] in every build mode. Both hashes must be
+  /// registered as redirect URIs in the Azure app registration.
+  final String? microsoftAndroidDebugRedirectUri;
+
   const SharingAuthConfig({
     required this.appleBundleId,
     required this.googleServerClientId,
     required this.facebookAppId,
     this.appleServicesId,
     this.appleRedirectUri,
+    this.microsoftClientId,
+    this.microsoftAndroidRedirectUri,
+    this.microsoftAndroidDebugRedirectUri,
   });
 }
 

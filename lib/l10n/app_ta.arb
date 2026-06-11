@@ -133,6 +133,7 @@
     "signInLastUsedHint": "கடந்த முறை, நீங்கள் {provider} மூலம் உள்நுழைந்தீர்கள்.",
     "signInWithApple": "Apple உடன் தொடரவும்",
     "signInWithGoogle": "Google உடன் தொடரவும்",
+    "signInWithMicrosoft": "Microsoft உடன் தொடரவும்",
     "signInWithFacebook": "Facebook உடன் தொடரவும்",
     "signInFailed": "உள்நுழைவு தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்.",
     "signInCancelled": "உள்நுழைவு ரத்து செய்யப்பட்டது.",
@@ -140,6 +141,7 @@
     "signInProviderNoCredential": "உள்நுழைவு செல்லுபடியாகும் பதிலை வழங்கவில்லை. மீண்டும் முயற்சிக்கவும்.",
     "providerApple": "Apple",
     "providerGoogle": "Google",
+    "providerMicrosoft": "Microsoft",
     "providerFacebook": "Facebook",
     "providerTest": "சோதனை அமர்வு",
 

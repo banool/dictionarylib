@@ -168,6 +168,7 @@ enum AuthProvider {
   apple,
   google,
   facebook,
+  microsoft,
 
   /// Integration-test bypass — only ever set when [AuthApi.signInWithTestToken]
   /// is used (gated server-side; see RUNBOOK). Surfacing it as a distinct
@@ -188,6 +189,8 @@ extension AuthProviderLabel on AuthProvider {
         return l.providerGoogle;
       case AuthProvider.facebook:
         return l.providerFacebook;
+      case AuthProvider.microsoft:
+        return l.providerMicrosoft;
       case AuthProvider.test:
         return l.providerTest;
     }

@@ -1,5 +1,6 @@
 /// Failure surface for the provider sign-in wrappers
-/// ([apple_sign_in.dart] / [google_sign_in.dart] / [facebook_sign_in.dart]).
+/// ([apple_sign_in.dart] / [google_sign_in.dart] / [facebook_sign_in.dart] /
+/// [microsoft_sign_in.dart]).
 ///
 /// The dialog layer maps [SignInErrorKind] to a localised string. The
 /// provider wrappers must NOT include English text in the exception

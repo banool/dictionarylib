@@ -380,6 +380,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get signInWithGoogle => 'Continue with Google';
 
   @override
+  String get signInWithMicrosoft => 'Continue with Microsoft';
+
+  @override
   String get signInWithFacebook => 'Continue with Facebook';
 
   @override
@@ -401,6 +404,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get providerGoogle => 'Google';
+
+  @override
+  String get providerMicrosoft => 'Microsoft';
 
   @override
   String get providerFacebook => 'Facebook';
