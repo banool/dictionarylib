@@ -175,6 +175,9 @@ Widget _videoOrScreenshotPoster(String mediaLink, Widget video) {
   return Image.network(
     _posterUrlFor(mediaLink),
     fit: BoxFit.contain,
+    // The pane is usually larger than even the upscaled poster; cubic
+    // filtering keeps the remaining stretch from looking soft.
+    filterQuality: FilterQuality.high,
     errorBuilder: (context, error, stackTrace) => video,
   );
 }
