@@ -1085,53 +1085,53 @@ abstract class DictLibLocalizations {
   /// **'No special characters besides these are allowed: , . - _ !'**
   String get listNameAllowedChars;
 
-  /// No description provided for @importOwnedListsPromptTitle.
+  /// No description provided for @importEditableListsPromptTitle.
   ///
   /// In en, this message translates to:
   /// **'Import your shared lists?'**
-  String get importOwnedListsPromptTitle;
+  String get importEditableListsPromptTitle;
 
-  /// No description provided for @importOwnedListsPromptBody.
+  /// No description provided for @importEditableListsPromptBody.
   ///
   /// In en, this message translates to:
   /// **'We\'ll fetch any shared lists tied to this account — both the ones you created and the ones you\'ve been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you\'re online.'**
-  String get importOwnedListsPromptBody;
+  String get importEditableListsPromptBody;
 
-  /// No description provided for @importOwnedListsActionImport.
+  /// No description provided for @importEditableListsActionImport.
   ///
   /// In en, this message translates to:
   /// **'Import'**
-  String get importOwnedListsActionImport;
+  String get importEditableListsActionImport;
 
-  /// No description provided for @importOwnedListsActionSkip.
+  /// No description provided for @importEditableListsActionSkip.
   ///
   /// In en, this message translates to:
   /// **'Skip'**
-  String get importOwnedListsActionSkip;
+  String get importEditableListsActionSkip;
 
-  /// No description provided for @importOwnedListsRunning.
+  /// No description provided for @importEditableListsRunning.
   ///
   /// In en, this message translates to:
   /// **'Importing your shared lists…'**
-  String get importOwnedListsRunning;
+  String get importEditableListsRunning;
 
-  /// No description provided for @importOwnedListsFailed.
+  /// No description provided for @importEditableListsFailed.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t import lists: {message}'**
-  String importOwnedListsFailed(String message);
+  String importEditableListsFailed(String message);
 
-  /// No description provided for @importOwnedListsResultNone.
+  /// No description provided for @importEditableListsResultNone.
   ///
   /// In en, this message translates to:
   /// **'No shared lists found.'**
-  String get importOwnedListsResultNone;
+  String get importEditableListsResultNone;
 
-  /// No description provided for @importOwnedListsResultDone.
+  /// No description provided for @importEditableListsResultDone.
   ///
   /// In en, this message translates to:
   /// **'Imported {imported} of {total} list(s).'**
-  String importOwnedListsResultDone(int imported, int total);
+  String importEditableListsResultDone(int imported, int total);
 
   /// No description provided for @duplicateConfirmTitle.
   ///

@@ -162,7 +162,7 @@ class SettingsPageState extends State<SettingsPage> {
                 // signed out drain immediately — same nudge the resume
                 // banner and expiry-snack sign-in paths give.
                 unawaited(sharing.engine.syncAll());
-                if (context.mounted) await offerImportOwnedLists(context);
+                if (context.mounted) await offerImportEditableLists(context);
               }
               if (mounted) setState(() {});
             })
@@ -521,11 +521,11 @@ Future<void> _setThemeVariant(AppThemeVariant variant) async {
   themeVariantNotifier.value = variant;
 }
 
-/// Prompt the user about pulling down any lists owned by their current
-/// signed-in account, then run the import + show a summary. Designed to
-/// be called right after sign-in completes (typically from the Settings
-/// sign-in flow on a fresh install).
-Future<void> offerImportOwnedLists(BuildContext context) async {
+/// Prompt the user about pulling down any lists tied to their current
+/// signed-in account (owned, or editable via invite), then run the import
+/// + show a summary. Designed to be called right after sign-in completes
+/// (typically from the Settings sign-in flow on a fresh install).
+Future<void> offerImportEditableLists(BuildContext context) async {
   final l = DictLibLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
 
@@ -558,21 +558,21 @@ Future<void> offerImportOwnedLists(BuildContext context) async {
       }
     }
   } catch (e) {
-    printAndLog('offerImportOwnedLists: pre-check failed, skipping prompt: $e');
+    printAndLog('offerImportEditableLists: pre-check failed, skipping prompt: $e');
     return;
   }
   if (names.isEmpty || !context.mounted) return;
 
   // Capture the result via closure so we can format the snackbar after
   // [runWithProgress] returns success.
-  ImportOwnedListsResult? result;
+  ImportEditableListsResult? result;
   final go = await confirmAlert(
     context,
     Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(l.importOwnedListsPromptBody),
+        Text(l.importEditableListsPromptBody),
         const SizedBox(height: 12),
         for (final name in names)
           Padding(
@@ -589,25 +589,25 @@ Future<void> offerImportOwnedLists(BuildContext context) async {
           ),
       ],
     ),
-    title: l.importOwnedListsPromptTitle,
-    confirmText: l.importOwnedListsActionImport,
-    cancelText: l.importOwnedListsActionSkip,
+    title: l.importEditableListsPromptTitle,
+    confirmText: l.importEditableListsActionImport,
+    cancelText: l.importEditableListsActionSkip,
   );
   if (!go || !context.mounted) return;
 
   final ok = await runWithProgress(
     context: context,
-    message: l.importOwnedListsRunning,
+    message: l.importEditableListsRunning,
     task: () async =>
-        result = await listsService.importOwnedLists(context: context),
+        result = await listsService.importEditableLists(context: context),
     errorMessage: (e) =>
-        e is SyncException ? l.importOwnedListsFailed(e.message) : '$e',
+        e is SyncException ? l.importEditableListsFailed(e.message) : '$e',
   );
   if (!ok || result == null) return;
   final r = result!;
   showSnackVia(
       messenger,
       r.total == 0
-          ? l.importOwnedListsResultNone
-          : l.importOwnedListsResultDone(r.imported, r.total));
+          ? l.importEditableListsResultNone
+          : l.importEditableListsResultDone(r.imported, r.total));
 }

@@ -330,7 +330,7 @@ void main() {
     });
   });
 
-  group('importOwnedLists', () {
+  group('importEditableLists', () {
     test('imports owned + editor lists with the correct roles', () async {
       installFakeSharing((req) async {
         if (req.url.path == '/v1/my-lists') {
@@ -373,7 +373,7 @@ void main() {
         return http.Response('', 404);
       });
 
-      final result = await listsService.importOwnedLists();
+      final result = await listsService.importEditableLists();
       expect(result.imported, 2);
       expect(result.skipped, 0);
       expect(result.total, 2);
@@ -402,7 +402,7 @@ void main() {
         return http.Response('', 404);
       });
 
-      // Pre-install the list. importOwnedLists should skip it.
+      // Pre-install the list. importEditableLists should skip it.
       await userEntryListManager.createEntryList('mine_words');
       final source = userEntryListManager.getEntryLists()['mine_words']!;
       await sharing.lists.insert(SyncedEntryList.owner(
@@ -420,13 +420,13 @@ void main() {
         source: source,
       ));
 
-      final result = await listsService.importOwnedLists();
+      final result = await listsService.importEditableLists();
       expect(result.imported, 0);
       expect(result.skipped, 1);
     });
   });
 
-  group('importOwnedLists — local-name collision', () {
+  group('importEditableLists — local-name collision', () {
     /// Multi-device convergence variant: a fresh device imports an
     /// owned list whose displayName matches a local list the user
     /// already had. The local user list must NOT be overwritten —
@@ -467,7 +467,7 @@ void main() {
       await preExisting.addVideo(cherryVideo);
       final preExistingVideos = preExisting.savedVideos.toSet();
 
-      final result = await listsService.importOwnedLists();
+      final result = await listsService.importEditableLists();
       expect(result.imported, 1);
 
       // The pre-existing local list is untouched.

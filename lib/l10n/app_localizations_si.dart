@@ -558,32 +558,32 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'මේවා හැර වෙනත් විශේෂ අක්ෂර අවසර නැත: , . - _ !';
 
   @override
-  String get importOwnedListsPromptTitle =>
+  String get importEditableListsPromptTitle =>
       'ඔබ කලින් බෙදාගත් ලැයිස්තු ආයාත කරන්නද?';
 
   @override
-  String get importOwnedListsPromptBody =>
+  String get importEditableListsPromptBody =>
       'ඔබ කළමනාකරණය කිරීමට පුරනය වී ඇති ලැයිස්තු මොනවාදැයි අපි සේවාදායකයෙන් විමසා ඒවා නව දේශීය ලැයිස්තු ලෙස ආයාත කරමු. ඔබගේ පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත. ඕනෑම නම ගැටුමකට සංඛ්‍යාත්මක උපසර්ගයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ආයාතයෙන් පසු, ඔබගේ උපාංගය සත්‍යයේ මූලාශ්‍රය වේ — තවදුරටත් සංස්කරණ දේශීයව රැඳී පසුබිමින් සේවාදායකයට තල්ලු වේ.';
 
   @override
-  String get importOwnedListsActionImport => 'ආයාත කරන්න';
+  String get importEditableListsActionImport => 'ආයාත කරන්න';
 
   @override
-  String get importOwnedListsActionSkip => 'මඟ හරින්න';
+  String get importEditableListsActionSkip => 'මඟ හරින්න';
 
   @override
-  String get importOwnedListsRunning => 'ඔබගේ බෙදාගත් ලැයිස්තු ආයාත කරමින්…';
+  String get importEditableListsRunning => 'ඔබගේ බෙදාගත් ලැයිස්තු ආයාත කරමින්…';
 
   @override
-  String importOwnedListsFailed(String message) {
+  String importEditableListsFailed(String message) {
     return 'ලැයිස්තු ආයාත කිරීමට නොහැකි විය: $message';
   }
 
   @override
-  String get importOwnedListsResultNone => 'බෙදාගත් ලැයිස්තු හමු නොවීය.';
+  String get importEditableListsResultNone => 'බෙදාගත් ලැයිස්තු හමු නොවීය.';
 
   @override
-  String importOwnedListsResultDone(int imported, int total) {
+  String importEditableListsResultDone(int imported, int total) {
     return 'ලැයිස්තු $totalකින් $importedක් ආයාත කරන ලදී.';
   }
 

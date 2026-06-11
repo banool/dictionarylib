@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.3.41
+version: 0.3.42
 
 publish_to: 'none'
 

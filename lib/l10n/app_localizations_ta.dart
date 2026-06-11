@@ -567,34 +567,34 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'இவற்றைத் தவிர வேறு சிறப்பு எழுத்துகள் அனுமதிக்கப்படவில்லை: , . - _ !';
 
   @override
-  String get importOwnedListsPromptTitle =>
+  String get importEditableListsPromptTitle =>
       'நீங்கள் முன்பு பகிர்ந்த பட்டியல்களை இறக்குமதி செய்யவா?';
 
   @override
-  String get importOwnedListsPromptBody =>
+  String get importEditableListsPromptBody =>
       'நீங்கள் நிர்வகிக்க உள்நுழைந்துள்ள பட்டியல்கள் எவை என்பதை சேவையகத்திடம் கேட்டு, அவற்றைப் புதிய உள்ளூர் பட்டியல்களாக இறக்குமதி செய்வோம். உங்கள் தற்போதைய உள்ளூர் பட்டியல்கள் தொடப்படாது. ஏதேனும் பெயர் மோதல்களுக்கு எண் பின்னொட்டு வழங்கப்படும் (உதா. \"Cats\" → \"Cats 2\"). இறக்குமதிக்குப் பிறகு, உங்கள் சாதனமே உண்மையின் மூலமாகும் — மேலதிக திருத்தங்கள் உள்ளூரில் இருந்து, பின்னணியில் சேவையகத்திற்குத் தள்ளப்படும்.';
 
   @override
-  String get importOwnedListsActionImport => 'இறக்குமதி செய்';
+  String get importEditableListsActionImport => 'இறக்குமதி செய்';
 
   @override
-  String get importOwnedListsActionSkip => 'தவிர்';
+  String get importEditableListsActionSkip => 'தவிர்';
 
   @override
-  String get importOwnedListsRunning =>
+  String get importEditableListsRunning =>
       'உங்கள் பகிரப்பட்ட பட்டியல்களை இறக்குமதி செய்கிறது…';
 
   @override
-  String importOwnedListsFailed(String message) {
+  String importEditableListsFailed(String message) {
     return 'பட்டியல்களை இறக்குமதி செய்ய முடியவில்லை: $message';
   }
 
   @override
-  String get importOwnedListsResultNone =>
+  String get importEditableListsResultNone =>
       'பகிரப்பட்ட பட்டியல்கள் எதுவும் இல்லை.';
 
   @override
-  String importOwnedListsResultDone(int imported, int total) {
+  String importEditableListsResultDone(int imported, int total) {
     return '$total பட்டியல்களில் $imported இறக்குமதி செய்யப்பட்டது.';
   }
 

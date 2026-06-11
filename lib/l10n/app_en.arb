@@ -257,20 +257,20 @@
 
     "listNameAllowedChars": "No special characters besides these are allowed: , . - _ !",
 
-    "importOwnedListsPromptTitle": "Import your shared lists?",
-    "importOwnedListsPromptBody": "We'll fetch any shared lists tied to this account — both the ones you created and the ones you've been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you're online.",
-    "importOwnedListsActionImport": "Import",
-    "importOwnedListsActionSkip": "Skip",
-    "importOwnedListsRunning": "Importing your shared lists…",
-    "importOwnedListsFailed": "Couldn't import lists: {message}",
-    "@importOwnedListsFailed": {
+    "importEditableListsPromptTitle": "Import your shared lists?",
+    "importEditableListsPromptBody": "We'll fetch any shared lists tied to this account — both the ones you created and the ones you've been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you're online.",
+    "importEditableListsActionImport": "Import",
+    "importEditableListsActionSkip": "Skip",
+    "importEditableListsRunning": "Importing your shared lists…",
+    "importEditableListsFailed": "Couldn't import lists: {message}",
+    "@importEditableListsFailed": {
         "placeholders": {
             "message": { "type": "String" }
         }
     },
-    "importOwnedListsResultNone": "No shared lists found.",
-    "importOwnedListsResultDone": "Imported {imported} of {total} list(s).",
-    "@importOwnedListsResultDone": {
+    "importEditableListsResultNone": "No shared lists found.",
+    "importEditableListsResultDone": "Imported {imported} of {total} list(s).",
+    "@importEditableListsResultDone": {
         "placeholders": {
             "imported": { "type": "int" },
             "total": { "type": "int" }

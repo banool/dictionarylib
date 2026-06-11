@@ -554,31 +554,31 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'No special characters besides these are allowed: , . - _ !';
 
   @override
-  String get importOwnedListsPromptTitle => 'Import your shared lists?';
+  String get importEditableListsPromptTitle => 'Import your shared lists?';
 
   @override
-  String get importOwnedListsPromptBody =>
+  String get importEditableListsPromptBody =>
       'We\'ll fetch any shared lists tied to this account — both the ones you created and the ones you\'ve been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you\'re online.';
 
   @override
-  String get importOwnedListsActionImport => 'Import';
+  String get importEditableListsActionImport => 'Import';
 
   @override
-  String get importOwnedListsActionSkip => 'Skip';
+  String get importEditableListsActionSkip => 'Skip';
 
   @override
-  String get importOwnedListsRunning => 'Importing your shared lists…';
+  String get importEditableListsRunning => 'Importing your shared lists…';
 
   @override
-  String importOwnedListsFailed(String message) {
+  String importEditableListsFailed(String message) {
     return 'Couldn\'t import lists: $message';
   }
 
   @override
-  String get importOwnedListsResultNone => 'No shared lists found.';
+  String get importEditableListsResultNone => 'No shared lists found.';
 
   @override
-  String importOwnedListsResultDone(int imported, int total) {
+  String importEditableListsResultDone(int imported, int total) {
     return 'Imported $imported of $total list(s).';
   }
 

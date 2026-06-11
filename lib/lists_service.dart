@@ -203,14 +203,14 @@ class ListsService {
   /// server-supplied display name can't be turned into a valid local
   /// storage key. Optional so test code can call this without a
   /// widget tree; pass a real context from real callers.
-  Future<ImportOwnedListsResult> importOwnedLists(
+  Future<ImportEditableListsResult> importEditableLists(
       {BuildContext? context}) async {
     if (!sharing.isEnabled) {
       throw StateError('sharing is not configured for this app');
     }
     final session = sharing.auth.store.current;
     if (session == null) {
-      throw StateError('importOwnedLists: not signed in');
+      throw StateError('importEditableLists: not signed in');
     }
     final userLists =
         await sharing.api.userLists(sessionToken: session.sessionToken);
@@ -359,7 +359,7 @@ class ListsService {
     }
 
     sharing.bumpState();
-    return ImportOwnedListsResult(
+    return ImportEditableListsResult(
         imported: imported, skipped: skipped, total: total);
   }
 
@@ -398,7 +398,7 @@ class ListsService {
 /// pattern.
 ListsService get listsService => ListsService.instance;
 
-/// One row in [ListsService.importOwnedLists]'s fetch phase. `snapshot`
+/// One row in [ListsService.importEditableLists]'s fetch phase. `snapshot`
 /// is null when the /state call failed — the apply phase treats null
 /// as a skip rather than aborting the whole import.
 class _FetchResult {
@@ -407,12 +407,12 @@ class _FetchResult {
   const _FetchResult({required this.listId, required this.snapshot});
 }
 
-/// Outcome of [ListsService.importOwnedLists].
-class ImportOwnedListsResult {
+/// Outcome of [ListsService.importEditableLists].
+class ImportEditableListsResult {
   final int imported;
   final int skipped;
   final int total;
-  const ImportOwnedListsResult({
+  const ImportEditableListsResult({
     required this.imported,
     required this.skipped,
     required this.total,
