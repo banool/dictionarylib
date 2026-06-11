@@ -133,6 +133,52 @@ class InheritedPlaybackSpeed extends InheritedWidget {
   }
 }
 
+/// True when the SOFTWARE_VIDEO_DECODE dart-define is set. Android
+/// emulators' hardware (mediacodec) decode path renders video textures as
+/// black frames, so the screenshot harness passes this to get real frames
+/// into its captures. Never set it for real builds — hardware decode is
+/// faster and kinder to the battery.
+const bool _kSoftwareVideoDecode =
+    bool.fromEnvironment('SOFTWARE_VIDEO_DECODE');
+
+/// Shared by every [VideoController] this file creates.
+const VideoControllerConfiguration _kVideoControllerConfiguration =
+    VideoControllerConfiguration(
+        enableHardwareAcceleration: !_kSoftwareVideoDecode);
+
+/// Base URL of pre-extracted first-frame posters, set only by the
+/// screenshot harness for Android emulators: mpv cannot create its GL
+/// context there (EGL_BAD_ATTRIBUTE, even with software decode), so live
+/// video always captures as a black pane. When this is set, the player
+/// pane shows the video's poster — a real frame of the real video,
+/// served by the harness over the emulator's host loopback — instead.
+/// Empty in every real build.
+const String _kScreenshotPostersUrl =
+    String.fromEnvironment('SCREENSHOT_POSTERS_URL');
+
+/// Poster URL for [mediaLink]: the video URL's last two path segments
+/// joined with '_', plus '.png' — must match take_screenshots.py's
+/// extraction naming.
+String _posterUrlFor(String mediaLink) {
+  final segments = Uri.parse(mediaLink).pathSegments;
+  final tail = segments.length >= 2
+      ? '${segments[segments.length - 2]}_${segments.last}'
+      : segments.last;
+  return '$_kScreenshotPostersUrl/$tail.png';
+}
+
+/// The live [video] widget, or its static poster in screenshot mode.
+/// Any poster fetch problem falls back to the live player, so a missing
+/// frame can never break a real flow.
+Widget _videoOrScreenshotPoster(String mediaLink, Widget video) {
+  if (_kScreenshotPostersUrl.isEmpty) return video;
+  return Image.network(
+    _posterUrlFor(mediaLink),
+    fit: BoxFit.contain,
+    errorBuilder: (context, error, stackTrace) => video,
+  );
+}
+
 /// Data class to hold a Player and its associated VideoController.
 class _PlayerData {
   final Player player;
@@ -279,7 +325,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     // Create Player and VideoController following media-kit README:
     // https://github.com/media-kit/media-kit
     final player = Player();
-    final controller = VideoController(player);
+    final controller =
+        VideoController(player, configuration: _kVideoControllerConfiguration);
     players[idx] = _PlayerData(player: player, controller: controller);
 
     // Open the media asynchronously after the widget is in the tree.
@@ -643,15 +690,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                   child: SizedBox(
                     width: videoWidth,
                     height: videoHeight,
-                    child: Video(
-                      controller: playerData.controller,
-                      // Loading indicator on initial load only, not on loop.
-                      controls: (state) => getLoadingVideoControls(
-                          state, playerData.hasPlayedOnce),
-                      // Letterbox while the real dimensions are still loading
-                      // (we size the box from fallbackAspectRatio until then)
-                      // rather than stretching a wrong-ratio video with fill.
-                      fit: BoxFit.contain,
+                    child: _videoOrScreenshotPoster(
+                      mediaLink,
+                      Video(
+                        controller: playerData.controller,
+                        // Loading indicator on initial load only, not on loop.
+                        controls: (state) => getLoadingVideoControls(
+                            state, playerData.hasPlayedOnce),
+                        // Letterbox while the real dimensions are still
+                        // loading (we size the box from fallbackAspectRatio
+                        // until then) rather than stretching a wrong-ratio
+                        // video with fill.
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
@@ -783,7 +834,8 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
   void initState() {
     super.initState();
     _player = Player();
-    _controller = VideoController(_player);
+    _controller =
+        VideoController(_player, configuration: _kVideoControllerConfiguration);
     _open();
   }
 
@@ -867,10 +919,13 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
             child: Center(
               child: AspectRatio(
                 aspectRatio: _aspectRatio ?? 16 / 9,
-                child: Video(
-                  controller: _controller,
-                  fit: BoxFit.contain,
-                  controls: (state) => const SizedBox.shrink(),
+                child: _videoOrScreenshotPoster(
+                  widget.mediaLink,
+                  Video(
+                    controller: _controller,
+                    fit: BoxFit.contain,
+                    controls: (state) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),
