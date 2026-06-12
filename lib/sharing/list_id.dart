@@ -16,7 +16,7 @@ const int _listIdLength = 12;
 /// to 64 chars. Deliberately wider than [_listIdAlphabet] so that
 /// future generators can pick different alphabets / lengths without a
 /// client-side parser change. The Worker's `LIST_ID_RE` in
-/// `lists/workers/src/validation.ts` must stay in sync with this.
+/// `workers/src/validation.ts` in the private backend repo must stay in sync with this.
 final RegExp _listIdPattern = RegExp(r'^[a-z0-9]{1,64}$');
 
 /// Maximum acceptable id length. Matches the Worker.

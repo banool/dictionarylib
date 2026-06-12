@@ -27,13 +27,13 @@ import 'sharing_config.dart';
 ///   3. Wire schema — this `supportedSchemaVersion` (currently 3), mirrored
 ///      by the worker: the shape of payloads on the network.
 ///   4. DO SQLite storage — `DO_SCHEMA_VERSION` (currently 2) in
-///      `lists/workers/src/list_do.ts`: the Durable Object's on-disk tables.
+///      `workers/src/list_do.ts` in the private backend repo: the Durable Object's on-disk tables.
 /// They share the word "version" and happen to overlap in number, but each
 /// migrates on its own schedule. Bumping one does NOT imply bumping the others.
 const int supportedSchemaVersion = 3;
 
 /// Mirror of the server's `MAX_DISPLAY_NAME_LEN` (see
-/// `lists/workers/src/validation.ts`). Used for client-side validation
+/// `workers/src/validation.ts` in the private backend repo). Used for client-side validation
 /// so the user gets immediate feedback rather than a 400 round-trip;
 /// the server re-checks on every accepted request.
 const int maxDisplayNameLen = 80;
@@ -59,7 +59,7 @@ int _parseLastModifiedSeconds(http.Response resp) {
 /// Discriminator string the worker stamps on a 403's `details.reason`
 /// when the rejection comes from the `x-app-id` check (config drift)
 /// rather than a real membership failure. Mirrors
-/// `FORBID_REASON_WRONG_APP` in `lists/workers/src/index.ts` — keep
+/// `FORBID_REASON_WRONG_APP` in `workers/src/index.ts` in the private backend repo — keep
 /// in lockstep. Consumers use the typed [SyncException.isWrongAppForbid]
 /// rather than reading this literal.
 const String _forbidReasonWrongApp = 'wrong_app';
@@ -68,7 +68,7 @@ const String _forbidReasonWrongApp = 'wrong_app';
 /// when a /sync is rejected because the client's `lastKnownSeq` is ahead
 /// of the server (server-side data loss, restore-from-backup, listId
 /// reuse). Mirrors `STALE_CURSOR_REASON` in
-/// `lists/workers/src/list_do.ts` — keep in lockstep.
+/// `workers/src/list_do.ts` in the private backend repo — keep in lockstep.
 const String _invalidBodyReasonStaleCursor = 'stale_cursor';
 
 /// Error envelope returned by the API.

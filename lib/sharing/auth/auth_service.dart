@@ -18,7 +18,7 @@ import 'microsoft_sign_in.dart';
 /// kick off its flow).
 ///
 /// KEEP IN SYNC WITH THE SERVER. The matching server-side switch is
-/// `PROVIDER_ENABLED` in `dictionarylib/lists/workers/src/providers.ts`.
+/// `PROVIDER_ENABLED` in `workers/src/providers.ts` in the private backend repo.
 /// To turn a provider off, set it `false` in BOTH places: this flag hides
 /// the button, and the server flag is the authoritative gate that rejects
 /// the provider's credential even if an old client build or a hand-crafted

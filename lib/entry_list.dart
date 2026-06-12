@@ -253,7 +253,7 @@ class EntryList {
   /// `"favourites"`, `"  FAVOURITES  "` all hit.
   ///
   /// Single source of truth on the client. The share-API Worker keeps its
-  /// own copy in `lists/workers/src/validation.ts` — keep them in sync.
+  /// own copy in `workers/src/validation.ts` in the private backend repo — keep them in sync.
   static const Set<String> _reservedNamesLower = {'favourites'};
 
   /// True if [name] (trimmed, case-insensitive) collides with a reserved

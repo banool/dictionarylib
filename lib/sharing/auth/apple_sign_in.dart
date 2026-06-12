@@ -20,7 +20,7 @@ bool appleSignInAvailable() {
 }
 
 /// Server-side cap on display name length. Mirrors
-/// `MAX_DISPLAY_NAME_LEN` in `lists/workers/src/validation.ts`; we
+/// `MAX_DISPLAY_NAME_LEN` in `workers/src/validation.ts` in the private backend repo; we
 /// clamp client-side too so the worker doesn't have to reject the
 /// request just because Apple gave us a very long full name.
 const int _maxAppleDisplayNameLen = 80;

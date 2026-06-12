@@ -4,8 +4,8 @@
 /// The model: "device A" is a REAL client stack (SyncApi + AuthService +
 /// SyncedEntryListManager + SyncEngine — the exact production classes) talking
 /// to a real `wrangler dev` worker over HTTP, while "device B" is a thin raw
-/// HTTP client (a Dart port of the bun suite's `Client` in
-/// `lists/workers/test/integration/helpers.ts`) acting as a second,
+/// HTTP client (a Dart port of the bun suite's `Client` in the backend
+/// repo's `workers/test/integration/helpers.ts`) acting as a second,
 /// independent identity. This sidesteps the process-wide singletons
 /// (`sharedPreferences`, `sharing`, the cached client id) that prevent two
 /// full Flutter stacks from coexisting in one test process, while still
@@ -15,7 +15,7 @@
 ///   INTEGRATION_BASE_URL  default http://localhost:8787
 ///   TEST_AUTH_TOKEN       default the dev-env shared token in wrangler.toml
 ///
-/// Start the server with: bash -c 'cd lists/workers && bunx wrangler dev --env dev'
+/// Start the server with: bash -c 'cd ../dictionary_backend/workers && bunx wrangler dev --env dev'
 library;
 
 import 'dart:convert';
@@ -41,7 +41,7 @@ const String kIntegrationTestAuthToken = String.fromEnvironment(
     'TEST_AUTH_TOKEN',
     defaultValue: 'dev-integration-test-token-please-override');
 
-/// Must match the dev env's APP_ID in lists/workers/wrangler.toml.
+/// Must match the dev env's APP_ID in the backend repo's workers/wrangler.toml.
 const String kIntegrationAppId = 'auslan';
 
 /// Sharing config pointing the real client stack at the local worker.

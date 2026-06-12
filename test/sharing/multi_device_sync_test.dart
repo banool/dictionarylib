@@ -9,9 +9,10 @@
 /// optimistic apply + pending-op replay + missedOps folding + snapshot
 /// catch-up + role transitions, all against genuine server seq ordering.
 ///
-/// Auto-skips (like lists/workers/test/integration) when no server is
-/// reachable. Start one with:
-///   bash -c 'cd lists/workers && bunx wrangler dev --env dev'
+/// Auto-skips (like the backend repo's workers/test/integration) when no
+/// server is reachable. Start one from a checkout of the private backend
+/// repo (a sibling of this one):
+///   bash -c 'cd ../dictionary_backend/workers && bunx wrangler dev --env dev'
 /// then run:
 ///   flutter test test/sharing/multi_device_sync_test.dart
 library;
@@ -46,8 +47,9 @@ Future<void> main() async {
     // without a server.
     // ignore: avoid_print
     print('[multi-device] skipping — no server reachable at '
-        '$kIntegrationBaseUrl.\nStart one in another terminal:\n'
-        '  cd lists/workers && bunx wrangler dev --env dev');
+        '$kIntegrationBaseUrl.\nStart one in another terminal from the '
+        'private backend repo:\n'
+        '  cd ../dictionary_backend/workers && bunx wrangler dev --env dev');
     return;
   }
 

@@ -23,4 +23,4 @@ flutter pub run build_runner build
 
 ## Shared lists
 
-Learn more about this feature in `lists/`.
+The client side of the shared-lists feature lives in `lib/sharing/`. The backend lives in a separate private repository.

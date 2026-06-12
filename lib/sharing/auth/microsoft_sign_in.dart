@@ -11,7 +11,7 @@ import 'sign_in_exception.dart';
 /// that enables Microsoft sign-in ships this file and lists it under
 /// `assets:` in its pubspec. The file carries the broker / authority
 /// settings; `client_id` + `redirect_uri` are injected programmatically
-/// from [SharingAuthConfig]. See `dictionarylib/lists/MANUAL_SETUP.md` §4.
+/// from [SharingAuthConfig]. See the private backend repo's `MANUAL_SETUP.md` §4.
 const String _msalAndroidConfigAsset = 'assets/msal_config.json';
 
 /// Scopes requested from Microsoft. We only need to authenticate the user

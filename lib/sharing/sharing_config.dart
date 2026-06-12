@@ -32,7 +32,7 @@ class SharingConfig {
   /// OAuth provider client identifiers. Required to sign in with each
   /// provider; the matching `aud` value(s) must be in the Worker's env
   /// (`APPLE_AUDIENCES`, `GOOGLE_AUDIENCES`, `FACEBOOK_APP_ID`,
-  /// `MICROSOFT_CLIENT_ID`). See `dictionarylib/lists/MANUAL_SETUP.md`.
+  /// `MICROSOFT_CLIENT_ID`). See the private backend repo's `MANUAL_SETUP.md`.
   final SharingAuthConfig auth;
 
   /// Optional: enables a "Test sign-in" affordance in the sign-in
@@ -106,7 +106,7 @@ class SharingAuthConfig {
   /// Credential Manager, which rejects iOS/Android-type ids with a
   /// developer-console error. (iOS additionally uses the iOS client id from
   /// `GIDClientID` in Info.plist for the flow itself.) See
-  /// `dictionarylib/lists/MANUAL_SETUP.md` §2.
+  /// the private backend repo's `MANUAL_SETUP.md` §2.
   final String googleServerClientId;
 
   /// Facebook app id (numeric string). Matches the Worker's
@@ -116,7 +116,7 @@ class SharingAuthConfig {
   /// Microsoft Entra (Azure AD) application (client) id. Matches the
   /// Worker's `MICROSOFT_CLIENT_ID`. Null treats Microsoft as unconfigured
   /// for this app, so the button never shows rather than failing at
-  /// sign-in time. Provisioning: `dictionarylib/lists/MANUAL_SETUP.md` §4.
+  /// sign-in time. Provisioning: the private backend repo's `MANUAL_SETUP.md` §4.
   final String? microsoftClientId;
 
   /// Android-only MSAL redirect URIs,
