@@ -508,6 +508,11 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
+  String retryAttemptSnack(int attempt, int maxAttempts) {
+    return 'That didn\'t work — retrying (attempt $attempt of $maxAttempts)…';
+  }
+
+  @override
   String get subscribedCopyMenuItem => 'Duplicate';
 
   @override

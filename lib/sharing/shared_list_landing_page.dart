@@ -5,6 +5,7 @@ import '../globals.dart';
 import '../l10n/app_localizations.dart';
 import '../lists_service.dart';
 import '../page_entry_list.dart';
+import '../retry.dart';
 import '../theme.dart' show kRadiusCard;
 import 'auth/sign_in_dialog.dart';
 import 'sync_api.dart';
@@ -41,6 +42,12 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
   Future<SyncedEntryList>? _future;
   String? _displayName; // Best-effort preview for the invite copy.
 
+  /// "Attempt n of m" notice shown under the spinner while the subscribe /
+  /// accept call is being retried, so a slow recovery reads as progress
+  /// instead of a hang (or, worse, a flash of error). Cleared when the
+  /// underlying future completes either way.
+  String? _retryNotice;
+
   /// Set once we've handed off to the destination page via
   /// `pushReplacement`. Guards the FutureBuilder against a second
   /// rebuild (theme change, locale change) scheduling another
@@ -72,21 +79,45 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     if (mounted) setState(() {});
   }
 
-  Future<SyncedEntryList> _subscribe() async {
+  void _noteRetry(int attempt, int maxAttempts) {
+    if (!mounted) return;
+    setState(() => _retryNotice = DictLibLocalizations.of(context)!
+        .retryAttemptSnack(attempt, maxAttempts));
+  }
+
+  void _clearRetryNotice() {
+    if (mounted && _retryNotice != null) {
+      setState(() => _retryNotice = null);
+    }
+  }
+
+  Future<SyncedEntryList> _subscribe() {
     // Unreachable from real UI — the landing page only mounts when
     // sharing is configured. Assert so we don't carry an English
     // message all the way to the user.
     assert(sharing.isEnabled,
         'SharedListLandingPage mounted without sharing setup');
-    final result = await sharing.engine.subscribe(widget.listId);
-    if (result == null) {
-      // The list was orphaned mid-subscribe (e.g., owner deleted it
-      // between our GET and our local install). `gone` is handled by
-      // [localisedSyncError] / the invite-error branch, so the message
-      // string itself is never user-visible.
-      throw SyncException(SyncErrorKind.gone, '');
-    }
-    return result;
+    return retryWithFeedback(
+      () async {
+        final result = await sharing.engine.subscribe(widget.listId);
+        if (result == null) {
+          // The list was orphaned mid-subscribe (e.g., owner deleted it
+          // between our GET and our local install). `gone` is handled by
+          // [localisedSyncError] / the invite-error branch, so the message
+          // string itself is never user-visible.
+          throw SyncException(SyncErrorKind.gone, '');
+        }
+        return result;
+      },
+      // Beyond the usual transient kinds, a fresh share's public payload
+      // can 404 for a moment while R2 propagates — the classic "scanned
+      // the QR code straight after sharing" case — so "not found" is
+      // worth retrying here too.
+      shouldRetry: (e) =>
+          isTransientSyncError(e) ||
+          (e is SyncException && e.kind == SyncErrorKind.notFound),
+      onRetry: _noteRetry,
+    ).whenComplete(_clearRetryNotice);
   }
 
   /// Fetch the public subscriber payload just to learn the list's
@@ -120,15 +151,20 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     });
   }
 
-  Future<SyncedEntryList> _doAccept() async {
+  Future<SyncedEntryList> _doAccept() {
     // Same unreachable case as in [_subscribe]; assert rather than
-    // surfacing an English message through the error builder.
+    // surfacing an English message through the error builder. Unlike the
+    // subscribe flavour, a 404 here means a bad or consumed invite —
+    // terminal, so only the usual transient kinds retry.
     assert(sharing.isEnabled,
         'SharedListLandingPage mounted without sharing setup');
-    return await sharing.engine.acceptInvite(
-      listId: widget.listId,
-      token: widget.inviteToken!,
-    );
+    return retryWithFeedback(
+      () => sharing.engine.acceptInvite(
+        listId: widget.listId,
+        token: widget.inviteToken!,
+      ),
+      onRetry: _noteRetry,
+    ).whenComplete(_clearRetryNotice);
   }
 
   @override
@@ -146,6 +182,7 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
               future: _future,
               builder: (context, snap) {
                 if (snap.connectionState != ConnectionState.done) {
+                  final cs = Theme.of(context).colorScheme;
                   return Center(
                       child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -155,6 +192,13 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
                         Text(isInvite
                             ? l.acceptInviteLandingAccepting
                             : l.sharedListLandingLoading),
+                        if (_retryNotice != null) ...[
+                          const SizedBox(height: 8),
+                          Text(_retryNotice!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 13, color: cs.onSurfaceVariant)),
+                        ],
                       ]));
                 }
                 if (snap.hasError) return _buildError(l, snap.error, isInvite);

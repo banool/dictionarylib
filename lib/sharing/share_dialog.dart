@@ -10,6 +10,7 @@ import '../entry_list.dart';
 import '../globals.dart';
 import '../l10n/app_localizations.dart';
 import '../lists_service.dart';
+import '../retry.dart';
 import 'auth/sign_in_dialog.dart';
 import 'deep_link_handler.dart';
 import 'list_id.dart' show exampleListId;
@@ -91,7 +92,7 @@ Future<SyncedEntryList?> showShareDialog({
           // failure / cancel there (or an unmount across the gap) aborts
           // the share cleanly.
           final session = await ensureSession(ctx);
-          if (session == null) return;
+          if (session == null || !ctx.mounted) return;
 
           setLocal(() {
             submitting = true;
@@ -100,10 +101,13 @@ Future<SyncedEntryList?> showShareDialog({
           });
 
           try {
-            final synced = await listsService.shareList(
-              sourceList: sourceList,
-              displayName: displayName,
-              sessionToken: session.sessionToken,
+            final synced = await retryWithFeedback(
+              () => listsService.shareList(
+                sourceList: sourceList,
+                displayName: displayName,
+                sessionToken: session.sessionToken,
+              ),
+              onRetry: snackRetryFeedback(ctx),
             );
             if (ctx.mounted) Navigator.of(ctx).pop(synced);
           } on SyncException catch (e) {
@@ -448,7 +452,9 @@ Future<SyncedEntryList?> showSubscribeDialog(
             error = null;
           });
           try {
-            final list = await sharing.engine.subscribe(parsed.listId);
+            final list = await retryWithFeedback(
+                () => sharing.engine.subscribe(parsed.listId),
+                onRetry: snackRetryFeedback(ctx));
             if (ctx.mounted) Navigator.of(ctx).pop(list);
           } on SyncException catch (e) {
             setLocal(() {
@@ -464,18 +470,18 @@ Future<SyncedEntryList?> showSubscribeDialog(
           final payload = invite!;
           // Accepting registers the user as an editor, which the server ties
           // to an account — ensure we're signed in first.
-          if (await ensureSession(ctx,
-                  contextMessage: l.signInDialogContextInvite) ==
-              null) {
-            return;
-          }
+          final session = await ensureSession(ctx,
+              contextMessage: l.signInDialogContextInvite);
+          if (session == null || !ctx.mounted) return;
           setLocal(() {
             submitting = true;
             error = null;
           });
           try {
-            final list = await sharing.engine.acceptInvite(
-                listId: payload.listId, token: payload.inviteToken!);
+            final list = await retryWithFeedback(
+                () => sharing.engine.acceptInvite(
+                    listId: payload.listId, token: payload.inviteToken!),
+                onRetry: snackRetryFeedback(ctx));
             if (ctx.mounted) Navigator.of(ctx).pop(list);
           } on SyncException catch (e) {
             setLocal(() {

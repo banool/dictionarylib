@@ -87,6 +87,19 @@ class SyncException implements Exception {
       kind == SyncErrorKind.forbidden &&
       details?['reason'] == _forbidReasonWrongApp;
 
+  /// Transient transport/server conditions worth retrying, and worth
+  /// surfacing to the user on a foreground action — as opposed to terminal
+  /// outcomes like [SyncErrorKind.notFound] / [SyncErrorKind.gone] (which
+  /// the engine reconciles into local state via its 404 threshold and
+  /// orphan/drop handling) or auth/permission failures (which demote the
+  /// role or drop the session and fire their own notifications). The
+  /// engine's user-initiated refreshes rethrow only these so a flaky
+  /// network is shown while a deleted list still just quietly disappears.
+  bool get isTransient =>
+      kind == SyncErrorKind.network ||
+      kind == SyncErrorKind.server ||
+      kind == SyncErrorKind.rateLimited;
+
   /// True if this is the server telling us our sync cursor is ahead of
   /// its own op log — i.e. the server lost state relative to what this
   /// client saw. The engine self-heals by re-adopting the authoritative

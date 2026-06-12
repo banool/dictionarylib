@@ -16,6 +16,7 @@ import 'hearth.dart';
 import 'l10n/app_localizations.dart';
 import 'lists_service.dart';
 import 'page_settings_help_en.dart';
+import 'retry.dart';
 import 'theme.dart';
 import 'sharing/auth/auth_store.dart';
 import 'sharing/auth/sign_in_dialog.dart';
@@ -598,10 +599,14 @@ Future<void> offerImportEditableLists(BuildContext context) async {
   final ok = await runWithProgress(
     context: context,
     message: l.importEditableListsRunning,
-    task: () async =>
-        result = await listsService.importEditableLists(context: context),
-    errorMessage: (e) =>
-        e is SyncException ? l.importEditableListsFailed(e.message) : '$e',
+    task: () => retryWithFeedback(
+        () async =>
+            result = await listsService.importEditableLists(context: context),
+        onRetry: snackRetryFeedback(context)),
+    errorMessage: (e) => e is SyncException
+        ? l.importEditableListsFailed(
+            localisedSyncErrorSimple(context, e, e.message))
+        : '$e',
   );
   if (!ok || result == null) return;
   final r = result!;

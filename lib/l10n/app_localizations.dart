@@ -1007,6 +1007,12 @@ abstract class DictLibLocalizations {
   /// **'Sync failed: {message}'**
   String subscribedSyncFailedSnack(String message);
 
+  /// No description provided for @retryAttemptSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work — retrying (attempt {attempt} of {maxAttempts})…'**
+  String retryAttemptSnack(int attempt, int maxAttempts);
+
   /// No description provided for @subscribedCopyMenuItem.
   ///
   /// In en, this message translates to:

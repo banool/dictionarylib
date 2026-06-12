@@ -6,6 +6,7 @@ import '../globals.dart';
 import '../hearth.dart';
 import '../l10n/app_localizations.dart';
 import '../lists_service.dart';
+import '../retry.dart';
 import '../sharing/sync_api.dart';
 import '../top_level_scaffold.dart' show LISTS_ROUTE;
 import 'share_dialog.dart' show showShareLinkDialog;
@@ -69,13 +70,17 @@ class _ListMembersPageState extends State<ListMembersPage> {
   /// case. Failures surface a snack.
   Future<void> _refresh() async {
     try {
-      await listsService.refreshSyncedList(widget.list);
+      await retryWithFeedback(
+        () => listsService.refreshSyncedList(widget.list),
+        onRetry: snackRetryFeedback(context),
+      );
     } on SyncException catch (e) {
       if (mounted) {
         showSnack(
             context,
-            DictLibLocalizations.of(context)!
-                .subscribedSyncFailedSnack(e.message));
+            DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
+                localisedSyncErrorSimple(context, e, e.message)),
+            replaceCurrent: true);
       }
     }
     if (mounted) setState(() {});
@@ -97,7 +102,9 @@ class _ListMembersPageState extends State<ListMembersPage> {
       _generalError = null;
     });
     try {
-      final invite = await sharing.engine.createInvite(widget.list.listId);
+      final invite = await retryWithFeedback(
+          () => sharing.engine.createInvite(widget.list.listId),
+          onRetry: snackRetryFeedback(context));
       final url = sharing.config.inviteUrlFor(widget.list.listId, invite.token);
       // The invite is created — stop the button spinner before opening the
       // result dialog, otherwise it keeps spinning behind the dialog for as
@@ -157,13 +164,15 @@ class _ListMembersPageState extends State<ListMembersPage> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
     setState(() {
       _removingUserId = editor.userId;
       _generalError = null;
     });
     try {
-      await sharing.engine.removeEditor(widget.list.listId, editor.userId);
+      await retryWithFeedback(
+          () => sharing.engine.removeEditor(widget.list.listId, editor.userId),
+          onRetry: snackRetryFeedback(context));
     } on SyncException catch (e) {
       if (mounted) {
         final ll = DictLibLocalizations.of(context)!;
@@ -197,14 +206,16 @@ class _ListMembersPageState extends State<ListMembersPage> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
     setState(() {
       _leavingInflight = true;
       _generalError = null;
     });
     var left = false;
     try {
-      await sharing.engine.leaveAsEditor(widget.list.listId);
+      await retryWithFeedback(
+          () => sharing.engine.leaveAsEditor(widget.list.listId),
+          onRetry: snackRetryFeedback(context));
       left = true;
     } on SyncException catch (e) {
       if (mounted) {

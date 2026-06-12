@@ -5,6 +5,7 @@ import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/lists_service.dart';
+import 'package:dictionarylib/retry.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
@@ -137,9 +138,29 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     super.dispose();
   }
 
+  /// Pull-to-refresh over every shared list. [SyncEngine.syncAll] returns
+  /// per-list failures rather than throwing; surface the first one (after
+  /// retrying transient ones with on-screen feedback) so a dead network
+  /// doesn't read as a successful refresh.
   Future<void> _refreshSynced() async {
     if (!sharing.isEnabled) return;
-    await sharing.engine.syncAll();
+    try {
+      await retryWithFeedback(
+        () async {
+          final failures = await sharing.engine.syncAll();
+          if (failures.isNotEmpty) throw failures.first;
+        },
+        onRetry: snackRetryFeedback(context),
+      );
+    } on SyncException catch (e) {
+      if (mounted) {
+        showSnack(
+            context,
+            DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
+                localisedSyncErrorSimple(context, e, e.message)),
+            replaceCurrent: true);
+      }
+    }
     if (mounted) setState(() {});
   }
 
@@ -736,7 +757,11 @@ Future<bool> applyRenameSharedListDialog(
   return _showRenameDialog(
     context,
     currentName: owned.getName(context),
-    onRename: (newName) => listsService.renameSharedList(owned, newName),
+    // Renaming hits the server; retry transient failures with feedback
+    // before the dialog's error handling surfaces the final failure.
+    onRename: (newName) => retryWithFeedback(
+        () => listsService.renameSharedList(owned, newName),
+        onRetry: snackRetryFeedback(context)),
   );
 }
 

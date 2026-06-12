@@ -231,6 +231,13 @@
             "message": { "type": "String" }
         }
     },
+    "retryAttemptSnack": "That didn't work — retrying (attempt {attempt} of {maxAttempts})…",
+    "@retryAttemptSnack": {
+        "placeholders": {
+            "attempt": { "type": "int" },
+            "maxAttempts": { "type": "int" }
+        }
+    },
     "subscribedCopyMenuItem": "Duplicate",
 
     "settingsSharing": "Sharing",

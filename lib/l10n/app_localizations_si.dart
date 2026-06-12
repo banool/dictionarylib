@@ -512,6 +512,11 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
+  String retryAttemptSnack(int attempt, int maxAttempts) {
+    return 'එය අසාර්ථක විය — නැවත උත්සාහ කරමින් ($maxAttemptsන් $attempt වැනි උත්සාහය)…';
+  }
+
+  @override
   String get subscribedCopyMenuItem => 'අනුපිටපත් කරන්න';
 
   @override

@@ -6,6 +6,7 @@ import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_entry_list_help_en.dart';
+import 'package:dictionarylib/retry.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/list_members_page.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
@@ -210,16 +211,22 @@ class EntryListPageState extends State<EntryListPage> {
 
   /// Pull-to-refresh handler: force a sync of the shared list, then
   /// rebuild. The [RefreshIndicator] owns the spinner, so on success we
-  /// just fall back to the normal view; failures surface a snack.
+  /// just fall back to the normal view. Transient failures retry with
+  /// "attempt n of m" feedback; a final failure surfaces a snack saying
+  /// specifically what went wrong.
   Future<void> _pullToRefresh(SyncedEntryList synced) async {
     try {
-      await listsService.refreshSyncedList(synced);
+      await retryWithFeedback(
+        () => listsService.refreshSyncedList(synced),
+        onRetry: snackRetryFeedback(context),
+      );
     } on SyncException catch (e) {
       if (mounted) {
         showSnack(
             context,
-            DictLibLocalizations.of(context)!
-                .subscribedSyncFailedSnack(e.message));
+            DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
+                localisedSyncErrorSimple(context, e, e.message)),
+            replaceCurrent: true);
       }
     }
     if (mounted) search();
@@ -293,9 +300,12 @@ class EntryListPageState extends State<EntryListPage> {
       context,
       Text(l.unshareConfirmBody),
       title: l.unshareConfirmTitle,
-      onConfirm: () => listsService.unshareList(owned),
-      errorMessage: (e) =>
-          e is SyncException ? l.unshareFailed(e.message) : e.toString(),
+      onConfirm: () => retryWithFeedback(
+          () => listsService.unshareList(owned),
+          onRetry: snackRetryFeedback(context)),
+      errorMessage: (e) => e is SyncException
+          ? l.unshareFailed(localisedSyncErrorSimple(context, e, e.message))
+          : e.toString(),
     );
     if (confirmed && mounted) setState(() {});
   }
@@ -307,9 +317,12 @@ class EntryListPageState extends State<EntryListPage> {
         final ok = await runWithProgress(
           context: context,
           message: l.subscribedSyncInProgress,
-          task: () => listsService.refreshSubscriber(list),
+          task: () => retryWithFeedback(
+              () => listsService.refreshSubscriber(list),
+              onRetry: snackRetryFeedback(context)),
           errorMessage: (e) => e is SyncException
-              ? l.subscribedSyncFailedSnack(e.message)
+              ? l.subscribedSyncFailedSnack(
+                  localisedSyncErrorSimple(context, e, e.message))
               : '$e',
         );
         if (!ok || !mounted) return;

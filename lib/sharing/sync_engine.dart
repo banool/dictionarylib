@@ -331,21 +331,32 @@ class SyncEngine {
   /// (a pull-only sync). After that, [_drainListPending] keeps
   /// flushing while there's still queued work, so a long offline
   /// queue (>50 ops) fully lands before returning.
-  Future<void> syncAll() async {
+  /// Returns the per-list failures instead of throwing: background
+  /// callers (app open / resume) ignore them, while a foreground caller
+  /// (the overview's pull-to-refresh) surfaces them to the user.
+  Future<List<SyncException>> syncAll() async {
+    final failures = <SyncException>[];
+    void recordFailure(String label, Object e) {
+      printAndLog('SyncEngine: $label failed: $e');
+      if (e is SyncException) failures.add(e);
+    }
+
     final futures = <Future<void>>[];
     for (final l in _manager.editableLists) {
-      futures.add(_flushAndDrain(l.listId).catchError((e) =>
-          printAndLog('SyncEngine: sync editable ${l.listId} failed: $e')));
+      futures.add(_flushAndDrain(l.listId, rethrowOnError: true)
+          .catchError((e) => recordFailure('sync editable ${l.listId}', e)));
     }
     for (final l in _manager.subscribedLists) {
-      futures.add(_pullSubscribed(l.listId).catchError(
-          (e) => printAndLog('SyncEngine: pull sub ${l.listId} failed: $e')));
+      futures.add(_pullSubscribed(l.listId, rethrowOnError: true)
+          .catchError((e) => recordFailure('pull sub ${l.listId}', e)));
     }
     await Future.wait(futures);
+    return failures;
   }
 
-  Future<void> _flushAndDrain(String listId) async {
-    await _flushOps(listId);
+  Future<void> _flushAndDrain(String listId,
+      {bool rethrowOnError = false}) async {
+    await _flushOps(listId, rethrowOnError: rethrowOnError);
     await _drainListPending(listId);
   }
 
@@ -354,7 +365,12 @@ class SyncEngine {
   /// POST /sync with pending ops + lastKnownSeq, then reconcile the
   /// response into local state. All under the per-list lock — no
   /// inflight bool needed.
-  Future<void> _flushOps(String listId) {
+  ///
+  /// Errors are normally swallowed after [_handleSyncError] (background
+  /// flushes self-heal via backoff and should never toast); foreground
+  /// callers pass [rethrowOnError] so a user-initiated refresh can tell
+  /// the user what went wrong instead of failing silently.
+  Future<void> _flushOps(String listId, {bool rethrowOnError = false}) {
     return _stateOf(listId).lock.synchronized(() async {
       final list = _manager.get(listId);
       if (list == null) return;
@@ -393,6 +409,11 @@ class SyncEngine {
         }
       } on SyncException catch (e) {
         await _handleSyncError(list, e, batch);
+        // Only transient failures surface on a foreground refresh; terminal
+        // outcomes (notFound/gone/auth/permission) are reconciled into local
+        // state above and shouldn't read as a refresh error. See
+        // [SyncException.isTransient].
+        if (rethrowOnError && e.isTransient) rethrow;
       }
     });
   }
@@ -689,7 +710,10 @@ class SyncEngine {
 
   // -------- Subscriber: R2 poll --------
 
-  Future<void> _pullSubscribed(String listId) {
+  /// Same error contract as [_flushOps]: swallowed for background polls,
+  /// rethrown (after the usual handling) when [rethrowOnError] is set so
+  /// foreground refreshes can surface the failure.
+  Future<void> _pullSubscribed(String listId, {bool rethrowOnError = false}) {
     return _stateOf(listId).lock.synchronized(() async {
       final local = _manager.get(listId);
       if (local == null) return;
@@ -727,11 +751,17 @@ class SyncEngine {
         if (e.kind == SyncErrorKind.notFound || e.kind == SyncErrorKind.gone) {
           // A fresh subscriber pull can transiently 404 (R2 propagation
           // right after publish), so 404s go through the same
-          // threshold-and-backoff treatment as the sync path.
+          // threshold-and-backoff treatment as the sync path. These are
+          // deliberately NOT rethrown even on a foreground refresh: a
+          // transient 404 mustn't read as "list not found", and a real
+          // deletion tombstones the list (its own feedback).
           await _handleNotFoundOrGone(local, e.kind, 'pull');
           return;
         }
         printAndLog('SyncEngine: pull ${local.listId} error: $e');
+        // Surface only transient failures (network/server/rate-limited) on a
+        // foreground refresh; see [SyncException.isTransient].
+        if (rethrowOnError && e.isTransient) rethrow;
       }
     });
   }
@@ -1003,11 +1033,12 @@ class SyncEngine {
     await _manager.removeLocal(listId);
   }
 
-  /// Single-list subscriber refresh.
+  /// Single-list subscriber refresh. User-initiated, so failures
+  /// propagate for the caller to surface.
   Future<void> refreshSubscriber(String listId) async {
     final list = _manager.get(listId);
     if (list == null || list.meta.role != ListRole.subscriber) return;
-    await _pullSubscribed(listId);
+    await _pullSubscribed(listId, rethrowOnError: true);
   }
 
   /// Force a full sync of a single shared list, whatever the viewer's
@@ -1019,13 +1050,15 @@ class SyncEngine {
   /// the member directory (`meta.cachedMembers`), so a co-editor who was
   /// just added via an invite shows up immediately instead of only after
   /// an app restart. Subscribers re-pull the public payload from R2.
+  /// User-initiated (unlike the background flush/poll paths), so
+  /// failures propagate for the caller to surface.
   Future<void> refreshList(String listId) async {
     final list = _manager.get(listId);
     if (list == null) return;
     if (_isEditableRole(list.meta.role)) {
-      await _flushAndDrain(listId);
+      await _flushAndDrain(listId, rethrowOnError: true);
     } else {
-      await _pullSubscribed(listId);
+      await _pullSubscribed(listId, rethrowOnError: true);
     }
   }
 

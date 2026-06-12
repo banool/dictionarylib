@@ -174,6 +174,7 @@
     "subscribedSyncInProgress": "සමමුහුර්ත වෙමින්…",
     "subscribedSyncDoneSnack": "යාවත්කාලීනයි",
     "subscribedSyncFailedSnack": "සමමුහුර්ත වීම අසාර්ථක විය: {message}",
+    "retryAttemptSnack": "එය අසාර්ථක විය — නැවත උත්සාහ කරමින් ({maxAttempts}න් {attempt} වැනි උත්සාහය)…",
     "subscribedCopyMenuItem": "අනුපිටපත් කරන්න",
     "settingsSharing": "බෙදා ගැනීම",
     "settingsSignIn": "ලැයිස්තු බෙදා ගැනීමට පුරනය වන්න",

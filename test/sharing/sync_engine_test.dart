@@ -1414,4 +1414,79 @@ void main() {
       expect(ctx.requests, isEmpty);
     });
   });
+
+  group('SyncEngine — foreground refresh error surfacing', () {
+    http.Response serverError(http.Request req) => http.Response(
+        jsonEncode({
+          'error': {'code': 'INTERNAL', 'message': 'boom'}
+        }),
+        500);
+
+    Future<void> insertSubscriber(SyncedEntryListManager manager,
+        {String listId = 'subbed123456'}) async {
+      await manager.insert(SyncedEntryList.subscriber(
+        meta: SyncedListMeta(
+          listId: listId,
+          displayName: 'Subbed',
+          role: ListRole.subscriber,
+          lastKnownSeq: 1,
+          etag: '"etag1"',
+          lastSyncedAt: 1700000000,
+          serverUpdatedAt: 1700000000,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+    }
+
+    test('refreshList rethrows a server failure for an editable list',
+        () async {
+      final ctx = _makeEngine((req) async => serverError(req));
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      await expectLater(
+        ctx.engine.refreshList(list.listId),
+        throwsA(isA<SyncException>()
+            .having((e) => e.kind, 'kind', SyncErrorKind.server)),
+      );
+    });
+
+    test('refreshList rethrows a network failure for a subscriber', () async {
+      final ctx =
+          _makeEngine((req) async => throw http.ClientException('no route'));
+      await insertSubscriber(ctx.manager);
+      await expectLater(
+        ctx.engine.refreshList('subbed123456'),
+        throwsA(isA<SyncException>()
+            .having((e) => e.kind, 'kind', SyncErrorKind.network)),
+      );
+    });
+
+    test('refreshSubscriber rethrows network failures too', () async {
+      final ctx =
+          _makeEngine((req) async => throw http.ClientException('no route'));
+      await insertSubscriber(ctx.manager);
+      await expectLater(
+        ctx.engine.refreshSubscriber('subbed123456'),
+        throwsA(isA<SyncException>()),
+      );
+    });
+
+    test('background pushAllDirty still swallows the same failure', () async {
+      final ctx = _makeEngine((req) async => serverError(req));
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+      // Must complete normally; the op stays queued for the backoff retry.
+      await ctx.engine.pushAllDirty();
+      expect(ctx.manager.get(list.listId)!.meta.pendingOps, isNotEmpty);
+    });
+
+    test('syncAll reports per-list failures instead of throwing', () async {
+      final ctx = _makeEngine((req) async => serverError(req));
+      await setUpOwnedList(ctx.engine, ctx.manager);
+      await insertSubscriber(ctx.manager);
+      final failures = await ctx.engine.syncAll();
+      expect(failures, hasLength(2));
+      expect(failures.every((e) => e.kind == SyncErrorKind.server), isTrue);
+    });
+  });
 }

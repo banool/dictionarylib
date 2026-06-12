@@ -371,8 +371,13 @@ void showSnack(
   Duration? duration,
   Color? backgroundColor,
   Color? textColor,
+  bool replaceCurrent = false,
 }) {
   final messenger = ScaffoldMessenger.of(context);
+  // For rapidly-evolving status (retry progress, then the final outcome)
+  // the default queueing would hold each message for its full duration and
+  // delay the one that matters; replacing keeps the latest state on screen.
+  if (replaceCurrent) messenger.removeCurrentSnackBar();
   messenger.showSnackBar(_tapToDismissSnackBar(
     messenger,
     Text(message,

@@ -521,6 +521,11 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
+  String retryAttemptSnack(int attempt, int maxAttempts) {
+    return 'அது வேலை செய்யவில்லை — மீண்டும் முயற்சிக்கிறது ($maxAttempts-இல் முயற்சி $attempt)…';
+  }
+
+  @override
   String get subscribedCopyMenuItem => 'நகலெடு';
 
   @override
