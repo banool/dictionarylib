@@ -673,6 +673,36 @@ void main() {
       final list = ctx.manager.get('subbed123456')!;
       expect(list.meta.lastSyncedAt, greaterThan(1700000000));
     });
+
+    test('user-initiated refresh sends Cache-Control: no-cache; '
+        'background poll does not', () async {
+      final ctx = _makeEngine((req) async => http.Response('', 304));
+      await ctx.manager.insert(SyncedEntryList.subscriber(
+        meta: SyncedListMeta(
+          listId: 'subbed123456',
+          displayName: 'Subbed',
+          role: ListRole.subscriber,
+          lastKnownSeq: 1,
+          etag: '"etag1"',
+          lastSyncedAt: 1700000000,
+          serverUpdatedAt: 1700000000,
+          orphaned: false,
+        ),
+        savedVideos: LinkedHashSet<SavedVideo>(),
+      ));
+
+      // Pull-to-refresh → bypass the worker edge cache.
+      await ctx.engine.refreshSubscriber('subbed123456');
+      final refreshReq = ctx.requests.last;
+      expect(refreshReq.method, 'GET');
+      expect(refreshReq.headers['cache-control'], 'no-cache');
+
+      // Background full sync → stay on the cheap cached path (no override).
+      await ctx.engine.syncAll();
+      final pollReq = ctx.requests.last;
+      expect(pollReq.method, 'GET');
+      expect(pollReq.headers.containsKey('cache-control'), isFalse);
+    });
   });
 
   group('SyncEngine — per-list lock serialisation', () {

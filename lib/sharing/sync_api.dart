@@ -627,9 +627,18 @@ class SyncApi {
 
   /// Subscriber poll. Reads the R2 snapshot via the worker's edge
   /// cache. Pass [ifNoneMatch] to get a 304 when unchanged.
-  Future<FetchResult> getList(String listId, {String? ifNoneMatch}) async {
+  ///
+  /// Set [forceFresh] for a user-initiated pull-to-refresh: it sends
+  /// `Cache-Control: no-cache` so the worker skips its edge cache and
+  /// validates against the current R2 snapshot. The edge TTL can
+  /// otherwise hide a just-made change from a reader in a different colo
+  /// (cache invalidation on write is colo-local). Background/passive polls
+  /// leave it false and stay on the cheap cached path.
+  Future<FetchResult> getList(String listId,
+      {String? ifNoneMatch, bool forceFresh = false}) async {
     final headers = _baseHeaders();
     if (ifNoneMatch != null) headers['if-none-match'] = ifNoneMatch;
+    if (forceFresh) headers['cache-control'] = 'no-cache';
     final resp =
         await _request(method: 'GET', url: _listUrl(listId), headers: headers);
     if (resp.statusCode == 304) return FetchNotModified();

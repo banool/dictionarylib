@@ -334,7 +334,12 @@ class SyncEngine {
   /// Returns the per-list failures instead of throwing: background
   /// callers (app open / resume) ignore them, while a foreground caller
   /// (the overview's pull-to-refresh) surfaces them to the user.
-  Future<List<SyncException>> syncAll() async {
+  ///
+  /// [forceFresh] is set only by the genuine user-initiated pull-to-refresh
+  /// so each subscriber pull bypasses the worker's edge cache; the
+  /// background app-open/resume callers leave it false to stay on the
+  /// cached path.
+  Future<List<SyncException>> syncAll({bool forceFresh = false}) async {
     final failures = <SyncException>[];
     void recordFailure(String label, Object e) {
       printAndLog('SyncEngine: $label failed: $e');
@@ -347,8 +352,9 @@ class SyncEngine {
           .catchError((e) => recordFailure('sync editable ${l.listId}', e)));
     }
     for (final l in _manager.subscribedLists) {
-      futures.add(_pullSubscribed(l.listId, rethrowOnError: true)
-          .catchError((e) => recordFailure('pull sub ${l.listId}', e)));
+      futures.add(
+          _pullSubscribed(l.listId, rethrowOnError: true, forceFresh: forceFresh)
+              .catchError((e) => recordFailure('pull sub ${l.listId}', e)));
     }
     await Future.wait(futures);
     return failures;
@@ -713,7 +719,12 @@ class SyncEngine {
   /// Same error contract as [_flushOps]: swallowed for background polls,
   /// rethrown (after the usual handling) when [rethrowOnError] is set so
   /// foreground refreshes can surface the failure.
-  Future<void> _pullSubscribed(String listId, {bool rethrowOnError = false}) {
+  ///
+  /// [forceFresh] is set by user-initiated pull-to-refresh so the public
+  /// GET bypasses the worker's edge cache and reads the current R2
+  /// snapshot (see [SyncApi.getList]); background polls leave it false.
+  Future<void> _pullSubscribed(String listId,
+      {bool rethrowOnError = false, bool forceFresh = false}) {
     return _stateOf(listId).lock.synchronized(() async {
       final local = _manager.get(listId);
       if (local == null) return;
@@ -723,8 +734,8 @@ class SyncEngine {
       // fine — `replaceEntriesFromServer` operates on the wrapper's
       // entries set, which is the right thing in either case.
       try {
-        final result =
-            await _api.getList(local.listId, ifNoneMatch: local.meta.etag);
+        final result = await _api.getList(local.listId,
+            ifNoneMatch: local.meta.etag, forceFresh: forceFresh);
         final state = _stateOf(listId);
         state.backoffSeconds = null;
         state.consecutiveNotFound = 0;
@@ -1038,7 +1049,7 @@ class SyncEngine {
   Future<void> refreshSubscriber(String listId) async {
     final list = _manager.get(listId);
     if (list == null || list.meta.role != ListRole.subscriber) return;
-    await _pullSubscribed(listId, rethrowOnError: true);
+    await _pullSubscribed(listId, rethrowOnError: true, forceFresh: true);
   }
 
   /// Force a full sync of a single shared list, whatever the viewer's
@@ -1058,7 +1069,7 @@ class SyncEngine {
     if (_isEditableRole(list.meta.role)) {
       await _flushAndDrain(listId, rethrowOnError: true);
     } else {
-      await _pullSubscribed(listId, rethrowOnError: true);
+      await _pullSubscribed(listId, rethrowOnError: true, forceFresh: true);
     }
   }
 

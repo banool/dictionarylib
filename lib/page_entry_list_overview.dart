@@ -147,7 +147,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     try {
       await retryWithFeedback(
         () async {
-          final failures = await sharing.engine.syncAll();
+          // User-initiated pull-to-refresh: bypass the worker edge cache so
+          // a just-made change shows up immediately (see SyncApi.getList).
+          final failures = await sharing.engine.syncAll(forceFresh: true);
           if (failures.isNotEmpty) throw failures.first;
         },
         onRetry: snackRetryFeedback(context),
