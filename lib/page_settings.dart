@@ -153,7 +153,8 @@ class SettingsPageState extends State<SettingsPage> {
           if (mounted) setState(() {});
         }),
       ]),
-      if (shareState.isEnabled)
+      // Hidden on web: there's no sign-in / account on the web build.
+      if (shareState.isEnabled && !kIsWeb)
         ...section(l.settingsSharing, [
           if (session == null)
             navRow(l.settingsSignIn, onTap: () async {

@@ -137,7 +137,11 @@ bool getShowFlashcards() {
 }
 
 bool getShowLists() {
-  return !kIsWeb;
+  // Shown on web too: you can browse and subscribe to community lists
+  // read-only without an account. Creating/editing lists needs the mobile
+  // app — those affordances are gated separately (see kIsWeb checks in the
+  // lists overview, the share/save buttons, and settings).
+  return true;
 }
 
 // Matches everything up to the first space or "(", i.e. the head of the phrase

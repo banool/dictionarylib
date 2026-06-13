@@ -10,6 +10,8 @@ import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
+import 'package:dictionarylib/web_limitations.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dictionarylib/dictionarylib.dart'
@@ -188,8 +190,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
     List<Widget> actions = [];
 
-    // Only show the edit action for user lists.
-    if (activeTab == _TabDescriptor.myLists) {
+    // Only show the edit action for user lists — and not on web, where lists
+    // can't be created or edited (no account).
+    if (activeTab == _TabDescriptor.myLists && !kIsWeb) {
       actions.add(buildActionButton(
         context,
         inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
@@ -316,6 +319,19 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
           // doesn't play nicely with it).
           if (sharing.isEnabled && !inEditMode) {
             body = RefreshIndicator(onRefresh: _refreshSynced, child: body);
+          }
+          if (kIsWeb) {
+            // No local lists, favourites, or reorder hint on web — you can't
+            // create or save them there. Just explain; the Community and
+            // Shared-with-me tabs carry the read-only content.
+            final l = DictLibLocalizations.of(context)!;
+            return ListView(children: [
+              WebLimitationsCard(
+                heading: l.webLimitationsListsHeading,
+                body: l.webLimitationsListsBody,
+                footer: l.webLimitationsFooter,
+              ),
+            ]);
           }
           return body;
         }(),

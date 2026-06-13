@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
@@ -7,6 +8,7 @@ import 'globals.dart';
 import 'hearth.dart';
 import 'page_news.dart';
 import 'top_level_scaffold.dart';
+import 'web_limitations.dart';
 
 class SearchPage extends StatefulWidget {
   // This will only ever be set if this page was opened via a deeplink.
@@ -132,7 +134,11 @@ class SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (advisoriesResponse != null &&
+    // Not auto-shown on web: every visit is effectively a fresh session there
+    // (no persisted "seen" state), so it would pop the news every load. The
+    // campaign button in the app bar still opens it on demand.
+    if (!kIsWeb &&
+        advisoriesResponse != null &&
         advisoriesResponse!.newAdvisories &&
         advisoriesResponse!.advisories.isNotEmpty &&
         !advisoryShownOnce) {
@@ -365,7 +371,9 @@ class SearchPageState extends State<SearchPage> {
     final l = DictLibLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
     final recents = _getRecents();
-    final signOfDay = _signOfDay(locale);
+    // No sign of the day on web — it's drawn from saved/subscribed lists and
+    // the web build has no personal saved words, so it'd be empty or arbitrary.
+    final signOfDay = kIsWeb ? null : _signOfDay(locale);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -445,6 +453,22 @@ class SearchPageState extends State<SearchPage> {
             ),
           ),
           _signOfDayCard(context, signOfDay),
+        ],
+        if (kIsWeb) ...[
+          // Push the card down so it sits roughly centred when it's the only
+          // thing on the empty search screen (the common web first-load case).
+          if (recents.isEmpty)
+            SizedBox(height: MediaQuery.of(context).size.height * 0.16),
+          WebLimitationsCard(
+            heading: l.webLimitationsHeading,
+            points: [
+              l.webLimitationsNoSaving,
+              l.webLimitationsNoLists,
+              l.webLimitationsNoRevision,
+              l.webLimitationsNoSignIn,
+            ],
+            footer: l.webLimitationsFooter,
+          ),
         ],
       ],
     );

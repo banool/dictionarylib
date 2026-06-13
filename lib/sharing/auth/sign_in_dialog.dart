@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -35,6 +35,10 @@ final ValueNotifier<String?> _inflightContextMessage = ValueNotifier(null);
 /// arrival mid-share doesn't strand the user with the wrong copy.
 Future<AuthSession?> showSignInDialog(BuildContext context,
     {String? contextMessage}) {
+  // Web has no sign-in (every provider is unavailable — see auth_service), so
+  // the provider dialog would be empty. Any flow that reaches for a session on
+  // web gets a clear pointer to the mobile app instead of a dead dialog.
+  if (kIsWeb) return _showWebSharingUnavailableDialog(context);
   final existing = _inflightSignIn;
   if (existing != null) {
     if (contextMessage != null) _inflightContextMessage.value = contextMessage;
@@ -78,6 +82,29 @@ Future<AuthSession?> ensureSession(BuildContext context,
       await showSignInDialog(context, contextMessage: contextMessage);
   if (session == null || !context.mounted) return null;
   return session;
+}
+
+/// Web stand-in for the sign-in dialog: there's no web sign-in, so explain
+/// that publishing/editing shared lists needs the mobile app and return null
+/// (the caller treats that as "no session", same as a cancel).
+Future<AuthSession?> _showWebSharingUnavailableDialog(
+    BuildContext context) async {
+  final l = DictLibLocalizations.of(context)!;
+  final appName = sharing.isEnabled ? sharing.config.appName : 'mobile';
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l.webSharingUnavailableTitle),
+      content: Text(l.webSharingUnavailableBody(appName)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+        ),
+      ],
+    ),
+  );
+  return null;
 }
 
 Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
