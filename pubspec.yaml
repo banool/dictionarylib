@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.3.52
+version: 0.3.53
 
 publish_to: 'none'
 
@@ -9,6 +9,8 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  # Used to gzip the dictionary dump for web local-storage (entry_loader.dart).
+  archive: ^4.0.0
   cached_network_image: ^3.4.1
   carousel_slider:
   collection:
@@ -46,9 +48,13 @@ dependencies:
   shared_preferences:
   store_redirect:
   url_launcher:
+  # Native (Android/iOS) video. On web media_kit's player misbehaves (loads
+  # then sits paused, wakelock errors), so the web build plays through
+  # package:video_player's HTML5 <video> instead — see video_player_web.dart.
   media_kit:
   media_kit_video:
   media_kit_libs_video:
+  video_player: ^2.9.2
   # --- Shared lists feature ---
   app_links: ^6.3.0
   qr_flutter: ^4.1.0

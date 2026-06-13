@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -19,8 +20,10 @@ class ErrorFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Remove the splash screen.
-    FlutterNativeSplash.remove();
+    // Remove the splash screen (native only — no web splash configured).
+    if (!kIsWeb) {
+      FlutterNativeSplash.remove();
+    }
 
     Widget advisoryWidget;
     if (advisoriesResponse == null) {

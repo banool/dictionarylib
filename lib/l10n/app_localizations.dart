@@ -2032,6 +2032,96 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Saved to {listName}'**
   String savedToNamedList(String listName);
+
+  /// No description provided for @webLimitationsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the web version'**
+  String get webLimitationsHeading;
+
+  /// No description provided for @webLimitationsNoSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t save signs or favourites'**
+  String get webLimitationsNoSaving;
+
+  /// No description provided for @webLimitationsNoLists.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t create your own lists'**
+  String get webLimitationsNoLists;
+
+  /// No description provided for @webLimitationsNoRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'No revision or flashcards'**
+  String get webLimitationsNoRevision;
+
+  /// No description provided for @webLimitationsNoSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'No signing in or editing shared lists'**
+  String get webLimitationsNoSignIn;
+
+  /// No description provided for @webLimitationsListsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists on the web'**
+  String get webLimitationsListsHeading;
+
+  /// No description provided for @webLimitationsListsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t create or save your own lists on the web version — that\'s a mobile-app feature. Browse the Community tab, or open a list someone shares with you, to view signs read-only.'**
+  String get webLimitationsListsBody;
+
+  /// No description provided for @webLimitationsFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'For all of that, install the mobile app.'**
+  String get webLimitationsFooter;
+
+  /// No description provided for @webSharingUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the mobile app'**
+  String get webSharingUnavailableTitle;
+
+  /// No description provided for @webSharingUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in, and publishing or editing shared lists, aren\'t available in the web version. Install the {appName} app on your phone to create, publish and edit shared lists. You can still browse the dictionary and open shared lists read-only here.'**
+  String webSharingUnavailableBody(String appName);
+
+  /// No description provided for @videoCarouselPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous video'**
+  String get videoCarouselPrevious;
+
+  /// No description provided for @videoCarouselNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next video'**
+  String get videoCarouselNext;
+
+  /// No description provided for @variationPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous variation'**
+  String get variationPrevious;
+
+  /// No description provided for @variationNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next variation'**
+  String get variationNext;
+
+  /// No description provided for @webVideoLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this video.'**
+  String get webVideoLoadError;
 }
 
 class _DictLibLocalizationsDelegate

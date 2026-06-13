@@ -562,5 +562,21 @@
     "saveToNamedList": "Save to {listName}",
     "@saveToNamedList": { "placeholders": { "listName": { "type": "String" } } },
     "savedToNamedList": "Saved to {listName}",
-    "@savedToNamedList": { "placeholders": { "listName": { "type": "String" } } }
+    "@savedToNamedList": { "placeholders": { "listName": { "type": "String" } } },
+    "webLimitationsHeading": "Using the web version",
+    "webLimitationsNoSaving": "You can't save signs or favourites",
+    "webLimitationsNoLists": "You can't create your own lists",
+    "webLimitationsNoRevision": "No revision or flashcards",
+    "webLimitationsNoSignIn": "No signing in or editing shared lists",
+    "webLimitationsListsHeading": "Lists on the web",
+    "webLimitationsListsBody": "You can't create or save your own lists on the web version — that's a mobile-app feature. Browse the Community tab, or open a list someone shares with you, to view signs read-only.",
+    "webLimitationsFooter": "For all of that, install the mobile app.",
+    "webSharingUnavailableTitle": "Use the mobile app",
+    "webSharingUnavailableBody": "Signing in, and publishing or editing shared lists, aren't available in the web version. Install the {appName} app on your phone to create, publish and edit shared lists. You can still browse the dictionary and open shared lists read-only here.",
+    "@webSharingUnavailableBody": { "placeholders": { "appName": { "type": "String" } } },
+    "videoCarouselPrevious": "Previous video",
+    "videoCarouselNext": "Next video",
+    "variationPrevious": "Previous variation",
+    "variationNext": "Next variation",
+    "webVideoLoadError": "Couldn't load this video."
 }

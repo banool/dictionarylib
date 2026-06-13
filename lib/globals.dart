@@ -109,9 +109,9 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
   // Load device info once at startup.
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   try {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       androidDeviceInfo = await deviceInfo.androidInfo;
-    } else if (Platform.isIOS) {
+    } else if (!kIsWeb && Platform.isIOS) {
       iosDeviceInfo = await deviceInfo.iosInfo;
     }
     printAndLog("Successfully loaded device info");

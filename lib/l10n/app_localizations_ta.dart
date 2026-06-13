@@ -1184,4 +1184,57 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String savedToNamedList(String listName) {
     return '$listName இல் சேமிக்கப்பட்டது';
   }
+
+  @override
+  String get webLimitationsHeading => 'வலை பதிப்பைப் பயன்படுத்துதல்';
+
+  @override
+  String get webLimitationsNoSaving =>
+      'சைகைகள் அல்லது பிடித்தவைகளைச் சேமிக்க முடியாது';
+
+  @override
+  String get webLimitationsNoLists =>
+      'உங்கள் சொந்த பட்டியல்களை உருவாக்க முடியாது';
+
+  @override
+  String get webLimitationsNoRevision =>
+      'மீள்பார்வை அல்லது ஃபிளாஷ்கார்டுகள் இல்லை';
+
+  @override
+  String get webLimitationsNoSignIn =>
+      'உள்நுழைவு அல்லது பகிரப்பட்ட பட்டியல்களைத் திருத்துதல் இல்லை';
+
+  @override
+  String get webLimitationsListsHeading => 'வலையில் பட்டியல்கள்';
+
+  @override
+  String get webLimitationsListsBody =>
+      'வலை பதிப்பில் உங்கள் சொந்த பட்டியல்களை உருவாக்கவோ சேமிக்கவோ முடியாது — அது ஒரு மொபைல் செயலி அம்சம். சைகைகளைப் படிக்க மட்டும் பார்க்க சமூகத் தாவலை உலாவவும், அல்லது யாராவது உங்களுடன் பகிரும் பட்டியலைத் திறக்கவும்.';
+
+  @override
+  String get webLimitationsFooter =>
+      'அவை அனைத்திற்கும், மொபைல் செயலியை நிறுவவும்.';
+
+  @override
+  String get webSharingUnavailableTitle => 'மொபைல் செயலியைப் பயன்படுத்தவும்';
+
+  @override
+  String webSharingUnavailableBody(String appName) {
+    return 'உள்நுழைவு, மற்றும் பகிரப்பட்ட பட்டியல்களை வெளியிடுதல் அல்லது திருத்துதல் வலை பதிப்பில் கிடைக்காது. பகிரப்பட்ட பட்டியல்களை உருவாக்க, வெளியிட மற்றும் திருத்த உங்கள் தொலைபேசியில் $appName செயலியை நிறுவவும். நீங்கள் இன்னும் அகராதியை உலாவலாம் மற்றும் பகிரப்பட்ட பட்டியல்களை இங்கே படிக்க மட்டும் திறக்கலாம்.';
+  }
+
+  @override
+  String get videoCarouselPrevious => 'முந்தைய வீடியோ';
+
+  @override
+  String get videoCarouselNext => 'அடுத்த வீடியோ';
+
+  @override
+  String get variationPrevious => 'முந்தைய மாறுபாடு';
+
+  @override
+  String get variationNext => 'அடுத்த மாறுபாடு';
+
+  @override
+  String get webVideoLoadError => 'இந்த வீடியோவை ஏற்ற முடியவில்லை.';
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:store_redirect/store_redirect.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:http/http.dart' as http;
@@ -82,8 +83,10 @@ class ForceUpgradePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Remove the splash screen.
-    FlutterNativeSplash.remove();
+    // Remove the splash screen (native only — no web splash configured).
+    if (!kIsWeb) {
+      FlutterNativeSplash.remove();
+    }
 
     Widget updateButton = Container();
     if (Platform.isIOS || Platform.isAndroid) {

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
@@ -7,6 +9,15 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'common.dart';
+
+/// Web local-storage codec for the dictionary dump: the raw JSON is ~16mb
+/// (over the local-storage cap), so we gzip it (~1.7mb) and base64 it for
+/// string storage. Native uses a plain file and doesn't need this.
+String _compressForWeb(String data) =>
+    base64Encode(GZipEncoder().encodeBytes(utf8.encode(data)));
+
+String _decompressFromWeb(String stored) =>
+    utf8.decode(GZipDecoder().decodeBytes(base64Decode(stored)));
 
 abstract class EntryLoader {
   /// Returns the local path where we store the dictionary data we download.
@@ -23,9 +34,13 @@ abstract class EntryLoader {
     // First try to read the data from local storage.
     try {
       if (kIsWeb) {
-        // If we're on web use local storage, in which we just store all the data
-        // as a value in the kv store.
-        data = sharedPreferences.getString(KEY_WEB_DICTIONARY_DATA);
+        // On web the dump is stored gzipped + base64'd to fit local storage
+        // (see _writeEntries); decompress it back to the raw JSON. A bad/old
+        // value throws here and is handled by the surrounding catch (→ re-download).
+        final stored = sharedPreferences.getString(KEY_WEB_DICTIONARY_DATA);
+        if (stored != null) {
+          data = _decompressFromWeb(stored);
+        }
       } else {
         // If we're not on web, read data from the application directory, in
         // which we store it as an actual file.
@@ -78,15 +93,23 @@ abstract class EntryLoader {
   Future<void> _writeEntries(String newData) async {
     printAndLog("Writing new data to local storage");
     if (kIsWeb) {
-      // On web we persist the whole dump as a single local-storage value. The
-      // dump is ~11mb and local-storage limits vary by browser (some as low as
-      // ~5mb), so this can fail on web for large dictionaries — a known
-      // limitation. See https://stackoverflow.com/q/2989284/3846032.
-      await sharedPreferences.setString(KEY_WEB_DICTIONARY_DATA, newData);
-    } else {
-      final path = await _dictionaryDataFilePath;
-      await path.writeAsString(newData);
+      // The raw dump is ~16mb of JSON — well over the ~5mb local-storage cap —
+      // so on web we gzip it (~1.7mb) and base64 it for string storage, then
+      // reverse it on read. Still swallow a write failure: the data is already
+      // in memory for this session, we just won't have it cached next load.
+      try {
+        await sharedPreferences.setString(
+            KEY_WEB_DICTIONARY_DATA, _compressForWeb(newData));
+        printAndLog("Wrote new data to local storage (gzipped)");
+      } catch (e) {
+        printAndLog(
+            "Failed to persist dictionary to web local storage; continuing "
+            "with in-memory data for this session: $e");
+      }
+      return;
     }
+    final path = await _dictionaryDataFilePath;
+    await path.writeAsString(newData);
     printAndLog("Wrote new data to local storage");
   }
 

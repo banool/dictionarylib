@@ -1170,4 +1170,53 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String savedToNamedList(String listName) {
     return '$listName වෙත සුරකින ලදී';
   }
+
+  @override
+  String get webLimitationsHeading => 'වෙබ් අනුවාදය භාවිතා කිරීම';
+
+  @override
+  String get webLimitationsNoSaving => 'ඔබට සංඥා හෝ ප්‍රියතම සුරැකිය නොහැක';
+
+  @override
+  String get webLimitationsNoLists => 'ඔබට ඔබේම ලැයිස්තු සෑදිය නොහැක';
+
+  @override
+  String get webLimitationsNoRevision => 'පුණරීක්ෂණ හෝ ෆ්ලෑෂ්කාඩ් නැත';
+
+  @override
+  String get webLimitationsNoSignIn =>
+      'පුරනය වීම හෝ බෙදාගත් ලැයිස්තු සංස්කරණය නැත';
+
+  @override
+  String get webLimitationsListsHeading => 'වෙබ් හි ලැයිස්තු';
+
+  @override
+  String get webLimitationsListsBody =>
+      'ඔබට වෙබ් අනුවාදයේ ඔබේම ලැයිස්තු සෑදීමට හෝ සුරැකීමට නොහැක — එය ජංගම යෙදුමේ විශේෂාංගයකි. සංඥා කියවීම පමණක් බැලීමට ප්‍රජා ටැබය බ්‍රවුස් කරන්න, හෝ යමෙකු ඔබ සමඟ බෙදාගත් ලැයිස්තුවක් විවෘත කරන්න.';
+
+  @override
+  String get webLimitationsFooter => 'ඒ සියල්ල සඳහා, ජංගම යෙදුම ස්ථාපනය කරන්න.';
+
+  @override
+  String get webSharingUnavailableTitle => 'ජංගම යෙදුම භාවිතා කරන්න';
+
+  @override
+  String webSharingUnavailableBody(String appName) {
+    return 'පුරනය වීම සහ බෙදාගත් ලැයිස්තු ප්‍රකාශනය හෝ සංස්කරණය වෙබ් අනුවාදයේ නොමැත. බෙදාගත් ලැයිස්තු සෑදීමට, ප්‍රකාශනය කිරීමට සහ සංස්කරණය කිරීමට ඔබේ දුරකථනයේ $appName යෙදුම ස්ථාපනය කරන්න. ඔබට තවමත් ශබ්දකෝෂය බ්‍රවුස් කර බෙදාගත් ලැයිස්තු කියවීම පමණක් මෙහි විවෘත කළ හැක.';
+  }
+
+  @override
+  String get videoCarouselPrevious => 'පෙර වීඩියෝව';
+
+  @override
+  String get videoCarouselNext => 'ඊළඟ වීඩියෝව';
+
+  @override
+  String get variationPrevious => 'පෙර විචලනය';
+
+  @override
+  String get variationNext => 'ඊළඟ විචලනය';
+
+  @override
+  String get webVideoLoadError => 'මෙම වීඩියෝව පූරණය කළ නොහැක.';
 }

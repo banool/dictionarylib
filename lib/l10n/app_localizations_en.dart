@@ -1159,4 +1159,52 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String savedToNamedList(String listName) {
     return 'Saved to $listName';
   }
+
+  @override
+  String get webLimitationsHeading => 'Using the web version';
+
+  @override
+  String get webLimitationsNoSaving => 'You can\'t save signs or favourites';
+
+  @override
+  String get webLimitationsNoLists => 'You can\'t create your own lists';
+
+  @override
+  String get webLimitationsNoRevision => 'No revision or flashcards';
+
+  @override
+  String get webLimitationsNoSignIn => 'No signing in or editing shared lists';
+
+  @override
+  String get webLimitationsListsHeading => 'Lists on the web';
+
+  @override
+  String get webLimitationsListsBody =>
+      'You can\'t create or save your own lists on the web version — that\'s a mobile-app feature. Browse the Community tab, or open a list someone shares with you, to view signs read-only.';
+
+  @override
+  String get webLimitationsFooter => 'For all of that, install the mobile app.';
+
+  @override
+  String get webSharingUnavailableTitle => 'Use the mobile app';
+
+  @override
+  String webSharingUnavailableBody(String appName) {
+    return 'Signing in, and publishing or editing shared lists, aren\'t available in the web version. Install the $appName app on your phone to create, publish and edit shared lists. You can still browse the dictionary and open shared lists read-only here.';
+  }
+
+  @override
+  String get videoCarouselPrevious => 'Previous video';
+
+  @override
+  String get videoCarouselNext => 'Next video';
+
+  @override
+  String get variationPrevious => 'Previous variation';
+
+  @override
+  String get variationNext => 'Next variation';
+
+  @override
+  String get webVideoLoadError => 'Couldn\'t load this video.';
 }
