@@ -10,6 +10,13 @@ class Advisory {
   String date;
   List<String> lines;
 
+  // Optional inclusive app-version bounds. An advisory is only shown when the
+  // running app's version is within [minVersion, maxVersion]. Either (or both)
+  // may be null, meaning "no lower/upper bound". See
+  // advisoryAppliesToCurrentVersion.
+  String? minVersion;
+  String? maxVersion;
+
   MarkdownBody asMarkdown() {
     return MarkdownBody(data: lines.join("\n"));
   }
@@ -17,7 +24,59 @@ class Advisory {
   Advisory({
     required this.date,
     required this.lines,
+    this.minVersion,
+    this.maxVersion,
   });
+}
+
+// Returns true if [advisory] should be shown to the running build, i.e. the
+// app's version falls within the advisory's [Advisory.minVersion] /
+// [Advisory.maxVersion] range (both inclusive, both optional). If we couldn't
+// determine our own version we fail open and show it — better a stray
+// announcement than silently swallowing an important one.
+bool advisoryAppliesToCurrentVersion(Advisory advisory) {
+  if (advisory.minVersion == null && advisory.maxVersion == null) {
+    return true;
+  }
+  var current = packageInfo?.version;
+  if (current == null) {
+    return true;
+  }
+  if (advisory.minVersion != null &&
+      compareVersions(current, advisory.minVersion!) < 0) {
+    return false;
+  }
+  if (advisory.maxVersion != null &&
+      compareVersions(current, advisory.maxVersion!) > 0) {
+    return false;
+  }
+  return true;
+}
+
+// Compares two dotted version strings (e.g. "2.0.0") numerically, part by
+// part. Returns a negative number if [a] is older than [b], zero if they're
+// equal, a positive number if [a] is newer. Any "+build" suffix is ignored,
+// missing trailing parts count as 0 (so "2.0" == "2.0.0"), and non-numeric
+// parts count as 0 so a malformed bound can never accidentally hide an
+// advisory.
+int compareVersions(String a, String b) {
+  List<int> parts(String v) => v
+      .split("+")
+      .first
+      .split(".")
+      .map((p) => int.tryParse(p.trim()) ?? 0)
+      .toList();
+  var pa = parts(a);
+  var pb = parts(b);
+  var length = pa.length > pb.length ? pa.length : pb.length;
+  for (var i = 0; i < length; i++) {
+    var x = i < pa.length ? pa[i] : 0;
+    var y = i < pb.length ? pb[i] : 0;
+    if (x != y) {
+      return x < y ? -1 : 1;
+    }
+  }
+  return 0;
 }
 
 class AdvisoriesResponse {
@@ -56,6 +115,8 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   var inSection = false;
   List<String> currentLines = [];
   String? currentDate;
+  String? currentMinVersion;
+  String? currentMaxVersion;
   for (var line in rawData.split("\n")) {
     // Skip comment lines.
     if (line.startsWith("////")) {
@@ -75,9 +136,21 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
 
     // Handle the end of a section.
     if (line.startsWith("END===")) {
-      advisories.add(Advisory(date: currentDate!, lines: currentLines));
+      var advisory = Advisory(
+        date: currentDate!,
+        lines: currentLines,
+        minVersion: currentMinVersion,
+        maxVersion: currentMaxVersion,
+      );
+      // Only keep advisories whose version range covers this build. One with
+      // no MINVERSION/MAXVERSION applies to everyone.
+      if (advisoryAppliesToCurrentVersion(advisory)) {
+        advisories.add(advisory);
+      }
       currentLines = [];
       currentDate = null;
+      currentMinVersion = null;
+      currentMaxVersion = null;
       inSection = false;
       continue;
     }
@@ -85,6 +158,18 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
     // Handle the date.
     if (line.startsWith("DATE===")) {
       currentDate = line.substring("DATE===".length);
+      continue;
+    }
+
+    // Handle the optional inclusive app-version bounds. These let a newer
+    // announcement target newer app versions; older versions parsing the same
+    // section simply skip it (see advisoryAppliesToCurrentVersion).
+    if (line.startsWith("MINVERSION===")) {
+      currentMinVersion = line.substring("MINVERSION===".length).trim();
+      continue;
+    }
+    if (line.startsWith("MAXVERSION===")) {
+      currentMaxVersion = line.substring("MAXVERSION===".length).trim();
       continue;
     }
 
