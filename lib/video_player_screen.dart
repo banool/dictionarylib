@@ -6,6 +6,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
+import 'package:dictionarylib/video_player_web.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
@@ -271,6 +272,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   @override
   void initState() {
     super.initState();
+    // Web plays through package:video_player (WebVideoCarousel) instead of
+    // media_kit, so none of this media_kit player setup runs there — build()
+    // returns the web carousel before any of it is used.
+    if (kIsWeb) return;
     // Observe app lifecycle so we can resume playback after the app is
     // backgrounded (e.g. the user opened an external link and came back).
     WidgetsBinding.instance.addObserver(this);
@@ -389,7 +394,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
       String mediaSource = mediaLink;
 
-      if (shouldCache) {
+      if (shouldCache && !kIsWeb) {
+        // Skipped on web: flutter_cache_manager's fetch is blocked by CORS on
+        // the cross-origin video host, and we download directly anyway (the
+        // browser/media_kit handle HTTP caching). Trying it just adds a failed
+        // request + noise per video.
         try {
           printAndLog(
               "Attempting to pull video $mediaLink from the cache / internet");
@@ -602,6 +611,20 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Web plays through package:video_player rather than media_kit — its
+    // player loads then sits paused on web and trips wakelock errors. Delegate
+    // the whole carousel to the HTML5 <video>-backed implementation there; the
+    // media_kit path below is native-only.
+    if (kIsWeb) {
+      return WebVideoCarousel(
+        mediaLinks: widget.mediaLinks,
+        fallbackAspectRatio: widget.fallbackAspectRatio,
+        initialPage: widget.initialPage,
+        onPageChanged: widget.onPageChanged,
+        expandOnTap: widget.expandOnTap,
+        isActive: widget.isActive,
+      );
+    }
     // Get height of screen to ensure that the video only takes up
     // a certain proportion of it.
     List<Widget> items = [];
