@@ -3,16 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// A minimal loading screen shown while the app initialises (loads the
 /// dictionary and makes its first network calls). It runs *before* the real
-/// [MaterialApp] and before localisation/theme setup, so it carries its own
-/// tiny MaterialApp and hard-coded brand colours rather than reading from
-/// context.
+/// app and before localisation/theme setup, so it carries its own hard-coded
+/// brand colours rather than reading from context.
 ///
-/// Only used on web: native platforms hold their configured native splash
-/// across startup, whereas web has no splash and `setup()` would otherwise
-/// leave a blank page for a few seconds. The colours mirror the native splash
-/// (cream background) and the Hearth primary so the handoff to the real themed
-/// app is seamless, and the text uses the bundled Hanken Grotesk — a default
-/// font here would hit CanvasKit's `.AppleSystemUIFont` abort on web.
+/// Deliberately a **bare** widget tree — no [MaterialApp], no Navigator/Router.
+/// It's shown via a first `runApp(...)` on web (where there's no native splash
+/// and `setup()` would otherwise leave a blank page for a few seconds), then
+/// replaced by the real app once setup completes. A [MaterialApp] here would
+/// install a Navigator that, finding no route for a deep link like
+/// `/share/<id>`, falls back to `/` and reports it to the engine — clobbering
+/// the deep link before the real router (go_router) ever reads it. A bare tree
+/// never reports a route, so the initial URL is preserved.
+///
+/// The colours mirror the native splash (cream background) and the Hearth
+/// primary so the handoff to the real themed app is seamless, and the text uses
+/// the bundled Hanken Grotesk — a default font here would hit CanvasKit's
+/// `.AppleSystemUIFont` abort on web.
 class StartupLoadingScreen extends StatelessWidget {
   const StartupLoadingScreen({super.key, required this.appName});
 
@@ -26,11 +32,11 @@ class StartupLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: _bg,
-        body: Center(
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: ColoredBox(
+        color: _bg,
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
