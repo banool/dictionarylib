@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../common.dart';
 import '../globals.dart';
@@ -212,12 +214,7 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
                   _navigated = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                      builder: (_) => EntryListPage(
-                        entryList: list,
-                        navigateToEntryPage: widget.navigateToEntryPage,
-                      ),
-                    ));
+                    _showList(context, list);
                   });
                 }
                 return const Center(child: CircularProgressIndicator());
@@ -321,12 +318,30 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
   void _openExisting(SyncedEntryList list) {
     if (_navigated) return;
     _navigated = true;
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
+    _showList(context, list);
+  }
+
+  /// Show [list] in its full page. Normally we replace the landing page; but on
+  /// web the landing page is often the cold-start root (deep-linked straight to
+  /// /share/<id>) with nothing to pop back to, so seed the app home underneath
+  /// first — then the list view has a working back button out to the
+  /// dictionary.
+  void _showList(BuildContext context, SyncedEntryList list) {
+    final route = MaterialPageRoute<void>(
       builder: (_) => EntryListPage(
         entryList: list,
         navigateToEntryPage: widget.navigateToEntryPage,
       ),
-    ));
+    );
+    final navigator = Navigator.of(context);
+    if (kIsWeb && !navigator.canPop()) {
+      GoRouter.of(context).go('/');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        rootNavigatorKey.currentState?.push(route);
+      });
+    } else {
+      navigator.pushReplacement(route);
+    }
   }
 
   Widget _buildError(DictLibLocalizations l, Object? err, bool isInvite) {

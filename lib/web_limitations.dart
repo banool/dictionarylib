@@ -16,6 +16,7 @@ class WebLimitationsCard extends StatelessWidget {
     this.body,
     this.footer,
     this.footerUrl,
+    this.onDismiss,
   });
 
   /// Bold heading line.
@@ -33,6 +34,11 @@ class WebLimitationsCard extends StatelessWidget {
   /// If set, [footer] becomes a tappable link to this URL (the marketing site,
   /// where the App Store / Play Store install buttons live).
   final String? footerUrl;
+
+  /// If set, a small dismiss (✕) button is shown in the top-right corner; tap
+  /// it to call this. The caller is responsible for remembering the dismissal
+  /// (e.g. in shared_preferences) and hiding the card on the next build.
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +97,18 @@ class WebLimitationsCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (onDismiss != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: InkWell(
+                  onTap: onDismiss,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: Icon(Icons.close, size: 18, color: onSurface),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

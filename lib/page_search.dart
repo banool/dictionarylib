@@ -374,6 +374,12 @@ class SearchPageState extends State<SearchPage> {
     // No sign of the day on web — it's drawn from saved/subscribed lists and
     // the web build has no personal saved words, so it'd be empty or arbitrary.
     final signOfDay = kIsWeb ? null : _signOfDay(locale);
+    // Web-only limitations card, dismissible — remembered in local storage. A
+    // storage wipe / different browser just re-shows it, which is fine for a
+    // hint.
+    const webCardDismissedKey = 'webLimitationsDismissed';
+    final webCardDismissed =
+        kIsWeb && (sharedPreferences.getBool(webCardDismissedKey) ?? false);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -454,7 +460,7 @@ class SearchPageState extends State<SearchPage> {
           ),
           _signOfDayCard(context, signOfDay),
         ],
-        if (kIsWeb) ...[
+        if (kIsWeb && !webCardDismissed) ...[
           // Always give the card generous space above it (recents or not) so it
           // reads as the focus of the otherwise-empty web search screen, and
           // cap it to about half the width — it's a compact notice, not
@@ -476,6 +482,10 @@ class SearchPageState extends State<SearchPage> {
                 // Web is Auslan-only for now, so this points at the Auslan
                 // marketing site where the install buttons live.
                 footerUrl: 'https://auslandictionary.org/',
+                onDismiss: () {
+                  sharedPreferences.setBool(webCardDismissedKey, true);
+                  setState(() {});
+                },
               ),
             ),
           ),
