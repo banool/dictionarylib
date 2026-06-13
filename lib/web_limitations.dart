@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// A small info card explaining a limitation of the web version. The web build
 /// has no account features (no sign-in, no favourites/saving, no creating or
@@ -14,6 +15,7 @@ class WebLimitationsCard extends StatelessWidget {
     this.points = const [],
     this.body,
     this.footer,
+    this.footerUrl,
   });
 
   /// Bold heading line.
@@ -27,6 +29,10 @@ class WebLimitationsCard extends StatelessWidget {
 
   /// Closing line pointing at the mobile app. Pass null to omit.
   final String? footer;
+
+  /// If set, [footer] becomes a tappable link to this URL (the marketing site,
+  /// where the App Store / Play Store install buttons live).
+  final String? footerUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -65,9 +71,22 @@ class WebLimitationsCard extends StatelessWidget {
                   ],
                   if (footer != null) ...[
                     const SizedBox(height: 10),
-                    Text(footer!,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    if (footerUrl != null)
+                      InkWell(
+                        onTap: () => launchUrl(Uri.parse(footerUrl!),
+                            mode: LaunchMode.externalApplication),
+                        child: Text(footer!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                              decorationColor: theme.colorScheme.primary,
+                            )),
+                      )
+                    else
+                      Text(footer!,
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600)),
                   ],
                 ],
               ),

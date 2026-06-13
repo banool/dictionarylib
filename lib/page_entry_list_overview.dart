@@ -330,6 +330,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
                 heading: l.webLimitationsListsHeading,
                 body: l.webLimitationsListsBody,
                 footer: l.webLimitationsFooter,
+                // Web is Auslan-only for now, so this points at the Auslan
+                // marketing site where the install buttons live.
+                footerUrl: 'https://auslandictionary.org/',
               ),
             ]);
           }

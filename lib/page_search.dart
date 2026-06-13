@@ -455,19 +455,29 @@ class SearchPageState extends State<SearchPage> {
           _signOfDayCard(context, signOfDay),
         ],
         if (kIsWeb) ...[
-          // Push the card down so it sits roughly centred when it's the only
-          // thing on the empty search screen (the common web first-load case).
-          if (recents.isEmpty)
-            SizedBox(height: MediaQuery.of(context).size.height * 0.16),
-          WebLimitationsCard(
-            heading: l.webLimitationsHeading,
-            points: [
-              l.webLimitationsNoSaving,
-              l.webLimitationsNoLists,
-              l.webLimitationsNoRevision,
-              l.webLimitationsNoSignIn,
-            ],
-            footer: l.webLimitationsFooter,
+          // Always give the card generous space above it (recents or not) so it
+          // reads as the focus of the otherwise-empty web search screen, and
+          // cap it to about half the width — it's a compact notice, not
+          // full-bleed content.
+          SizedBox(height: MediaQuery.of(context).size.height * 0.16),
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.5),
+              child: WebLimitationsCard(
+                heading: l.webLimitationsHeading,
+                points: [
+                  l.webLimitationsNoSaving,
+                  l.webLimitationsNoLists,
+                  l.webLimitationsNoRevision,
+                  l.webLimitationsNoSignIn,
+                ],
+                footer: l.webLimitationsFooter,
+                // Web is Auslan-only for now, so this points at the Auslan
+                // marketing site where the install buttons live.
+                footerUrl: 'https://auslandictionary.org/',
+              ),
+            ),
           ),
         ],
       ],
