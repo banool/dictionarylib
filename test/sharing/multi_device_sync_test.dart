@@ -43,13 +43,17 @@ Future<void> main() async {
   HttpOverrides.global = null;
 
   if (!await integrationServerReachable()) {
-    // Mirror the bun suite's skip behaviour so plain `flutter test` is green
-    // without a server.
+    final msg = 'no server reachable at $kIntegrationBaseUrl.\nStart one in '
+        'another terminal from the private backend repo:\n'
+        '  cd ../dictionary_backend/workers && bunx wrangler dev --env dev';
+    // CI sets REQUIRE_SERVER so a skip can't masquerade as a pass — fail
+    // loudly. A plain local `flutter test` leaves it unset and skips.
+    if (Platform.environment.containsKey('REQUIRE_SERVER')) {
+      fail(
+          '[multi-device] $msg\nREQUIRE_SERVER is set — failing not skipping.');
+    }
     // ignore: avoid_print
-    print('[multi-device] skipping — no server reachable at '
-        '$kIntegrationBaseUrl.\nStart one in another terminal from the '
-        'private backend repo:\n'
-        '  cd ../dictionary_backend/workers && bunx wrangler dev --env dev');
+    print('[multi-device] skipping — $msg');
     return;
   }
 
