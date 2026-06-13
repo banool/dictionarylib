@@ -120,8 +120,7 @@ void main() {
       expect(store.loaded, isTrue);
     });
 
-    test('load returns null when the persisted provider is unknown',
-        () async {
+    test('load returns null when the persisted provider is unknown', () async {
       // Simulates a downgrade where a session stored under a provider
       // this build doesn't know about should fail gracefully — the
       // `firstWhere` throws `StateError`, the broad catch in

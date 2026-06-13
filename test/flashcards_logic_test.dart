@@ -67,7 +67,8 @@ void main() {
   });
 
   group('migrateLegacyReviewsIfNeeded — v1 master rewrite', () {
-    test('legacy master with tail that endsWith a known video URL '
+    test(
+        'legacy master with tail that endsWith a known video URL '
         'is rewritten to the v2 shape', () async {
       // Entry "apple" has one video. The legacy master uses just the
       // filename ("apple.mp4") as the tail; the migration matches it
@@ -80,14 +81,14 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored, hasLength(1));
       expect(stored.single,
           startsWith('apple${_sep}https://media.test/apple.mp4==='));
     });
 
-    test('legacy master with tail that "contains" a video URL '
+    test(
+        'legacy master with tail that "contains" a video URL '
         'segment is rewritten', () async {
       // Tail is a directory fragment of the URL. The migration's
       // contains-check catches this case.
@@ -99,48 +100,47 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored.single,
           startsWith('friend${_sep}https://media.test/auslan/46/46930.mp4==='));
     });
 
-    test('legacy master whose tail matches no video falls back to the '
+    test(
+        'legacy master whose tail matches no video falls back to the '
         'entry\'s first sub-entry\'s first video', () async {
       // The exact tail "completely-different.mp4" is nowhere in the
       // entry's media, but the entry exists. Migration takes the
       // "first video" fallback rather than dropping the review.
-      keyedByEnglishEntriesGlobal['apple'] = FakeEntry('apple',
-          videos: const ['https://media.test/apple-v1.mp4']);
+      keyedByEnglishEntriesGlobal['apple'] =
+          FakeEntry('apple', videos: const ['https://media.test/apple-v1.mp4']);
       await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
         encodeFakeReview('apple-completely-different.mp4'),
       ]);
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored.single,
           startsWith('apple${_sep}https://media.test/apple-v1.mp4==='));
     });
 
-    test('fallback picks the first sub-entry\'s first video when the '
+    test(
+        'fallback picks the first sub-entry\'s first video when the '
         'entry has multiple sub-entries', () async {
       // Sanity check: the fallback walks sub-entries in order and
       // takes the first non-empty one's first video.
-      keyedByEnglishEntriesGlobal['multi'] = FakeEntry('multi',
-          subEntries: const [
-            FakeSubEntryFixture(videos: ['s1.mp4', 's1b.mp4']),
-            FakeSubEntryFixture(videos: ['s2.mp4']),
-          ]);
+      keyedByEnglishEntriesGlobal['multi'] =
+          FakeEntry('multi', subEntries: const [
+        FakeSubEntryFixture(videos: ['s1.mp4', 's1b.mp4']),
+        FakeSubEntryFixture(videos: ['s2.mp4']),
+      ]);
       await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
         encodeFakeReview('multi-no-such-tail.mp4'),
       ]);
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored.single, startsWith('multi${_sep}s1.mp4==='));
     });
 
@@ -173,8 +173,7 @@ void main() {
       expect(sharedPreferences.getStringList(KEY_STORED_REVIEWS), isEmpty);
     });
 
-    test('hyphenated entry key resolves via the right split point',
-        () async {
+    test('hyphenated entry key resolves via the right split point', () async {
       // For "welsh-corgi-vid.mp4" with entry "welsh-corgi" + no entry
       // "welsh", rightmost-first walk finds "welsh-corgi" first.
       keyedByEnglishEntriesGlobal['welsh-corgi'] = FakeEntry('welsh-corgi',
@@ -185,13 +184,13 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored.single,
           startsWith('welsh-corgi${_sep}https://media.test/vid.mp4==='));
     });
 
-    test('longest matching entry key wins when a shorter prefix is also '
+    test(
+        'longest matching entry key wins when a shorter prefix is also '
         'an entry', () async {
       // Regression: when both "welsh" and "welsh-corgi" exist, a v1
       // master "welsh-corgi-vid.mp4" must resolve to "welsh-corgi"
@@ -199,8 +198,8 @@ void main() {
       // (which a leftmost-first walk would silently pick). Otherwise
       // long-lived spaced-repetition history gets reattached to the
       // wrong entry forever.
-      keyedByEnglishEntriesGlobal['welsh'] = FakeEntry('welsh',
-          videos: const ['https://media.test/welsh.mp4']);
+      keyedByEnglishEntriesGlobal['welsh'] =
+          FakeEntry('welsh', videos: const ['https://media.test/welsh.mp4']);
       keyedByEnglishEntriesGlobal['welsh-corgi'] = FakeEntry('welsh-corgi',
           videos: const ['https://media.test/corgi.mp4']);
       await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
@@ -209,8 +208,7 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored.single,
           startsWith('welsh-corgi${_sep}https://media.test/corgi.mp4==='));
     });
@@ -223,18 +221,17 @@ void main() {
       // unit separator in the master and copies them verbatim.
       keyedByEnglishEntriesGlobal['apple'] =
           FakeEntry('apple', videos: const ['https://media.test/a.mp4']);
-      final v2Encoded = encodeFakeReview(
-          'apple${_sep}https://media.test/a.mp4');
-      await sharedPreferences
-          .setStringList(KEY_STORED_REVIEWS, [v2Encoded]);
+      final v2Encoded =
+          encodeFakeReview('apple${_sep}https://media.test/a.mp4');
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [v2Encoded]);
 
       await migrateLegacyReviewsIfNeeded();
 
-      expect(sharedPreferences.getStringList(KEY_STORED_REVIEWS),
-          [v2Encoded]);
+      expect(sharedPreferences.getStringList(KEY_STORED_REVIEWS), [v2Encoded]);
     });
 
-    test('mixed input: v1 + v2 in same list — v1 migrated, v2 untouched, '
+    test(
+        'mixed input: v1 + v2 in same list — v1 migrated, v2 untouched, '
         'order preserved', () async {
       keyedByEnglishEntriesGlobal['apple'] =
           FakeEntry('apple', videos: const ['https://media.test/a.mp4']);
@@ -246,21 +243,22 @@ void main() {
       final v1Other = encodeFakeReview('banana-b.mp4');
 
       await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
-        v1, v2, v1Other,
+        v1,
+        v2,
+        v1Other,
       ]);
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored, hasLength(3));
       expect(stored[0], startsWith('apple${_sep}https://media.test/a.mp4==='));
       expect(stored[1], v2);
-      expect(stored[2],
-          startsWith('banana${_sep}https://media.test/b.mp4==='));
+      expect(stored[2], startsWith('banana${_sep}https://media.test/b.mp4==='));
     });
 
-    test('mixed input with one unresolvable v1 — bad one dropped, '
+    test(
+        'mixed input with one unresolvable v1 — bad one dropped, '
         'others retained in original order', () async {
       keyedByEnglishEntriesGlobal['apple'] =
           FakeEntry('apple', videos: const ['https://media.test/a.mp4']);
@@ -275,8 +273,7 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored, hasLength(2));
       expect(stored[0], startsWith('apple${_sep}'));
       expect(stored[1], startsWith('cherry${_sep}'));
@@ -295,15 +292,15 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored, hasLength(1));
       expect(stored.single, startsWith('apple${_sep}'));
     });
   });
 
   group('migrateLegacyReviewsIfNeeded — semantic preservation', () {
-    test('a v1 review\'s ts / rating / combination round-trip through '
+    test(
+        'a v1 review\'s ts / rating / combination round-trip through '
         'decodeReview after migration', () async {
       // Migration only rewrites the master; the rest of the encoded
       // string is appended verbatim. Verify decodeReview can still
@@ -312,16 +309,13 @@ void main() {
           FakeEntry('apple', videos: const ['https://media.test/a.mp4']);
       final encoded = encodeFakeReview('apple-a.mp4',
           front: 1, back: 0, rating: Rating.Hard, tsMicros: 1234567890);
-      await sharedPreferences
-          .setStringList(KEY_STORED_REVIEWS, [encoded]);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [encoded]);
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       final decoded = decodeReview(stored.single);
-      expect(decoded.master,
-          'apple${_sep}https://media.test/a.mp4');
+      expect(decoded.master, 'apple${_sep}https://media.test/a.mp4');
       expect(decoded.combination!.front, [1]);
       expect(decoded.combination!.back, [0]);
       expect(decoded.rating, Rating.Hard);
@@ -342,8 +336,7 @@ void main() {
 
       await migrateLegacyReviewsIfNeeded();
 
-      final stored =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       final decoded = decodeReview(stored.single);
       final expected = savedVideoMasterId(
           SavedVideo(entryKey: 'apple', videoUrl: 'https://media.test/a.mp4'));
@@ -360,15 +353,13 @@ void main() {
       ]);
 
       await migrateLegacyReviewsIfNeeded();
-      final afterFirst =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS);
+      final afterFirst = sharedPreferences.getStringList(KEY_STORED_REVIEWS);
 
       // Tamper with state in a way the second call would notice if it
       // ran: stuff a legacy-looking review at the end. The flag
       // short-circuit must skip the second pass.
       final tampered = [...?afterFirst, encodeFakeReview('apple-a.mp4')];
-      await sharedPreferences
-          .setStringList(KEY_STORED_REVIEWS, tampered);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, tampered);
 
       await migrateLegacyReviewsIfNeeded();
 
@@ -377,7 +368,8 @@ void main() {
       expect(sharedPreferences.getStringList(KEY_STORED_REVIEWS), tampered);
     });
 
-    test('parsing post-migration output back through the migration '
+    test(
+        'parsing post-migration output back through the migration '
         '(after wiping the flag) is stable', () async {
       // Even if some future bug wipes the schema-version flag, the
       // already-v2 entries in storage should pass through untouched
@@ -389,8 +381,7 @@ void main() {
       ]);
 
       await migrateLegacyReviewsIfNeeded();
-      final afterFirst =
-          sharedPreferences.getStringList(KEY_STORED_REVIEWS);
+      final afterFirst = sharedPreferences.getStringList(KEY_STORED_REVIEWS);
 
       // Wipe the flag and re-run.
       await sharedPreferences.remove(KEY_REVIEWS_SCHEMA_VERSION);

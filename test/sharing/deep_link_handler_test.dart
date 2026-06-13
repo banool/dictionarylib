@@ -141,22 +141,22 @@ void main() {
     });
 
     test('lowercases extracted key', () {
-      expect(_parsedListId('https://example.com/l/ABC234XYZ567'),
-          'abc234xyz567');
+      expect(
+          _parsedListId('https://example.com/l/ABC234XYZ567'), 'abc234xyz567');
     });
   });
 
   group('parseShareInput — rejects unrelated URLs', () {
     test('rejects URLs without /l/ segment', () {
-      expect(parseShareInput('https://example.com/profile/jdoe', _config),
-          isNull);
+      expect(
+          parseShareInput('https://example.com/profile/jdoe', _config), isNull);
     });
 
     test('rejects /l/ with invalid key', () {
-      expect(parseShareInput('https://example.com/l/UPPER_CASE', _config),
-          isNull);
-      expect(parseShareInput('https://example.com/l/with-dash', _config),
-          isNull);
+      expect(
+          parseShareInput('https://example.com/l/UPPER_CASE', _config), isNull);
+      expect(
+          parseShareInput('https://example.com/l/with-dash', _config), isNull);
     });
 
     test('rejects garbage', () {

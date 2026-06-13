@@ -165,11 +165,8 @@ List<ResolvedSavedVideo> resolveSavedVideos(
 }
 
 /// Build a DolphinSR Master per resolved saved video.
-List<Master> getMastersFromVideos(
-    Locale revisionLocale,
-    List<ResolvedSavedVideo> videos,
-    bool entryToSign,
-    bool signToEntry) {
+List<Master> getMastersFromVideos(Locale revisionLocale,
+    List<ResolvedSavedVideo> videos, bool entryToSign, bool signToEntry) {
   printAndLog("Making masters from ${videos.length} saved videos");
   final masters = <Master>[];
   final seen = <String>{};
@@ -350,8 +347,7 @@ Review decodeReview(String s) {
 /// Runs once per install, gated by [KEY_REVIEWS_SCHEMA_VERSION]. Safe
 /// to call on every launch; a no-op after the first successful run.
 Future<void> migrateLegacyReviewsIfNeeded() async {
-  final stored =
-      sharedPreferences.getInt(KEY_REVIEWS_SCHEMA_VERSION) ?? 1;
+  final stored = sharedPreferences.getInt(KEY_REVIEWS_SCHEMA_VERSION) ?? 1;
   if (stored >= reviewsSchemaVersion) return;
   final encoded =
       sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? const <String>[];

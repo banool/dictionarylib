@@ -141,7 +141,8 @@ void main() {
 
   /// An invite link for a list the user already edits should just open it,
   /// not try to re-accept (which would burn a fresh token for nothing).
-  testWidgets('invite link for an already-edited list opens it without a '
+  testWidgets(
+      'invite link for an already-edited list opens it without a '
       'network accept', (tester) async {
     const listId = 'abc234xyz567';
     const name = 'Animals 101';
@@ -182,8 +183,7 @@ void main() {
 
     // It opened the existing list (dialog popped) and never hit accept-invite.
     expect(find.text('Accept invitation'), findsNothing);
-    expect(
-        requests.any((r) => r.url.path.endsWith('/accept-invite')), isFalse,
+    expect(requests.any((r) => r.url.path.endsWith('/accept-invite')), isFalse,
         reason: 'already an editor — no need to accept again');
     expect(tester.takeException(), isNull);
   });

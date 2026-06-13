@@ -53,18 +53,17 @@ class _SaveVideoSheet extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-              child: Text(title,
-                  style: Theme.of(context).textTheme.titleLarge),
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: rows.length,
                 itemBuilder: (context, i) => _SaveVideoSheetRow(
-                      key: ValueKey('saveVideoSheet.row.${rows[i].key}'),
-                      list: rows[i],
-                      video: video,
-                    ),
+                  key: ValueKey('saveVideoSheet.row.${rows[i].key}'),
+                  list: rows[i],
+                  video: video,
+                ),
               ),
             ),
           ],

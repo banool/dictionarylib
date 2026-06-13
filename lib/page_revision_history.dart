@@ -231,8 +231,8 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
               color: cs.surface,
               borderRadius: BorderRadius.circular(kRadiusBox),
             ),
-            child: Icon(Icons.local_fire_department,
-                size: 28, color: cs.primary),
+            child:
+                Icon(Icons.local_fire_department, size: 28, color: cs.primary),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -247,9 +247,7 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
                 ),
                 Text(
                   DictLibLocalizations.of(context)!.revisionStreakSubtitle,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: cs.onPrimaryContainer),
+                  style: TextStyle(fontSize: 13, color: cs.onPrimaryContainer),
                 ),
               ],
             ),

@@ -188,8 +188,8 @@ void main() {
         sessionToken: 'fake-session-jwt',
       );
       final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
-      expect(() async => await source.addVideo(v),
-          throwsA(isA<AssertionError>()));
+      expect(
+          () async => await source.addVideo(v), throwsA(isA<AssertionError>()));
       // No op enqueued either way — the assertion fires before the
       // source's `entries.add`.
       expect(synced.meta.pendingOps, isEmpty);
@@ -460,8 +460,7 @@ void main() {
       // EntryList key shape the import path would produce (`MyList`
       // → `MyList_words`) so the collision actually triggers.
       await userEntryListManager.createEntryList('MyList_words');
-      final preExisting =
-          userEntryListManager.getEntryLists()['MyList_words']!;
+      final preExisting = userEntryListManager.getEntryLists()['MyList_words']!;
       final cherryVideo =
           SavedVideo(entryKey: 'cherry', videoUrl: videoFor('cherry'));
       await preExisting.addVideo(cherryVideo);
@@ -515,8 +514,8 @@ void main() {
         ),
         source: source,
       ));
-      expect(sharedPreferences.getString('shared_ownedlist001_meta'),
-          isNotNull);
+      expect(
+          sharedPreferences.getString('shared_ownedlist001_meta'), isNotNull);
       expect(sharedPreferences.getStringList(KEY_SHARED_LIST_IDS),
           contains('ownedlist001'));
 
@@ -532,9 +531,8 @@ void main() {
       expect(sharedPreferences.getStringList(KEY_SHARED_LIST_IDS),
           isNot(contains('ownedlist001')));
       expect(sharedPreferences.getString('shared_ownedlist001_meta'), isNull);
-      expect(sharedPreferences.getStringList('shared_ownedlist001_words'),
-          isNull);
+      expect(
+          sharedPreferences.getStringList('shared_ownedlist001_words'), isNull);
     });
   });
-
 }

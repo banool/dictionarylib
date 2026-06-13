@@ -308,9 +308,8 @@ TextTheme _hearthTextTheme(Brightness b) {
 }
 
 ThemeData _buildHearthTheme(Brightness brightness) {
-  final t = brightness == Brightness.dark
-      ? _HearthTokens.dark
-      : _HearthTokens.light;
+  final t =
+      brightness == Brightness.dark ? _HearthTokens.dark : _HearthTokens.light;
   final cs = _hearthScheme(brightness, t);
   final textTheme = _hearthTextTheme(brightness);
   final bodyFamily = GoogleFonts.hankenGrotesk().fontFamily;
@@ -326,8 +325,8 @@ ThemeData _buildHearthTheme(Brightness brightness) {
         foregroundColor: WidgetStatePropertyAll(fg),
         elevation: const WidgetStatePropertyAll(0.0),
         minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
-        padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 18)),
+        padding:
+            const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18)),
         textStyle: WidgetStatePropertyAll(TextStyle(
             fontFamily: bodyFamily, fontWeight: FontWeight.w700, fontSize: 15)),
         shape: WidgetStatePropertyAll(RoundedRectangleBorder(
@@ -407,8 +406,8 @@ ThemeData _buildHearthTheme(Brightness brightness) {
         foregroundColor: t.primary,
         textStyle: TextStyle(
             fontFamily: bodyFamily, fontWeight: FontWeight.w700, fontSize: 15),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusButton)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kRadiusButton)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -418,23 +417,22 @@ ThemeData _buildHearthTheme(Brightness brightness) {
         side: BorderSide(color: t.outline, width: 1.5),
         textStyle: TextStyle(
             fontFamily: bodyFamily, fontWeight: FontWeight.w700, fontSize: 15),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusButton)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kRadiusButton)),
       ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: t.primary,
       foregroundColor: t.onPrimary,
       elevation: 2,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusButton)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusButton)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: t.surfaceAlt,
       hintStyle: TextStyle(color: t.faint),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: inputBorder(Colors.transparent, 0),
       enabledBorder: inputBorder(t.outline, 1),
       focusedBorder: inputBorder(t.primary, 2),
@@ -447,23 +445,28 @@ ThemeData _buildHearthTheme(Brightness brightness) {
     ),
     checkboxTheme: CheckboxThemeData(
       fillColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected) ? t.primary : Colors.transparent),
+          states.contains(WidgetState.selected)
+              ? t.primary
+              : Colors.transparent),
       checkColor: WidgetStatePropertyAll(t.onPrimary),
       side: BorderSide(color: t.outline, width: 2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
     ),
     radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? t.primary : t.faint),
+      fillColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.selected) ? t.primary : t.faint),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: t.surfaceAlt,
       selectedColor: t.primaryCont,
       secondarySelectedColor: t.primaryCont,
       labelStyle: TextStyle(
-          color: t.onSurface, fontWeight: FontWeight.w600, fontFamily: bodyFamily),
+          color: t.onSurface,
+          fontWeight: FontWeight.w600,
+          fontFamily: bodyFamily),
       side: BorderSide(color: t.outline),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusChip)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusChip)),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: t.surface,
@@ -483,7 +486,8 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       contentTextStyle: TextStyle(color: t.bg, fontWeight: FontWeight.w600),
       actionTextColor: t.primary,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusChip)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusChip)),
     ),
     tabBarTheme: TabBarThemeData(
       labelColor: t.primary,
@@ -560,8 +564,7 @@ ThemeData _buildClassicTheme(Brightness brightness, Color seed) {
       enabledBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: seed),
       ),
-      hintStyle:
-          TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+      hintStyle: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
     ),
     tabBarTheme: const TabBarThemeData(
       labelColor: Colors.white,
@@ -576,8 +579,7 @@ ThemeData _buildClassicTheme(Brightness brightness, Color seed) {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: seed,
-      contentTextStyle:
-          TextStyle(color: isDark ? Colors.black : Colors.white),
+      contentTextStyle: TextStyle(color: isDark ? Colors.black : Colors.white),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
       selectedItemColor: seed,

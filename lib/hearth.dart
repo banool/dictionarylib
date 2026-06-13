@@ -82,9 +82,8 @@ class HearthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final content = padding == null
-        ? child
-        : Padding(padding: padding!, child: child);
+    final content =
+        padding == null ? child : Padding(padding: padding!, child: child);
     return Material(
       color: cs.surface,
       borderRadius: BorderRadius.circular(kRadiusCard),
@@ -187,8 +186,8 @@ class HearthEmptyState extends StatelessWidget {
               child: Text(
                 body!,
                 textAlign: TextAlign.center,
-                style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant, height: 1.5),
+                style: tt.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant, height: 1.5),
               ),
             ),
           ],

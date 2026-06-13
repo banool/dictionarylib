@@ -84,7 +84,9 @@ void main() {
         Master(
           id: 'apple',
           fields: ['apple', VIDEO_LINKS_MARKER],
-          combinations: [Combination(front: [0], back: [1])],
+          combinations: [
+            Combination(front: [0], back: [1])
+          ],
         ),
       ];
       final reviews = [
@@ -108,7 +110,8 @@ void main() {
   });
 
   group('rebuildDolphin — one review per card', () {
-    test('re-rating a card does not accumulate phantom reviews: the rebuilt '
+    test(
+        're-rating a card does not accumulate phantom reviews: the rebuilt '
         'state matches a fresh build with only the latest review', () {
       final masters = _twoMasters();
       final di = getDolphinInformationFromVideos([], masters, reviews: []);
@@ -136,7 +139,8 @@ void main() {
       _expectSameSchedule(rebuilt.dolphin, nextSession.dolphin);
     });
 
-    test('rebuilt dolphin equals next-session rebuild across persisted '
+    test(
+        'rebuilt dolphin equals next-session rebuild across persisted '
         'history + multiple re-rated session answers', () {
       final masters = _twoMasters();
       // Pre-existing persisted history from earlier sessions.
@@ -168,7 +172,8 @@ void main() {
       _expectSameSchedule(rebuilt.dolphin, nextSession.dolphin);
     });
 
-    test('rebuild preserves the DolphinInformation carry-along fields so it '
+    test(
+        'rebuild preserves the DolphinInformation carry-along fields so it '
         'can itself be rebuilt again', () {
       final masters = _twoMasters();
       final di = getDolphinInformationFromVideos([], masters, reviews: []);
@@ -191,7 +196,8 @@ void main() {
       _expectSameSchedule(rebuilt2.dolphin, nextSession.dolphin);
     });
 
-    test('reviews are applied in ascending ts order regardless of the order '
+    test(
+        'reviews are applied in ascending ts order regardless of the order '
         'they arrive in answers (DolphinSR throws on out-of-order apply)', () {
       final masters = _twoMasters();
       // Persisted history is OLDER than the session answers; if the
@@ -210,7 +216,8 @@ void main() {
       expect(() => rebuildDolphin(di, [newer]), returnsNormally);
     });
 
-    test('rebuilt dolphin schedules identically to a same-seed manual build '
+    test(
+        'rebuilt dolphin schedules identically to a same-seed manual build '
         'from the canonical one-per-card review set — including nextCard '
         'ordering', () {
       // The cross-session seed reviews are intentionally re-randomised

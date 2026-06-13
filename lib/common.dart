@@ -239,46 +239,46 @@ Future<bool> confirmAlert(
       bool running = false;
       return StatefulBuilder(builder: (ctx, setLocal) {
         Future<void> handleConfirm() async {
-        if (onConfirm == null) {
-          confirmed = true;
-          Navigator.of(ctx).pop();
-          return;
+          if (onConfirm == null) {
+            confirmed = true;
+            Navigator.of(ctx).pop();
+            return;
+          }
+          setLocal(() => running = true);
+          try {
+            await onConfirm();
+            confirmed = true;
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          } catch (e) {
+            if (ctx.mounted) setLocal(() => running = false);
+            messenger.showSnackBar(_tapToDismissSnackBar(
+              messenger,
+              Text(errorMessage?.call(e) ?? e.toString()),
+              backgroundColor: errorColor,
+            ));
+          }
         }
-        setLocal(() => running = true);
-        try {
-          await onConfirm();
-          confirmed = true;
-          if (ctx.mounted) Navigator.of(ctx).pop();
-        } catch (e) {
-          if (ctx.mounted) setLocal(() => running = false);
-          messenger.showSnackBar(_tapToDismissSnackBar(
-            messenger,
-            Text(errorMessage?.call(e) ?? e.toString()),
-            backgroundColor: errorColor,
-          ));
-        }
-      }
 
-      return AlertDialog(
-        title: Text(title!),
-        content: content,
-        actions: [
-          TextButton(
-            onPressed: running ? null : () => Navigator.of(ctx).pop(),
-            child: Text(cancelText!),
-          ),
-          TextButton(
-            onPressed: running ? null : handleConfirm,
-            child: running
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(confirmText!),
-          ),
-        ],
-      );
+        return AlertDialog(
+          title: Text(title!),
+          content: content,
+          actions: [
+            TextButton(
+              onPressed: running ? null : () => Navigator.of(ctx).pop(),
+              child: Text(cancelText!),
+            ),
+            TextButton(
+              onPressed: running ? null : handleConfirm,
+              child: running
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(confirmText!),
+            ),
+          ],
+        );
       });
     },
   );
@@ -560,15 +560,13 @@ Widget? getInnerRelatedEntriesWidget(
     textSpans.add(TextSpan(
       text: relatedWord,
       style: TextStyle(
-          color:
-              isRelated ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          color: isRelated ? colorScheme.primary : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
           decoration: isRelated ? TextDecoration.underline : null),
       recognizer: TapGestureRecognizer()..onTap = navFunction,
     ));
     textSpans.add(TextSpan(
-        text: suffix,
-        style: TextStyle(color: colorScheme.onSurfaceVariant)));
+        text: suffix, style: TextStyle(color: colorScheme.onSurfaceVariant)));
     idx += 1;
   }
 

@@ -101,7 +101,6 @@ Future<void> setupPhaseOne() async {
     printAndLog(
         "Failed to get package info: $e (continuing without raising any error)");
   }
-
 }
 
 // Set up up until we fetch knobs. This includes shared device / package info,

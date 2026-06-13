@@ -674,7 +674,8 @@ void main() {
       expect(list.meta.lastSyncedAt, greaterThan(1700000000));
     });
 
-    test('user-initiated refresh sends Cache-Control: no-cache; '
+    test(
+        'user-initiated refresh sends Cache-Control: no-cache; '
         'background poll does not', () async {
       final ctx = _makeEngine((req) async => http.Response('', 304));
       await ctx.manager.insert(SyncedEntryList.subscriber(
@@ -706,7 +707,8 @@ void main() {
   });
 
   group('SyncEngine — per-list lock serialisation', () {
-    test('enqueueAddEntry during an in-flight flush is sent in a follow-up '
+    test(
+        'enqueueAddEntry during an in-flight flush is sent in a follow-up '
         '/sync call (no lost op)', () async {
       // Gate the first /sync response so we can interleave a second
       // enqueue + flush before it returns.
@@ -749,11 +751,11 @@ void main() {
 
       expect(syncCallCount, greaterThanOrEqualTo(2),
           reason: 'the second op must be sent in its own /sync call');
-      expect(list.meta.pendingOps, isEmpty,
-          reason: 'both ops should be acked');
+      expect(list.meta.pendingOps, isEmpty, reason: 'both ops should be acked');
     });
 
-    test('two concurrent pushAllDirty calls do not double-send the same '
+    test(
+        'two concurrent pushAllDirty calls do not double-send the same '
         'pending ops', () async {
       // We count both the number of /sync calls AND the number of
       // distinct ops that the engine sent on the wire. The lock should
@@ -798,10 +800,9 @@ void main() {
           sentBatchSizes.add(ops.length);
           // Use the next batch's expected starting seq so each batch's
           // applied seqs are unique. lastKnownSeq starts at 1 and grows.
-          final start = 1 + sentBatchSizes.fold<int>(
-              0,
-              (sum, n) =>
-                  sum + (n == ops.length ? 0 : n)) +
+          final start = 1 +
+              sentBatchSizes.fold<int>(
+                  0, (sum, n) => sum + (n == ops.length ? 0 : n)) +
               1; // simplistic but sufficient
           return stubSyncApplyAll(req, firstAppliedSeq: start);
         }
@@ -890,9 +891,9 @@ void main() {
     });
   });
 
-  group('SyncEngine — crash-window recovery via replayPendingOpsLocally',
-      () {
-    test('meta-written-but-entries-write-skipped → load + replay folds the '
+  group('SyncEngine — crash-window recovery via replayPendingOpsLocally', () {
+    test(
+        'meta-written-but-entries-write-skipped → load + replay folds the '
         'pending op back into the in-memory entries set', () async {
       // Simulate a crash *after* meta-write but *before* entries-write
       // by writing the meta blob manually and leaving the payload
@@ -934,13 +935,12 @@ void main() {
       expect(list.meta.pendingOps, hasLength(1),
           reason: 'pending op is still queued for the next /sync');
     });
-
   });
 
   group('SyncEngine — 403 demotion triggers post-demote pull', () {
-    test('403 on /sync → role flips to subscriber, ops cleared, '
-        'removedAsEditor notification emitted, follow-up GET fires',
-        () async {
+    test(
+        '403 on /sync → role flips to subscriber, ops cleared, '
+        'removedAsEditor notification emitted, follow-up GET fires', () async {
       var sawSync = false;
       var sawPostDemoteGet = false;
       final ctx = _makeEngine((req) async {
@@ -1052,31 +1052,28 @@ void main() {
         if (req.url.path.endsWith('/sync')) {
           // Server applied our addEntry(apple) AND reports that another
           // device added "banana" with seq 5.
-          return stubSyncApplyAll(req,
-              firstAppliedSeq: 4,
-              missedOps: [
-                {
-                  'seq': 5,
-                  'type': 'addEntry',
-                  'args': {'entry': 'banana', 'video': videoFor('banana')},
-                  'userId': 'apple:other-device',
-                  'actorDisplayName': 'Phone',
-                  'serverTs': 1700000099,
-                }
-              ]);
+          return stubSyncApplyAll(req, firstAppliedSeq: 4, missedOps: [
+            {
+              'seq': 5,
+              'type': 'addEntry',
+              'args': {'entry': 'banana', 'video': videoFor('banana')},
+              'userId': 'apple:other-device',
+              'actorDisplayName': 'Phone',
+              'serverTs': 1700000099,
+            }
+          ]);
         }
         return http.Response('', 404);
       });
-      final list = await setUpOwnedList(ctx.engine, ctx.manager,
-          initialKeys: const []);
+      final list =
+          await setUpOwnedList(ctx.engine, ctx.manager, initialKeys: const []);
       ctx.engine.enqueueAddVideo(list.listId, _v('apple'));
       // Optimistically apply the local op to the source (mirrors what
       // SyncedEntryList.addVideo does after enqueue).
       list.ownerSource!.savedVideos.add(_v('apple'));
       await ctx.engine.pushAllDirty();
 
-      final keys =
-          list.ownerSource!.savedVideos.map((v) => v.entryKey).toSet();
+      final keys = list.ownerSource!.savedVideos.map((v) => v.entryKey).toSet();
       expect(keys, containsAll(['apple', 'banana']),
           reason: 'owner source list must contain both the locally-added '
               'and the remotely-added entries after convergence');
@@ -1085,15 +1082,15 @@ void main() {
       // the source's payload key).
       final persisted =
           sharedPreferences.getStringList(list.ownerSource!.key) ?? const [];
-      expect(
-          persisted.toSet(),
+      expect(persisted.toSet(),
           containsAll([_v('apple').toStorage(), _v('banana').toStorage()]),
           reason: 'shared-prefs payload must reflect the merged state');
     });
   });
 
   group('SyncException + RemoteList — schemaVersion validation', () {
-    test('unsupported schemaVersion on a subscriber GET → '
+    test(
+        'unsupported schemaVersion on a subscriber GET → '
         'SyncException(server)', () async {
       final ctx = _makeEngine((req) async {
         return http.Response(
@@ -1207,7 +1204,8 @@ void main() {
   });
 
   group('SyncEngine.createOwned — ID-collision exhaustion', () {
-    test('always-409 server → throws SyncException(idCollision) after '
+    test(
+        'always-409 server → throws SyncException(idCollision) after '
         '5 attempts', () async {
       var attempts = 0;
       final source = await _localListWith('cats_words', const []);
@@ -1222,9 +1220,7 @@ void main() {
 
       await expectLater(
         ctx.engine.createOwned(
-            displayName: 'x',
-            source: source,
-            sessionToken: 'fake-session-jwt'),
+            displayName: 'x', source: source, sessionToken: 'fake-session-jwt'),
         throwsA(isA<SyncException>()
             .having((e) => e.kind, 'kind', SyncErrorKind.idCollision)),
       );
@@ -1434,8 +1430,8 @@ void main() {
           reason: 'a subscriber refresh re-pulls the public payload');
       final list = ctx.manager.get('sublist00001')!;
       expect(list.meta.displayName, 'Fresh name');
-      expect(list.savedVideos.map((v) => v.entryKey).toSet(),
-          {'apple', 'banana'});
+      expect(
+          list.savedVideos.map((v) => v.entryKey).toSet(), {'apple', 'banana'});
     });
 
     test('unknown list id is a no-op (no request)', () async {

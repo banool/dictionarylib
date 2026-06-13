@@ -132,15 +132,13 @@ Future<void> main() async {
       expect(owned.savedVideos, contains(_v('banana')));
       expect(owned.meta.pendingOps, isEmpty);
       // Both sides agree with the server.
-      expect(await b.entryKeys(listId),
-          unorderedEquals(['apple', 'banana']));
+      expect(await b.entryKeys(listId), unorderedEquals(['apple', 'banana']));
     });
 
     test(
         'concurrent offline edit + foreign op converge through server '
         'seq order', () async {
-      final (owner, listId, mirror) =
-          await joinAsEditor(initialKeys: ['base']);
+      final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['base']);
 
       // Device A removes `base` offline (pending op, no flush yet) while the
       // owner concurrently adds `extra` server-side.
@@ -202,7 +200,8 @@ Future<void> main() async {
   });
 
   group('role transitions seen from device A', () {
-    test('removal as editor mid-edit demotes to subscriber and drops the '
+    test(
+        'removal as editor mid-edit demotes to subscriber and drops the '
         'queue (documenting current behaviour)', () async {
       final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['x']);
 
@@ -225,7 +224,8 @@ Future<void> main() async {
       expect(await owner.entryKeys(listId), equals(['x']));
     });
 
-    test('owner account deletion tombstones the list; the editor mirror is '
+    test(
+        'owner account deletion tombstones the list; the editor mirror is '
         'dropped on next sync (documenting current behaviour)', () async {
       final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['y']);
       expect(mirror.meta.role, ListRole.editor);
@@ -237,8 +237,7 @@ Future<void> main() async {
       expect(deviceA.manager.get(listId), isNull);
     });
 
-    test('session expiry preserves the queue; re-sign-in drains it',
-        () async {
+    test('session expiry preserves the queue; re-sign-in drains it', () async {
       final (owner, listId, mirror) = await joinAsEditor();
       final goodSession = deviceA.auth.store.current!;
 

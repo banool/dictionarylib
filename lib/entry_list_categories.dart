@@ -46,7 +46,8 @@ class CategoryEntryListManager implements EntryListManager {
     bool canBeEdited = false;
     // Case-insensitive key order so the community lists read alphabetically
     // rather than capitals-first (ASCII) order.
-    SplayTreeMap<String, EntryList> entryLists = SplayTreeMap(compareDisplayNames);
+    SplayTreeMap<String, EntryList> entryLists =
+        SplayTreeMap(compareDisplayNames);
     for (String key in categoryToEntries.keys) {
       final saved = LinkedHashSet<SavedVideo>();
       for (final e in categoryToEntries[key]!) {

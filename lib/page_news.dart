@@ -36,8 +36,8 @@ class NewsPage extends StatelessWidget {
         HearthEmptyState(
           icon: Icons.cloud_off_outlined,
           title: l?.newsErrorTitle ?? "Couldn't load news",
-          body: l?.newsErrorBody ??
-              "Check your connection and try again later.",
+          body:
+              l?.newsErrorBody ?? "Check your connection and try again later.",
         ),
       );
     } else if (advisories.isEmpty) {
@@ -124,8 +124,7 @@ class _AdvisoryCard extends StatelessWidget {
                   ),
                 ),
                 if (isNew)
-                  HearthTag("NEW",
-                      color: cs.onPrimary, background: cs.primary),
+                  HearthTag("NEW", color: cs.onPrimary, background: cs.primary),
               ],
             ),
             const SizedBox(height: 10),

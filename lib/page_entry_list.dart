@@ -300,8 +300,7 @@ class EntryListPageState extends State<EntryListPage> {
       context,
       Text(l.unshareConfirmBody),
       title: l.unshareConfirmTitle,
-      onConfirm: () => retryWithFeedback(
-          () => listsService.unshareList(owned),
+      onConfirm: () => retryWithFeedback(() => listsService.unshareList(owned),
           onRetry: snackRetryFeedback(context)),
       errorMessage: (e) => e is SyncException
           ? l.unshareFailed(localisedSyncErrorSimple(context, e, e.message))
@@ -566,73 +565,74 @@ class EntryListPageState extends State<EntryListPage> {
       body: constrainContentWidth(
         context,
         Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            if (bannerLists.isNotEmpty) SignInResumeBanner(lists: bannerLists),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Form(
-                  child: Column(children: <Widget>[
-                TextField(
-                  controller: _searchFieldController,
-                  focusNode: textFieldFocus,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    prefixIcon: const Icon(Icons.search),
-                    // Match the main search page: only offer the clear button
-                    // once there's something to clear.
-                    suffixIcon: currentSearchTerm.isEmpty
-                        ? null
-                        : IconButton(
-                            onPressed: clearSearch,
-                            icon: const Icon(Icons.close),
-                          ),
+          padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              if (bannerLists.isNotEmpty)
+                SignInResumeBanner(lists: bannerLists),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Form(
+                    child: Column(children: <Widget>[
+                  TextField(
+                    controller: _searchFieldController,
+                    focusNode: textFieldFocus,
+                    decoration: InputDecoration(
+                      hintText: hintText,
+                      prefixIcon: const Icon(Icons.search),
+                      // Match the main search page: only offer the clear button
+                      // once there's something to clear.
+                      suffixIcon: currentSearchTerm.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: clearSearch,
+                              icon: const Icon(Icons.close),
+                            ),
+                    ),
+                    onChanged: (String value) {
+                      updateCurrentSearchTerm(value);
+                      search();
+                    },
+                    autofocus: false,
+                    textInputAction: TextInputAction.search,
+                    keyboardType: TextInputType.visiblePassword,
+                    autocorrect: false,
                   ),
-                  onChanged: (String value) {
-                    updateCurrentSearchTerm(value);
-                    search();
-                  },
-                  autofocus: false,
-                  textInputAction: TextInputAction.search,
-                  keyboardType: TextInputType.visiblePassword,
-                  autocorrect: false,
-                ),
-              ])),
-            ),
-            Expanded(
-                child: Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: () {
-                final synced = _syncedForRefresh;
-                final list = listWidget(
-                  context,
-                  entriesSearched,
-                  refreshEntries,
-                  widget.navigateToEntryPage,
-                  entryList: widget.entryList,
-                  deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
-                      ? removeEntry
-                      : null,
-                  addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
-                      ? addEntry
-                      : null,
-                  // Pull-to-refresh only makes sense for shared lists; a
-                  // short list still needs to be draggable for the gesture.
-                  alwaysScrollable: synced != null,
-                );
-                // Shared lists (any role) get swipe-down-to-sync.
-                if (synced == null) return list;
-                return RefreshIndicator(
-                  onRefresh: () => _pullToRefresh(synced),
-                  child: list,
-                );
-              }(),
-            )),
-          ],
-        ),
+                ])),
+              ),
+              Expanded(
+                  child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: () {
+                  final synced = _syncedForRefresh;
+                  final list = listWidget(
+                    context,
+                    entriesSearched,
+                    refreshEntries,
+                    widget.navigateToEntryPage,
+                    entryList: widget.entryList,
+                    deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
+                        ? removeEntry
+                        : null,
+                    addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
+                        ? addEntry
+                        : null,
+                    // Pull-to-refresh only makes sense for shared lists; a
+                    // short list still needs to be draggable for the gesture.
+                    alwaysScrollable: synced != null,
+                  );
+                  // Shared lists (any role) get swipe-down-to-sync.
+                  if (synced == null) return list;
+                  return RefreshIndicator(
+                    onRefresh: () => _pullToRefresh(synced),
+                    child: list,
+                  );
+                }(),
+              )),
+            ],
+          ),
         ),
       ),
     );

@@ -50,7 +50,8 @@ void main() {
         home: SharedListLandingPage(
           listId: 'list000001',
           inviteToken: 'tok-abc',
-          navigateToEntryPage: (context, entry, _, {focusVideo, saveToList}) async {},
+          navigateToEntryPage: (context, entry, _,
+              {focusVideo, saveToList}) async {},
         ),
       );
 

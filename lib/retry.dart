@@ -32,7 +32,7 @@ Future<T> retryWithFeedback<T>(
 }) async {
   final retriable = shouldRetry ?? isTransientSyncError;
   var delay = firstDelay;
-  for (var attempt = 1; ; attempt++) {
+  for (var attempt = 1;; attempt++) {
     try {
       return await action();
     } catch (e) {

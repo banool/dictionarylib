@@ -89,7 +89,8 @@ class Sharing with ChangeNotifier {
     final api = SyncApi(dummyConfig);
     final authApi = AuthApi(dummyConfig);
     final authStore = AuthStore.withSession(null);
-    final auth = AuthService(config: dummyConfig, api: authApi, store: authStore);
+    final auth =
+        AuthService(config: dummyConfig, api: authApi, store: authStore);
     final lists = SyncedEntryListManager({});
     final engine = SyncEngine(api: api, manager: lists, auth: auth);
     final deepLinks = DeepLinkHandler(config: dummyConfig);

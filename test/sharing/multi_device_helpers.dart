@@ -65,7 +65,8 @@ const SharingConfig kIntegrationSharingConfig = SharingConfig(
 Future<bool> integrationServerReachable() async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
   try {
-    final req = await client.getUrl(Uri.parse('$kIntegrationBaseUrl/v1/health'));
+    final req =
+        await client.getUrl(Uri.parse('$kIntegrationBaseUrl/v1/health'));
     final resp = await req.close().timeout(const Duration(seconds: 3));
     await resp.drain<void>();
     return resp.statusCode == 200;
@@ -113,7 +114,8 @@ Future<AuthSession> signInTestUser(
     }),
   );
   if (resp.statusCode != 200) {
-    throw StateError('test sign-in failed: HTTP ${resp.statusCode} ${resp.body}');
+    throw StateError(
+        'test sign-in failed: HTTP ${resp.statusCode} ${resp.body}');
   }
   final json = jsonDecode(resp.body) as Map<String, dynamic>;
   return AuthSession(
@@ -232,7 +234,8 @@ class HttpDevice {
 
   HttpDevice(this.session);
 
-  static Future<HttpDevice> signIn({String? userId, String? displayName}) async {
+  static Future<HttpDevice> signIn(
+      {String? userId, String? displayName}) async {
     return HttpDevice(await signInTestUser(
         userId: userId, displayName: displayName ?? 'Device B'));
   }

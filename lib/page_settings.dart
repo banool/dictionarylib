@@ -123,8 +123,8 @@ class SettingsPageState extends State<SettingsPage> {
       ...section(l.settingsAppearance, [
         navRow(l.settingsColourMode, value: _getThemeModeString(context),
             onTap: () async {
-          final current = ThemeMode
-              .values[sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
+          final current = ThemeMode.values[
+              sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
           final chosen = await showHearthPicker<ThemeMode>(
             context: context,
             title: l.settingsColourMode,
@@ -559,7 +559,8 @@ Future<void> offerImportEditableLists(BuildContext context) async {
       }
     }
   } catch (e) {
-    printAndLog('offerImportEditableLists: pre-check failed, skipping prompt: $e');
+    printAndLog(
+        'offerImportEditableLists: pre-check failed, skipping prompt: $e');
     return;
   }
   if (names.isEmpty || !context.mounted) return;

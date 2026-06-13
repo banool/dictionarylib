@@ -48,8 +48,9 @@ class _SignInResumeBannerState extends State<SignInResumeBanner> {
     // expired", which is misleading after a deliberate sign-out (the common
     // case) — the session didn't expire, the user signed out. The neutral
     // copy is correct in both situations.
-    final message =
-        hasPending ? l.overviewResumeSignInWithPending : l.overviewResumeSignInIdle;
+    final message = hasPending
+        ? l.overviewResumeSignInWithPending
+        : l.overviewResumeSignInIdle;
     return MaterialBanner(
       content: Text(message),
       leading: Icon(

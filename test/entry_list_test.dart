@@ -66,8 +66,8 @@ void main() {
       ]) {
         expect(
           () => EntryList.getKeyFromName(name),
-          throwsA(isA<EntryListNameException>().having(
-              (e) => e.kind, 'kind', EntryListNameError.invalidChars)),
+          throwsA(isA<EntryListNameException>()
+              .having((e) => e.kind, 'kind', EntryListNameError.invalidChars)),
           reason: '$name contains a disallowed character',
         );
       }
@@ -93,7 +93,8 @@ void main() {
       }
     });
 
-    test('a literal underscore in a typed name displays as a space (lossy)', () {
+    test('a literal underscore in a typed name displays as a space (lossy)',
+        () {
       // Documents the deliberately-lossy '_'<->' ' round-trip: a typed
       // underscore is stored as an underscore in the key, which
       // getNameFromKey then maps back to a space.
@@ -124,8 +125,13 @@ void main() {
     });
 
     test('addAllVideosOfEntry adds every video of the entry', () async {
-      seedDictionary(['apple'], videosByKey: {
-        'apple': ['https://example.test/apple-1.mp4', 'https://example.test/apple-2.mp4']
+      seedDictionary([
+        'apple'
+      ], videosByKey: {
+        'apple': [
+          'https://example.test/apple-1.mp4',
+          'https://example.test/apple-2.mp4'
+        ]
       });
       final list = EntryList('cats_words', LinkedHashSet<SavedVideo>(), true);
       await list.addAllVideosOfEntry(keyedByEnglishEntriesGlobal['apple']!);
@@ -147,7 +153,9 @@ void main() {
 
   group('EntryList.containsAllVideosOf', () {
     test('true only once every video of the entry is saved', () async {
-      seedDictionary(['apple'], videosByKey: {
+      seedDictionary([
+        'apple'
+      ], videosByKey: {
         'apple': ['https://example.test/a1.mp4', 'https://example.test/a2.mp4'],
       });
       final entry = keyedByEnglishEntriesGlobal['apple']!;
@@ -179,7 +187,10 @@ void main() {
 
   group('EntryList v1→v2 migration', () {
     test('legacy entry keys expand to every video of the entry', () async {
-      seedDictionary(['apple', 'banana'], videosByKey: {
+      seedDictionary([
+        'apple',
+        'banana'
+      ], videosByKey: {
         'apple': [
           'https://example.test/apple-1.mp4',
           'https://example.test/apple-2.mp4'
@@ -206,8 +217,8 @@ void main() {
     });
 
     test('a list with schemaVersion=2 is not re-migrated', () async {
-      await sharedPreferences.setStringList(
-          'cats_words', ['apple|${videoFor('apple')}']);
+      await sharedPreferences
+          .setStringList('cats_words', ['apple|${videoFor('apple')}']);
       await sharedPreferences.setInt('cats_words_schemaVersion', 2);
       final list = EntryList.fromRaw('cats_words');
       expect(list.savedVideos.length, 1);
@@ -281,15 +292,18 @@ void main() {
         'banana|${videoFor('banana')}', // v2 item
       ]);
       final list = EntryList.fromRaw('cats_words');
-      expect(list.savedVideos.map((v) => v.entryKey).toSet(),
-          {'apple', 'banana'});
-      expect(list.containsVideo(
-          SavedVideo(entryKey: 'banana', videoUrl: videoFor('banana'))),
+      expect(
+          list.savedVideos.map((v) => v.entryKey).toSet(), {'apple', 'banana'});
+      expect(
+          list.containsVideo(
+              SavedVideo(entryKey: 'banana', videoUrl: videoFor('banana'))),
           isTrue);
     });
 
     test('migration is idempotent across two loads', () async {
-      seedDictionary(['apple'], videosByKey: {
+      seedDictionary([
+        'apple'
+      ], videosByKey: {
         'apple': ['https://example.test/a1.mp4', 'https://example.test/a2.mp4'],
       });
       await sharedPreferences.setStringList('cats_words', ['apple']);
@@ -316,8 +330,8 @@ void main() {
       // current dictionary. The list ends up empty but we still want
       // the flag set so the next launch skips the (now-pointless)
       // re-scan.
-      await sharedPreferences.setStringList(
-          'cats_words', ['no_such_entry_1', 'no_such_entry_2']);
+      await sharedPreferences
+          .setStringList('cats_words', ['no_such_entry_1', 'no_such_entry_2']);
       final list = EntryList.fromRaw('cats_words');
       expect(list.savedVideos, isEmpty);
       expect(sharedPreferences.getInt('cats_words_schemaVersion'), 2);
@@ -325,7 +339,9 @@ void main() {
     });
 
     test('migrated list answers the new read API correctly', () async {
-      seedDictionary(['apple'], videosByKey: {
+      seedDictionary([
+        'apple'
+      ], videosByKey: {
         'apple': ['https://example.test/a1.mp4', 'https://example.test/a2.mp4'],
       });
       await sharedPreferences.setStringList('cats_words', ['apple']);
@@ -346,8 +362,8 @@ void main() {
       // write-back and the flag write — currently they're separate
       // calls). The next load sees v2-format items, doesn't re-expand
       // anything (nothing to expand), and stamps the flag.
-      await sharedPreferences.setStringList(
-          'cats_words', ['apple|${videoFor('apple')}']);
+      await sharedPreferences
+          .setStringList('cats_words', ['apple|${videoFor('apple')}']);
       // No setInt for the flag.
       final list = EntryList.fromRaw('cats_words');
       expect(list.savedVideos, hasLength(1));
@@ -359,7 +375,8 @@ void main() {
       expect(sharedPreferences.getInt('cats_words_schemaVersion'), 2);
     });
 
-    test('SavedVideo.tryParse splits on the FIRST pipe — video URL with '
+    test(
+        'SavedVideo.tryParse splits on the FIRST pipe — video URL with '
         'a literal pipe round-trips', () async {
       // Defence in depth: someone constructed a video URL that contains
       // `|`. Storage uses the leftmost `|` as the separator, so the
@@ -473,9 +490,7 @@ void main() {
       userEntryListManager = UserEntryListManager.fromStartup();
       await userEntryListManager.createEntryList('cats_words');
       final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
-      await userEntryListManager
-          .getEntryLists()['cats_words']!
-          .addVideo(v);
+      await userEntryListManager.getEntryLists()['cats_words']!.addVideo(v);
       expect(sharedPreferences.getStringList('cats_words'), [v.toStorage()]);
 
       await userEntryListManager.deleteEntryList('cats_words');
@@ -552,7 +567,8 @@ void main() {
       expect(() => userEntryListManager.renameEntryList('a_words', 'b_words'),
           throwsA(isA<EntryListNameException>()));
       // The source list is left untouched.
-      expect(userEntryListManager.getEntryLists().containsKey('a_words'), isTrue);
+      expect(
+          userEntryListManager.getEntryLists().containsKey('a_words'), isTrue);
     });
 
     test('renameEntryList refuses to rename favourites', () async {
@@ -575,7 +591,8 @@ void main() {
       final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
       await userEntryListManager.getEntryLists()['cats_words']!.addVideo(v);
       await userEntryListManager.renameEntryList('cats_words', 'cats_words');
-      expect(userEntryListManager.getEntryLists()['cats_words']!.containsVideo(v),
+      expect(
+          userEntryListManager.getEntryLists()['cats_words']!.containsVideo(v),
           isTrue);
       expect(sharedPreferences.getStringList('cats_words'), [v.toStorage()]);
     });

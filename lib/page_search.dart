@@ -402,7 +402,8 @@ class SearchPageState extends State<SearchPage> {
                   label: ConstrainedBox(
                     constraints: BoxConstraints(
                         maxWidth: MediaQuery.of(context).size.width * 0.6),
-                    child: Text(w, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    child:
+                        Text(w, maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
                   onPressed: () {
                     final entry = _findByPhrase(context, w);

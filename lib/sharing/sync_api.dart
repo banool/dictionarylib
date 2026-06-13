@@ -280,7 +280,8 @@ List<SavedVideo> _parseEntriesArray(dynamic raw) {
   for (var i = 0; i < raw.length; i++) {
     final item = raw[i];
     if (item is! Map) {
-      throw SyncException(SyncErrorKind.server, 'entries[$i] must be an object');
+      throw SyncException(
+          SyncErrorKind.server, 'entries[$i] must be an object');
     }
     final entry = item['entry'];
     final video = item['video'];
@@ -520,7 +521,8 @@ class SyncResponse {
           .toList(),
       snapshot: snapshot,
       members: MembersBlock.fromJson(json['members'] as Map<String, dynamic>),
-      wasSnapshotCatchUp: json['wasSnapshotCatchUp'] as bool? ?? snapshot != null,
+      wasSnapshotCatchUp:
+          json['wasSnapshotCatchUp'] as bool? ?? snapshot != null,
       displayName: json['displayName'] as String?,
     );
   }

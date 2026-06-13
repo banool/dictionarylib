@@ -327,7 +327,10 @@ class EntryList {
   /// no video of the entry has been saved.
   List<SavedVideo> videosForEntry(Entry entry) {
     final key = entry.getKey();
-    return [for (final v in savedVideos) if (v.entryKey == key) v];
+    return [
+      for (final v in savedVideos)
+        if (v.entryKey == key) v
+    ];
   }
 
   /// True when *every* video of [entry] is already saved in this list, i.e.

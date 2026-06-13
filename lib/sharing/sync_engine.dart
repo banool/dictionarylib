@@ -352,9 +352,9 @@ class SyncEngine {
           .catchError((e) => recordFailure('sync editable ${l.listId}', e)));
     }
     for (final l in _manager.subscribedLists) {
-      futures.add(
-          _pullSubscribed(l.listId, rethrowOnError: true, forceFresh: forceFresh)
-              .catchError((e) => recordFailure('pull sub ${l.listId}', e)));
+      futures.add(_pullSubscribed(l.listId,
+              rethrowOnError: true, forceFresh: forceFresh)
+          .catchError((e) => recordFailure('pull sub ${l.listId}', e)));
     }
     await Future.wait(futures);
     return failures;
@@ -613,8 +613,7 @@ class SyncEngine {
         await _handleNotFoundOrGone(list, err.kind, 'stale-cursor recovery');
         return;
       }
-      printAndLog(
-          'SyncEngine: stale-cursor recovery for $listId failed: $err');
+      printAndLog('SyncEngine: stale-cursor recovery for $listId failed: $err');
       _scheduleBackoffRetry(list, null);
     }
   }

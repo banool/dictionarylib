@@ -74,7 +74,8 @@ Future<AuthSession?> ensureSession(BuildContext context,
   final existing = sharing.auth.store.current;
   if (existing != null) return existing;
   if (!context.mounted) return null;
-  final session = await showSignInDialog(context, contextMessage: contextMessage);
+  final session =
+      await showSignInDialog(context, contextMessage: contextMessage);
   if (session == null || !context.mounted) return null;
   return session;
 }
@@ -227,9 +228,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
             // we're still completing), turn Cancel into a spinner rather than
             // hiding the provider's logo. Disabled meanwhile so a stray tap
             // can't tear down the in-flight request.
-            child: inflight != null
-                ? buttonSpinner(ctx)
-                : Text(l.alertCancel),
+            child: inflight != null ? buttonSpinner(ctx) : Text(l.alertCancel),
           ),
         ],
       );

@@ -55,8 +55,8 @@ Widget getPlaybackSpeedDropdownWidget(void Function(PlaybackSpeed?) onChanged,
     {bool enabled = true, Color? disabledColor, PlaybackSpeed? current}) {
   return Builder(builder: (context) {
     return IconButton(
-      icon: Icon(Icons.slow_motion_video,
-          color: enabled ? null : disabledColor),
+      icon:
+          Icon(Icons.slow_motion_video, color: enabled ? null : disabledColor),
       tooltip: DictLibLocalizations.of(context)!.playbackSpeedTitle,
       onPressed: enabled
           ? () => _showPlaybackSpeedSheet(context, onChanged, current)
@@ -66,10 +66,8 @@ Widget getPlaybackSpeedDropdownWidget(void Function(PlaybackSpeed?) onChanged,
 }
 
 /// A bottom sheet listing the playback speeds, with the current one ticked.
-Future<void> _showPlaybackSpeedSheet(
-    BuildContext context,
-    void Function(PlaybackSpeed?) onChanged,
-    PlaybackSpeed? current) async {
+Future<void> _showPlaybackSpeedSheet(BuildContext context,
+    void Function(PlaybackSpeed?) onChanged, PlaybackSpeed? current) async {
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,

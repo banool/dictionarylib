@@ -142,8 +142,8 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     // unmount: the user may have backed out of this page (or a rebuild tore
     // it down) while the sign-in dialog was up — it returns null in that case
     // so we bail before touching state.
-    final session =
-        await ensureSession(context, contextMessage: l.signInDialogContextInvite);
+    final session = await ensureSession(context,
+        contextMessage: l.signInDialogContextInvite);
     if (session == null) return;
 
     setState(() {
@@ -308,8 +308,8 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
             ],
             Text(message,
                 textAlign: TextAlign.center,
-                style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant, height: 1.5)),
+                style: tt.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant, height: 1.5)),
             const SizedBox(height: 22),
             FilledButton(onPressed: onPressed, child: Text(buttonLabel)),
           ],

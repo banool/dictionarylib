@@ -243,9 +243,8 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     // sees it from any tab, not just "My lists". The banner widget
     // collapses to SizedBox.shrink when there's nothing to nudge about.
     if (sharing.isEnabled) {
-      final editable = sharing.lists.editableLists
-          .where((l) => !l.meta.orphaned)
-          .toList();
+      final editable =
+          sharing.lists.editableLists.where((l) => !l.meta.orphaned).toList();
       body = Column(
         children: [
           SignInResumeBanner(lists: editable),
@@ -397,8 +396,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
               await Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) =>
-                          widget.buildEntryListWidgetCallback(el)));
+                      builder: (_) => widget.buildEntryListWidgetCallback(el)));
               if (mounted) setState(() {});
             },
           ),
@@ -478,7 +476,8 @@ Widget _getUserLists(
           fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
     ),
   ));
-  return ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: tiles);
+  return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8), children: tiles);
 }
 
 /// A short "N words" subtitle for a list (counts distinct entries).
@@ -570,7 +569,8 @@ Widget _buildEditModeList(
         DictLibLocalizations.of(context)!.listsReorderHint,
         textAlign: TextAlign.center,
         style: TextStyle(
-            fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     ),
     children: tiles,

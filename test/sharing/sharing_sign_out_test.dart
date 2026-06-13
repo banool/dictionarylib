@@ -11,8 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
 
-SavedVideo _v(String key) =>
-    SavedVideo(entryKey: key, videoUrl: videoFor(key));
+SavedVideo _v(String key) => SavedVideo(entryKey: key, videoUrl: videoFor(key));
 
 /// Install an owner wrapper around a fresh local list plus a subscriber
 /// mirror, returning the owner wrapper. Mirrors the direct-insert
@@ -92,8 +91,7 @@ void main() {
 
     test('still signs out cleanly when the flush cannot reach the server',
         () async {
-      installFakeSharing(
-          (req) async => throw http.ClientException('offline'));
+      installFakeSharing((req) async => throw http.ClientException('offline'));
       final owned = await _installLists();
       await sharing.engine.enqueueAddVideo(owned.listId, _v('cherry'));
 
