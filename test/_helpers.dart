@@ -97,27 +97,35 @@ void installFakeSecureStorage() {
   );
 }
 
+/// Base URL the tests treat media as served from. A media path resolves
+/// to `kTestMediaBase + path` (see [mediaUrlForPath]); the v2→v3 list /
+/// review migrations strip it back off (see [mediaPathForUrl]).
+const String kTestMediaBase = 'https://example.test';
+
 /// Populate `keyedByEnglishEntriesGlobal` with [FakeEntry] instances.
-/// By default each entry gets one synthetic video named
-/// `"https://example.test/<key>.mp4"` so per-video tests can refer to
-/// it without spelling out a URL. Pass [videosByKey] to supply a
-/// specific video list per entry (used for migration / multi-video
-/// scenarios).
+/// By default each entry gets one synthetic media **path** (`/<key>.mp4`,
+/// what [SubEntry.getMedia] now returns) so per-video tests can refer to
+/// it via [videoFor] without spelling it out. Pass [videosByKey] to
+/// supply specific paths per entry (migration / multi-video scenarios).
+/// Also configures [mediaBaseUrls], which the migrations rely on.
 void seedDictionary(
   Iterable<String> keys, {
   Map<String, List<String>> videosByKey = const {},
 }) {
+  mediaBaseUrls = const [kTestMediaBase];
   keyedByEnglishEntriesGlobal.clear();
   for (final k in keys) {
-    final videos = videosByKey[k] ?? ['https://example.test/$k.mp4'];
+    final videos = videosByKey[k] ?? [videoFor(k)];
     keyedByEnglishEntriesGlobal[k] = FakeEntry(k, videos: videos);
   }
 }
 
-/// Convenience for the very common "one video per entry, named after
-/// the entry key" pattern in tests. Mirrors what `seedDictionary` does
-/// by default.
-String videoFor(String entryKey) => 'https://example.test/$entryKey.mp4';
+/// The media **path** (the v3 saved-video identity) for [entryKey].
+String videoFor(String entryKey) => '/$entryKey.mp4';
+
+/// The full v2-era media URL for [entryKey] — `kTestMediaBase` + its
+/// path. Used by migration tests that seed the old full-URL shape.
+String urlFor(String entryKey) => '$kTestMediaBase${videoFor(entryKey)}';
 
 /// Default config used by every sharing-related test.
 const kTestSharingConfig = SharingConfig(

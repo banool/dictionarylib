@@ -20,10 +20,21 @@ String _decompressFromWeb(String stored) =>
     utf8.decode(GZipDecoder().decodeBytes(base64Decode(stored)));
 
 abstract class EntryLoader {
+  /// Filename (native) under the app documents dir for the cached
+  /// dictionary dump. Overridable so a data-format change can ship under
+  /// a fresh name: the new build then ignores the old cache and
+  /// re-downloads, rather than reading data in a format it no longer
+  /// understands (e.g. the move from full media URLs to media paths).
+  String get dictionaryCacheFileName => 'word_dictionary.json';
+
+  /// SharedPreferences key (web) for the cached dictionary dump.
+  /// Overridable alongside [dictionaryCacheFileName] for the same reason.
+  String get webDictionaryCacheKey => KEY_WEB_DICTIONARY_DATA;
+
   /// Returns the local path where we store the dictionary data we download.
   Future<File> get _dictionaryDataFilePath async {
     final path = (await getApplicationDocumentsDirectory()).path;
-    return File('$path/word_dictionary.json');
+    return File('$path/$dictionaryCacheFileName');
   }
 
   /// Try to load data from local storage. If there was an error we won't throw
@@ -37,7 +48,7 @@ abstract class EntryLoader {
         // On web the dump is stored gzipped + base64'd to fit local storage
         // (see _writeEntries); decompress it back to the raw JSON. A bad/old
         // value throws here and is handled by the surrounding catch (→ re-download).
-        final stored = sharedPreferences.getString(KEY_WEB_DICTIONARY_DATA);
+        final stored = sharedPreferences.getString(webDictionaryCacheKey);
         if (stored != null) {
           data = _decompressFromWeb(stored);
         }
@@ -99,7 +110,7 @@ abstract class EntryLoader {
       // in memory for this session, we just won't have it cached next load.
       try {
         await sharedPreferences.setString(
-            KEY_WEB_DICTIONARY_DATA, _compressForWeb(newData));
+            webDictionaryCacheKey, _compressForWeb(newData));
         printAndLog("Wrote new data to local storage (gzipped)");
       } catch (e) {
         printAndLog(

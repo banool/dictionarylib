@@ -22,7 +22,7 @@ import '../_helpers.dart';
 /// Lets per-entry tests stay terse — `_v('apple')` instead of spelling
 /// out the URL each time.
 SavedVideo _v(String entryKey) =>
-    SavedVideo(entryKey: entryKey, videoUrl: videoFor(entryKey));
+    SavedVideo(entryKey: entryKey, mediaPath: videoFor(entryKey));
 
 /// Build a [SyncEngine] backed by a stub HTTP client. Returns the
 /// engine, its manager, the requests list, and the auth service so

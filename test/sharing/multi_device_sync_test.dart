@@ -33,7 +33,7 @@ import '../_helpers.dart';
 import 'multi_device_helpers.dart';
 
 SavedVideo _v(String key) =>
-    SavedVideo(entryKey: key, videoUrl: integrationVideoFor(key));
+    SavedVideo(entryKey: key, mediaPath: integrationVideoFor(key));
 
 Future<void> main() async {
   // The secure-storage fake calls TestWidgetsFlutterBinding.ensureInitialized,

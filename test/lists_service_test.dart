@@ -151,7 +151,7 @@ void main() {
       // The "favourites star" / "My Lists tap" path both end up holding
       // the wrapper (via [ListsService.favouritesList] or the overview's
       // wrapper-routing). Edits through the wrapper enqueue a sync op.
-      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      final v = SavedVideo(entryKey: 'apple', mediaPath: videoFor('apple'));
       await synced.addVideo(v);
       expect(synced.meta.pendingOps, hasLength(1));
       expect(synced.meta.pendingOps.single.type, 'addEntry');
@@ -187,7 +187,7 @@ void main() {
         displayName: 'Cats',
         sessionToken: 'fake-session-jwt',
       );
-      final v = SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'));
+      final v = SavedVideo(entryKey: 'apple', mediaPath: videoFor('apple'));
       expect(
           () async => await source.addVideo(v), throwsA(isA<AssertionError>()));
       // No op enqueued either way — the assertion fires before the
@@ -462,7 +462,7 @@ void main() {
       await userEntryListManager.createEntryList('MyList_words');
       final preExisting = userEntryListManager.getEntryLists()['MyList_words']!;
       final cherryVideo =
-          SavedVideo(entryKey: 'cherry', videoUrl: videoFor('cherry'));
+          SavedVideo(entryKey: 'cherry', mediaPath: videoFor('cherry'));
       await preExisting.addVideo(cherryVideo);
       final preExistingVideos = preExisting.savedVideos.toSet();
 

@@ -41,7 +41,12 @@ abstract class SubEntry<R, D> {
   // Used for comparing sub-entries.
   String getKey(Entry parentEntry);
 
-  // Return the URLs of the media.
+  // Return the media **paths** (video / image) in display order — each
+  // the path after the serving base, e.g. `/mp4video/11/11450.mp4`. This
+  // is the stable identity a saved video is keyed by (so it survives the
+  // content moving between hosts / CDNs); resolve a path to a playable
+  // URL with [mediaUrlForPath] (globals.dart). The app ships the base(s)
+  // in [mediaBaseUrls] rather than baking a host into the data.
   List<String> getMedia();
 
   List<String> getRelatedWords();

@@ -10,22 +10,109 @@ import 'saved_video.dart';
 const String KEY_ENTRY_LIST_KEYS = "word_list_keys";
 const int SUFFIX_LENGTH = 6;
 
-/// Bumped when the on-disk format for a single list's entries changes
-/// in a way [EntryList.loadEntryList] needs to adapt to. Recorded
-/// per-list under [_listSchemaVersionKey] after a successful migration so
-/// we don't re-scan legacy items every launch.
+/// Bumped when the on-disk format for a single list's saved videos
+/// changes in a way [EntryList.loadSavedVideos] needs to adapt to.
+/// Recorded per-list under [_listSchemaVersionKey] after a successful
+/// migration so we don't re-scan / re-rewrite every launch.
 ///
-/// History:
-///   - implicit v1: `List<String>` of entry keys (one entry per item).
+/// History (each step is applied in order by [_migrateRawList], so a list
+/// at any older version converges to the current one):
+///   - v1: `List<String>` of entry keys (one whole entry per item).
 ///   - v2: `List<String>` of `"<entryKey>|<videoUrl>"` (one saved video
-///     per item). Legacy items are detected by absence of `|` and
-///     expanded to all videos of the entry on first load.
-const int listSchemaVersion = 2;
+///     per item, the video half a fully-qualified URL). The v1→v2 step
+///     expands each legacy entry key to every video of the entry.
+///   - v3: `List<String>` of `"<entryKey>|<mediaPath>"` — same per-video
+///     shape, but the video half is now the media **path** (its stable
+///     identity — see [SavedVideo]), so a saved video survives the
+///     content moving between hosts / CDNs. The v2→v3 step strips the
+///     serving base off each stored URL (see [mediaPathForUrl]).
+///
+/// To add a v(N)→v(N+1) migration: bump [listSchemaVersion], add a
+/// `_migrateListV{N}toV{N+1}` that maps the raw `List<String>` forward,
+/// and wire it into [_migrateRawList]'s switch.
+const int listSchemaVersion = 3;
 
-/// Per-list shared-prefs key that records the schema version of the
-/// last successful migration. Lists without this key are treated as
-/// pre-v2 and re-scanned for legacy items on load.
+/// Per-list shared-prefs key that records the schema version of the last
+/// successful migration. Lists without this key are treated as v1 and
+/// stepped all the way forward on load.
 String _listSchemaVersionKey(String listKey) => '${listKey}_schemaVersion';
+
+/// Upgrade a list's raw stored `List<String>` from [fromVersion] to the
+/// current [listSchemaVersion], applying one ordered step at a time. Each
+/// step takes the previous version's on-disk shape and returns the next
+/// version's. Pure (no I/O) so it's trivially testable; the caller
+/// persists the result.
+List<String> _migrateRawList(List<String> raw, int fromVersion) {
+  var working = raw;
+  for (var v = fromVersion; v < listSchemaVersion; v++) {
+    switch (v) {
+      case 1:
+        working = _migrateListV1toV2(working);
+        break;
+      case 2:
+        working = _migrateListV2toV3(working);
+        break;
+    }
+  }
+  return working;
+}
+
+/// v1→v2: expand each bare entry key to one `"<entryKey>|<videoUrl>"`
+/// item per video of the entry (full URLs — the v2 shape), in sub-entry /
+/// within-sub-entry order. Items already in `"<entryKey>|..."` shape (a
+/// partially-rolled-out v2 write) pass through untouched. Entries no
+/// longer in the dictionary, or with no videos, are dropped — the same
+/// "entry missing" behaviour the pre-per-video loader had.
+List<String> _migrateListV1toV2(List<String> raw) {
+  final out = <String>[];
+  for (final item in raw) {
+    if (item.contains(SavedVideo.storageSeparator)) {
+      out.add(item); // already v2+.
+      continue;
+    }
+    final entry = keyedByEnglishEntriesGlobal[item];
+    if (entry == null) {
+      printAndLog(
+          'EntryList: legacy entry "$item" not in dictionary; dropping');
+      continue;
+    }
+    for (final sub in entry.getSubEntries()) {
+      // getMedia() returns paths; resolve to the v2 full-URL shape so the
+      // v2→v3 step below can strip it back down uniformly.
+      for (final path in sub.getMedia()) {
+        out.add('$item${SavedVideo.storageSeparator}${mediaUrlForPath(path)}');
+      }
+    }
+  }
+  return out;
+}
+
+/// v2→v3: rewrite each `"<entryKey>|<videoUrl>"` to
+/// `"<entryKey>|<mediaPath>"` by stripping the serving base off the URL
+/// (see [mediaPathForUrl]). An item whose video half isn't an absolute
+/// URL is already a path and passes through. A URL not under any known
+/// base (orphaned, or an unexpected host) is kept as-is rather than
+/// dropped — it simply won't resolve for display, exactly as before, and
+/// we avoid silently deleting a user's save.
+List<String> _migrateListV2toV3(List<String> raw) {
+  final out = <String>[];
+  for (final item in raw) {
+    final parsed = SavedVideo.tryParse(item);
+    if (parsed == null) continue;
+    final value = parsed.mediaPath;
+    if (!_looksAbsoluteUrl(value)) {
+      out.add(item); // already a path.
+      continue;
+    }
+    final path = mediaPathForUrl(value);
+    out.add(SavedVideo(entryKey: parsed.entryKey, mediaPath: path ?? value)
+        .toStorage());
+  }
+  return out;
+}
+
+bool _looksAbsoluteUrl(String s) =>
+    s.startsWith('http://') || s.startsWith('https://');
 
 /// Why a proposed list name failed validation. The UI looks up a
 /// localised message per kind via [EntryListNameException.localise].
@@ -88,8 +175,8 @@ class EntryListNameException implements Exception {
 
 /// A user-created list of saved videos.
 ///
-/// Storage model: each item is a [SavedVideo] = `(entryKey, videoUrl)`,
-/// persisted in SharedPreferences as `"entryKey|videoUrl"`. The same
+/// Storage model: each item is a [SavedVideo] = `(entryKey, mediaPath)`,
+/// persisted in SharedPreferences as `"entryKey|mediaPath"`. The same
 /// entry can contribute multiple saved videos, in which case the list
 /// view groups them under a single entry row but the underlying
 /// container preserves per-video insertion order.
@@ -121,69 +208,42 @@ class EntryList {
   }
 
   /// Load this list from SharedPreferences. Performs the v1→v2
-  /// migration on the fly: legacy bare-entry-key items are expanded to
-  /// every video of the entry (in sub-entry / within-sub-entry order)
-  /// and the migrated list is written back immediately so subsequent
-  /// loads skip the work.
+  /// migrations on the fly (see [listSchemaVersion] / [_migrateRawList]):
+  /// the stored form is stepped forward and written back immediately so
+  /// subsequent loads skip the work.
   factory EntryList.fromRaw(String key) {
     final saved = loadSavedVideos(key);
     return EntryList(key, saved, true);
   }
 
-  /// Load saved videos for [key], handling the v1→v2 migration.
-  ///
-  /// v1 storage was `List<String>` of entry keys. v2 stores one
-  /// `"entryKey|videoUrl"` per item. A list is considered already
-  /// migrated when its [_listSchemaVersionKey] equals
-  /// [listSchemaVersion]; otherwise legacy items are detected by
-  /// absence of `|` and expanded. The migration write is fire-and-forget
-  /// async — the in-memory result is correct regardless.
+  /// Load the saved videos for [key], applying ordered schema migrations
+  /// from the stored version up to [listSchemaVersion]. A list with no
+  /// recorded version is treated as v1 (the pre-per-video format) and
+  /// stepped all the way forward; see [_migrateRawList] for the steps.
+  /// The migration write is fire-and-forget — the returned in-memory set
+  /// is authoritative regardless of whether the write lands.
   static LinkedHashSet<SavedVideo> loadSavedVideos(String key) {
-    final out = LinkedHashSet<SavedVideo>();
     final raw = sharedPreferences.getStringList(key) ?? const <String>[];
-    final storedVersion = sharedPreferences.getInt(_listSchemaVersionKey(key));
-    final alreadyMigrated = storedVersion == listSchemaVersion;
-    var migratedAnything = false;
-    var droppedAnything = false;
+    // Absent flag ⇒ v1 (the pre-per-video format). Step forward from there.
+    final storedVersion =
+        sharedPreferences.getInt(_listSchemaVersionKey(key)) ?? 1;
 
-    for (final item in raw) {
+    final migrated = storedVersion < listSchemaVersion
+        ? _migrateRawList(raw, storedVersion)
+        : raw;
+
+    final out = LinkedHashSet<SavedVideo>();
+    for (final item in migrated) {
       final parsed = SavedVideo.tryParse(item);
-      if (parsed != null) {
-        out.add(parsed);
-        continue;
-      }
-      // Legacy item: an entry key with no separator. Expand to every
-      // video of the entry. If the entry isn't in the dictionary
-      // anymore (data refresh dropped it), drop the item — same
-      // behaviour as the pre-refactor "entry missing" path.
-      final entry = keyedByEnglishEntriesGlobal[item];
-      if (entry == null) {
-        printAndLog('EntryList $key: legacy entry "$item" '
-            'not in dictionary; dropping');
-        droppedAnything = true;
-        continue;
-      }
-      final expanded = allVideosOf(entry);
-      if (expanded.isEmpty) {
-        printAndLog('EntryList $key: legacy entry "$item" has no videos; '
-            'dropping');
-        droppedAnything = true;
-        continue;
-      }
-      out.addAll(expanded);
-      migratedAnything = true;
+      if (parsed != null) out.add(parsed);
     }
 
-    if (!alreadyMigrated && (migratedAnything || droppedAnything)) {
-      printAndLog('EntryList $key: migrated to schemaVersion '
-          '$listSchemaVersion (expanded ${out.length} videos)');
-    }
-
-    if (!alreadyMigrated) {
-      // Fire-and-forget the migration write. Even if the user is
-      // currently offline / shared-prefs is being unusually slow, the
-      // in-memory state is already correct, and the next mutation will
-      // re-persist with the new format anyway.
+    if (storedVersion != listSchemaVersion) {
+      // Persist the migrated, de-duplicated form and stamp the version so
+      // the next launch is a plain read. Fire-and-forget: the in-memory
+      // result above is already authoritative.
+      printAndLog('EntryList $key: migrated v$storedVersion → '
+          'v$listSchemaVersion (${out.length} saved videos)');
       sharedPreferences.setStringList(
           key, out.map((v) => v.toStorage()).toList());
       sharedPreferences.setInt(_listSchemaVersionKey(key), listSchemaVersion);

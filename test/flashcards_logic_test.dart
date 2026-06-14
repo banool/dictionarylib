@@ -31,6 +31,10 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     sharedPreferences = await SharedPreferences.getInstance();
     keyedByEnglishEntriesGlobal.clear();
+    // Deterministic default: no serving base configured, so a v2 master's
+    // URL is kept verbatim (nothing to strip). The conversion group below
+    // sets a base explicitly to exercise the v2→v3 path rewrite.
+    mediaBaseUrls = const [];
   });
 
   group('migrateLegacyReviewsIfNeeded — short-circuits', () {
@@ -214,11 +218,12 @@ void main() {
     });
   });
 
-  group('migrateLegacyReviewsIfNeeded — v2 pass-through + mixed inputs', () {
-    test('an already-v2 master in the input is passed through unchanged',
+  group('migrateLegacyReviewsIfNeeded — v2 inputs + mixed inputs', () {
+    test('a v2 master whose URL is under no known base is kept verbatim',
         () async {
-      // The migration loop detects v2 entries by the presence of the
-      // unit separator in the master and copies them verbatim.
+      // A v2 master is detected by the unit separator. Its URL is rewritten
+      // to a path only when it's under a configured base; here no base is
+      // set (see setUp), so it's kept verbatim.
       keyedByEnglishEntriesGlobal['apple'] =
           FakeEntry('apple', videos: const ['https://media.test/a.mp4']);
       final v2Encoded =
@@ -339,7 +344,7 @@ void main() {
       final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       final decoded = decodeReview(stored.single);
       final expected = savedVideoMasterId(
-          SavedVideo(entryKey: 'apple', videoUrl: 'https://media.test/a.mp4'));
+          SavedVideo(entryKey: 'apple', mediaPath: 'https://media.test/a.mp4'));
       expect(decoded.master, expected);
     });
   });
@@ -390,6 +395,47 @@ void main() {
       expect(sharedPreferences.getStringList(KEY_STORED_REVIEWS), afterFirst);
       expect(sharedPreferences.getInt(KEY_REVIEWS_SCHEMA_VERSION),
           reviewsSchemaVersion);
+    });
+  });
+
+  group('migrateLegacyReviewsIfNeeded — v2→v3 path conversion', () {
+    const base = 'https://media.test';
+
+    test('a v2 master URL under the configured base is rewritten to a path',
+        () async {
+      mediaBaseUrls = const [base];
+      final v2 = encodeFakeReview('apple$_sep$base/auslan/11/11450.mp4');
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [v2]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      // Base stripped → the master now carries the media path.
+      expect(stored.single, startsWith('apple$_sep/auslan/11/11450.mp4==='));
+      expect(sharedPreferences.getInt(KEY_REVIEWS_SCHEMA_VERSION),
+          reviewsSchemaVersion);
+    });
+
+    test('a v2 master URL under no configured base is kept as-is', () async {
+      mediaBaseUrls = const [base];
+      final v2 = encodeFakeReview('apple${_sep}https://elsewhere.test/x.mp4');
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [v2]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, v2);
+    });
+
+    test('a v3 master (already a path) passes through unchanged', () async {
+      mediaBaseUrls = const [base];
+      final v3 = encodeFakeReview('apple$_sep/auslan/11/11450.mp4');
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [v3]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, v3);
     });
   });
 }

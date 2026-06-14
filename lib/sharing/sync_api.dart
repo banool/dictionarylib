@@ -16,7 +16,10 @@ import 'sharing_config.dart';
 /// History:
 ///   - v2: `entries: string[]` of entry keys (whole-entry saves).
 ///   - v3: `entries: SavedVideoDto[]` (per-video saves). Op args
-///     `{key}` become `{entry, video}`.
+///     `{key}` become `{entry, video}`. The `video` field is an opaque
+///     string — the client now puts the media **path** there (its stable
+///     identity) rather than a full URL, but the wire shape is unchanged,
+///     so this stays v3 (the server never interprets the field).
 ///
 /// FOUR INDEPENDENT "SCHEMA VERSION" AXES — do not assume they move together:
 ///   1. Local prefs list schema — `listSchemaVersion` (currently 2) in
@@ -289,7 +292,9 @@ List<SavedVideo> _parseEntriesArray(dynamic raw) {
       throw SyncException(SyncErrorKind.server,
           'entries[$i] must have string `entry` and `video` fields');
     }
-    out.add(SavedVideo(entryKey: entry, videoUrl: video));
+    // The `video` field carries the media path (the wire shape is
+    // unchanged — it has always been an opaque string to the server).
+    out.add(SavedVideo(entryKey: entry, mediaPath: video));
   }
   return out;
 }

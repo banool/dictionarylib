@@ -410,7 +410,8 @@ class SyncedEntryList extends EntryList {
       printAndLog('Synced list ${meta.listId}: malformed op args $args');
       return null;
     }
-    return SavedVideo(entryKey: entry, videoUrl: video);
+    // The op arg `video` carries the media path (opaque string on the wire).
+    return SavedVideo(entryKey: entry, mediaPath: video);
   }
 
   /// Replay any persisted pending ops against the in-memory savedVideos

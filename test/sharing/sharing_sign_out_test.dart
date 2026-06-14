@@ -11,7 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
 
-SavedVideo _v(String key) => SavedVideo(entryKey: key, videoUrl: videoFor(key));
+SavedVideo _v(String key) =>
+    SavedVideo(entryKey: key, mediaPath: videoFor(key));
 
 /// Install an owner wrapper around a fresh local list plus a subscriber
 /// mirror, returning the owner wrapper. Mirrors the direct-insert

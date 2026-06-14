@@ -29,6 +29,36 @@ final ValueNotifier<AppThemeVariant> themeVariantNotifier =
 Set<Entry> entriesGlobal = {};
 Map<String, Entry> keyedByEnglishEntriesGlobal = {};
 
+/// Base URLs the app serves media from, most-preferred first. A saved
+/// video's identity is the media **path** ([SubEntry.getMedia] returns
+/// paths, e.g. `/mp4video/11/11450.mp4`); the playable URL is built fresh
+/// as `mediaBaseUrls.first + path`. Shipping the base in the app — rather
+/// than baking it into the data or the saved identity — lets the content
+/// move between hosts / CDNs without invalidating saved videos, and lets
+/// a future release switch hosts. The app sets this in setup, before the
+/// dictionary + lists load (so the list migration can resolve / strip it).
+List<String> mediaBaseUrls = const [];
+
+/// Resolve a media [path] (e.g. `/mp4video/11/11450.mp4`) to a full,
+/// playable URL using the configured [mediaBaseUrls]. Returns the input
+/// unchanged when it's already an absolute URL (defensive — an absolute
+/// URL is its own identity) or when no base is configured (e.g. tests).
+String mediaUrlForPath(String path) {
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (mediaBaseUrls.isEmpty) return path;
+  return '${mediaBaseUrls.first}$path';
+}
+
+/// If [url] is a full URL under one of [mediaBaseUrls], return the media
+/// path after the base (its stable identity); otherwise null. Used by the
+/// v2→v3 list / review migrations to convert stored full URLs to paths.
+String? mediaPathForUrl(String url) {
+  for (final base in mediaBaseUrls) {
+    if (url.startsWith(base)) return url.substring(base.length);
+  }
+  return null;
+}
+
 // For logging of things that occur in the background.
 MaxLengthQueue<String> backgroundLogs = MaxLengthQueue(200);
 

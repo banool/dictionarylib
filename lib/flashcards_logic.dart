@@ -21,23 +21,29 @@ const String KEY_USE_UNKNOWN_REGION_SIGNS = "use_unknown_region_signs";
 
 const String KEY_LISTS_TO_REVIEW = "lists_chosen_to_review";
 
-/// SharedPreferences flag that marks the v1→v2 review-history migration
-/// as having been attempted. Set unconditionally after a launch where
+/// SharedPreferences flag that marks the review-history migration as
+/// having been attempted. Set unconditionally after a launch where
 /// [migrateLegacyReviewsIfNeeded] runs, even if it migrated nothing —
 /// repeat launches don't re-scan.
+///
+/// History mirrors the saved-video identity (see [SavedVideo]):
+///   - v1: master `<entryKey>-<firstVideoFilename>` (no separator we own).
+///   - v2: master `<entryKey>\x1F<videoUrl>` (per-video, full URL).
+///   - v3: master `<entryKey>\x1F<mediaPath>` (per-video, path identity).
+/// [migrateLegacyReviewsIfNeeded] steps any older shape up to v3.
 const String KEY_REVIEWS_SCHEMA_VERSION = "reviews_schema_version";
-const int reviewsSchemaVersion = 2;
+const int reviewsSchemaVersion = 3;
 
 /// Composite key used as a DolphinSR master id and as the master field
-/// in stored reviews. Format: `<entryKey>\x1F<videoUrl>`. ASCII unit
-/// separator chosen so it can't collide with anything in an entry key
-/// or URL.
+/// in stored reviews. Format: `<entryKey>\x1F<mediaPath>`. ASCII unit
+/// separator chosen so it can't collide with anything in an entry key or
+/// path.
 const String _masterKeySep = '\x1F';
 
 String savedVideoMasterId(SavedVideo video) =>
-    '${video.entryKey}$_masterKeySep${video.videoUrl}';
+    '${video.entryKey}$_masterKeySep${video.mediaPath}';
 
-/// Parse a master id back into the (entryKey, videoUrl) pair. Returns
+/// Parse a master id back into the (entryKey, mediaPath) pair. Returns
 /// null for legacy v1 ids (which used the older "entryKey-firstVideo"
 /// shape with no separator we control). Used by review-history
 /// migration to skip legacy-shaped masters that were already dropped.
@@ -45,7 +51,7 @@ SavedVideo? parseSavedVideoMasterId(String id) {
   final i = id.indexOf(_masterKeySep);
   if (i < 0) return null;
   return SavedVideo(
-      entryKey: id.substring(0, i), videoUrl: id.substring(i + 1));
+      entryKey: id.substring(0, i), mediaPath: id.substring(i + 1));
 }
 
 class DolphinInformation {
@@ -144,10 +150,10 @@ List<ResolvedSavedVideo> resolveSavedVideos(
       if (!seen.add(v)) continue;
       final entry = keyedByEnglishEntriesGlobal[v.entryKey];
       if (entry == null) continue;
-      // Find the sub-entry the video belongs to.
+      // Find the sub-entry the saved media path belongs to.
       SubEntry? matched;
       for (final sub in entry.getSubEntries()) {
-        if (sub.getMedia().contains(v.videoUrl)) {
+        if (sub.getMedia().contains(v.mediaPath)) {
           matched = sub;
           break;
         }
@@ -157,7 +163,8 @@ List<ResolvedSavedVideo> resolveSavedVideos(
         video: v,
         entry: entry,
         subEntry: matched,
-        videoUrl: v.videoUrl,
+        // Resolve the stored path to a playable URL for the card.
+        videoUrl: mediaUrlForPath(v.mediaPath),
       ));
     }
   }
@@ -335,17 +342,20 @@ Review decodeReview(String s) {
   );
 }
 
-/// Migrate legacy review history (master id of shape
-/// `<entryKey>-<firstVideoFilename>`) to the v2 master id shape
-/// (`<entryKey>\x1F<videoUrl>`).
+/// Migrate stored review history forward to the current v3 master-id
+/// shape (`<entryKey>\x1F<mediaPath>`); see [reviewsSchemaVersion].
 ///
-/// Best-effort: for each legacy review, find the entry and pick its
-/// first sub-entry's first video as the corresponding saved-video
-/// master. Reviews that can't be resolved are dropped — losing them
-/// is preferable to crashing DolphinSR with malformed masters.
+/// Steps any older shape:
+///   - v1 `<entryKey>-<firstVideoFilename>` → resolved to a path master
+///     via [_tryMigrateLegacyMaster] (best-effort; unresolvable reviews
+///     are dropped rather than crashing DolphinSR with a bad master).
+///   - v2 `<entryKey>\x1F<videoUrl>` → the serving base is stripped off
+///     the URL to get the path (see [mediaPathForUrl]); a URL under no
+///     known base is kept as-is.
+///   - v3 `<entryKey>\x1F<mediaPath>` → passed through.
 ///
-/// Runs once per install, gated by [KEY_REVIEWS_SCHEMA_VERSION]. Safe
-/// to call on every launch; a no-op after the first successful run.
+/// Runs once per install, gated by [KEY_REVIEWS_SCHEMA_VERSION]. Safe to
+/// call on every launch; a no-op after the first successful run.
 Future<void> migrateLegacyReviewsIfNeeded() async {
   final stored = sharedPreferences.getInt(KEY_REVIEWS_SCHEMA_VERSION) ?? 1;
   if (stored >= reviewsSchemaVersion) return;
@@ -357,9 +367,9 @@ Future<void> migrateLegacyReviewsIfNeeded() async {
     return;
   }
   final out = <String>[];
-  var migrated = 0;
+  var converted = 0;
+  var unchanged = 0;
   var dropped = 0;
-  var alreadyV2 = 0;
   for (final raw in encoded) {
     // The master field is the first delimited segment, so split on the
     // first REVIEW_DELIMITER only.
@@ -370,28 +380,39 @@ Future<void> migrateLegacyReviewsIfNeeded() async {
     }
     final master = raw.substring(0, firstDelim);
     final tail = raw.substring(firstDelim);
-    // v2 masters contain the unit-separator; pass through unchanged.
-    if (master.contains(_masterKeySep)) {
-      out.add(raw);
-      alreadyV2++;
+    final sepIdx = master.indexOf(_masterKeySep);
+    if (sepIdx >= 0) {
+      // v2 (URL) or already v3 (path). Strip the serving base off a URL
+      // to get the path; keep a path / unknown-base URL as-is.
+      final entryKey = master.substring(0, sepIdx);
+      final value = master.substring(sepIdx + 1);
+      if (value.startsWith('http://') || value.startsWith('https://')) {
+        final path = mediaPathForUrl(value);
+        out.add('$entryKey$_masterKeySep${path ?? value}$tail');
+        path != null ? converted++ : unchanged++;
+      } else {
+        out.add(raw); // already a path.
+        unchanged++;
+      }
       continue;
     }
-    // Legacy shape: `<entryKey>-<firstVideoFilenameOrUrl>`. We don't
-    // know exactly where the entry key ends, so try the leftmost `-`
-    // and walk rightward until we find an entry that exists.
+    // Legacy v1 shape: `<entryKey>-<firstVideoFilenameOrUrl>`. We don't
+    // know exactly where the entry key ends, so try the leftmost `-` and
+    // walk rightward until we find an entry that exists.
     final newMaster = _tryMigrateLegacyMaster(master);
     if (newMaster == null) {
       dropped++;
       continue;
     }
     out.add('$newMaster$tail');
-    migrated++;
+    converted++;
   }
   await sharedPreferences.setStringList(KEY_STORED_REVIEWS, out);
   await sharedPreferences.setInt(
       KEY_REVIEWS_SCHEMA_VERSION, reviewsSchemaVersion);
-  printAndLog('Reviews migration: $migrated migrated, $alreadyV2 already v2, '
-      '$dropped dropped (of ${encoded.length} total)');
+  printAndLog(
+      'Reviews migration → v$reviewsSchemaVersion: $converted converted, '
+      '$unchanged unchanged, $dropped dropped (of ${encoded.length} total)');
 }
 
 /// Try to rewrite a v1 master id `<entryKey>-<videoSuffix>` to the v2
@@ -411,21 +432,21 @@ String? _tryMigrateLegacyMaster(String legacyMaster) {
     final entry = keyedByEnglishEntriesGlobal[candidate];
     if (entry != null) {
       for (final sub in entry.getSubEntries()) {
-        for (final url in sub.getMedia()) {
-          if (url.endsWith(tail) || url.contains(tail)) {
+        for (final path in sub.getMedia()) {
+          if (path.endsWith(tail) || path.contains(tail)) {
             return savedVideoMasterId(
-                SavedVideo(entryKey: candidate, videoUrl: url));
+                SavedVideo(entryKey: candidate, mediaPath: path));
           }
         }
       }
-      // Tail didn't match any video URL — fall back to the entry's
+      // Tail didn't match any media path — fall back to the entry's
       // first sub-entry's first video so a stored review keeps some
       // signal instead of being dropped wholesale. Best-effort.
       for (final sub in entry.getSubEntries()) {
         final media = sub.getMedia();
         if (media.isNotEmpty) {
           return savedVideoMasterId(
-              SavedVideo(entryKey: candidate, videoUrl: media.first));
+              SavedVideo(entryKey: candidate, mediaPath: media.first));
         }
       }
     }

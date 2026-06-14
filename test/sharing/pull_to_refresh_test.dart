@@ -43,7 +43,7 @@ void main() {
         orphaned: false,
       ),
       savedVideos: LinkedHashSet.of(
-          {SavedVideo(entryKey: 'apple', videoUrl: videoFor('apple'))}),
+          {SavedVideo(entryKey: 'apple', mediaPath: videoFor('apple'))}),
     );
     await sharing.lists.insert(list);
     return list;
