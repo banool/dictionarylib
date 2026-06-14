@@ -1889,6 +1889,30 @@ abstract class DictLibLocalizations {
   /// **'Most signs aren\'t tagged with a region, so leaving this on keeps them in your revision.'**
   String get regionSheetUnknownExplanation;
 
+  /// No description provided for @regionSheetUnknownSignsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Signs with unknown region'**
+  String get regionSheetUnknownSignsTitle;
+
+  /// No description provided for @regionSubtitleAllAustralia.
+  ///
+  /// In en, this message translates to:
+  /// **'All of Australia'**
+  String get regionSubtitleAllAustralia;
+
+  /// No description provided for @regionSubtitleRegionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 region} other{{count} regions}}'**
+  String regionSubtitleRegionCount(int count);
+
+  /// No description provided for @regionSubtitleUnknownSigns.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown-region signs'**
+  String get regionSubtitleUnknownSigns;
+
   /// No description provided for @wordVariationWithHint.
   ///
   /// In en, this message translates to:
@@ -1946,7 +1970,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @sessionCompleteHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Nice work — that\'s {count} signs revised'**
+  /// **'Nice work — that\'s {count, plural, =1{1 sign revised} other{{count} signs revised}}'**
   String sessionCompleteHeadline(int count);
 
   /// No description provided for @summarySuccess.

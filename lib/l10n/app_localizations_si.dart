@@ -1081,6 +1081,26 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'බොහෝ සංඥා කලාපයකට ටැග් කර නැත, එබැවින් මෙය සක්‍රීයව තැබීමෙන් ඒවා ඔබගේ සංශෝධනයේ රඳවා ගනී.';
 
   @override
+  String get regionSheetUnknownSignsTitle => 'Signs with unknown region';
+
+  @override
+  String get regionSubtitleAllAustralia => 'All of Australia';
+
+  @override
+  String regionSubtitleRegionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count regions',
+      one: '1 region',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regionSubtitleUnknownSigns => 'unknown-region signs';
+
+  @override
   String wordVariationWithHint(int index, int count) {
     return 'විචලනය $index/$count · සැසඳීමට ස්වයිප් කරන්න';
   }

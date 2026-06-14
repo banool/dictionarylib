@@ -1070,6 +1070,26 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'Most signs aren\'t tagged with a region, so leaving this on keeps them in your revision.';
 
   @override
+  String get regionSheetUnknownSignsTitle => 'Signs with unknown region';
+
+  @override
+  String get regionSubtitleAllAustralia => 'All of Australia';
+
+  @override
+  String regionSubtitleRegionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count regions',
+      one: '1 region',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regionSubtitleUnknownSigns => 'unknown-region signs';
+
+  @override
   String wordVariationWithHint(int index, int count) {
     return 'Variation $index of $count';
   }
@@ -1102,7 +1122,13 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String sessionCompleteHeadline(int count) {
-    return 'Nice work — that\'s $count signs revised';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count signs revised',
+      one: '1 sign revised',
+    );
+    return 'Nice work — that\'s $_temp0';
   }
 
   @override

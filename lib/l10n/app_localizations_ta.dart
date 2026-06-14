@@ -1095,6 +1095,26 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'பெரும்பாலான சைகைகளுக்கு பகுதி குறிச்சொல் இல்லை, எனவே இதை இயக்கி வைப்பது அவற்றை உங்கள் திருத்தத்தில் வைத்திருக்கும்.';
 
   @override
+  String get regionSheetUnknownSignsTitle => 'Signs with unknown region';
+
+  @override
+  String get regionSubtitleAllAustralia => 'All of Australia';
+
+  @override
+  String regionSubtitleRegionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count regions',
+      one: '1 region',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regionSubtitleUnknownSigns => 'unknown-region signs';
+
+  @override
   String wordVariationWithHint(int index, int count) {
     return 'மாறுபாடு $index/$count · ஒப்பிட ஸ்வைப் செய்யவும்';
   }
