@@ -1233,4 +1233,22 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get webVideoLoadError => 'Couldn\'t load this video.';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get deviceDefault => 'Device default';
+
+  @override
+  String get wordDataMissing => 'No data available for this language.';
+
+  @override
+  String get wordNoDefinitions => 'No definitions available.';
+
+  @override
+  String get flashcardsAllOfSriLanka => 'All of Sri Lanka';
+
+  @override
+  String get flashcardsNorthEast => 'North East';
 }

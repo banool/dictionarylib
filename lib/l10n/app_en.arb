@@ -583,5 +583,11 @@
     "videoCarouselNext": "Next video",
     "variationPrevious": "Previous variation",
     "variationNext": "Next variation",
-    "webVideoLoadError": "Couldn't load this video."
+    "webVideoLoadError": "Couldn't load this video.",
+    "settingsLanguage": "Language",
+    "deviceDefault": "Device default",
+    "wordDataMissing": "No data available for this language.",
+    "wordNoDefinitions": "No definitions available.",
+    "flashcardsAllOfSriLanka": "All of Sri Lanka",
+    "flashcardsNorthEast": "North East"
 }

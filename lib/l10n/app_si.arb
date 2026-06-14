@@ -374,5 +374,15 @@
     "videoCarouselNext": "ඊළඟ වීඩියෝව",
     "variationPrevious": "පෙර විචලනය",
     "variationNext": "ඊළඟ විචලනය",
-    "webVideoLoadError": "මෙම වීඩියෝව පූරණය කළ නොහැක."
+    "webVideoLoadError": "මෙම වීඩියෝව පූරණය කළ නොහැක.",
+    "regionSheetUnknownSignsTitle": "කලාපය නොදන්නා සංඥා",
+    "regionSubtitleAllAustralia": "මුළු ඕස්ට්‍රේලියාව",
+    "regionSubtitleRegionCount": "{count, plural, =1{කලාප 1} other{කලාප {count}}}",
+    "regionSubtitleUnknownSigns": "කලාපය නොදන්නා සංඥා",
+    "settingsLanguage": "භාෂාව",
+    "deviceDefault": "උපාංගයේ පෙරනිමිය",
+    "wordDataMissing": "මෙම භාෂාව සඳහා දත්ත නොමැත.",
+    "wordNoDefinitions": "අර්ථ දැක්වීම් නොමැත.",
+    "flashcardsAllOfSriLanka": "මුළු ශ්‍රී ලංකාව",
+    "flashcardsNorthEast": "උතුරු නැගෙනහිර"
 }

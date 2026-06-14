@@ -2146,6 +2146,42 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t load this video.'**
   String get webVideoLoadError;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// No description provided for @deviceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Device default'**
+  String get deviceDefault;
+
+  /// No description provided for @wordDataMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available for this language.'**
+  String get wordDataMissing;
+
+  /// No description provided for @wordNoDefinitions.
+  ///
+  /// In en, this message translates to:
+  /// **'No definitions available.'**
+  String get wordNoDefinitions;
+
+  /// No description provided for @flashcardsAllOfSriLanka.
+  ///
+  /// In en, this message translates to:
+  /// **'All of Sri Lanka'**
+  String get flashcardsAllOfSriLanka;
+
+  /// No description provided for @flashcardsNorthEast.
+  ///
+  /// In en, this message translates to:
+  /// **'North East'**
+  String get flashcardsNorthEast;
 }
 
 class _DictLibLocalizationsDelegate

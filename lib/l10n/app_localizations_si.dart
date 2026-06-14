@@ -1081,24 +1081,24 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'බොහෝ සංඥා කලාපයකට ටැග් කර නැත, එබැවින් මෙය සක්‍රීයව තැබීමෙන් ඒවා ඔබගේ සංශෝධනයේ රඳවා ගනී.';
 
   @override
-  String get regionSheetUnknownSignsTitle => 'Signs with unknown region';
+  String get regionSheetUnknownSignsTitle => 'කලාපය නොදන්නා සංඥා';
 
   @override
-  String get regionSubtitleAllAustralia => 'All of Australia';
+  String get regionSubtitleAllAustralia => 'මුළු ඕස්ට්‍රේලියාව';
 
   @override
   String regionSubtitleRegionCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count regions',
-      one: '1 region',
+      other: 'කලාප $count',
+      one: 'කලාප 1',
     );
     return '$_temp0';
   }
 
   @override
-  String get regionSubtitleUnknownSigns => 'unknown-region signs';
+  String get regionSubtitleUnknownSigns => 'කලාපය නොදන්නා සංඥා';
 
   @override
   String wordVariationWithHint(int index, int count) {
@@ -1239,4 +1239,22 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get webVideoLoadError => 'මෙම වීඩියෝව පූරණය කළ නොහැක.';
+
+  @override
+  String get settingsLanguage => 'භාෂාව';
+
+  @override
+  String get deviceDefault => 'උපාංගයේ පෙරනිමිය';
+
+  @override
+  String get wordDataMissing => 'මෙම භාෂාව සඳහා දත්ත නොමැත.';
+
+  @override
+  String get wordNoDefinitions => 'අර්ථ දැක්වීම් නොමැත.';
+
+  @override
+  String get flashcardsAllOfSriLanka => 'මුළු ශ්‍රී ලංකාව';
+
+  @override
+  String get flashcardsNorthEast => 'උතුරු නැගෙනහිර';
 }

@@ -1095,24 +1095,24 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'பெரும்பாலான சைகைகளுக்கு பகுதி குறிச்சொல் இல்லை, எனவே இதை இயக்கி வைப்பது அவற்றை உங்கள் திருத்தத்தில் வைத்திருக்கும்.';
 
   @override
-  String get regionSheetUnknownSignsTitle => 'Signs with unknown region';
+  String get regionSheetUnknownSignsTitle => 'அறியப்படாத பகுதி கொண்ட சைகைகள்';
 
   @override
-  String get regionSubtitleAllAustralia => 'All of Australia';
+  String get regionSubtitleAllAustralia => 'முழு ஆஸ்திரேலியா';
 
   @override
   String regionSubtitleRegionCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count regions',
-      one: '1 region',
+      other: '$count பகுதிகள்',
+      one: '1 பகுதி',
     );
     return '$_temp0';
   }
 
   @override
-  String get regionSubtitleUnknownSigns => 'unknown-region signs';
+  String get regionSubtitleUnknownSigns => 'அறியப்படாத பகுதி சைகைகள்';
 
   @override
   String wordVariationWithHint(int index, int count) {
@@ -1257,4 +1257,22 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get webVideoLoadError => 'இந்த வீடியோவை ஏற்ற முடியவில்லை.';
+
+  @override
+  String get settingsLanguage => 'மொழி';
+
+  @override
+  String get deviceDefault => 'சாதன இயல்புநிலை';
+
+  @override
+  String get wordDataMissing => 'இந்த மொழிக்கான தரவு எதுவும் இல்லை.';
+
+  @override
+  String get wordNoDefinitions => 'வரையறைகள் எதுவும் இல்லை.';
+
+  @override
+  String get flashcardsAllOfSriLanka => 'முழு இலங்கை';
+
+  @override
+  String get flashcardsNorthEast => 'வடகிழக்கு';
 }

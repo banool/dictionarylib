@@ -374,5 +374,15 @@
     "videoCarouselNext": "அடுத்த வீடியோ",
     "variationPrevious": "முந்தைய மாறுபாடு",
     "variationNext": "அடுத்த மாறுபாடு",
-    "webVideoLoadError": "இந்த வீடியோவை ஏற்ற முடியவில்லை."
+    "webVideoLoadError": "இந்த வீடியோவை ஏற்ற முடியவில்லை.",
+    "regionSheetUnknownSignsTitle": "அறியப்படாத பகுதி கொண்ட சைகைகள்",
+    "regionSubtitleAllAustralia": "முழு ஆஸ்திரேலியா",
+    "regionSubtitleRegionCount": "{count, plural, =1{1 பகுதி} other{{count} பகுதிகள்}}",
+    "regionSubtitleUnknownSigns": "அறியப்படாத பகுதி சைகைகள்",
+    "settingsLanguage": "மொழி",
+    "deviceDefault": "சாதன இயல்புநிலை",
+    "wordDataMissing": "இந்த மொழிக்கான தரவு எதுவும் இல்லை.",
+    "wordNoDefinitions": "வரையறைகள் எதுவும் இல்லை.",
+    "flashcardsAllOfSriLanka": "முழு இலங்கை",
+    "flashcardsNorthEast": "வடகிழக்கு"
 }
