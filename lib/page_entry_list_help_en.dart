@@ -44,5 +44,37 @@ Widget getEntryListHelpPageEn() {
           "do not show that button when visiting a word from a list (unless that list "
           "is your Favourites)."
     ],
+    "How do I share this list?": [
+      "Tap the share icon in the top right of the list. The first time, we'll ask "
+          "you to pick a display name so people know what they're following, then "
+          "give you a share link to send around (along with a QR code for sharing in "
+          "person). Tapping the share icon again later brings the link back up.",
+      "Anyone who opens the link can subscribe and will follow along with your "
+          "edits. Sharing needs an account, so you'll be asked to sign in the first "
+          "time.",
+      "To stop sharing, open the share link again and choose to unshare. The list "
+          "stays on your device — it just stops syncing, and anyone who was "
+          "following it will see it as removed.",
+    ],
+    "How do I let someone else help edit my list?": [
+      "Open the list and tap the people icon in the top right to see its members. "
+          "As the owner you can invite an editor from here, and we'll generate an "
+          "invite link to send them. Invites expire after a while, so it's best to "
+          "send one when the person is ready to accept it.",
+      "Once they accept, they can add and remove words just like you can, and "
+          "everyone's changes sync together. You can remove an editor at any time "
+          "from that same members page, and an editor can choose to leave a list "
+          "they no longer want to help with.",
+      "Inviting an editor needs an account on both sides. Simply following a list "
+          "to read it does not.",
+    ],
+    "I'm following a list someone shared — why can't I edit it?": [
+      "When you subscribe to someone else's shared list, you get a read-only copy "
+          "that follows their changes, so the edit (pencil) option isn't shown. "
+          "Editing is kept to the owner and anyone they've invited as an editor.",
+      "If you'd like to help look after the list, ask the owner to invite you as an "
+          "editor. If you just want a copy you can change freely, you can always "
+          "make a new list of your own and add the words you want.",
+    ],
   });
 }
