@@ -122,15 +122,17 @@ class _HearthTokens {
     faint: Color(0xFF9A8B7D),
     outline: Color(0xFFE7D8C9),
     faintOutline: Color(0xFFF0E5D9),
-    primary: Color(0xFFBF5C36),
+    // Refined 2026-06-14 (Hearth refinement handoff): a calmer clay that sheds
+    // chroma so it stops competing with content. Neutrals are untouched.
+    primary: Color(0xFFB06544),
     onPrimary: Color(0xFFFFFFFF),
-    primaryCont: Color(0xFFF7DFD1),
-    onPrimaryCont: Color(0xFF56230F),
-    accent: Color(0xFFC98A2E),
+    primaryCont: Color(0xFFF6D9C8),
+    onPrimaryCont: Color(0xFF5A2410),
+    accent: Color(0xFFAE8143),
     success: Color(0xFF2E7D58),
     successCont: Color(0xFFD6ECE0),
     onSuccess: Color(0xFF0E3B27),
-    danger: Color(0xFFB23A2C),
+    danger: Color(0xFFA5483E),
     dangerCont: Color(0xFFF6DBD6),
     onDanger: Color(0xFF5A170F),
     appbar: Color(0xFFFBF5EE),
@@ -151,15 +153,20 @@ class _HearthTokens {
     faint: Color(0xFF998A7B),
     outline: Color(0xFF4E3D30),
     faintOutline: Color(0xFF382C22),
-    primary: Color(0xFFE89070),
-    onPrimary: Color(0xFF46190A),
-    primaryCont: Color(0xFF6A3320),
-    onPrimaryCont: Color(0xFFFBDFD2),
-    accent: Color(0xFFE6B65F),
-    success: Color(0xFF86CBA6),
+    // Refined 2026-06-14 (Hearth refinement handoff): the dark-mode orange was
+    // too bright and leaned pink ("neon coral"); pulling lightness/chroma down
+    // and the hue toward true clay makes it read as a glowing ember. Danger was
+    // nearly identical to primary — now a deeper red so destructive actions are
+    // distinct. Neutrals are untouched.
+    primary: Color(0xFFD48E73),
+    onPrimary: Color(0xFF3A1206),
+    primaryCont: Color(0xFF714131),
+    onPrimaryCont: Color(0xFFF5DCCC),
+    accent: Color(0xFFDBBA82),
+    success: Color(0xFF95C8AE),
     successCont: Color(0xFF234234),
     onSuccess: Color(0xFFD8F0E3),
-    danger: Color(0xFFEC9385),
+    danger: Color(0xFFD3746E),
     dangerCont: Color(0xFF4A211B),
     onDanger: Color(0xFFF7DBD5),
     appbar: Color(0xFF221A15),
@@ -435,7 +442,9 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: inputBorder(Colors.transparent, 0),
       enabledBorder: inputBorder(t.outline, 1),
-      focusedBorder: inputBorder(t.primary, 2),
+      // Softened from 2px to 1.5px (Hearth refinement) so the focus ring eases
+      // on rather than snapping to a hard saturated border.
+      focusedBorder: inputBorder(t.primary, 1.5),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: const WidgetStatePropertyAll(Colors.white),
