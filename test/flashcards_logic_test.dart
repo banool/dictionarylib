@@ -539,6 +539,29 @@ void main() {
       expect(stored.single, startsWith('Sri Lanka$_sep/media/11450.mp4==='));
     });
 
+    test(
+        'a filename whose pre-hyphen prefix is also an entry resolves to the '
+        'real (suffix) entry, not the prefix one', () async {
+      // Real SLSL data has filenames like "cold-snobbish_NE_Reg.mp4" while
+      // "cold" is itself an entry. The review belongs to the master's SUFFIX
+      // ("snobbish"); a hyphen-first resolver with a first-video fallback would
+      // mis-attribute it to "cold". A strong (video-confirmed) match must win
+      // over the weak fallback.
+      keyedByEnglishEntriesGlobal['cold'] =
+          FakeEntry('cold', videos: const ['/media/cold.mp4']);
+      keyedByEnglishEntriesGlobal['snobbish'] = FakeEntry('snobbish',
+          videos: const ['/media/cold-snobbish_NE_Reg.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('cold-snobbish_NE_Reg.mp4snobbish'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single,
+          startsWith('snobbish$_sep/media/cold-snobbish_NE_Reg.mp4==='));
+    });
+
     test('the resolved master equals savedVideoMasterId for the same video',
         () async {
       // The migration output must be string-equal to the id the runtime

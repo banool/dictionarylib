@@ -424,12 +424,20 @@ Future<void> migrateLegacyReviewsIfNeeded() async {
 ///   - Auslan: `<entryKey>-<videoSuffix>` — entry key first, '-' separator.
 ///   - SLSL:   `<video><entryKey>` — the video first, the entry key a
 ///     trailing suffix, no separator (`sorted(videos)[0] + entryKey`).
-/// Auslan's shape is tried first; an Auslan master always resolves there,
-/// so the SLSL suffix scan only runs for masters the hyphen shape can't
-/// resolve (which is every SLSL master, and nothing Auslan produces).
+///
+/// A **video-confirmed (strong)** match of either shape is preferred over an
+/// **entry-only (fallback)** match of either shape. That ordering matters
+/// because SLSL filenames can themselves contain a word that is also an entry
+/// key (e.g. `"cold-snobbish_NE_Reg.mp4"` while `"cold"` is an entry): a
+/// hyphen-first resolver with a first-video fallback would mis-attribute the
+/// review for `"snobbish"` to `"cold"`. Trying every strong match before any
+/// fallback lets the real owner — whose media filename actually matches — win.
+/// Auslan masters resolve at the first strong step regardless.
 String? _tryMigrateLegacyMaster(String legacyMaster) {
-  return _resolveHyphenPrefixMaster(legacyMaster) ??
-      _resolveSuffixEntryKeyMaster(legacyMaster);
+  return _resolveHyphenPrefixMaster(legacyMaster, strict: true) ??
+      _resolveSuffixEntryKeyMaster(legacyMaster, strict: true) ??
+      _resolveHyphenPrefixMaster(legacyMaster, strict: false) ??
+      _resolveSuffixEntryKeyMaster(legacyMaster, strict: false);
 }
 
 /// Auslan shape: `<entryKey>-<videoSuffix>`.
@@ -439,7 +447,12 @@ String? _tryMigrateLegacyMaster(String legacyMaster) {
 /// exist in the dictionary — without this, a v1 review for
 /// `"welsh-corgi"` would silently rewrite to `"welsh"` and the review
 /// would attach to the wrong entry forever.
-String? _resolveHyphenPrefixMaster(String legacyMaster) {
+///
+/// When [strict], only a video-confirmed match counts; the entry-exists
+/// first-video fallback is skipped (it's deferred to a later, lower-priority
+/// pass — see [_tryMigrateLegacyMaster]).
+String? _resolveHyphenPrefixMaster(String legacyMaster,
+    {required bool strict}) {
   var idx = legacyMaster.lastIndexOf('-');
   while (idx >= 0) {
     final candidate = legacyMaster.substring(0, idx);
@@ -454,14 +467,16 @@ String? _resolveHyphenPrefixMaster(String legacyMaster) {
           }
         }
       }
-      // Tail didn't match any media path — fall back to the entry's
-      // first sub-entry's first video so a stored review keeps some
-      // signal instead of being dropped wholesale. Best-effort.
-      for (final sub in entry.getSubEntries()) {
-        final media = sub.getMedia();
-        if (media.isNotEmpty) {
-          return savedVideoMasterId(
-              SavedVideo(entryKey: candidate, mediaPath: media.first));
+      if (!strict) {
+        // Tail didn't match any media path — fall back to the entry's
+        // first sub-entry's first video so a stored review keeps some
+        // signal instead of being dropped wholesale. Best-effort.
+        for (final sub in entry.getSubEntries()) {
+          final media = sub.getMedia();
+          if (media.isNotEmpty) {
+            return savedVideoMasterId(
+                SavedVideo(entryKey: candidate, mediaPath: media.first));
+          }
         }
       }
     }
@@ -478,11 +493,13 @@ String? _resolveHyphenPrefixMaster(String legacyMaster) {
 /// suffix of [legacyMaster], **longest first** so e.g. `"Sri Lanka"` wins
 /// over `"Lanka"`. The leading remainder is the old stored video
 /// reference (a bare filename in SLSL's data, e.g. `"11450.mp4"`); it is
-/// matched to one of that entry's current media paths by filename, with a
-/// best-effort fall back to the entry's first video — mirroring the
-/// hyphen resolver so an upgrading user keeps the review rather than
-/// losing it.
-String? _resolveSuffixEntryKeyMaster(String legacyMaster) {
+/// matched to one of that entry's current media paths by filename.
+///
+/// When [strict], only a video-confirmed (filename) match counts; the
+/// entry-exists first-video fallback is skipped (deferred to the final pass —
+/// see [_tryMigrateLegacyMaster]).
+String? _resolveSuffixEntryKeyMaster(String legacyMaster,
+    {required bool strict}) {
   // Entries whose key is a proper suffix of the master, longest first.
   final candidates = <Entry>[
     for (final entry in keyedByEnglishEntriesGlobal.values)
@@ -508,7 +525,7 @@ String? _resolveSuffixEntryKeyMaster(String legacyMaster) {
     }
     // Remember the longest-suffix entry's first video as a fallback in
     // case no candidate's filename matches any current media path.
-    if (fallback == null) {
+    if (!strict && fallback == null) {
       for (final sub in entry.getSubEntries()) {
         final media = sub.getMedia();
         if (media.isNotEmpty) {
