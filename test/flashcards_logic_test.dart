@@ -438,4 +438,124 @@ void main() {
       expect(stored.single, v3);
     });
   });
+
+  // SLSL stores review masters as "<video><entryKey>" (MySubEntry.getKey =
+  // sorted(videos)[0] + entryKey) — the inverse of Auslan's
+  // "<entryKey>-<video>". These guarantee an upgrading SLSL user's flashcard
+  // history survives. The stored video half is a bare filename ("11450.mp4");
+  // the current dictionary exposes it as the path "/media/11450.mp4", so
+  // resolution is by filename.
+  group('migrateLegacyReviewsIfNeeded — SLSL suffix-shaped masters', () {
+    test('"<filename><entryKey>" resolves to the media path by filename',
+        () async {
+      keyedByEnglishEntriesGlobal['Sri Lanka'] =
+          FakeEntry('Sri Lanka', videos: const ['/media/11450.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('11450.mp4Sri Lanka'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, startsWith('Sri Lanka$_sep/media/11450.mp4==='));
+    });
+
+    test('a multi-word entry key with a space resolves via the suffix match',
+        () async {
+      keyedByEnglishEntriesGlobal['good morning'] =
+          FakeEntry('good morning', videos: const ['/media/77.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('77.mp4good morning'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, startsWith('good morning$_sep/media/77.mp4==='));
+    });
+
+    test('the longest entry-key suffix wins ("Sri Lanka" over "Lanka")',
+        () async {
+      // Both exist and end the master; a naive shortest/any match would
+      // mis-attribute the review to "Lanka" forever.
+      keyedByEnglishEntriesGlobal['Lanka'] =
+          FakeEntry('Lanka', videos: const ['/media/lanka.mp4']);
+      keyedByEnglishEntriesGlobal['Sri Lanka'] =
+          FakeEntry('Sri Lanka', videos: const ['/media/11450.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('11450.mp4Sri Lanka'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, startsWith('Sri Lanka$_sep/media/11450.mp4==='));
+    });
+
+    test('an old full-URL video form still resolves by trailing filename',
+        () async {
+      // Some installs stored the video half as a full URL rather than a
+      // bare filename; the trailing filename still pins the media path.
+      keyedByEnglishEntriesGlobal['Sri Lanka'] =
+          FakeEntry('Sri Lanka', videos: const ['/media/11450.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview(
+            'https://srilankansignlanguage.org/media/11450.mp4Sri Lanka'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, startsWith('Sri Lanka$_sep/media/11450.mp4==='));
+    });
+
+    test('entry matched but the filename is unknown → first-video fallback',
+        () async {
+      keyedByEnglishEntriesGlobal['Sri Lanka'] =
+          FakeEntry('Sri Lanka', videos: const ['/media/real.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('99999.mp4Sri Lanka'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored.single, startsWith('Sri Lanka$_sep/media/real.mp4==='));
+    });
+
+    test('a master whose entry is gone is dropped (others survive, no crash)',
+        () async {
+      keyedByEnglishEntriesGlobal['Sri Lanka'] =
+          FakeEntry('Sri Lanka', videos: const ['/media/11450.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('11450.mp4Sri Lanka'),
+        encodeFakeReview('123.mp4Vanished Word'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      expect(stored, hasLength(1));
+      expect(stored.single, startsWith('Sri Lanka$_sep/media/11450.mp4==='));
+    });
+
+    test('the resolved master equals savedVideoMasterId for the same video',
+        () async {
+      // The migration output must be string-equal to the id the runtime
+      // generates for a fresh save, so a migrated review lines up with the
+      // new per-video master in future flashcard sessions.
+      keyedByEnglishEntriesGlobal['Sri Lanka'] =
+          FakeEntry('Sri Lanka', videos: const ['/media/11450.mp4']);
+      await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+        encodeFakeReview('11450.mp4Sri Lanka'),
+      ]);
+
+      await migrateLegacyReviewsIfNeeded();
+
+      final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
+      final expected = savedVideoMasterId(
+          SavedVideo(entryKey: 'Sri Lanka', mediaPath: '/media/11450.mp4'));
+      expect(decodeReview(stored.single).master, expected);
+    });
+  });
 }

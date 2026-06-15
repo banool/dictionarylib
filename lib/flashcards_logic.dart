@@ -415,16 +415,31 @@ Future<void> migrateLegacyReviewsIfNeeded() async {
       '$unchanged unchanged, $dropped dropped (of ${encoded.length} total)');
 }
 
-/// Try to rewrite a v1 master id `<entryKey>-<videoSuffix>` to the v2
-/// shape. Returns the v2 master id on success, null when nothing
-/// resolves.
+/// Try to rewrite a v1 master id to the current `<entryKey>\x1F<mediaPath>`
+/// shape. Returns the resolved master id on success, null when nothing
+/// resolves (the caller drops the review).
+///
+/// Two historical v1 shapes exist, produced by the two apps' differing
+/// `SubEntry.getKey`:
+///   - Auslan: `<entryKey>-<videoSuffix>` — entry key first, '-' separator.
+///   - SLSL:   `<video><entryKey>` — the video first, the entry key a
+///     trailing suffix, no separator (`sorted(videos)[0] + entryKey`).
+/// Auslan's shape is tried first; an Auslan master always resolves there,
+/// so the SLSL suffix scan only runs for masters the hyphen shape can't
+/// resolve (which is every SLSL master, and nothing Auslan produces).
+String? _tryMigrateLegacyMaster(String legacyMaster) {
+  return _resolveHyphenPrefixMaster(legacyMaster) ??
+      _resolveSuffixEntryKeyMaster(legacyMaster);
+}
+
+/// Auslan shape: `<entryKey>-<videoSuffix>`.
 ///
 /// Walks `-` positions **rightmost first** so that a hyphenated entry
 /// key like `"welsh-corgi"` wins over the shorter `"welsh"` when both
 /// exist in the dictionary — without this, a v1 review for
 /// `"welsh-corgi"` would silently rewrite to `"welsh"` and the review
 /// would attach to the wrong entry forever.
-String? _tryMigrateLegacyMaster(String legacyMaster) {
+String? _resolveHyphenPrefixMaster(String legacyMaster) {
   var idx = legacyMaster.lastIndexOf('-');
   while (idx >= 0) {
     final candidate = legacyMaster.substring(0, idx);
@@ -453,6 +468,58 @@ String? _tryMigrateLegacyMaster(String legacyMaster) {
     idx = legacyMaster.lastIndexOf('-', idx - 1);
   }
   return null;
+}
+
+/// SLSL shape: `<video><entryKey>` — the video reference first, the entry
+/// key a trailing suffix, no separator (`MySubEntry.getKey` returns
+/// `sorted(videos)[0] + entryKey`).
+///
+/// The entry key is recovered by testing which dictionary keys are a
+/// suffix of [legacyMaster], **longest first** so e.g. `"Sri Lanka"` wins
+/// over `"Lanka"`. The leading remainder is the old stored video
+/// reference (a bare filename in SLSL's data, e.g. `"11450.mp4"`); it is
+/// matched to one of that entry's current media paths by filename, with a
+/// best-effort fall back to the entry's first video — mirroring the
+/// hyphen resolver so an upgrading user keeps the review rather than
+/// losing it.
+String? _resolveSuffixEntryKeyMaster(String legacyMaster) {
+  // Entries whose key is a proper suffix of the master, longest first.
+  final candidates = <Entry>[
+    for (final entry in keyedByEnglishEntriesGlobal.values)
+      if (entry.getKey().isNotEmpty &&
+          entry.getKey().length < legacyMaster.length &&
+          legacyMaster.endsWith(entry.getKey()))
+        entry,
+  ]..sort((a, b) => b.getKey().length.compareTo(a.getKey().length));
+
+  String? fallback;
+  for (final entry in candidates) {
+    final key = entry.getKey();
+    final video = legacyMaster.substring(0, legacyMaster.length - key.length);
+    final fileName = video.split('/').last;
+    for (final sub in entry.getSubEntries()) {
+      for (final path in sub.getMedia()) {
+        if (path == video ||
+            path.endsWith(video) ||
+            path.split('/').last == fileName) {
+          return savedVideoMasterId(SavedVideo(entryKey: key, mediaPath: path));
+        }
+      }
+    }
+    // Remember the longest-suffix entry's first video as a fallback in
+    // case no candidate's filename matches any current media path.
+    if (fallback == null) {
+      for (final sub in entry.getSubEntries()) {
+        final media = sub.getMedia();
+        if (media.isNotEmpty) {
+          fallback = savedVideoMasterId(
+              SavedVideo(entryKey: key, mediaPath: media.first));
+          break;
+        }
+      }
+    }
+  }
+  return fallback;
 }
 
 List<Review> readReviews() {
