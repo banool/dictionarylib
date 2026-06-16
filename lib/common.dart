@@ -511,6 +511,27 @@ Text getText(String s, {bool larger = false, Color? color}) {
   );
 }
 
+/// Route path for an entry page. The entry's key (its English phrase) is the
+/// `:key` path segment; `?variation=N&video=M` optionally deep-link to a
+/// specific sub-entry / video within it. Shared by both apps' routers.
+const String WORD_ROUTE = "/word";
+
+/// Non-URL-serialisable args carried to the [WORD_ROUTE] page by an in-app
+/// navigation (the entry object is re-resolved from the URL key, but these
+/// can't be). Absent on a cold deep link, where the route falls back to
+/// sensible defaults (full UI, no focused video, no save-to-list target).
+class EntryPageArgs {
+  const EntryPageArgs({
+    this.showFavouritesButton = true,
+    this.focusVideo,
+    this.saveToList,
+  });
+
+  final bool showFavouritesButton;
+  final SavedVideo? focusVideo;
+  final EntryList? saveToList;
+}
+
 typedef NavigateToEntryPageFn = Future<void> Function(
   BuildContext context,
   Entry entry,
