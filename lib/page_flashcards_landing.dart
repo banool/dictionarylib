@@ -6,6 +6,7 @@ import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
+import 'package:dictionarylib/page_flashcards.dart';
 import 'package:dictionarylib/page_revision_history.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
@@ -44,10 +45,21 @@ abstract class FlashcardsLandingPageController {
     }
   }
 
+  /// The per-app rendering config for the shared [FlashcardsPage] — video
+  /// aspect ratio, region rendering, app-bar extras, and the open-entry
+  /// navigation. Supplied by each app; the page itself is shared.
+  FlashcardsConfig get flashcardsConfig;
+
   Widget buildFlashcardsPage(
-      {required DolphinInformation dolphinInformation,
-      required RevisionStrategy revisionStrategy,
-      required List<Review> existingReviews});
+          {required DolphinInformation dolphinInformation,
+          required RevisionStrategy revisionStrategy,
+          required List<Review> existingReviews}) =>
+      FlashcardsPage(
+        di: dolphinInformation,
+        revisionStrategy: revisionStrategy,
+        existingReviews: existingReviews,
+        config: flashcardsConfig,
+      );
 
   Widget buildHelpPage(BuildContext context);
 
