@@ -1275,4 +1275,22 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get flashcardsNorthEast => 'வடகிழக்கு';
+
+  @override
+  String get videoStatusCurrent => 'தற்போதைய';
+
+  @override
+  String get videoStatusHistorical => 'வரலாற்று';
+
+  @override
+  String get sourceFieldResearched => 'ஆராய்ந்த';
+
+  @override
+  String get sourceFieldRecorded => 'பதிவுசெய்த';
+
+  @override
+  String get sourceFieldPublished => 'வெளியிட்ட';
+
+  @override
+  String get sourceFieldSource => 'ஆதாரம்';
 }

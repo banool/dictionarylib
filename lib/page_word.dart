@@ -11,6 +11,7 @@ import 'hearth.dart';
 import 'lists_service.dart';
 import 'save_video_sheet.dart';
 import 'saved_video.dart';
+import 'theme.dart';
 import 'video_player_screen.dart';
 import 'web_drag_scroll_behavior.dart';
 
@@ -391,6 +392,349 @@ Widget _definitionsList(
   );
 }
 
+/// The resolved colours for a video-status pill / chip. `CURRENT` reuses the
+/// theme's success (tertiary) slots; `HISTORICAL` uses the bespoke historical
+/// tint from [HearthColors] (with a hard light-mode fallback for any theme that
+/// somehow lacks the extension) over the accent (secondary) dot; any unknown
+/// future token falls back to a neutral surface so a new status never crashes
+/// or looks broken.
+class _StatusStyle {
+  const _StatusStyle(this.background, this.foreground, this.dot);
+  final Color background;
+  final Color foreground;
+  final Color dot;
+}
+
+_StatusStyle _statusStyle(BuildContext context, String status) {
+  final cs = Theme.of(context).colorScheme;
+  switch (status) {
+    case "CURRENT":
+      return _StatusStyle(
+          cs.tertiaryContainer, cs.onTertiaryContainer, cs.tertiary);
+    case "HISTORICAL":
+      final h = Theme.of(context).extension<HearthColors>();
+      return _StatusStyle(
+        h?.historicalContainer ?? const Color(0xFFE8D6B9),
+        h?.onHistoricalContainer ?? const Color(0xFF5E4321),
+        cs.secondary,
+      );
+    default:
+      return _StatusStyle(
+          cs.surfaceContainerHighest, cs.onSurfaceVariant, cs.outline);
+  }
+}
+
+/// The localised pill / chip label for a status token. Unknown tokens fall back
+/// to the raw token (shown uppercased) rather than throwing.
+String _statusLabel(BuildContext context, String status) {
+  final l = DictLibLocalizations.of(context)!;
+  switch (status) {
+    case "CURRENT":
+      return l.videoStatusCurrent;
+    case "HISTORICAL":
+      return l.videoStatusHistorical;
+    default:
+      return status;
+  }
+}
+
+/// The status pill overlaid on the current carousel video (top-left). A
+/// coloured dot + uppercase status label; tapping opens the source sheet. A
+/// transparent ≥44×44 hit area wraps the ~27px-tall visual for accessibility,
+/// while the inked pill itself keeps the native tap ripple.
+class _VideoStatusPill extends StatelessWidget {
+  const _VideoStatusPill({required this.item, required this.onTap});
+
+  final MediaItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = item.status ?? "";
+    final style = _statusStyle(context, status);
+    final label = _statusLabel(context, status);
+    final pill = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: style.background,
+        borderRadius: BorderRadius.circular(kRadiusPill),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(40, 24, 14, 0.16),
+            blurRadius: 7,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: style.dot),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.44, // 0.04em at 11px.
+              color: style.foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          alignment: Alignment.topLeft,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(kRadiusPill),
+              child: pill,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Open the read-only source & date sheet for [item]. The rounded top and
+/// surface come from the theme's `bottomSheetTheme`; the scrim is the Hearth
+/// `scrim` token. Dismiss by drag-down, scrim tap, or the close button.
+void _showVideoSourceSheet(BuildContext context, MediaItem item) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    barrierColor: Theme.of(context).colorScheme.scrim,
+    builder: (ctx) => _SourceSheet(item: item),
+  );
+}
+
+/// The "source & date sheet": a grabber, a header (status chip + derived title +
+/// close button), the populated metadata rows (Researched / Recorded /
+/// Published / Source, in that fixed order), and — only if the admin wrote one —
+/// a free-text note card. Absent fields are omitted; an item with only a status
+/// shows just the header, intentionally.
+class _SourceSheet extends StatelessWidget {
+  const _SourceSheet({required this.item});
+
+  final MediaItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l = DictLibLocalizations.of(context)!;
+
+    final rows = <_SourceField>[
+      if (item.researched != null)
+        _SourceField(l.sourceFieldResearched, item.researched!),
+      if (item.recorded != null)
+        _SourceField(l.sourceFieldRecorded, item.recorded!),
+      if (item.published != null)
+        _SourceField(l.sourceFieldPublished, item.published!),
+      if (item.source != null) _SourceField(l.sourceFieldSource, item.source!),
+    ];
+    final note = item.note;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 12, 20, 26 + MediaQuery.of(context).viewInsets.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: cs.outline,
+                  borderRadius: BorderRadius.circular(kRadiusPill),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _StatusChip(item: item),
+                _CloseButton(onTap: () => Navigator.of(context).pop()),
+              ],
+            ),
+            if (rows.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              for (var i = 0; i < rows.length; i++)
+                _SourceRowWidget(
+                    field: rows[i], showDivider: i < rows.length - 1),
+            ],
+            if (note != null && note.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Text(
+                  note,
+                  style: tt.bodyMedium?.copyWith(
+                    fontSize: 12.5,
+                    height: 1.45,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The status chip in the sheet header — same palette as the pill, a touch
+/// smaller (padding 5×9, 10.5px label) per the handoff.
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.item});
+
+  final MediaItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = item.status ?? "";
+    final style = _statusStyle(context, status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: style.background,
+        borderRadius: BorderRadius.circular(kRadiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: style.dot),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            _statusLabel(context, status).toUpperCase(),
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.42, // 0.04em at 10.5px.
+              color: style.foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The sheet's close button: a 30×30 surfaceContainer circle with a muted
+/// close glyph. The scrim and drag-down also dismiss, so this stays compact.
+class _CloseButton extends StatelessWidget {
+  const _CloseButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: MaterialLocalizations.of(context).closeButtonTooltip,
+      child: Material(
+        color: cs.surfaceContainer,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: 30,
+            height: 30,
+            child: Icon(Icons.close, size: 18, color: cs.onSurfaceVariant),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One (label, value) pair shown in the source sheet.
+class _SourceField {
+  const _SourceField(this.label, this.value);
+  final String label;
+  final String value;
+}
+
+/// A single metadata row: a muted label on the left and the bold value
+/// (right-aligned, wraps) on the right, with a hairline divider below unless
+/// it's the last row.
+class _SourceRowWidget extends StatelessWidget {
+  const _SourceRowWidget({required this.field, required this.showDivider});
+
+  final _SourceField field;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                field.label,
+                style: TextStyle(fontSize: 13.5, color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  field.value,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          Divider(height: 1, thickness: 1, color: cs.outlineVariant),
+      ],
+    );
+  }
+}
+
 class SubEntryPage extends StatefulWidget {
   const SubEntryPage({
     super.key,
@@ -576,6 +920,22 @@ class SubEntryPageState extends State<SubEntryPage>
     // playable URL. Tapping the video expands it over a dimmed backdrop
     // (handled inside VideoPlayerScreen so the inline tile pauses + hides while
     // expanded — no second player); image (.jpg) recordings are skipped.
+    // Overlay the per-video status pill (Current / Historical) on each video
+    // that has a status. The player positions the overlay on the framed video
+    // itself (top-left), so it stays on the video as the carousel centres /
+    // letterboxes it; VideoPlayerScreen stays generic — it just paints an
+    // optional caller-supplied overlay per index and knows nothing about status.
+    final mediaItems = widget.subEntry.getMediaItems();
+    Widget? statusPillFor(int index) {
+      if (index < 0 || index >= mediaItems.length) return null;
+      final item = mediaItems[index];
+      if (!item.hasStatus) return null;
+      return _VideoStatusPill(
+        item: item,
+        onTap: () => _showVideoSourceSheet(context, item),
+      );
+    }
+
     final tappableVideo = VideoPlayerScreen(
       mediaLinks: widget.subEntry.getMedia().map(mediaUrlForPath).toList(),
       fallbackAspectRatio: widget.config.videoAspectRatio,
@@ -583,7 +943,9 @@ class SubEntryPageState extends State<SubEntryPage>
       onPageChanged: _onVideoChanged,
       expandOnTap: true,
       isActive: widget.isActive,
+      overlayBuilder: statusPillFor,
     );
+    final Widget videoWithPill = tappableVideo;
 
     Widget? bookmarkRow;
     final paths = widget.subEntry.getMedia();
@@ -608,7 +970,7 @@ class SubEntryPageState extends State<SubEntryPage>
       // Loose Flexible: the video keeps its natural size when there's room but
       // yields under pressure (e.g. a short transition frame during a route
       // pop) so the column never overflows. Definitions below is the Expanded.
-      children.add(Flexible(child: tappableVideo));
+      children.add(Flexible(child: videoWithPill));
       if (bookmarkRow != null) children.add(bookmarkRow);
       // Inner tier: which video within this variation (only if >1 recording).
       if (videoIndicator != null) children.add(videoIndicator);
@@ -657,7 +1019,7 @@ class SubEntryPageState extends State<SubEntryPage>
                         constraints: BoxConstraints(
                             maxHeight:
                                 pane.maxWidth / widget.config.videoAspectRatio),
-                        child: tappableVideo,
+                        child: videoWithPill,
                       ),
                     ),
                     if (bookmarkRow != null) bookmarkRow,

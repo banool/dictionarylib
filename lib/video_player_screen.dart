@@ -212,10 +212,18 @@ class VideoPlayerScreen extends StatefulWidget {
     this.onPageChanged,
     this.expandOnTap = false,
     this.isActive = true,
+    this.overlayBuilder,
   });
 
   final List<String> mediaLinks;
   final double fallbackAspectRatio;
+
+  /// Optional per-video overlay, painted at the top-left of the framed video
+  /// for the slide at [index] (returns null for no overlay). Positioned on the
+  /// video card itself — not the carousel viewport — so it stays put as the
+  /// video is centred / letterboxed. Kept caller-supplied so this player stays
+  /// generic; the entry page uses it for the Current / Historical status pill.
+  final Widget? Function(int index)? overlayBuilder;
 
   /// When true, tapping a (non-image) video opens it expanded over a dimmed
   /// backdrop via [showExpandedVideo]. The inline tile is paused and hidden
@@ -609,6 +617,23 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     if (wasPlaying) await pd?.player.play();
   }
 
+  /// Overlay the caller's per-video widget (see
+  /// [VideoPlayerScreen.overlayBuilder]) at the framed video's top-left, or
+  /// return [framed] unchanged when there's none. Stacked on the frame (not the
+  /// carousel viewport) so it tracks the video as it's centred / letterboxed.
+  Widget _withOverlay(int idx, Widget framed) {
+    final overlay = widget.overlayBuilder?.call(idx);
+    if (overlay == null) return framed;
+    return Stack(
+      children: [
+        framed,
+        // 15 from the frame's outer edge ≈ 10 from the video itself, since
+        // HearthVideoFrame insets the video by its 5px padding.
+        Positioned(top: 15, left: 15, child: overlay),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Web plays through package:video_player rather than media_kit — its
@@ -623,6 +648,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         onPageChanged: widget.onPageChanged,
         expandOnTap: widget.expandOnTap,
         isActive: widget.isActive,
+        overlayBuilder: widget.overlayBuilder,
       );
     }
     // Get height of screen to ensure that the video only takes up
@@ -704,32 +730,34 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                     constraints.maxHeight - verticalMargin * 2 - frameTotal;
                 videoWidth = videoHeight * videoAspectRatio;
               }
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: verticalMargin),
-                alignment: Alignment.center,
-                // The signing video framed as the hero (shared Hearth widget:
-                // soft surface card, subtle border + warm shadow, rounded
-                // video inside).
-                child: HearthVideoFrame(
-                  child: SizedBox(
-                    width: videoWidth,
-                    height: videoHeight,
-                    child: _videoOrScreenshotPoster(
-                      mediaLink,
-                      Video(
-                        controller: playerData.controller,
-                        // Loading indicator on initial load only, not on loop.
-                        controls: (state) => getLoadingVideoControls(
-                            state, playerData.hasPlayedOnce),
-                        // Letterbox while the real dimensions are still
-                        // loading (we size the box from fallbackAspectRatio
-                        // until then) rather than stretching a wrong-ratio
-                        // video with fill.
-                        fit: BoxFit.contain,
-                      ),
+              // The signing video framed as the hero (shared Hearth widget:
+              // soft surface card, subtle border + warm shadow, rounded video
+              // inside).
+              Widget framed = HearthVideoFrame(
+                child: SizedBox(
+                  width: videoWidth,
+                  height: videoHeight,
+                  child: _videoOrScreenshotPoster(
+                    mediaLink,
+                    Video(
+                      controller: playerData.controller,
+                      // Loading indicator on initial load only, not on loop.
+                      controls: (state) => getLoadingVideoControls(
+                          state, playerData.hasPlayedOnce),
+                      // Letterbox while the real dimensions are still
+                      // loading (we size the box from fallbackAspectRatio
+                      // until then) rather than stretching a wrong-ratio
+                      // video with fill.
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
+              );
+              framed = _withOverlay(idx, framed);
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: verticalMargin),
+                alignment: Alignment.center,
+                child: framed,
               );
             },
           );

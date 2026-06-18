@@ -49,6 +49,14 @@ abstract class SubEntry<R, D> {
   // in [mediaBaseUrls] rather than baking a host into the data.
   List<String> getMedia();
 
+  /// The media items in display order — each a [MediaItem] (a path plus optional
+  /// per-video versioning metadata). Defaults to bare items derived from
+  /// [getMedia] with no status, so the status pill stays hidden. Apps with
+  /// per-video versioning (SLSL) override this to attach status / dates /
+  /// source / note; index 0 is the current video (don't re-sort on the client).
+  List<MediaItem> getMediaItems() =>
+      getMedia().map((p) => MediaItem(path: p)).toList();
+
   List<String> getRelatedWords();
 
   // Gets definitions.
@@ -57,6 +65,47 @@ abstract class SubEntry<R, D> {
 
   // Return what regions this entry is appropriate for.
   List<R> getRegions();
+}
+
+/// One playable media item (video / image) plus optional per-video versioning
+/// metadata, surfaced by [SubEntry.getMediaItems].
+///
+/// [path] is the stable saved-video identity (see SavedVideo) — the same string
+/// [SubEntry.getMedia] returns, so saves keep resolving. [status] is an **open
+/// token** (`"CURRENT"` / `"HISTORICAL"` / future states); a null status means
+/// the app shows no status pill (e.g. Auslan, or legacy data without
+/// versioning). The date / source / note fields are free-form display strings —
+/// shown verbatim, never parsed.
+class MediaItem {
+  const MediaItem({
+    required this.path,
+    this.status,
+    this.researched,
+    this.recorded,
+    this.published,
+    this.source,
+    this.note,
+  });
+
+  final String path;
+  final String? status;
+  final String? researched;
+  final String? recorded;
+  final String? published;
+  final String? source;
+  final String? note;
+
+  /// Whether this item carries a status worth surfacing — the pill is shown
+  /// only when true.
+  bool get hasStatus => status != null;
+
+  /// Whether the source sheet has anything beyond the status/title to show.
+  bool get hasDetails =>
+      researched != null ||
+      recorded != null ||
+      published != null ||
+      source != null ||
+      note != null;
 }
 
 const LANGUAGE_CODE_ENGLISH = "en";

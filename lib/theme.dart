@@ -84,6 +84,9 @@ class _HearthTokens {
   final Color accent;
   final Color success, successCont, onSuccess;
   final Color danger, dangerCont, onDanger;
+  // The "historical" video-status tint (warm tan). No standard ColorScheme slot,
+  // so it's surfaced to widgets via the HearthColors theme extension below.
+  final Color historicalCont, onHistorical;
   final Color appbar, scrim, shadow;
 
   const _HearthTokens({
@@ -107,6 +110,8 @@ class _HearthTokens {
     required this.danger,
     required this.dangerCont,
     required this.onDanger,
+    required this.historicalCont,
+    required this.onHistorical,
     required this.appbar,
     required this.scrim,
     required this.shadow,
@@ -135,6 +140,8 @@ class _HearthTokens {
     danger: Color(0xFFA5483E),
     dangerCont: Color(0xFFF6DBD6),
     onDanger: Color(0xFF5A170F),
+    historicalCont: Color(0xFFE8D6B9),
+    onHistorical: Color(0xFF5E4321),
     appbar: Color(0xFFFBF5EE),
     scrim: Color.fromRGBO(40, 24, 14, 0.42),
     shadow: Color.fromRGBO(120, 70, 40, 0.16),
@@ -169,10 +176,50 @@ class _HearthTokens {
     danger: Color(0xFFD3746E),
     dangerCont: Color(0xFF4A211B),
     onDanger: Color(0xFFF7DBD5),
+    // Dark "historical": deep warm brown container + light tan text, mirroring
+    // the success dark pair.
+    historicalCont: Color(0xFF3D2E18),
+    onHistorical: Color(0xFFECD9B6),
     appbar: Color(0xFF221A15),
     scrim: Color.fromRGBO(0, 0, 0, 0.6),
     shadow: Color.fromRGBO(0, 0, 0, 0.5),
   );
+}
+
+/// Hearth colours that have no standard [ColorScheme] slot — currently the
+/// "historical" video-status tint used by the entry-page status pill and source
+/// sheet. Read with `Theme.of(context).extension<HearthColors>()!`.
+@immutable
+class HearthColors extends ThemeExtension<HearthColors> {
+  const HearthColors({
+    required this.historicalContainer,
+    required this.onHistoricalContainer,
+  });
+
+  final Color historicalContainer;
+  final Color onHistoricalContainer;
+
+  @override
+  HearthColors copyWith({
+    Color? historicalContainer,
+    Color? onHistoricalContainer,
+  }) =>
+      HearthColors(
+        historicalContainer: historicalContainer ?? this.historicalContainer,
+        onHistoricalContainer:
+            onHistoricalContainer ?? this.onHistoricalContainer,
+      );
+
+  @override
+  HearthColors lerp(ThemeExtension<HearthColors>? other, double t) {
+    if (other is! HearthColors) return this;
+    return HearthColors(
+      historicalContainer:
+          Color.lerp(historicalContainer, other.historicalContainer, t)!,
+      onHistoricalContainer:
+          Color.lerp(onHistoricalContainer, other.onHistoricalContainer, t)!,
+    );
+  }
 }
 
 // Corner radii from the Hearth tokens. Public so the bespoke Hearth widgets
@@ -344,6 +391,12 @@ ThemeData _buildHearthTheme(Brightness brightness) {
     useMaterial3: true,
     brightness: brightness,
     colorScheme: cs,
+    extensions: [
+      HearthColors(
+        historicalContainer: t.historicalCont,
+        onHistoricalContainer: t.onHistorical,
+      ),
+    ],
     scaffoldBackgroundColor: t.bg,
     canvasColor: t.bg,
     fontFamily: bodyFamily,
@@ -537,6 +590,19 @@ ThemeData _buildClassicTheme(Brightness brightness, Color seed) {
   final isDark = brightness == Brightness.dark;
   return ThemeData(
     colorScheme: colorScheme,
+    // The video-status "historical" tint has no ColorScheme slot; expose it
+    // here too (reusing the Hearth tokens) so the entry-page pill/sheet also
+    // work under the Classic variant.
+    extensions: [
+      HearthColors(
+        historicalContainer: isDark
+            ? _HearthTokens.dark.historicalCont
+            : _HearthTokens.light.historicalCont,
+        onHistoricalContainer: isDark
+            ? _HearthTokens.dark.onHistorical
+            : _HearthTokens.light.onHistorical,
+      ),
+    ],
     appBarTheme: AppBarTheme(
       backgroundColor: isDark ? const Color(0xFF1F1F1F) : seed,
       foregroundColor: Colors.white,

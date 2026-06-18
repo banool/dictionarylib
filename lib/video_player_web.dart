@@ -30,6 +30,7 @@ class WebVideoCarousel extends StatefulWidget {
     this.onPageChanged,
     this.expandOnTap = false,
     this.isActive = true,
+    this.overlayBuilder,
   });
 
   final List<String> mediaLinks;
@@ -38,6 +39,10 @@ class WebVideoCarousel extends StatefulWidget {
   final void Function(int)? onPageChanged;
   final bool expandOnTap;
   final bool isActive;
+
+  /// Per-video overlay painted at the framed video's top-left (see
+  /// [VideoPlayerScreen.overlayBuilder]).
+  final Widget? Function(int index)? overlayBuilder;
 
   @override
   State<WebVideoCarousel> createState() => _WebVideoCarouselState();
@@ -274,16 +279,28 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
                   constraints.maxHeight - verticalMargin * 2 - frameTotal;
               videoWidth = videoHeight * videoAspectRatio;
             }
+            Widget framed = HearthVideoFrame(
+              child: SizedBox(
+                width: videoWidth,
+                height: videoHeight,
+                child: VideoPlayer(controller),
+              ),
+            );
+            final overlay = widget.overlayBuilder?.call(idx);
+            if (overlay != null) {
+              framed = Stack(
+                children: [
+                  framed,
+                  // 15 from the frame's outer edge ≈ 10 from the video itself
+                  // (HearthVideoFrame insets the video by its 5px padding).
+                  Positioned(top: 15, left: 15, child: overlay),
+                ],
+              );
+            }
             return Container(
               padding: const EdgeInsets.symmetric(vertical: verticalMargin),
               alignment: Alignment.center,
-              child: HearthVideoFrame(
-                child: SizedBox(
-                  width: videoWidth,
-                  height: videoHeight,
-                  child: VideoPlayer(controller),
-                ),
-              ),
+              child: framed,
             );
           },
         );

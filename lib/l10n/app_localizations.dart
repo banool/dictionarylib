@@ -2182,6 +2182,42 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'North East'**
   String get flashcardsNorthEast;
+
+  /// No description provided for @videoStatusCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get videoStatusCurrent;
+
+  /// No description provided for @videoStatusHistorical.
+  ///
+  /// In en, this message translates to:
+  /// **'Historical'**
+  String get videoStatusHistorical;
+
+  /// No description provided for @sourceFieldResearched.
+  ///
+  /// In en, this message translates to:
+  /// **'Researched'**
+  String get sourceFieldResearched;
+
+  /// No description provided for @sourceFieldRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get sourceFieldRecorded;
+
+  /// No description provided for @sourceFieldPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Published'**
+  String get sourceFieldPublished;
+
+  /// No description provided for @sourceFieldSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get sourceFieldSource;
 }
 
 class _DictLibLocalizationsDelegate

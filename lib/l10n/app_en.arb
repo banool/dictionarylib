@@ -589,5 +589,11 @@
     "wordDataMissing": "No data available for this language.",
     "wordNoDefinitions": "No definitions available.",
     "flashcardsAllOfSriLanka": "All of Sri Lanka",
-    "flashcardsNorthEast": "North East"
+    "flashcardsNorthEast": "North East",
+    "videoStatusCurrent": "Current",
+    "videoStatusHistorical": "Historical",
+    "sourceFieldResearched": "Researched",
+    "sourceFieldRecorded": "Recorded",
+    "sourceFieldPublished": "Published",
+    "sourceFieldSource": "Source"
 }

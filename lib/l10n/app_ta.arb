@@ -384,5 +384,11 @@
     "wordDataMissing": "இந்த மொழிக்கான தரவு எதுவும் இல்லை.",
     "wordNoDefinitions": "வரையறைகள் எதுவும் இல்லை.",
     "flashcardsAllOfSriLanka": "முழு இலங்கை",
-    "flashcardsNorthEast": "வடகிழக்கு"
+    "flashcardsNorthEast": "வடகிழக்கு",
+    "videoStatusCurrent": "தற்போதைய",
+    "videoStatusHistorical": "வரலாற்று",
+    "sourceFieldResearched": "ஆராய்ந்த",
+    "sourceFieldRecorded": "பதிவுசெய்த",
+    "sourceFieldPublished": "வெளியிட்ட",
+    "sourceFieldSource": "ஆதாரம்"
 }

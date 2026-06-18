@@ -1257,4 +1257,22 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get flashcardsNorthEast => 'උතුරු නැගෙනහිර';
+
+  @override
+  String get videoStatusCurrent => 'වර්තමාන';
+
+  @override
+  String get videoStatusHistorical => 'ඓතිහාසික';
+
+  @override
+  String get sourceFieldResearched => 'පර්යේෂණය කළ';
+
+  @override
+  String get sourceFieldRecorded => 'පටිගත කළ';
+
+  @override
+  String get sourceFieldPublished => 'ප්‍රකාශයට පත් කළ';
+
+  @override
+  String get sourceFieldSource => 'මූලාශ්‍රය';
 }

@@ -384,5 +384,11 @@
     "wordDataMissing": "මෙම භාෂාව සඳහා දත්ත නොමැත.",
     "wordNoDefinitions": "අර්ථ දැක්වීම් නොමැත.",
     "flashcardsAllOfSriLanka": "මුළු ශ්‍රී ලංකාව",
-    "flashcardsNorthEast": "උතුරු නැගෙනහිර"
+    "flashcardsNorthEast": "උතුරු නැගෙනහිර",
+    "videoStatusCurrent": "වර්තමාන",
+    "videoStatusHistorical": "ඓතිහාසික",
+    "sourceFieldResearched": "පර්යේෂණය කළ",
+    "sourceFieldRecorded": "පටිගත කළ",
+    "sourceFieldPublished": "ප්‍රකාශයට පත් කළ",
+    "sourceFieldSource": "මූලාශ්‍රය"
 }

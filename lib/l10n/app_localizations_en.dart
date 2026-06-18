@@ -1251,4 +1251,22 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get flashcardsNorthEast => 'North East';
+
+  @override
+  String get videoStatusCurrent => 'Current';
+
+  @override
+  String get videoStatusHistorical => 'Historical';
+
+  @override
+  String get sourceFieldResearched => 'Researched';
+
+  @override
+  String get sourceFieldRecorded => 'Recorded';
+
+  @override
+  String get sourceFieldPublished => 'Published';
+
+  @override
+  String get sourceFieldSource => 'Source';
 }
