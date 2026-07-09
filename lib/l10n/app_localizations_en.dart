@@ -868,6 +868,20 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
+  String get reportIssueEmailFailedTitle => 'Couldn\'t open your email app';
+
+  @override
+  String reportIssueEmailFailedBody(String email) {
+    return 'Please email me directly at $email and I\'ll take a look.';
+  }
+
+  @override
+  String get reportIssueEmailCopy => 'Copy address';
+
+  @override
+  String get reportIssueEmailCopied => 'Address copied to clipboard';
+
+  @override
   String get signInTestUserButton => 'Sign in as test user (debug)';
 
   @override

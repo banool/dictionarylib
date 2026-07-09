@@ -298,16 +298,53 @@ class SettingsPageState extends State<SettingsPage> {
               mode: LaunchMode.externalApplication);
         }),
         navRow(l.settingsReportAppIssueEmail, onTap: () async {
-          var mailto = Mailto(
-              to: ['daniel@dport.me'],
+          const supportEmail = 'daniel@dport.me';
+          final mailto = Mailto(
+              to: [supportEmail],
               subject: l.reportIssueEmailSubject(widget.appName),
               body:
                   'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n');
           final uri = Uri.parse("$mailto");
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          } else {
-            printAndLog('Could not launch $uri');
+          // Capture the messenger before the async gap so the fallback can
+          // snack safely without touching a possibly-unmounted context.
+          final messenger = ScaffoldMessenger.of(context);
+          // Deliberately NOT gating on canLaunchUrl: for a mailto: URI it
+          // returns false on iOS unless the scheme is whitelisted in
+          // LSApplicationQueriesSchemes, and on Android 11+ unless a matching
+          // <queries> intent is declared — even when a mail app is installed.
+          // That false-negative is what made this button look broken. Try to
+          // launch, and if it genuinely can't be handled fall back to showing
+          // the address so the user is never left tapping a dead button.
+          bool launched = false;
+          try {
+            launched =
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } catch (e) {
+            printAndLog('Could not launch $uri: $e');
+          }
+          if (!launched && context.mounted) {
+            await showDialog<void>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(l.reportIssueEmailFailedTitle),
+                content: Text(l.reportIssueEmailFailedBody(supportEmail)),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      await Clipboard.setData(
+                          const ClipboardData(text: supportEmail));
+                      if (ctx.mounted) Navigator.of(ctx).pop();
+                      showSnackVia(messenger, l.reportIssueEmailCopied);
+                    },
+                    child: Text(l.reportIssueEmailCopy),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text(MaterialLocalizations.of(ctx).closeButtonLabel),
+                  ),
+                ],
+              ),
+            );
           }
         }),
         if (appStoreTileString != null)

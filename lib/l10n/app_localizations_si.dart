@@ -875,6 +875,21 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
+  String get reportIssueEmailFailedTitle =>
+      'ඔබගේ ඊමේල් යෙදුම විවෘත කළ නොහැකි විය';
+
+  @override
+  String reportIssueEmailFailedBody(String email) {
+    return 'කරුණාකර $email වෙත සෘජුවම ඊමේල් කරන්න, මම එය බලන්නම්.';
+  }
+
+  @override
+  String get reportIssueEmailCopy => 'ලිපිනය පිටපත් කරන්න';
+
+  @override
+  String get reportIssueEmailCopied => 'ලිපිනය පසුරු පුවරුවට පිටපත් කරන ලදී';
+
+  @override
   String get signInTestUserButton =>
       'පරීක්ෂණ පරිශීලකයෙකු ලෙස පුරනය වන්න (debug)';
 

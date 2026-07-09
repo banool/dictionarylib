@@ -475,6 +475,17 @@
             }
         }
     },
+    "reportIssueEmailFailedTitle": "Couldn't open your email app",
+    "reportIssueEmailFailedBody": "Please email me directly at {email} and I'll take a look.",
+    "@reportIssueEmailFailedBody": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "reportIssueEmailCopy": "Copy address",
+    "reportIssueEmailCopied": "Address copied to clipboard",
 
     "signInTestUserButton": "Sign in as test user (debug)",
     "signInTestPromptTitle": "Test sign-in",

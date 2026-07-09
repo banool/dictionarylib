@@ -284,6 +284,10 @@
     "backgroundLogsCopyButton": "ලොග පසුරු පුවරුවට පිටපත් කරන්න",
     "backgroundLogsCopiedSnack": "ලොග පසුරු පුවරුවට පිටපත් කරන ලදී",
     "reportIssueEmailSubject": "{appName} සමඟ ඇති ගැටලුව",
+    "reportIssueEmailFailedTitle": "ඔබගේ ඊමේල් යෙදුම විවෘත කළ නොහැකි විය",
+    "reportIssueEmailFailedBody": "කරුණාකර {email} වෙත සෘජුවම ඊමේල් කරන්න, මම එය බලන්නම්.",
+    "reportIssueEmailCopy": "ලිපිනය පිටපත් කරන්න",
+    "reportIssueEmailCopied": "ලිපිනය පසුරු පුවරුවට පිටපත් කරන ලදී",
 
     "signInTestUserButton": "පරීක්ෂණ පරිශීලකයෙකු ලෙස පුරනය වන්න (debug)",
     "signInTestPromptTitle": "පරීක්ෂණ පුරනය වීම",

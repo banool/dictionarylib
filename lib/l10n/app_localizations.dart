@@ -1589,6 +1589,30 @@ abstract class DictLibLocalizations {
   /// **'Issue with {appName}'**
   String reportIssueEmailSubject(String appName);
 
+  /// No description provided for @reportIssueEmailFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open your email app'**
+  String get reportIssueEmailFailedTitle;
+
+  /// No description provided for @reportIssueEmailFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please email me directly at {email} and I\'ll take a look.'**
+  String reportIssueEmailFailedBody(String email);
+
+  /// No description provided for @reportIssueEmailCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy address'**
+  String get reportIssueEmailCopy;
+
+  /// No description provided for @reportIssueEmailCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied to clipboard'**
+  String get reportIssueEmailCopied;
+
   /// No description provided for @signInTestUserButton.
   ///
   /// In en, this message translates to:

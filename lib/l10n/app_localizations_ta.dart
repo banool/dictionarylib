@@ -888,6 +888,22 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
+  String get reportIssueEmailFailedTitle =>
+      'உங்கள் மின்னஞ்சல் பயன்பாட்டைத் திறக்க முடியவில்லை';
+
+  @override
+  String reportIssueEmailFailedBody(String email) {
+    return 'தயவுசெய்து $email க்கு நேரடியாக மின்னஞ்சல் அனுப்புங்கள், நான் பார்த்துக்கொள்கிறேன்.';
+  }
+
+  @override
+  String get reportIssueEmailCopy => 'முகவரியை நகலெடு';
+
+  @override
+  String get reportIssueEmailCopied =>
+      'முகவரி கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது';
+
+  @override
   String get signInTestUserButton => 'சோதனைப் பயனராக உள்நுழை (debug)';
 
   @override
