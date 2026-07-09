@@ -1655,6 +1655,30 @@ abstract class DictLibLocalizations {
   /// **'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.'**
   String get signOfTheDayInfo;
 
+  /// No description provided for @signOfTheDayHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide this sign'**
+  String get signOfTheDayHide;
+
+  /// No description provided for @signOfTheDayHideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide this sign of the day?'**
+  String get signOfTheDayHideTitle;
+
+  /// No description provided for @signOfTheDayHideBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This sign won\'t be shown as the sign of the day again.'**
+  String get signOfTheDayHideBody;
+
+  /// No description provided for @signOfTheDayHideConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get signOfTheDayHideConfirm;
+
   /// No description provided for @searchResultCount.
   ///
   /// In en, this message translates to:

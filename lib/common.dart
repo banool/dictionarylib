@@ -29,6 +29,11 @@ const String KEY_SEARCH_FOR_FINGERSPELLING = "search_for_fingerspelling";
 // productive empty state on the search screen.
 const String KEY_RECENT_SEARCHES = "recent_searches";
 
+// Entry keys the user has explicitly hidden from the sign of the day. Once an
+// entry's key is in here it's never eligible to be featured again, even if it's
+// still saved in one of their lists.
+const String KEY_HIDDEN_SIGNS_OF_THE_DAY = "hidden_signs_of_the_day";
+
 const String KEY_FAVOURITES_ENTRIES = "favourites_words";
 
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS = "last_data_check_time";

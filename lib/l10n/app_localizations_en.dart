@@ -903,6 +903,19 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'The sign of the day is a random word from the lists you\'ve created or subscribed to. It changes once a day.';
 
   @override
+  String get signOfTheDayHide => 'Hide this sign';
+
+  @override
+  String get signOfTheDayHideTitle => 'Hide this sign of the day?';
+
+  @override
+  String get signOfTheDayHideBody =>
+      'This sign won\'t be shown as the sign of the day again.';
+
+  @override
+  String get signOfTheDayHideConfirm => 'Hide';
+
+  @override
   String searchResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

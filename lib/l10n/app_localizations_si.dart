@@ -911,6 +911,19 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'අද දවසේ සංඥාව ඔබ සාදා ඇති හෝ දායක වී ඇති ලැයිස්තුවලින් අහඹු වචනයකි. එය දිනකට වරක් වෙනස් වේ.';
 
   @override
+  String get signOfTheDayHide => 'මෙම සංඥාව සඟවන්න';
+
+  @override
+  String get signOfTheDayHideTitle => 'අද දවසේ මෙම සංඥාව සඟවන්නද?';
+
+  @override
+  String get signOfTheDayHideBody =>
+      'මෙම සංඥාව නැවත අද දවසේ සංඥාව ලෙස නොපෙන්වයි.';
+
+  @override
+  String get signOfTheDayHideConfirm => 'සඟවන්න';
+
+  @override
   String searchResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -1,14 +1,49 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 import 'common.dart';
+import 'entry_list.dart';
 import 'entry_types.dart';
 import 'globals.dart';
 import 'hearth.dart';
 import 'page_news.dart';
 import 'top_level_scaffold.dart';
 import 'web_limitations.dart';
+
+/// Deterministic "sign of the day" selection, factored out of the widget so it
+/// can be unit-tested without the whole search page (and its GoRouter-backed
+/// scaffold). Same sign all day, drawn only from [lists] — the user's saved,
+/// subscribed and co-edited lists, never the community lists or the full
+/// dictionary (which contains vulgar entries we don't want to surface).
+///
+/// Entries whose key is in [hiddenKeys] are excluded — that's how "hide this
+/// sign of the day" works. Returns null when nothing eligible remains (nothing
+/// saved, or every saved sign has been hidden), which is the signal for the
+/// caller to simply not render the card.
+@visibleForTesting
+Entry? computeSignOfDay(
+  Iterable<EntryList> lists,
+  Set<String> hiddenKeys,
+  Locale locale,
+  DateTime now,
+) {
+  final saved = <Entry>{};
+  for (final list in lists) {
+    for (final entry in list.uniqueEntries) {
+      if (hiddenKeys.contains(entry.getKey())) continue;
+      if (entry.getPhrase(locale) != null) saved.add(entry);
+    }
+  }
+  if (saved.isEmpty) return null;
+  final candidates = saved.toList()
+    ..sort((a, b) => a.getPhrase(locale)!.compareTo(b.getPhrase(locale)!));
+  // Roll over at local midnight (not UTC) by indexing off the local date.
+  final dayIndex =
+      DateTime(now.year, now.month, now.day).millisecondsSinceEpoch ~/
+          Duration.millisecondsPerDay;
+  return candidates[dayIndex % candidates.length];
+}
 
 class SearchPage extends StatefulWidget {
   // This will only ever be set if this page was opened via a deeplink.
@@ -340,7 +375,11 @@ class SearchPageState extends State<SearchPage> {
   // bring the whole screen down if startup hasn't finished initialising.
   Entry? _signOfDay(Locale locale) {
     try {
-      final saved = <Entry>{};
+      // Entries the user has permanently hidden from the sign of the day.
+      final hidden = sharedPreferences
+              .getStringList(KEY_HIDDEN_SIGNS_OF_THE_DAY)
+              ?.toSet() ??
+          const <String>{};
       // Lists you created (local) plus ones you subscribe to or co-edit —
       // never community lists.
       final lists = [
@@ -348,23 +387,45 @@ class SearchPageState extends State<SearchPage> {
         ...sharing.lists.subscribedLists,
         ...sharing.lists.editorLists,
       ];
-      for (final list in lists) {
-        for (final entry in list.uniqueEntries) {
-          if (entry.getPhrase(locale) != null) saved.add(entry);
-        }
-      }
-      if (saved.isEmpty) return null;
-      final candidates = saved.toList()
-        ..sort((a, b) => a.getPhrase(locale)!.compareTo(b.getPhrase(locale)!));
-      // Roll over at local midnight (not UTC) by indexing off the local date.
-      final now = DateTime.now();
-      final dayIndex =
-          DateTime(now.year, now.month, now.day).millisecondsSinceEpoch ~/
-              Duration.millisecondsPerDay;
-      return candidates[dayIndex % candidates.length];
+      return computeSignOfDay(lists, hidden, locale, DateTime.now());
     } catch (_) {
       return null;
     }
+  }
+
+  // Confirm, then permanently exclude [entry] from the sign of the day. On
+  // confirmation the entry's key is recorded and setState re-runs _signOfDay,
+  // which now skips it and surfaces a different saved sign for today.
+  Future<void> _hideSignOfDay(BuildContext context, Entry entry) async {
+    final l = DictLibLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.signOfTheDayHideTitle),
+        content: Text(l.signOfTheDayHideBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l.signOfTheDayHideConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final hidden =
+        sharedPreferences.getStringList(KEY_HIDDEN_SIGNS_OF_THE_DAY) ??
+            <String>[];
+    final key = entry.getKey();
+    if (!hidden.contains(key)) {
+      hidden.add(key);
+      await sharedPreferences.setStringList(
+          KEY_HIDDEN_SIGNS_OF_THE_DAY, hidden);
+    }
+    if (mounted) setState(() {});
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -436,26 +497,42 @@ class SearchPageState extends State<SearchPage> {
         if (signOfDay != null) ...[
           HearthSectionLabel(
             l.searchSignOfTheDay,
-            trailing: IconButton(
-              icon: const Icon(Icons.info_outline, size: 18),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              constraints: const BoxConstraints(),
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              tooltip: l.signOfTheDayInfo,
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(l.searchSignOfTheDay),
-                  content: Text(l.signOfTheDayInfo),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  tooltip: l.signOfTheDayInfo,
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(l.searchSignOfTheDay),
+                      content: Text(l.signOfTheDayInfo),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child:
+                              Text(MaterialLocalizations.of(ctx).okButtonLabel),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.visibility_off_outlined, size: 18),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  tooltip: l.signOfTheDayHide,
+                  onPressed: () => _hideSignOfDay(context, signOfDay),
+                ),
+              ],
             ),
           ),
           _signOfDayCard(context, signOfDay),

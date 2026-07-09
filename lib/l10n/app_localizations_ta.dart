@@ -923,6 +923,19 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'இன்றைய சைகை என்பது நீங்கள் உருவாக்கிய அல்லது குழுசேர்ந்த பட்டியல்களில் இருந்து ஒரு சீரற்ற வார்த்தையாகும். இது நாளுக்கு ஒருமுறை மாறுகிறது.';
 
   @override
+  String get signOfTheDayHide => 'இந்தச் சைகையை மறை';
+
+  @override
+  String get signOfTheDayHideTitle => 'இன்றைய இந்தச் சைகையை மறைக்கவா?';
+
+  @override
+  String get signOfTheDayHideBody =>
+      'இந்தச் சைகை மீண்டும் இன்றைய சைகையாகக் காட்டப்படாது.';
+
+  @override
+  String get signOfTheDayHideConfirm => 'மறை';
+
+  @override
   String searchResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
