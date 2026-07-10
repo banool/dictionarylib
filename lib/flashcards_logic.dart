@@ -3,6 +3,10 @@ import 'dart:collection';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
 
+// Re-exported so consumers (the apps, dictionarylib_test_support) can use the
+// review Rating enum without pinning dolphinsr_dart themselves.
+export 'package:dolphinsr_dart/dolphinsr_dart.dart' show Rating;
+
 import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';

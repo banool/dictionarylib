@@ -1,0 +1,27 @@
+name: dictionarylib_test_support
+description: >-
+  Shared integration-test suites for the dictionary apps. Consumed as a
+  dev_dependency via git url + path, pinned to the SAME ref as dictionarylib.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ">=3.2.3 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  # Resolved against the same repo/ref when consumed as a git dependency, and
+  # against the sibling checkout during local dev.
+  dictionarylib:
+    path: ../
+  device_info_plus:
+  http:
+  media_kit:
+
+dev_dependencies:
+  flutter_lints:

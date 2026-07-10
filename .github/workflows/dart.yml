@@ -24,3 +24,11 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
+      # The shared integration-test suites package (consumed by the apps as a
+      # git dev_dependency pinned to the same ref as dictionarylib itself).
+      - run: flutter pub get
+        working-directory: dictionarylib_test_support
+      - run: dart format --output=none --set-exit-if-changed lib
+        working-directory: dictionarylib_test_support
+      - run: flutter analyze --no-fatal-infos
+        working-directory: dictionarylib_test_support
