@@ -73,8 +73,18 @@ clone next to the app repo), overridable with `DICTIONARYLIB_DIR`:
 - `scripts/multi_device_run.sh` — canonical multi-device e2e driver. Each
   app's `integration_test/multi_device/run.sh` is a ~15-line wrapper setting
   `MD_APP_DIR`, `MD_BUNDLE_ID`, `MD_ANDROID_PKG`, `MD_APP_ID`.
+- `scripts/ios_publish.sh` — canonical TestFlight build/upload (auth
+  precheck, invalid-cert/profile cleanup, automatic signing, `--beta`
+  promotion). Each app's `ios/publish.sh` is a wrapper setting
+  `PUBLISH_APP_DIR`, `PUBLISH_BUNDLE_ID`, `PUBLISH_BETA_GROUP`.
 - `scripts/appstore_beta.py` — App Store Connect beta promotion, invoked by
-  each app's `ios/publish.sh --beta`. Fully env-var configured, stdlib-only.
+  `ios_publish.sh --beta`. Fully env-var configured, stdlib-only.
+- `scripts/take_screenshots_lib.py` / `scripts/upload_screenshots_lib.py` —
+  canonical store-screenshot capture/upload. Each app's
+  `screenshots/take_screenshots.py` and `screenshots/upload_screenshots.py`
+  are wrappers that import these via `sys.path` and call
+  `configure(...)` + `main()` with the app's device matrix, locale maps,
+  bundle ids, and poster-video source.
 
 ### Copy-pair policy: .githooks/pre-commit and bump_version.sh
 

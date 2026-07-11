@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.3.74
+version: 0.3.75
 
 publish_to: 'none'
 
@@ -28,6 +28,10 @@ dependencies:
     sdk: flutter
   flutter_cache_manager:
   flutter_localizations:
+    sdk: flutter
+  # usePathUrlStrategy() in app_bootstrap.dart for clean web URLs (no-op on
+  # mobile).
+  flutter_web_plugins:
     sdk: flutter
   flutter_markdown: ^0.7.4+1
   flutter_native_splash: 2.4.2

@@ -1,6 +1,7 @@
 library;
 
 export 'advisories.dart';
+export 'app_bootstrap.dart';
 export 'common.dart';
 export 'entry_list.dart';
 export 'entry_types.dart';
