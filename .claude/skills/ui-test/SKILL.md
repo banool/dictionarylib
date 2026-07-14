@@ -38,7 +38,7 @@ Simulator interaction needs the real sim + network. Run every axe/simctl/flutter
 - `DEBUG_THEME_MODE` — `light` or `dark`.
 
 ```bash
-cd /Users/dport/github/auslan_dictionary && /Users/dport/.development/flutter/bin/flutter run \
+cd /Users/daniel/github/auslan_dictionary && /Users/daniel/.development/flutter/bin/flutter run \
   --dart-define=DEBUG_INITIAL_LOCATION=/revision \
   --dart-define=DEBUG_THEME_VARIANT=hearth \
   --dart-define=DEBUG_THEME_MODE=dark
