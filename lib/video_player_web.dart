@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import 'common.dart' show getShouldUseHorizontalLayout, printAndLog;
+import 'globals.dart' show mediaFallbackUrlsFor;
 import 'hearth.dart' show HearthVideoFrame;
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 import 'video_player_screen.dart'
@@ -114,21 +115,49 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
     final link = widget.mediaLinks[idx];
     if (_isImage(link)) return;
     if (_controllers.containsKey(idx)) return;
+    // Try each configured host in turn (e.g. primary then R2 mirror), moving on
+    // when a controller fails to initialise. Single-base apps get a one-element
+    // list — the original single-URL behaviour.
+    _initControllerWithFallback(idx, mediaFallbackUrlsFor(link));
+  }
 
-    final controller = VideoPlayerController.networkUrl(Uri.parse(link));
-    _controllers[idx] = controller;
-    controller.initialize().then((_) {
-      if (!mounted) return;
-      controller.setLooping(true);
-      controller.setVolume(0);
-      controller.setPlaybackSpeed(_playbackSpeed);
-      // Only the centred, on-screen recording plays.
-      if (idx == _currentPage && widget.isActive) controller.play();
-      setState(() {});
-    }).catchError((Object e) {
-      printAndLog('web video init failed for $link: $e');
-      if (mounted) setState(() {});
-    });
+  /// Initialise the controller for [idx], falling back through [candidates]
+  /// (most-preferred first) when initialisation fails. On success the winning
+  /// controller is kept and played; if every candidate fails the last one is
+  /// kept so build()'s hasError branch shows the error widget.
+  Future<void> _initControllerWithFallback(
+      int idx, List<String> candidates) async {
+    for (int i = 0; i < candidates.length; i++) {
+      final isLast = i == candidates.length - 1;
+      final controller =
+          VideoPlayerController.networkUrl(Uri.parse(candidates[i]));
+      // Register synchronously so build() shows a spinner and a concurrent
+      // _ensureController(idx) skips (it's already keyed).
+      _controllers[idx] = controller;
+      try {
+        await controller.initialize();
+        // If unmounted mid-init, leave the controller in the map for the
+        // dispose() loop to tear down — don't double-dispose here.
+        if (!mounted) return;
+        controller.setLooping(true);
+        controller.setVolume(0);
+        controller.setPlaybackSpeed(_playbackSpeed);
+        // Only the centred, on-screen recording plays.
+        if (idx == _currentPage && widget.isActive) controller.play();
+        setState(() {});
+        return;
+      } catch (e) {
+        printAndLog(
+            'web video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e');
+        if (isLast) {
+          // Keep the failed controller so build() shows the error widget.
+          if (mounted) setState(() {});
+        } else {
+          // Discard and try the next host.
+          controller.dispose();
+        }
+      }
+    }
   }
 
   void _onPageChanged(int newPage) {
@@ -369,19 +398,41 @@ class _WebExpandedVideo extends StatefulWidget {
 }
 
 class _WebExpandedVideoState extends State<_WebExpandedVideo> {
-  late final VideoPlayerController _controller;
+  // Reassigned as the fallback walks the candidate hosts, so not `final`. Set
+  // synchronously in initState before the first await, so build()/dispose()
+  // always see a controller.
+  late VideoPlayerController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.mediaLink));
-    _controller.initialize().then((_) {
-      if (!mounted) return;
-      _controller.setLooping(true);
-      _controller.setVolume(0);
-      _controller.play();
-      setState(() {});
-    });
+    _initWithFallback(mediaFallbackUrlsFor(widget.mediaLink));
+  }
+
+  /// Initialise the expanded controller, falling back through [candidates]
+  /// (most-preferred first) when a host fails to initialise.
+  Future<void> _initWithFallback(List<String> candidates) async {
+    for (int i = 0; i < candidates.length; i++) {
+      final controller =
+          VideoPlayerController.networkUrl(Uri.parse(candidates[i]));
+      _controller = controller;
+      try {
+        await controller.initialize();
+        // If unmounted mid-init, leave it for dispose() to tear down.
+        if (!mounted) return;
+        controller.setLooping(true);
+        controller.setVolume(0);
+        controller.play();
+        setState(() {});
+        return;
+      } catch (e) {
+        printAndLog(
+            'web expanded video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e');
+        // Discard and try the next host; keep the last so build() shows its
+        // spinner/error state.
+        if (i < candidates.length - 1) controller.dispose();
+      }
+    }
   }
 
   @override

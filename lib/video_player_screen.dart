@@ -385,70 +385,85 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     }
   }
 
+  /// Resolve a single candidate [url] to a source media_kit can open: a local
+  /// cached (or, for `.bak`, temp) file path, or the URL itself when caching is
+  /// disabled. Throws on a definite fetch failure (404 / socket) — the signal
+  /// [_openMedia] uses to fall back to the next candidate host.
+  Future<String> _resolveOneSource(String url, bool shouldCache) async {
+    // .bak recordings are never cached: fetch (or reuse) a temp copy with the
+    // real extension so the player treats it like any other video. A non-200
+    // throws, so a missing .bak on one host falls back to the next.
+    if (url.endsWith(".bak")) {
+      printAndLog("Building video source with custom .bak behaviour: $url");
+      final dir = (await getTemporaryDirectory()).path;
+      final newFileName = url.split("/").last.replaceAll(".bak", "");
+      final file = File("$dir/$newFileName");
+      // Reuse the previously-downloaded temp file if it's already here instead
+      // of re-fetching the .bak over the network every open.
+      if (await file.exists()) return file.path;
+      final httpClient = HttpClient();
+      final request = await httpClient.getUrl(Uri.parse(url));
+      final response = await request.close();
+      if (response.statusCode != 200) {
+        throw "Failed to load $url with custom .bak behaviour: $response";
+      }
+      final bytes = await consolidateHttpClientResponseBytes(response);
+      await file.writeAsBytes(bytes);
+      return file.path;
+    }
+    if (shouldCache && !kIsWeb) {
+      // getSingleFile throws on a failed download — that's what lets the caller
+      // move on to the next host. (Skipped on web: flutter_cache_manager's
+      // fetch is blocked by CORS on the cross-origin video host, and the
+      // browser handles HTTP caching anyway — but web uses a different player.)
+      final file = await myCacheManager.getSingleFile(url);
+      return file.path;
+    }
+    // Caching disabled: no cheap failure signal, so this path can't fall back —
+    // hand the URL straight to the player.
+    printAndLog("Caching is disabled, pulling $url from the network");
+    return url;
+  }
+
   Future<void> _openMedia(String mediaLink, int idx) async {
     if (!mounted) return;
 
     final playerData = players[idx];
     if (playerData == null) return;
 
-    bool shouldCache = sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true;
+    // The saved-video identity is a media *path*; [mediaLink] is that path
+    // resolved against the preferred base (mediaBaseUrls.first). Recover a
+    // candidate URL for every configured host so a download failure on the
+    // primary (e.g. the main media host) falls back to the next (e.g. the R2
+    // mirror). Single-base apps get a one-element list — unchanged behaviour.
+    final candidates = mediaFallbackUrlsFor(mediaLink);
+    final bool shouldCache =
+        (sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true) &&
+            !mediaLink.endsWith(".bak");
+
+    String? mediaSource;
+    Object? lastError;
+    for (int i = 0; i < candidates.length; i++) {
+      try {
+        printAndLog(
+            "Resolving video ${candidates[i]} (candidate ${i + 1}/${candidates.length})");
+        mediaSource = await _resolveOneSource(candidates[i], shouldCache);
+        break;
+      } catch (e) {
+        lastError = e;
+        printAndLog("Candidate ${candidates[i]} failed to resolve: $e");
+      }
+    }
+    // Every candidate failed to cache/download. As a last resort, hand the
+    // preferred URL straight to the player — it may still stream even when the
+    // cache manager couldn't fetch it — matching the original fall-through.
+    if (mediaSource == null) {
+      printAndLog(
+          "All ${candidates.length} candidate(s) failed to resolve; handing the preferred URL to the player directly: $lastError");
+      mediaSource = candidates.first;
+    }
 
     try {
-      // Don't cache .bak files.
-      if (mediaLink.endsWith(".bak")) {
-        shouldCache = false;
-      }
-      bool shouldDownloadDirectly = !shouldCache || kIsWeb;
-
-      String mediaSource = mediaLink;
-
-      if (shouldCache && !kIsWeb) {
-        // Skipped on web: flutter_cache_manager's fetch is blocked by CORS on
-        // the cross-origin video host, and we download directly anyway (the
-        // browser/media_kit handle HTTP caching). Trying it just adds a failed
-        // request + noise per video.
-        try {
-          printAndLog(
-              "Attempting to pull video $mediaLink from the cache / internet");
-          File file = await myCacheManager.getSingleFile(mediaLink);
-          mediaSource = file.path;
-        } catch (e) {
-          printAndLog(
-              "Failed to use cache for $mediaLink despite caching being enabled, just trying to download directly: $e");
-          shouldDownloadDirectly = true;
-        }
-      }
-
-      if (shouldDownloadDirectly) {
-        if (!shouldCache) {
-          printAndLog(
-              "Caching is disabled, pulling $mediaLink from the network");
-        }
-        if (mediaLink.endsWith(".bak")) {
-          printAndLog("Building video controller with custom .bak behaviour");
-          String dir = (await getTemporaryDirectory()).path;
-          String newFileName = mediaLink.split("/").last.replaceAll(".bak", "");
-          File file = File("$dir/$newFileName");
-          // Reuse the previously-downloaded temp file if it's already here
-          // instead of re-fetching the .bak over the network every open.
-          if (await file.exists()) {
-            mediaSource = file.path;
-          } else {
-            HttpClient httpClient = HttpClient();
-            var request = await httpClient.getUrl(Uri.parse(mediaLink));
-            var response = await request.close();
-            if (response.statusCode != 200) {
-              throw "Failed to load $mediaLink with custom .bak behaviour: $response";
-            }
-            var bytes = await consolidateHttpClientResponseBytes(response);
-            await file.writeAsBytes(bytes);
-            mediaSource = file.path;
-          }
-        } else {
-          mediaSource = mediaLink;
-        }
-      }
-
       // Disable audio completely to prevent interrupting other audio (like music).
       // On native, disabling the audio track entirely prevents audio focus
       // acquisition (setVolume(0) alone still acquires it). On web, media_kit
@@ -900,13 +915,22 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
       }
       await _player.setPlaylistMode(PlaylistMode.loop);
 
-      String source = widget.mediaLink;
-      final shouldCache = sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true;
-      if (shouldCache && !kIsWeb && !widget.mediaLink.endsWith(".bak")) {
-        try {
-          final file = await myCacheManager.getSingleFile(widget.mediaLink);
-          source = file.path;
-        } catch (_) {/* fall back to streaming */}
+      // Try each configured host in turn (e.g. primary then R2 mirror); the
+      // first whose download succeeds is played from its cached file, and if
+      // none can be cached we stream the preferred URL.
+      final candidates = mediaFallbackUrlsFor(widget.mediaLink);
+      String source = candidates.first;
+      final shouldCache =
+          (sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true) &&
+              !widget.mediaLink.endsWith(".bak");
+      if (shouldCache && !kIsWeb) {
+        for (final url in candidates) {
+          try {
+            final file = await myCacheManager.getSingleFile(url);
+            source = file.path;
+            break;
+          } catch (_) {/* try the next host, else stream the preferred URL */}
+        }
       }
       final media = (source.startsWith('/') || source.startsWith('file://'))
           ? Media('file://$source'.replaceAll('file://file://', 'file://'))

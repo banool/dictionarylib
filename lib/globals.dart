@@ -59,6 +59,22 @@ String? mediaPathForUrl(String url) {
   return null;
 }
 
+/// All candidate playable URLs for an already-resolved media [url],
+/// most-preferred first — one per configured base in [mediaBaseUrls]. When
+/// [url] is a media URL under one of the bases (the normal case: it was built
+/// by [mediaUrlForPath] from `mediaBaseUrls.first`), this recovers the path and
+/// re-attaches every base, so the video players can fall back to the next host
+/// (e.g. an R2 mirror when the primary is down) without the caller having to
+/// know about the paths. For an absolute/foreign URL under no base, or when no
+/// bases are configured, returns just `[url]` — there is nothing to fall back
+/// to. The first element always equals [url] when [url] was built from the
+/// preferred base, so the preferred host is still tried first.
+List<String> mediaFallbackUrlsFor(String url) {
+  final path = mediaPathForUrl(url);
+  if (path == null) return [url];
+  return [for (final base in mediaBaseUrls) '$base$path'];
+}
+
 // For logging of things that occur in the background.
 MaxLengthQueue<String> backgroundLogs = MaxLengthQueue(200);
 
