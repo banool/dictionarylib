@@ -14,6 +14,7 @@ export 'page_revision_history.dart';
 export 'page_entry_list_help_en.dart';
 export 'page_entry_list_overview.dart';
 export 'page_entry_list_overview_help_en.dart';
+export 'page_flashcards_help_en.dart';
 export 'page_flashcards_landing.dart';
 export 'page_news.dart';
 export 'page_search.dart';
