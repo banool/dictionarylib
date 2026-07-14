@@ -14,7 +14,7 @@ abstract class YankedVersionChecker {
   /// methods don't play nice.
   Future<List<String>> getYankedVersions();
 
-  // Call this after setupPhaseOne, since that's where we set up the package info.
+  // Call this after loadPackageInfo, since that's where we set up the package info.
   Future<void> throwIfShouldUpgrade() async {
     if (packageInfo == null) {
       printAndLog(
@@ -53,9 +53,8 @@ class GitHubYankedVersionChecker extends YankedVersionChecker {
   @override
   Future<List<String>> getYankedVersions() async {
     try {
-      var response = await http
-          .get(Uri.parse(uri))
-          .timeout(const Duration(milliseconds: 2250));
+      var response =
+          await http.get(Uri.parse(uri)).timeout(kMetadataFetchTimeout);
       if (response.statusCode != 200) {
         throw Exception(
             "HTTP response for getting yanked versions was non 200: ${response.statusCode}");

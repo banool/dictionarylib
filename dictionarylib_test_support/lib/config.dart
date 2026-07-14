@@ -81,14 +81,14 @@ class MdSuiteConfig {
 
   final String appName;
 
-  /// The app's advisories.md raw URL (passed to setupPhaseTwo).
+  /// The app's advisories.md raw URL.
   final Uri advisoriesUrl;
 
-  /// The app's knob base URL (passed to setupPhaseThree).
+  /// The app's knob base URL.
   final String knobUrlBase;
 
-  /// Media base URLs, set before phase three so the list migration can
-  /// resolve saved-video paths.
+  /// Media base URLs, set (via setupMediaAndEntryLoader) before the entry load
+  /// so the list / review migrations can resolve saved-video paths.
   final List<String> mediaBaseUrls;
 
   /// Builds the app's EntryLoader. SLSL pins the loader at the direct bucket

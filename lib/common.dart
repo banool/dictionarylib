@@ -80,6 +80,12 @@ const int NUM_DAYS_TO_CACHE = 21;
 
 const int SEARCH_FOR_NUM_ITEMS = 25;
 
+/// Timeout for the best-effort startup metadata fetches (advisories,
+/// yanked_versions, knobs). They run concurrently during startup (see the
+/// dependency graph in setupDictionaryApp) and each falls back safely on
+/// failure, so this single value bounds the worst-case splash delay they add.
+const Duration kMetadataFetchTimeout = Duration(seconds: 3);
+
 final GlobalKey<NavigatorState> rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -107,8 +113,7 @@ Future<bool> readKnob(String urlBase, String key, bool fallback) async {
   String sharedPrefsKey = "knob_$key";
   try {
     String url = '$urlBase$key';
-    var result =
-        await http.get(Uri.parse(url)).timeout(const Duration(seconds: 4));
+    var result = await http.get(Uri.parse(url)).timeout(kMetadataFetchTimeout);
     String raw = result.body.replaceAll("\n", "");
     bool out;
     if (raw == "true") {

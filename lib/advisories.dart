@@ -101,9 +101,8 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   // Get the advisories file.
   String? rawData;
   try {
-    var result = await http
-        .get(advisoriesFileUri)
-        .timeout(const Duration(milliseconds: 2250));
+    var result =
+        await http.get(advisoriesFileUri).timeout(kMetadataFetchTimeout);
     rawData = result.body;
   } catch (e) {
     printAndLog("Failed to get advisory: $e");

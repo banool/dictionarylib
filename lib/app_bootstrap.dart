@@ -5,6 +5,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 
+import 'advisories.dart';
 import 'common.dart';
 import 'entry_loader.dart';
 import 'entry_types.dart';
@@ -15,11 +16,10 @@ import 'page_force_upgrade.dart';
 import 'sharing/sharing_config.dart';
 
 /// Everything app-specific about app startup. The orchestration itself —
-/// binding/splash, MediaKit, the phased setup order, the concurrent
-/// advisories + yanked-version fetch, the review-history migration,
-/// setupSharing after phase three, and the single runApp with the
-/// force-upgrade / error fallbacks — is identical across the dictionary apps
-/// and lives in [setupDictionaryApp] / [runDictionaryApp].
+/// binding/splash, MediaKit, the startup dependency graph, the review-history
+/// migration + setupSharing after the data load, and the single runApp with the
+/// force-upgrade / error fallbacks — is identical across the dictionary apps and
+/// lives in [setupDictionaryApp] / [runDictionaryApp].
 class DictAppBootstrapConfig {
   const DictAppBootstrapConfig({
     required this.advisoriesUrl,
@@ -30,7 +30,7 @@ class DictAppBootstrapConfig {
     required this.sharingConfig,
   });
 
-  /// The app's advisories file (GitHub raw; passed to setupPhaseTwo).
+  /// The app's advisories file (GitHub raw). Fetched best-effort at startup.
   final Uri advisoriesUrl;
 
   /// The app's yanked_versions file (GitHub raw). A listed version makes
@@ -38,30 +38,51 @@ class DictAppBootstrapConfig {
   /// ForceUpgradePage.
   final String yankedVersionsUrl;
 
-  /// The app's knob base URL (passed to setupPhaseThree).
+  /// The app's knob base URL.
   final String knobUrlBase;
 
-  /// Extra startup work run concurrently with the phase-two/yanked-version
-  /// network calls (e.g. SLSL's use_cdn_url knob read). Must not throw for
-  /// anything short of "the app cannot run".
+  /// Extra startup work run concurrently with the other best-effort metadata
+  /// fetches (e.g. SLSL's use_cdn_url knob read). The entry load waits on these
+  /// (so [setupMediaAndEntryLoader] can read them) but the advisory / yanked /
+  /// flashcards fetches do not. Must not throw for anything short of "the app
+  /// cannot run".
   final List<Future<void> Function()> extraStartupTasks;
 
-  /// Set [mediaBaseUrls] and build the app's EntryLoader. Runs after
-  /// [extraStartupTasks] complete (so it can read knobs they fetched) and
-  /// before setupPhaseThree (so the list migration can resolve / strip
-  /// saved-video paths against the bases).
+  /// Set [mediaBaseUrls] and build the app's EntryLoader. Awaits
+  /// [extraStartupTasks] (so it can read knobs they fetch, e.g. use_cdn_url) and
+  /// runs before the entry load (so the list / review migrations can resolve /
+  /// strip saved-video paths against the bases).
   final Future<EntryLoader> Function() setupMediaAndEntryLoader;
 
   final SharingConfig sharingConfig;
 }
 
-/// The shared body of the apps' `setup()`: phases one → three in order, with
-/// the review-history migration and setupSharing after phase three. Be
-/// careful reordering anything here — later steps implicitly depend on the
-/// side effects of earlier ones.
-Future<void> setupDictionaryApp(DictAppBootstrapConfig config,
-    {Set<Entry>? entriesGlobalReplacement}) async {
-  var widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+/// The shared body of the apps' `setup()`.
+///
+/// Startup is expressed as a **dependency graph** rather than a fixed sequence
+/// of phases: each unit of work below is a `Future` that awaits exactly its own
+/// prerequisites, so the ordering is explicit (read the `await`s) and
+/// everything that can run concurrently does. The only hard barrier is the
+/// `Future.wait` near the end — the set of work that must be settled before the
+/// first frame. To add startup work, wire a new future to the futures it truly
+/// depends on; don't reach for a new "phase".
+///
+/// Timing: the best-effort metadata fetches (advisories, the flashcards knob,
+/// the yanked check, the app's extra knobs) all run concurrently once the local
+/// HTTP prerequisites are ready, so a slow/offline network delays startup by at
+/// most one [kMetadataFetchTimeout], not the sum. The essential entry load runs
+/// concurrently with them, gated only on the extra knobs it needs.
+///
+/// [checkYankedVersion] and [handleNativeSplash] default to true for real app
+/// launches; the integration harness passes false (a forced upgrade must not
+/// veto an e2e run, and the tests own the splash).
+Future<void> setupDictionaryApp(
+  DictAppBootstrapConfig config, {
+  Set<Entry>? entriesGlobalReplacement,
+  bool checkYankedVersion = true,
+  bool handleNativeSplash = true,
+}) async {
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize media_kit for video playback (native only; web plays via the
   // HTML5 video_player path — see VideoSurface).
@@ -71,53 +92,86 @@ Future<void> setupDictionaryApp(DictAppBootstrapConfig config,
 
   // Preserve the splash screen while the app initializes. Native only —
   // there's no web splash configured, so calling this on web throws.
-  if (!kIsWeb) {
+  if (!kIsWeb && handleNativeSplash) {
     FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   }
 
-  // Loads the package info, which the yanked-version checker needs.
-  await setupPhaseOne();
+  // --- Startup dependency graph --------------------------------------------
 
-  // It is okay to check for yanked versions and do phase two setup at the same
-  // time because phase two setup never throws. We want to do them together
-  // because they both make network calls, so we can do them concurrently.
-  await Future.wait<void>([
-    (() async {
-      await setupPhaseTwo(config.advisoriesUrl);
-    })(),
-    (() async {
-      // If the user needs to upgrade, this will throw a specific error that
-      // runDictionaryApp catches to show the ForceUpgradePage.
-      await GitHubYankedVersionChecker(config.yankedVersionsUrl)
-          .throwIfShouldUpgrade();
-    })(),
-    for (final task in config.extraStartupTasks) task(),
+  // Local prerequisites, independent of each other.
+  final deviceInfoReady = loadDeviceInfo();
+  final packageInfoReady = loadPackageInfo();
+
+  // sharedPreferences + proxy + cache manager. Every network fetch waits on
+  // this so it honours the user's proxy setting and has prefs for caching.
+  final httpReady = setupHttpPrerequisites();
+
+  // Best-effort metadata. Each awaits only what it needs; none blocks another,
+  // and none throws (advisories → null, knob → cached/default on failure).
+  final advisoriesReady = () async {
+    // packageInfo gates version-bounded advisory filtering.
+    await Future.wait([httpReady, packageInfoReady]);
+    advisoriesResponse = await getAdvisories(config.advisoriesUrl);
+  }();
+  final flashcardsKnobReady = () async {
+    await httpReady;
+    enableFlashcardsKnob =
+        await readKnob(config.knobUrlBase, "enable_flashcards", true);
+  }();
+  final extraKnobsReady = () async {
+    await httpReady;
+    await Future.wait(config.extraStartupTasks.map((task) => task()));
+  }();
+
+  // Force-upgrade check. Throws YankedVersionError only when the running
+  // version is genuinely yanked (runDictionaryApp turns that into the
+  // ForceUpgradePage); a failed fetch fails open to "not yanked".
+  final yankedCheckReady = () async {
+    if (!checkYankedVersion) return;
+    await Future.wait([packageInfoReady, httpReady]);
+    await GitHubYankedVersionChecker(config.yankedVersionsUrl)
+        .throwIfShouldUpgrade();
+  }();
+
+  // Essential data: resolve media + build the loader (may read the extra knobs,
+  // e.g. SLSL's use_cdn_url), then load the dictionary — from disk, or a
+  // blocking download if the local cache is empty. Gated only on the extra
+  // knobs, so it overlaps the advisory / yanked / flashcards fetches.
+  final entriesReady = () async {
+    await extraKnobsReady;
+    final loader = await config.setupMediaAndEntryLoader();
+    await loadEntriesIntoGlobal(loader,
+        entriesGlobalReplacement: entriesGlobalReplacement);
+  }();
+
+  // Barrier: everything that must be settled before the first frame. A yanked
+  // version surfaces here as YankedVersionError. Future.wait keeps the other
+  // in-flight fetches attached, so no failure becomes an unhandled zone error.
+  await Future.wait([
+    deviceInfoReady,
+    httpReady,
+    advisoriesReady,
+    flashcardsKnobReady,
+    yankedCheckReady,
+    entriesReady,
   ]);
 
-  // Configure how saved-video paths resolve to playable URLs and build the
-  // dictionary loader (app-specific: bundled data vs runtime dump, knob-driven
-  // CDN ordering, debug backend overrides).
-  final entryLoader = await config.setupMediaAndEntryLoader();
+  // Derived from the flashcards knob (awaited above).
+  showFlashcards = getShowFlashcards();
 
-  await setupPhaseThree(
-      paramEntryLoader: entryLoader,
-      knobUrlBase: config.knobUrlBase,
-      entriesGlobalReplacement: entriesGlobalReplacement);
-
-  // One-shot migration of stored DolphinSR review history from the
-  // v1 master id shape ("entryKey-firstVideoFilename") to the v2
-  // shape (per-saved-video). No-op after the first successful run.
-  // Must run after setupPhaseThree because it walks the dictionary
-  // to resolve legacy master ids.
+  // One-shot migration of stored DolphinSR review history from the v1 master id
+  // shape ("entryKey-firstVideoFilename") to the v2 shape (per-saved-video).
+  // No-op after the first successful run. Runs after the entry load because it
+  // walks the dictionary to resolve legacy master ids.
   await migrateLegacyReviewsIfNeeded();
 
-  // Opt in to the shared-lists feature. Runs after phase three because the
+  // Opt in to the shared-lists feature. Runs after the entry load because the
   // synced-list manager resolves owner-share metadata against
-  // userEntryListManager, which phase three initializes.
+  // userEntryListManager, which the entry load initializes.
   await setupSharing(config.sharingConfig);
 
   // Remove the splash screen (native only; see preserve above).
-  if (!kIsWeb) {
+  if (!kIsWeb && handleNativeSplash) {
     FlutterNativeSplash.remove();
   }
 

@@ -121,9 +121,15 @@ class MyCacheManager extends CacheManager with ImageCacheManager {
         ));
 }
 
-// Setup just enough that we can show the force upgrade page.
-Future<void> setupPhaseOne() async {
-  // Load package info once at startup.
+// The individual startup operations live here as small, single-purpose
+// functions; [setupDictionaryApp] wires them into a dependency graph (each
+// awaits exactly its prerequisites) so independent work runs concurrently.
+// They set globals rather than returning, matching the rest of this file.
+
+/// Load the package info (app version etc.). The yanked-version check needs it,
+/// and advisory version-filtering reads it. Best-effort: leaves [packageInfo]
+/// null on failure, which downstream code tolerates.
+Future<void> loadPackageInfo() async {
   try {
     packageInfo = await PackageInfo.fromPlatform();
     printAndLog("Successfully loaded package info");
@@ -133,10 +139,8 @@ Future<void> setupPhaseOne() async {
   }
 }
 
-// Set up up until we fetch knobs. This includes shared device / package info,
-// shared prefs, proxy stuff, advisories, and the cache manager.
-Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
-  // Load device info once at startup.
+/// Load device info into the globals. Best-effort; no dependencies.
+Future<void> loadDeviceInfo() async {
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   try {
     if (!kIsWeb && Platform.isAndroid) {
@@ -149,12 +153,16 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
     printAndLog(
         "Failed to get device info: $e (continuing without raising any error)");
   }
+}
 
-  // Load shared preferences. We do this first because the later futures,
-  // such as loadFavourites and the knobs, depend on it being initialized.
+/// The local prerequisites every network fetch and the entry load depend on:
+/// [sharedPreferences] (knob caching, advisory bookkeeping, favourites),
+/// then the system HTTP proxy if the user enabled it (installed globally so
+/// every later fetch honours it), then the cache manager. No network of its
+/// own.
+Future<void> setupHttpPrerequisites() async {
   sharedPreferences = await SharedPreferences.getInstance();
 
-  // Set the HTTP proxy if necessary.
   bool useSystemHttpProxy =
       sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false;
   if (useSystemHttpProxy && !kIsWeb) {
@@ -163,18 +171,13 @@ Future<void> setupPhaseTwo(Uri advisoriesFileUri) async {
     printAndLog("Set HTTP proxy overrides to $httpProxy");
   }
 
-  // Load up the advisories before doing anything else so it can be displayed
-  // in the error page.
-  advisoriesResponse = await getAdvisories(advisoriesFileUri);
-
-  // Build the cache manager.
   myCacheManager = MyCacheManager();
 }
 
-/// Wire up shared lists. Call **after** `setupPhaseThree` in apps that want
-/// sharing — the synced-list manager looks up local source lists in
-/// `userEntryListManager`, which `setupPhaseThree` initializes. After this
-/// returns the consuming app should subscribe to
+/// Wire up shared lists. Call **after** the entry load ([loadEntriesIntoGlobal])
+/// in apps that want sharing — the synced-list manager looks up local source
+/// lists in `userEntryListManager`, which the entry load initializes. After
+/// this returns the consuming app should subscribe to
 /// `sharing.deepLinks.payloads` and route each [SharePayload] to its
 /// `/share/:listId` route (carrying the invite token when present).
 Future<void> setupSharing(SharingConfig config) async {
@@ -182,39 +185,29 @@ Future<void> setupSharing(SharingConfig config) async {
   sharing = await Sharing.setup(config);
 }
 
-// Pull knobs, load up entry data. Make sure you have pulled other knobs you
-// might care about / done other stuff with the shared prefs before this.
-// This expects that some knobs (e.g. enable_flashcards) exist upstream.
-Future<void> setupPhaseThree(
-    {required EntryLoader paramEntryLoader,
-    required String knobUrlBase,
-    Set<Entry>? entriesGlobalReplacement}) async {
+/// Populate [entriesGlobal] using the already-built [loader]: from
+/// [entriesGlobalReplacement] when given (tests), else local storage, else a
+/// blocking download (the app cannot run without entry data). Requires
+/// [mediaBaseUrls] already set so the list/review migrations can resolve /
+/// strip saved-video paths. Stores the loader in the [entryLoader] global.
+Future<void> loadEntriesIntoGlobal(
+  EntryLoader loader, {
+  Set<Entry>? entriesGlobalReplacement,
+}) async {
   if (entriesGlobalReplacement != null && entriesGlobalReplacement.isEmpty) {
     throw ArgumentError("If given, entriesGlobalReplacement must not be empty");
   }
 
-  await Future.wait<void>([
-    // Load up the words information once at startup from disk.
-    // We do this first because loadFavourites depends on it later.
-    (() async {
-      if (entriesGlobalReplacement != null) {
-        paramEntryLoader.setEntriesGlobal(entriesGlobalReplacement);
-      } else {
-        var entriesFromLocalStorage =
-            await paramEntryLoader.loadEntriesFromLocalStorage();
-        if (entriesFromLocalStorage.isNotEmpty) {
-          paramEntryLoader.setEntriesGlobal(entriesFromLocalStorage);
-        }
-      }
-    })(),
-
-    // Get knob values.
-    (() async => enableFlashcardsKnob =
-        await readKnob(knobUrlBase, "enable_flashcards", true))(),
-  ]);
-
-  // Resolve values based on knobs.
-  showFlashcards = getShowFlashcards();
+  // Load up the words information once at startup from disk. loadFavourites
+  // depends on it later.
+  if (entriesGlobalReplacement != null) {
+    loader.setEntriesGlobal(entriesGlobalReplacement);
+  } else {
+    var entriesFromLocalStorage = await loader.loadEntriesFromLocalStorage();
+    if (entriesFromLocalStorage.isNotEmpty) {
+      loader.setEntriesGlobal(entriesFromLocalStorage);
+    }
+  }
 
   // If entriesGlobalReplacement was set, entriesGlobal should have something
   // in it at this point.
@@ -230,7 +223,7 @@ Future<void> setupPhaseThree(
   if (entriesGlobal.isEmpty) {
     printAndLog(
         "No entry data found in local storage, fetching data from the internet and waiting for it before proceeeding...");
-    NewData? newData = await paramEntryLoader.downloadAndApplyNewData(true);
+    NewData? newData = await loader.downloadAndApplyNewData(true);
     if (newData == null) {
       // This implies that there is some incompatibility between the data upstream
       // and how the app interprets it.
@@ -240,7 +233,7 @@ Future<void> setupPhaseThree(
   } else {
     printAndLog(
         "Entry data was found in local storage, fetching new data from the internet in the background...");
-    paramEntryLoader.downloadAndApplyNewData(false);
+    loader.downloadAndApplyNewData(false);
   }
 
   // A final sanity check to ensure that we have entries data.
@@ -249,7 +242,7 @@ Future<void> setupPhaseThree(
         "entriesGlobal is empty even after the loading phase. The app cannot operate without entries data, throwing...");
   }
 
-  entryLoader = paramEntryLoader;
+  entryLoader = loader;
 }
 
 class ProxiedHttpOverrides extends HttpOverrides {

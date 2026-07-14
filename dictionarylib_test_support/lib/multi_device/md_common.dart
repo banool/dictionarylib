@@ -30,7 +30,6 @@ import 'package:dictionarylib/l10n/app_localizations_en.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:media_kit/media_kit.dart';
 
 import '../config.dart';
 import '../helpers.dart';
@@ -67,42 +66,54 @@ const String mdRenamedListName = 'Animals2';
 /// with [LOCALE_ENGLISH].
 final DictLibLocalizationsEn mdL10n = DictLibLocalizationsEn();
 
-/// Mirrors `setup()` in the app's lib/main.dart, with two test-only
-/// differences: sharing points at the local worker instead of production, and
-/// the yanked-version check is skipped (a forced upgrade must not be able to
-/// veto an e2e run). Keep the phase order in lockstep with main.dart.
+/// Runs the exact same startup orchestration as the real apps
+/// ([setupDictionaryApp]), with two test-only differences passed as flags:
+/// the yanked-version check is skipped (a forced upgrade must not veto an e2e
+/// run) and the native splash is left alone (the tests own it). Sharing points
+/// at the local worker via the [DictAppBootstrapConfig] built below.
 Future<void> mdSetup() async {
-  MediaKit.ensureInitialized();
-  await setupPhaseOne();
-  await setupPhaseTwo(mdConfig.advisoriesUrl);
-  // Resolve saved-video paths to URLs through mediaBaseUrls, set before phase
-  // three so the list migration can use them.
-  mediaBaseUrls = mdConfig.mediaBaseUrls;
-  await setupPhaseThree(
-      paramEntryLoader: mdConfig.buildEntryLoader(),
-      knobUrlBase: mdConfig.knobUrlBase);
-  await migrateLegacyReviewsIfNeeded();
-  await setupSharing(SharingConfig(
-    appId: mdConfig.appId,
-    appName: mdConfig.appName,
-    apiBaseUrl: mdApiBaseUrl,
-    // Production link shape so minted invite links round-trip through the
-    // same parsing the share/subscribe dialogs apply to real links.
-    shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,
-    shareLinkHost: mdConfig.shareLinkHost,
-    urlScheme: mdConfig.urlScheme,
-    auth: SharingAuthConfig(
-      appleBundleId: mdConfig.appleBundleId,
-      googleServerClientId: 'unused-in-md-tests',
-      facebookAppId: 'unused-in-md-tests',
-    ),
-    testSignIn: const TestSignInConfig(
-      testAuthToken: mdTestAuthToken,
-      defaultUserIdPrefix: 'test:md',
-      defaultDisplayName: 'Md Tester',
-    ),
-  ));
+  await setupDictionaryApp(
+    _mdBootstrapConfig(),
+    checkYankedVersion: false,
+    handleNativeSplash: false,
+  );
 }
+
+/// A [DictAppBootstrapConfig] assembled from the app-specific [mdConfig], so
+/// the multi-device suite drives the real bootstrap instead of reimplementing
+/// it. Media resolves through [mdConfig.mediaBaseUrls] directly (SLSL pins the
+/// dump URL for determinism rather than going through the use_cdn_url knob), so
+/// there are no extraStartupTasks. yankedVersionsUrl is unused (the check is
+/// skipped above).
+DictAppBootstrapConfig _mdBootstrapConfig() => DictAppBootstrapConfig(
+      advisoriesUrl: mdConfig.advisoriesUrl,
+      yankedVersionsUrl: '',
+      knobUrlBase: mdConfig.knobUrlBase,
+      setupMediaAndEntryLoader: () async {
+        mediaBaseUrls = mdConfig.mediaBaseUrls;
+        return mdConfig.buildEntryLoader();
+      },
+      sharingConfig: SharingConfig(
+        appId: mdConfig.appId,
+        appName: mdConfig.appName,
+        apiBaseUrl: mdApiBaseUrl,
+        // Production link shape so minted invite links round-trip through the
+        // same parsing the share/subscribe dialogs apply to real links.
+        shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,
+        shareLinkHost: mdConfig.shareLinkHost,
+        urlScheme: mdConfig.urlScheme,
+        auth: SharingAuthConfig(
+          appleBundleId: mdConfig.appleBundleId,
+          googleServerClientId: 'unused-in-md-tests',
+          facebookAppId: 'unused-in-md-tests',
+        ),
+        testSignIn: const TestSignInConfig(
+          testAuthToken: mdTestAuthToken,
+          defaultUserIdPrefix: 'test:md',
+          defaultDisplayName: 'Md Tester',
+        ),
+      ),
+    );
 
 /// Pump the real app and wait until the bottom navigation is up.
 Future<void> mdPumpApp(WidgetTester tester) async {
