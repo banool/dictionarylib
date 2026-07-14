@@ -568,7 +568,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get importEditableListsPromptBody =>
-      'ඔබ කළමනාකරණය කිරීමට පුරනය වී ඇති ලැයිස්තු මොනවාදැයි අපි සේවාදායකයෙන් විමසා ඒවා නව දේශීය ලැයිස්තු ලෙස ආයාත කරමු. ඔබගේ පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත. ඕනෑම නම ගැටුමකට සංඛ්‍යාත්මක උපසර්ගයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ආයාතයෙන් පසු, ඔබගේ උපාංගය සත්‍යයේ මූලාශ්‍රය වේ — තවදුරටත් සංස්කරණ දේශීයව රැඳී පසුබිමින් සේවාදායකයට තල්ලු වේ.';
+      'මෙම ගිණුමට සම්බන්ධ බෙදාගත් ලැයිස්තු — ඔබ සෑදූ ඒවා මෙන්ම ඔබ සංස්කාරකවරයෙකු ලෙස එක් කර ඇති ඒවාද — අප ලබාගෙන මෙම උපාංගයේ ස්ථාපනය කරමු. පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත; නම් ගැටුම්වලට සංඛ්‍යාත්මක ප්‍රත්‍යයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ඔබ සබැඳිව සිටින විට සංස්කරණ ස්වයංක්‍රීයව සමමුහුර්ත වේ.';
 
   @override
   String get importEditableListsActionImport => 'ආයාත කරන්න';
@@ -609,8 +609,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listSharedWithMeTab => 'දායක වූ';
 
   @override
-  String get listSharedWithMeEmpty =>
-      'තවම මෙහි කිසිවක් නැත.\n\nබෙදාගත් ලැයිස්තුවකට දායක වීමට ඉහළ ඇති වලාකුළු-බාගත අයිකනය තට්ටු කරන්න, නැතහොත් වෙනත් අයෙකුගේ බෙදාගැනීමේ/ආරාධනා සබැඳියක් විවෘත කරන්න.';
+  String get listSharedWithMeEmpty => 'තවම මෙහි කිසිවක් නැත.';
 
   @override
   String get ownedStatusOrphaned => 'බෙදාගත් — ඔබ විසින් මකා දමන ලදී';
@@ -817,7 +816,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get flashcardsSaveFailed =>
-      'ඔබගේ පුනරීක්ෂණ ප්‍රගතිය සුරැකීමට නොහැකි විය.';
+      'ඔබගේ සංශෝධන ප්‍රගතිය සුරැකීමට නොහැකි විය.';
 
   @override
   String get engineSessionExpiredSnack => 'පිටව ඇත — කරුණාකර නැවත පුරනය වන්න';
@@ -1006,7 +1005,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get listSubscribedEmptyBody =>
-      'යමෙකු ඔබ සමඟ බෙදාගත් ලැයිස්තුවක් අනුගමනය කරන්න. ගිණුමක් අවශ්‍ය නැත.';
+      'බෙදාගත් ලැයිස්තුවකට දායක වීමට ඉහළ ඇති වලාකුළු අයිකනය තට්ටු කරන්න, නැතහොත් වෙනත් අයෙකුගෙන් ලැබුණු බෙදාගැනීමේ සබැඳියක් විවෘත කරන්න. ගිණුමක් අවශ්‍ය නැත.';
 
   @override
   String revisionStreak(int days) {
@@ -1021,7 +1020,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get revisionStreakSubtitle =>
-      'මේ දක්වා දිගම ධාවනය — දිගටම කරගෙන යන්න!';
+      'මේ දක්වා දිගම අඛණ්ඩතාව — දිගටම කරගෙන යන්න!';
 
   @override
   String revisionSignCount(int count) {
@@ -1083,7 +1082,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
-  String get playbackSpeedTitle => 'ධාවන වේගය';
+  String get playbackSpeedTitle => 'ප්‍රතිවාදන වේගය';
 
   @override
   String get playbackSpeedNormal => 'සාමාන්‍ය';
@@ -1130,7 +1129,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String wordVariationWithHint(int index, int count) {
-    return 'විචලනය $index/$count · සැසඳීමට ස්වයිප් කරන්න';
+    return 'විචලනය $index/$count';
   }
 
   @override
@@ -1161,7 +1160,13 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String sessionCompleteHeadline(int count) {
-    return 'හොඳ වැඩක් — සංඥා $count ක් පුණරීක්ෂණය කළා';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'සංඥා $countක් සංශෝධනය කළා',
+      one: 'සංඥා 1ක් සංශෝධනය කළා',
+    );
+    return 'හොඳ වැඩක් — $_temp0';
   }
 
   @override
@@ -1200,14 +1205,14 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
-  String get revisionSummaryTitle => 'පුණරීක්ෂණ සාරාංශය';
+  String get revisionSummaryTitle => 'සංශෝධන සාරාංශය';
 
   @override
   String get revisionStatsEmptyTitle => 'තවම සංඛ්‍යාලේඛන නැත';
 
   @override
   String get revisionStatsEmptyBody =>
-      'පුණරීක්ෂණ සැසියක් අවසන් කරන්න, එවිට ඔබේ ප්‍රගතිය මෙහි පෙන්වනු ඇත.';
+      'සංශෝධන සැසියක් අවසන් කරන්න, එවිට ඔබේ ප්‍රගතිය මෙහි පෙන්වනු ඇත.';
 
   @override
   String saveToNamedList(String listName) {
@@ -1229,7 +1234,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get webLimitationsNoLists => 'ඔබට ඔබේම ලැයිස්තු සෑදිය නොහැක';
 
   @override
-  String get webLimitationsNoRevision => 'පුණරීක්ෂණ හෝ ෆ්ලෑෂ්කාඩ් නැත';
+  String get webLimitationsNoRevision => 'සංශෝධන හෝ ෆ්ලෑෂ්කාඩ් නැත';
 
   @override
   String get webLimitationsNoSignIn =>

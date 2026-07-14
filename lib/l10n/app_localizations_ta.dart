@@ -36,10 +36,10 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get flashcardsTypes => 'ஃபிளாஷ் கார்டுகளின் வகைகள்';
 
   @override
-  String get flashcardsSignToWord => 'கையெழுத்து -> சொல்';
+  String get flashcardsSignToWord => 'சைகை → சொல்';
 
   @override
-  String get flashcardsWordToSign => 'சொல் -> அடையாளம்';
+  String get flashcardsWordToSign => 'சொல் → சைகை';
 
   @override
   String get flashcardsRevisionSettings => 'மீள்திருத்த அமைப்புகள்';
@@ -573,11 +573,11 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get importEditableListsPromptTitle =>
-      'நீங்கள் முன்பு பகிர்ந்த பட்டியல்களை இறக்குமதி செய்யவா?';
+      'உங்கள் பகிரப்பட்ட பட்டியல்களை இறக்குமதி செய்யவா?';
 
   @override
   String get importEditableListsPromptBody =>
-      'நீங்கள் நிர்வகிக்க உள்நுழைந்துள்ள பட்டியல்கள் எவை என்பதை சேவையகத்திடம் கேட்டு, அவற்றைப் புதிய உள்ளூர் பட்டியல்களாக இறக்குமதி செய்வோம். உங்கள் தற்போதைய உள்ளூர் பட்டியல்கள் தொடப்படாது. ஏதேனும் பெயர் மோதல்களுக்கு எண் பின்னொட்டு வழங்கப்படும் (உதா. \"Cats\" → \"Cats 2\"). இறக்குமதிக்குப் பிறகு, உங்கள் சாதனமே உண்மையின் மூலமாகும் — மேலதிக திருத்தங்கள் உள்ளூரில் இருந்து, பின்னணியில் சேவையகத்திற்குத் தள்ளப்படும்.';
+      'இந்தக் கணக்குடன் தொடர்புடைய பகிரப்பட்ட பட்டியல்கள் அனைத்தையும் — நீங்கள் உருவாக்கியவை மற்றும் திருத்துநராகச் சேர்க்கப்பட்டவை ஆகிய இரண்டையும் — பெற்று, இந்தச் சாதனத்தில் நிறுவுவோம். ஏற்கனவே உள்ள உள்ளூர் பட்டியல்கள் தொடப்படாது; பெயர் மோதல்களுக்கு எண் பின்னொட்டு வழங்கப்படும் (உதா. \"Cats\" → \"Cats 2\"). நீங்கள் ஆன்லைனில் இருக்கும்போது திருத்தங்கள் தானாகவே ஒத்திசைக்கப்படும்.';
 
   @override
   String get importEditableListsActionImport => 'இறக்குமதி செய்';
@@ -620,8 +620,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get listSharedWithMeTab => 'குழுசேர்ந்த';
 
   @override
-  String get listSharedWithMeEmpty =>
-      'இங்கே இன்னும் எதுவும் இல்லை.\n\nபகிரப்பட்ட பட்டியலுக்கு குழுசேர மேலே உள்ள கிளவுட்-பதிவிறக்க ஐகானைத் தட்டவும், அல்லது வேறு ஒருவரின் பகிர்வு/அழைப்பு இணைப்பைத் திறக்கவும்.';
+  String get listSharedWithMeEmpty => 'இங்கே இன்னும் எதுவும் இல்லை.';
 
   @override
   String get ownedStatusOrphaned => 'பகிரப்பட்டது — உங்களால் நீக்கப்பட்டது';
@@ -829,7 +828,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get flashcardsSaveFailed =>
-      'உங்கள் மீள்பார்வை முன்னேற்றத்தைச் சேமிக்க முடியவில்லை.';
+      'உங்கள் திருத்த முன்னேற்றத்தைச் சேமிக்க முடியவில்லை.';
 
   @override
   String get engineSessionExpiredSnack => 'வெளியேறியது — மீண்டும் உள்நுழையவும்';
@@ -963,7 +962,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
-  String get entryTypePhrase => 'சொற்றொடர்';
+  String get entryTypePhrase => 'வாக்கியம்';
 
   @override
   String searchNoMatchTitle(String query) {
@@ -1019,7 +1018,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get listSubscribedEmptyBody =>
-      'யாரோ உங்களுடன் பகிர்ந்த பட்டியலைப் பின்தொடரவும். கணக்கு தேவையில்லை.';
+      'பகிரப்பட்ட பட்டியலுக்கு குழுசேர மேலே உள்ள கிளவுட் ஐகானைத் தட்டவும், அல்லது வேறு ஒருவரின் பகிர்வு இணைப்பைத் திறக்கவும். கணக்கு தேவையில்லை.';
 
   @override
   String revisionStreak(int days) {
@@ -1145,7 +1144,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String wordVariationWithHint(int index, int count) {
-    return 'மாறுபாடு $index/$count · ஒப்பிட ஸ்வைப் செய்யவும்';
+    return 'மாறுபாடு $index/$count';
   }
 
   @override
@@ -1176,7 +1175,13 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String sessionCompleteHeadline(int count) {
-    return 'நல்ல வேலை — $count சைகைகள் மீள்பார்வை செய்யப்பட்டன';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count சைகைகள் திருத்தப்பட்டன',
+      one: '1 சைகை திருத்தப்பட்டது',
+    );
+    return 'நல்ல வேலை — $_temp0';
   }
 
   @override
@@ -1215,14 +1220,14 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
-  String get revisionSummaryTitle => 'மீள்பார்வை சுருக்கம்';
+  String get revisionSummaryTitle => 'திருத்தச் சுருக்கம்';
 
   @override
   String get revisionStatsEmptyTitle => 'இன்னும் புள்ளிவிவரங்கள் இல்லை';
 
   @override
   String get revisionStatsEmptyBody =>
-      'ஒரு மீள்பார்வை அமர்வை முடிக்கவும், உங்கள் முன்னேற்றம் இங்கே தோன்றும்.';
+      'ஒரு திருத்த அமர்வை முடிக்கவும், உங்கள் முன்னேற்றம் இங்கே தோன்றும்.';
 
   @override
   String saveToNamedList(String listName) {
@@ -1247,7 +1252,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get webLimitationsNoRevision =>
-      'மீள்பார்வை அல்லது ஃபிளாஷ்கார்டுகள் இல்லை';
+      'திருத்தம் அல்லது ஃபிளாஷ்கார்டுகள் இல்லை';
 
   @override
   String get webLimitationsNoSignIn =>
