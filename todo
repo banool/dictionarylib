@@ -9,8 +9,9 @@
 - implement backup system for shared lists (there is already a plan for this)
 - ensure price alerting for cloudflare is in place
 - consider migrating backend for slsl to cloudflare + neondb or something (there is a plan exploring this)
-- align on a single license for the code (ideally one that bans commercial use), we use both gpl v3 and apache v2
 - optimize dump function for slsl
 - review how i actually populate the mirror for auslan dictionary, and migrate it from gcs to r2. make sure we have everything, both metadata and media files. remove gcs from auslan entirely. do it via pulumi though.
 - run an agent to have the sinhala and tamil translations improved. the agent should take a close look at the english text and how it is used in the app to make sure the sinhala / tamil is correct given the context.
-- have an agent figure out for me what kind of analytics i can add to the app that doesn't increase my privacy policy obligations (both my privacy policy and the list of things i have to disclose in the app store / play store). i'd like to know things like dau, get crash reports, high level breakdown of feature use, etc. 
+- have an agent figure out for me what kind of analytics i can add to the app that doesn't increase my privacy policy obligations (both my privacy policy and the list of things i have to disclose in the app store / play store). i'd like to know things like dau, get crash reports, high level breakdown of feature use, etc.
+    - see plan from gemini re posthog. validate with claude. /Users/daniel/.gemini/antigravity-cli/brain/5fe24606-24e7-4039-877c-95215feb5cc4/posthog_analytics_plan.md
+
