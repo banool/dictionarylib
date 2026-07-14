@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Promote the just-uploaded build to a TestFlight external tester group.
+"""Promote an already-uploaded build to a TestFlight external tester group.
 
-Run after an upload (see publish.sh --beta). Talks to the App Store Connect API:
-finds the build by its build number, waits for it to finish processing, sets the
-"What to Test" notes, adds it to the named external group, and submits it for
-Beta App Review (external groups require review before testers get the build).
+Run after an upload (see promote.sh --stage beta). Talks to the App Store
+Connect API: finds the build by its build number, waits for it to finish
+processing, sets the "What to Test" notes, adds it to the named external group,
+and submits it for Beta App Review (external groups require review before
+testers get the build).
 
 Self-contained: standard library only. The ES256 JWT is signed with `openssl`,
 so there are no pip dependencies.
 
-Config comes from the environment (publish.sh sets these):
+Config comes from the environment (promote.sh sets these):
   APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID, API_KEY_PATH
   ASC_BUNDLE_ID, ASC_BUILD_NUMBER, ASC_GROUP_NAME, ASC_WHATS_NEW
+  ASC_SUBMIT     "1" (default) submit for Beta App Review | "0" add to group only
+  ASC_DRY_RUN    "1" plan only, no writes | "0" (default)
 """
 
 import base64
@@ -129,8 +132,13 @@ def main():
     build_number = env("ASC_BUILD_NUMBER")
     group_name = env("ASC_GROUP_NAME")
     whats_new = os.environ.get("ASC_WHATS_NEW", "").strip()
+    submit = os.environ.get("ASC_SUBMIT", "1").strip() != "0"
+    dry_run = os.environ.get("ASC_DRY_RUN", "0").strip() == "1"
     if not whats_new:
         die("ASC_WHATS_NEW is empty — external testers require 'What to Test' notes")
+
+    if dry_run:
+        print("[appstore_beta] DRY RUN — no writes will be made")
 
     token = make_token()
 
@@ -175,6 +183,12 @@ def main():
     print(f"[appstore_beta] build is VALID -> {build_id}")
 
     # 3. "What to Test" notes (betaBuildLocalizations, en-US).
+    if dry_run:
+        print("[appstore_beta] [dry-run] would set 'What to Test' notes, add the "
+              f"build to {group_name!r}, and submit for Beta App Review")
+        print(f"\n[appstore_beta] Dry run complete — build {build_number} would go "
+              f"to '{group_name}'.")
+        return
     st, data = api(token, "GET", f"/v1/builds/{build_id}/betaBuildLocalizations")
     existing = (
         {loc["attributes"]["locale"]: loc["id"] for loc in data.get("data", [])}
@@ -240,6 +254,16 @@ def main():
         die(f"failed to add build to {group_name!r}: {err_detail(data)}")
 
     # 6. Submit for Beta App Review (required for external testers).
+    if not submit:
+        print(
+            f"[appstore_beta] ASC_SUBMIT=0 — added build to '{group_name}' but not "
+            "submitting for Beta App Review."
+        )
+        print(
+            f"\n[appstore_beta] Done — build {build_number} is in '{group_name}' "
+            "(not yet submitted for Beta App Review)."
+        )
+        return
     st, data = api(
         token,
         "POST",

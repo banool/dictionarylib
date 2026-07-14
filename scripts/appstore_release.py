@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Promote an already-uploaded TestFlight build to a full App Store release.
 
-Run after a beta upload (see release.sh). Talks to the App Store Connect API:
+Run after an upload (see promote.sh --stage external). Talks to the App Store Connect API:
 picks the build to release (the latest one in TestFlight, or an exact build
 number), finds or creates the editable App Store version for that build's
 marketing version, attaches the build, sets the "What's New" release notes,
@@ -10,7 +10,7 @@ sets the release type, and submits the version for App Store review.
 Self-contained: standard library only. The ES256 JWT is signed with `openssl`,
 so there are no pip dependencies. Mirrors appstore_beta.py's style.
 
-Config comes from the environment (release.sh sets these):
+Config comes from the environment (promote.sh sets these):
   APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID, API_KEY_PATH
   ASC_BUNDLE_ID          iOS bundle id, e.g. com.banool.auslanDictionary
   ASC_SELECT             "latest" (default) or "number"

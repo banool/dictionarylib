@@ -1,7 +1,3 @@
-- get android promotion working
-- make sure naming is consistent. what is now called publish, I want to be called upload (upload build, optionally with --beta to release it to the larger beta group). the other operation should be called promote (promote a previously uploaded build to the actual general release build). make sure scripts, docs, workloads, etc. reflect this naming.
-- add support for the ios publish and release operations in github as well as local
-- make sure the readme is updated showing how to do all of these operations, both local and via gha
 - look for more opportunities to unify, like some of the help pages and the flashcards landing
 - write at least a skill or something that makes sure the android / ios stuff is consistent between auslan and slsl
 - look into migrating everything to some non profit so the projects can be maintained if something happens to me
@@ -14,4 +10,3 @@
 - run an agent to have the sinhala and tamil translations improved. the agent should take a close look at the english text and how it is used in the app to make sure the sinhala / tamil is correct given the context.
 - have an agent figure out for me what kind of analytics i can add to the app that doesn't increase my privacy policy obligations (both my privacy policy and the list of things i have to disclose in the app store / play store). i'd like to know things like dau, get crash reports, high level breakdown of feature use, etc.
     - see plan from gemini re posthog. validate with claude. /Users/daniel/.gemini/antigravity-cli/brain/5fe24606-24e7-4039-877c-95215feb5cc4/posthog_analytics_plan.md
-

@@ -51,7 +51,7 @@ Called from the app repos via
   `flutter_version`, `format_paths`. No secrets.
 - `app-release-android.yaml` — flutter test (+ optionally build appbundle and
   upload to the Play internal track). Inputs: `package_name` (required),
-  `working_directory`, `flutter_version`, `publish` (false = test-only).
+  `working_directory`, `flutter_version`, `upload` (false = test-only).
   Secrets: `UPLOAD_KEYSTORE`, `KEY_PROPERTIES`, `ANDROID_SERVICE_ACCOUNT_JSON`.
 - `app-web-deploy.yaml` — Flutter web build → Cloudflare Pages. Inputs:
   `project_name`, `production_branch` (both required), `working_directory`,
@@ -73,12 +73,20 @@ clone next to the app repo), overridable with `DICTIONARYLIB_DIR`:
 - `scripts/multi_device_run.sh` — canonical multi-device e2e driver. Each
   app's `integration_test/multi_device/run.sh` is a ~15-line wrapper setting
   `MD_APP_DIR`, `MD_BUNDLE_ID`, `MD_ANDROID_PKG`, `MD_APP_ID`.
-- `scripts/ios_publish.sh` — canonical TestFlight build/upload (auth
-  precheck, invalid-cert/profile cleanup, automatic signing, `--beta`
-  promotion). Each app's `ios/publish.sh` is a wrapper setting
-  `PUBLISH_APP_DIR`, `PUBLISH_BUNDLE_ID`, `PUBLISH_BETA_GROUP`.
-- `scripts/appstore_beta.py` — App Store Connect beta promotion, invoked by
-  `ios_publish.sh --beta`. Fully env-var configured, stdlib-only.
+- `scripts/ios_upload.sh` — canonical TestFlight build/upload of an internal
+  build (auth precheck, invalid-cert/profile cleanup, automatic signing). Each
+  app's `ios/upload.sh` is a wrapper setting `UPLOAD_APP_DIR`, `UPLOAD_BUNDLE_ID`.
+- `scripts/promote.sh` — canonical promotion of an already-uploaded build to a
+  wider audience via a mandatory `--stage {beta,external}` flag. `beta` sends
+  the build to the external TestFlight group (iOS) and the beta track (Android)
+  with "What to Test" notes; `external` releases to the App Store and Play
+  production with "What's New" notes. Each app's `promote.sh` is a wrapper
+  setting `PROMOTE_APP_DIR`, `PROMOTE_BUNDLE_ID`, `PROMOTE_PACKAGE_NAME`,
+  `PROMOTE_BETA_GROUP`. Drives the helper scripts below; env-var configured.
+- `scripts/appstore_release.py` / `scripts/appstore_beta.py` /
+  `scripts/play_release.py` — App Store Connect and Google Play helpers invoked
+  by `promote.sh` (external release, TestFlight beta promotion, and Play
+  track-to-track promotion respectively). Fully env-var configured, stdlib-only.
 - `scripts/take_screenshots_lib.py` / `scripts/upload_screenshots_lib.py` —
   canonical store-screenshot capture/upload. Each app's
   `screenshots/take_screenshots.py` and `screenshots/upload_screenshots.py`

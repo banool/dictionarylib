@@ -18,11 +18,11 @@ Run from anywhere:
     python3 screenshots/upload_screenshots.py --dry-run     # plan only
 
 Credentials:
-  - App Store Connect: the same ios/publish.env that ios/publish.sh uses
+  - App Store Connect: the same ios/secrets.env that ios/upload.sh uses
     (APP_STORE_CONNECT_API_ISSUER_ID, API_KEY_PATH, and optionally
     APP_STORE_CONNECT_API_KEY_ID — the key ID is derived from the
     AuthKey_<ID>.p8 filename when the file keeps Apple's name). Real
-    environment variables win over publish.env.
+    environment variables win over secrets.env.
   - Google Play: a service account JSON key at
     android/play_service_account.json, or wherever
     PLAY_SERVICE_ACCOUNT_JSON_PATH points. Use the same service account CI
@@ -56,7 +56,7 @@ from pathlib import Path
 
 PROJECT_ROOT = None          # Path: the Flutter app dir (holds screenshots/)
 SCREENSHOTS_DIR = None       # Path: PROJECT_ROOT / "screenshots"
-IOS_PUBLISH_ENV = None       # Path: PROJECT_ROOT / "ios" / "publish.env"
+IOS_PUBLISH_ENV = None       # Path: PROJECT_ROOT / "ios" / "secrets.env" (legacy: publish.env)
 PLAY_KEY_PATH = None         # Path: Play service-account JSON key
 IOS_BUNDLE_ID = None
 ANDROID_PACKAGE_NAME = None
@@ -86,7 +86,11 @@ def configure(*, project_root, ios_bundle_id, android_package_name,
     global PLAY_LOCALE_MAP, IOS_LOCALE_MAP, ANDROID_IMAGE_TYPES
     PROJECT_ROOT = Path(project_root)
     SCREENSHOTS_DIR = PROJECT_ROOT / "screenshots"
-    IOS_PUBLISH_ENV = PROJECT_ROOT / "ios" / "publish.env"
+    IOS_PUBLISH_ENV = PROJECT_ROOT / "ios" / "secrets.env"
+    if not IOS_PUBLISH_ENV.exists():
+        _legacy_env = PROJECT_ROOT / "ios" / "publish.env"
+        if _legacy_env.exists():
+            IOS_PUBLISH_ENV = _legacy_env
     PLAY_KEY_PATH = Path(
         os.environ.get("PLAY_SERVICE_ACCOUNT_JSON_PATH")
         or PROJECT_ROOT / "android" / "play_service_account.json"
@@ -389,8 +393,8 @@ def describe_plan(platform, plan):
 
 
 def load_ios_credentials():
-    """The same credential scheme as ios/publish.sh: values come from
-    ios/publish.env, real environment variables win, and the key ID is
+    """The same credential scheme as ios/upload.sh: values come from
+    ios/secrets.env, real environment variables win, and the key ID is
     derived from the AuthKey_<ID>.p8 filename when possible."""
     names = (
         "APP_STORE_CONNECT_API_ISSUER_ID",
@@ -417,7 +421,7 @@ def load_ios_credentials():
         raise RuntimeError(
             "App Store Connect credentials missing: set "
             "APP_STORE_CONNECT_API_ISSUER_ID and API_KEY_PATH in "
-            "ios/publish.env (see README -> Deploying to iOS)"
+            "ios/secrets.env (see README -> Deploying to iOS)"
         )
     key_path = Path(key_path).expanduser()
     if not key_path.is_file():

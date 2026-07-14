@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Promote an already-uploaded Play build to the production track.
+"""Promote an already-uploaded Play build from one track to another.
 
-Run after CI has published the build to the internal track (see release.sh).
+Run after CI has published the build to the internal track (see promote.sh).
 Talks to the Google Play Developer API v3: opens an edit, reads the source
 track (internal by default) to find the versionCode(s) to promote, writes them
-into the production track with release notes and the chosen rollout, and commits
-the edit. If anything fails before the commit the edit is discarded, so a failed
-run changes nothing.
+into the target track (production by default) with release notes and the chosen
+rollout, and commits the edit. If anything fails before the commit the edit is
+discarded, so a failed run changes nothing.
 
 Self-contained: standard library only. The service-account JWT is signed with
 `openssl`, so there are no pip dependencies. Mirrors upload_screenshots_lib.py.
 
-Config comes from the environment (release.sh sets these):
+Config comes from the environment (promote.sh sets these):
   PLAY_SERVICE_ACCOUNT_JSON_PATH   path to the service-account JSON key
   PLAY_PACKAGE_NAME                Android package, e.g. com.banool.auslan_dictionary
   PLAY_FROM_TRACK                  source track (default "internal")
+  PLAY_TO_TRACK                    target track (default "production", e.g. "beta")
   PLAY_VERSION_CODE                optional cross-check against pubspec +N
   PLAY_RELEASE_NOTES               release notes text (required)
   PLAY_NOTES_LANG                  BCP-47 language for the notes (default "en-US")
@@ -175,6 +176,7 @@ def main():
     key_path = os.path.expanduser(env("PLAY_SERVICE_ACCOUNT_JSON_PATH"))
     package = env("PLAY_PACKAGE_NAME")
     from_track = os.environ.get("PLAY_FROM_TRACK", "internal").strip() or "internal"
+    to_track = os.environ.get("PLAY_TO_TRACK", "production").strip() or "production"
     expect_code = os.environ.get("PLAY_VERSION_CODE", "").strip()
     notes = os.environ.get("PLAY_RELEASE_NOTES", "").strip()
     notes_lang = os.environ.get("PLAY_NOTES_LANG", "en-US").strip() or "en-US"
@@ -230,19 +232,19 @@ def main():
                 f"track's latest is {top}; promoting {top} (the latest beta)"
             )
 
-        # 3. Check production for a no-op.
-        st, prod = play.call("GET", f"/edits/{edit_id}/tracks/production")
+        # 3. Check the target track for a no-op.
+        st, dst = play.call("GET", f"/edits/{edit_id}/tracks/{to_track}")
         if st == 200:
-            for r in prod.get("releases") or []:
+            for r in dst.get("releases") or []:
                 if (
                     r.get("status") == "completed"
                     and str(top) in [str(c) for c in r.get("versionCodes") or []]
                 ):
-                    log(f"versionCode {top} is already live on production at 100% — nothing to do")
+                    log(f"versionCode {top} is already live on the {to_track} track at 100% — nothing to do")
                     discard()
                     return
 
-        # 4. Compose the production release.
+        # 4. Compose the target-track release.
         release = {
             "versionCodes": [str(top)],
             "releaseNotes": [{"language": notes_lang, "text": notes}],
@@ -254,31 +256,31 @@ def main():
         else:
             release["status"] = "completed"
             plan = "full 100% rollout"
-        log(f"production release plan: versionCode {top}, {plan}, notes[{notes_lang}]")
+        log(f"{to_track} release plan: versionCode {top}, {plan}, notes[{notes_lang}]")
 
         if dry_run:
-            log("[dry-run] would PUT the production track and commit; discarding edit")
+            log(f"[dry-run] would PUT the {to_track} track and commit; discarding edit")
             discard()
             return
 
-        # 5. Write the production track.
+        # 5. Write the target track.
         st, data = play.call(
             "PUT",
-            f"/edits/{edit_id}/tracks/production",
-            body={"track": "production", "releases": [release]},
+            f"/edits/{edit_id}/tracks/{to_track}",
+            body={"track": to_track, "releases": [release]},
         )
         if st != 200:
             if st == 403:
                 die(
-                    "HTTP 403 writing the production track — the service account "
-                    "likely lacks the 'Release to production' permission in the "
+                    f"HTTP 403 writing the {to_track} track — the service account "
+                    f"likely lacks the 'Release to {to_track}' permission in the "
                     "Play Console (it may only have store-listing edit rights).\n"
                     f"  detail: {err(data, st)}"
                 )
-            die(f"could not write the production track (HTTP {st}): {err(data, st)}")
+            die(f"could not write the {to_track} track (HTTP {st}): {err(data, st)}")
 
         if not commit:
-            log("PLAY_COMMIT=0 — prepared the production track but discarding (not committing)")
+            log(f"PLAY_COMMIT=0 — prepared the {to_track} track but discarding (not committing)")
             discard()
             return
 
@@ -293,16 +295,16 @@ def main():
             if st == 403:
                 die(
                     "HTTP 403 committing — the service account likely lacks the "
-                    f"'Release to production' permission.\n  detail: {detail}"
+                    f"'Release to {to_track}' permission.\n  detail: {detail}"
                 )
             die(f"could not commit the edit (HTTP {st}): {detail}")
-        log(f"committed — versionCode {top} promoted to production ({plan})")
+        log(f"committed — versionCode {top} promoted to the {to_track} track ({plan})")
     except SystemExit:
         # die() already printed; drop the edit so a partial run leaves no trace.
         if not dry_run:
             discard()
         raise
-    log(f"\nDone — {package} versionCode {top} is on its way to production.")
+    log(f"\nDone — {package} versionCode {top} is on its way to the {to_track} track.")
 
 
 if __name__ == "__main__":

@@ -2,9 +2,9 @@
 # each app's CI via
 # `uses: banool/dictionarylib/.github/workflows/app-release-android.yaml@main`.
 #
-# With publish=true (the default) it writes the signing material, runs the
+# With upload=true (the default) it writes the signing material, runs the
 # tests, builds a signed appbundle, and uploads it to the Play internal track.
-# With publish=false it only runs the tests — the mode app CIs use for PRs and
+# With upload=false it only runs the tests — the mode app CIs use for PRs and
 # data-only changes.
 #
 # Note: the Play upload doesn't work until a single manual upload has been done
@@ -25,12 +25,12 @@ on:
       flutter_version:
         type: string
         default: '3.44.5'
-      publish:
+      upload:
         type: boolean
         default: true
         description: false = test-only (no signing material, no build, no upload).
     secrets:
-      # Required in practice when publish=true; declared optional so callers
+      # Required in practice when upload=true; declared optional so callers
       # with empty secrets (fork PRs) fail at the signing step, not the call.
       UPLOAD_KEYSTORE:
         required: false
@@ -49,9 +49,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - run: echo "${{ secrets.UPLOAD_KEYSTORE }}" | base64 -d > android/upload_keystore.jks
-        if: inputs.publish
+        if: inputs.upload
       - run: echo "${{ secrets.KEY_PROPERTIES }}" | base64 -d > android/key.properties
-        if: inputs.publish
+        if: inputs.upload
 
       - uses: actions/setup-java@v3
         with:
@@ -70,11 +70,11 @@ jobs:
 
       # This will produce a signed appbundle.
       - run: flutter build appbundle
-        if: inputs.publish
+        if: inputs.upload
 
-      - name: Publish Android build to internal track
+      - name: Upload Android build to internal track
         uses: r0adkll/upload-google-play@v1.0.15
-        if: inputs.publish
+        if: inputs.upload
         with:
           serviceAccountJsonPlainText: ${{ secrets.ANDROID_SERVICE_ACCOUNT_JSON }}
           packageName: ${{ inputs.package_name }}

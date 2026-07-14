@@ -1,43 +1,52 @@
 #!/bin/bash
 #
-# Build and upload a dictionary app to TestFlight using xcodebuild and the
-# App Store Connect API key.
+# Build and upload a dictionary app to TestFlight as an internal build, using
+# xcodebuild and the App Store Connect API key.
 #
 # This is the canonical implementation, shared by the dictionary apps; each
-# app's ios/publish.sh is a thin wrapper that sets the PUBLISH_* env below and
+# app's ios/upload.sh is a thin wrapper that sets the UPLOAD_* env below and
 # execs this. Run the wrapper, not this file.
+#
+# This ONLY uploads the build (it lands on the internal TestFlight track). To
+# send an already-uploaded build to the wider beta testers or the public, use
+# ./promote.sh (see its --stage flag).
 #
 # Fully hands-off. Signing is AUTOMATIC: with an Admin App Store Connect API key,
 # xcodebuild's -allowProvisioningUpdates creates and manages the distribution
 # certificate AND the App Store provisioning profile (including any Sign In
 # with Apple + Associated Domains entitlements) with no Xcode GUI or portal
-# steps. Credentials come from the app's ios/publish.env. See the app README ->
+# steps. Credentials come from the app's ios/secrets.env. See the app README ->
 # "Deploying to iOS" for setup and troubleshooting.
 #
-# Pass --beta to also promote the uploaded build to the app's external tester
-# group after upload — it prompts for "What to Test" notes up front.
-#
 # Required env (the wrapper sets these):
-#   PUBLISH_APP_DIR     absolute path to the Flutter app directory
-#   PUBLISH_BUNDLE_ID   iOS bundle id, e.g. com.banool.auslanDictionary
-#   PUBLISH_BETA_GROUP  external TestFlight group for --beta
+#   UPLOAD_APP_DIR     absolute path to the Flutter app directory
+#   UPLOAD_BUNDLE_ID   iOS bundle id, e.g. com.banool.auslanDictionary
 
 set -euo pipefail
 
-for var in PUBLISH_APP_DIR PUBLISH_BUNDLE_ID PUBLISH_BETA_GROUP; do
+for var in UPLOAD_APP_DIR UPLOAD_BUNDLE_ID; do
   if [[ -z "${!var:-}" ]]; then
-    echo "error: $var must be set (run this via the app's ios/publish.sh wrapper)" >&2
+    echo "error: $var must be set (run this via the app's ios/upload.sh wrapper)" >&2
     exit 1
   fi
 done
 
-# The beta-promotion helper lives next to this script; resolve it before
-# changing directory.
-APPSTORE_BETA="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/appstore_beta.py"
+# This script uploads only; it takes no arguments.
+for arg in "$@"; do
+  case "$arg" in
+    *) echo "Unknown argument: $arg (upload.sh takes none; use promote.sh to release a build)" >&2; exit 1 ;;
+  esac
+done
 
-cd "$PUBLISH_APP_DIR"
+cd "$UPLOAD_APP_DIR"
 
-. ./ios/publish.env
+# App Store Connect credentials (renamed from ios/publish.env; the old name
+# still works as a fallback).
+ENV_FILE="ios/secrets.env"
+[[ -f "$ENV_FILE" ]] || ENV_FILE="ios/publish.env"
+[[ -f "$ENV_FILE" ]] || { echo "error: ios/secrets.env not found in $UPLOAD_APP_DIR" >&2; exit 1; }
+# shellcheck disable=SC1090
+. "./$ENV_FILE"
 
 [[ -z "${TEAM_ID:-}" ]] && echo 'Please set TEAM_ID' && exit 1
 [[ -z "${APP_STORE_CONNECT_API_ISSUER_ID:-}" ]] && echo 'Please set APP_STORE_CONNECT_API_ISSUER_ID' && exit 1
@@ -47,7 +56,7 @@ cd "$PUBLISH_APP_DIR"
 # The key ID is NOT stored inside the .p8 — Apple only encodes it in the
 # download filename "AuthKey_<ID>.p8". Derive it from that filename when the key
 # keeps Apple's name, otherwise fall back to APP_STORE_CONNECT_API_KEY_ID from
-# publish.env. (So you can drop that env var entirely by keeping the key named
+# secrets.env. (So you can drop that env var entirely by keeping the key named
 # AuthKey_<ID>.p8.)
 KEY_ID="${APP_STORE_CONNECT_API_KEY_ID:-}"
 _kf="$(basename "$API_KEY_PATH")"
@@ -56,42 +65,8 @@ if [[ "$_kf" == AuthKey_*.p8 ]]; then
   KEY_ID="${_kf%.p8}"
 fi
 if [[ -z "$KEY_ID" ]]; then
-  echo "Set APP_STORE_CONNECT_API_KEY_ID in ios/publish.env, or name the key file AuthKey_<ID>.p8" >&2
+  echo "Set APP_STORE_CONNECT_API_KEY_ID in ios/secrets.env, or name the key file AuthKey_<ID>.p8" >&2
   exit 1
-fi
-
-# --beta: after uploading, also promote this build to the external tester group.
-# The flag is parsed and the notes prompted up front so the prompt doesn't
-# interrupt the long build/upload.
-BETA=false
-for arg in "$@"; do
-  case "$arg" in
-    --beta) BETA=true ;;
-    *) echo "Unknown argument: $arg (only --beta is supported)" >&2; exit 1 ;;
-  esac
-done
-
-BETA_GROUP="$PUBLISH_BETA_GROUP"
-BETA_NOTES=""
-if [[ "$BETA" == true ]]; then
-  echo "==> --beta: this build will be sent to the '$BETA_GROUP' external group after upload."
-  echo "    External testing needs 'What to Test' notes. Type them now, then finish with"
-  echo "    an empty line (or Ctrl-D):"
-  while IFS= read -r line; do
-    if [[ -z "$line" ]]; then
-      break
-    fi
-    BETA_NOTES+="$line"$'\n'
-  done
-  BETA_NOTES="${BETA_NOTES%$'\n'}"
-  if [[ -z "$BETA_NOTES" ]]; then
-    echo "No 'What to Test' notes entered — aborting." >&2
-    exit 1
-  fi
-  if [[ ! -f "$APPSTORE_BETA" ]]; then
-    echo "error: $APPSTORE_BETA not found." >&2
-    exit 1
-  fi
 fi
 
 ARCHIVE_PATH="build/ios/Runner.xcarchive"
@@ -239,6 +214,8 @@ clean_invalid_profiles() {
 
 # --- run --------------------------------------------------------------------
 
+echo "==> Uploading $UPLOAD_BUNDLE_ID to TestFlight (internal)..."
+
 auth_precheck
 
 if [[ "${SKIP_CERT_CLEANUP:-0}" != "1" ]]; then
@@ -308,22 +285,8 @@ xcrun altool --upload-app \
   --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
 rm -rf "$PRIVATE_KEYS_DIR"
 
-if [[ "$BETA" == true ]]; then
-  echo "==> Promoting the build to the '$BETA_GROUP' external group..."
-  # The build number is the +N part of the pubspec version; it identifies the
-  # build in App Store Connect.
-  BUILD_NUMBER=$(grep -E '^version:' pubspec.yaml | sed -E 's/.*\+([0-9]+).*$/\1/')
-  ASC_BUNDLE_ID="$PUBLISH_BUNDLE_ID" \
-  ASC_BUILD_NUMBER="$BUILD_NUMBER" \
-  ASC_GROUP_NAME="$BETA_GROUP" \
-  ASC_WHATS_NEW="$BETA_NOTES" \
-  APP_STORE_CONNECT_API_KEY_ID="$KEY_ID" \
-  APP_STORE_CONNECT_API_ISSUER_ID="$APP_STORE_CONNECT_API_ISSUER_ID" \
-  API_KEY_PATH="$API_KEY_PATH" \
-  python3 "$APPSTORE_BETA"
-fi
-
-echo "==> Done! Build uploaded to TestFlight."
+echo "==> Done! Build uploaded to TestFlight (internal)."
+echo "    To release it to beta testers or the public, run ./promote.sh."
 
 # ---------------------------------------------------------------------------
 # Troubleshooting (see the app README -> "Deploying to iOS")
