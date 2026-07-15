@@ -121,7 +121,12 @@ enum EntryListNameError {
   empty,
 
   /// Name contained characters outside [EntryList.validNameCharacters].
+  /// No longer produced by [EntryList.getKeyFromName] (which now accepts
+  /// any printable text); kept for compatibility.
   invalidChars,
+
+  /// Name exceeded [maxListNameLength] characters.
+  tooLong,
 
   /// Name matched one of [EntryList._reservedNamesLower].
   reserved,
@@ -149,6 +154,8 @@ class EntryListNameException implements Exception {
         return l.listNameErrorEmpty;
       case EntryListNameError.invalidChars:
         return l.listNameErrorInvalid;
+      case EntryListNameError.tooLong:
+        return l.listNameErrorTooLong(maxListNameLength);
       case EntryListNameError.reserved:
         return l.listNameErrorReserved(name);
       case EntryListNameError.alreadyExists:
@@ -162,6 +169,8 @@ class EntryListNameException implements Exception {
         return 'List name cannot be empty';
       case EntryListNameError.invalidChars:
         return 'Invalid list name';
+      case EntryListNameError.tooLong:
+        return 'List name is too long (max $maxListNameLength characters)';
       case EntryListNameError.reserved:
         return 'List name "$name" is reserved';
       case EntryListNameError.alreadyExists:
@@ -332,8 +341,14 @@ class EntryList {
     if (trimmed.isEmpty) {
       throw EntryListNameException(EntryListNameError.empty, trimmed);
     }
-    if (!validNameCharacters.hasMatch(trimmed)) {
-      throw EntryListNameException(EntryListNameError.invalidChars, trimmed);
+    // Any printable text is allowed (emoji included) — the name is only
+    // constrained by length and the reserved-name check, matching the
+    // shared-list rule in sharing/share_dialog.dart. Emoji round-trip
+    // through the key untouched: they contain no space or underscore, and
+    // the 6-char ASCII suffix stripped by getNameFromKey never splits a
+    // surrogate pair.
+    if (trimmed.length > maxListNameLength) {
+      throw EntryListNameException(EntryListNameError.tooLong, trimmed);
     }
     if (isReservedDisplayName(trimmed)) {
       throw EntryListNameException(EntryListNameError.reserved, trimmed);

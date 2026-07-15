@@ -13,7 +13,6 @@ import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:dictionarylib/web_limitations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:dictionarylib/dictionarylib.dart'
     show DictLibLocalizations, getEntryListOverviewHelpPageEn;
 
@@ -708,17 +707,11 @@ Future<bool> _showRenameDialog(
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(l.listNameAllowedChars),
-        const Padding(padding: EdgeInsets.only(top: 10)),
         TextField(
           controller: controller,
           decoration: InputDecoration(hintText: l.listEnterNewName),
           autofocus: true,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(EntryList.validNameCharacters),
-          ],
           textInputAction: TextInputAction.send,
-          keyboardType: TextInputType.visiblePassword,
           textCapitalization: TextCapitalization.words,
         ),
       ],
@@ -794,17 +787,11 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(l.listNameAllowedChars),
-        const Padding(padding: EdgeInsets.only(top: 10)),
         TextField(
           controller: controller,
           decoration: InputDecoration(hintText: l.listEnterNewName),
           autofocus: true,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(EntryList.validNameCharacters),
-          ],
           textInputAction: TextInputAction.send,
-          keyboardType: TextInputType.visiblePassword,
           textCapitalization: TextCapitalization.words,
         ),
       ],

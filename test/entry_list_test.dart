@@ -49,10 +49,11 @@ void main() {
       }
     });
 
-    test('rejects names containing characters outside the allowed set', () {
-      // Regression for the old `[,.-_!]` class, where the unescaped dash
-      // formed the range U+002E–U+005F and silently admitted these. They
-      // must all be rejected as invalidChars now that the dash is literal.
+    test('accepts punctuation/symbols that the old whitelist rejected', () {
+      // These were rejected by the old validNameCharacters whitelist. Local
+      // list names now allow any printable text (parity with shared-list
+      // display names), so they must be accepted and round-trip. None
+      // contain a space or underscore, so the key is lossless.
       for (final name in const [
         'a/b',
         'a:b',
@@ -64,13 +65,38 @@ void main() {
         'a=b',
         r'a\b',
       ]) {
-        expect(
-          () => EntryList.getKeyFromName(name),
-          throwsA(isA<EntryListNameException>()
-              .having((e) => e.kind, 'kind', EntryListNameError.invalidChars)),
-          reason: '$name contains a disallowed character',
-        );
+        final key = EntryList.getKeyFromName(name);
+        expect(EntryList.getNameFromKey(key), name,
+            reason: '$name should be accepted and round-trip');
       }
+    });
+
+    test('accepts and round-trips emoji', () {
+      // Emoji contain no space or underscore, and the 6-char ASCII suffix
+      // stripped by getNameFromKey never splits a surrogate pair / ZWJ
+      // sequence, so emoji round-trip losslessly. (The space in the first
+      // case becomes an underscore and back, the pre-existing behaviour.)
+      for (final name in const [
+        'Party 🎉',
+        '🎉',
+        'Party🎉',
+        '👨‍👩‍👧 family',
+      ]) {
+        final key = EntryList.getKeyFromName(name);
+        expect(EntryList.getNameFromKey(key), name,
+            reason: '$name should round-trip through the key');
+      }
+    });
+
+    test('rejects names longer than maxListNameLength', () {
+      expect(
+        () => EntryList.getKeyFromName('a' * (maxListNameLength + 1)),
+        throwsA(isA<EntryListNameException>()
+            .having((e) => e.kind, 'kind', EntryListNameError.tooLong)),
+      );
+      // Boundary: exactly the max length is fine.
+      expect(() => EntryList.getKeyFromName('a' * maxListNameLength),
+          returnsNormally);
     });
 
     test('accepts the literal punctuation in the allowed set', () {

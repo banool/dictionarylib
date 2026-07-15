@@ -188,8 +188,6 @@
     "settingsDeleteAccountRunning": "ගිණුම මකමින්…",
     "settingsDeleteAccountFailed": "ඔබගේ ගිණුම මැකීමට නොහැකි විය: {message}",
 
-    "listNameAllowedChars": "මේවා හැර වෙනත් විශේෂ අක්ෂර අවසර නැත: , . - _ !",
-
     "importEditableListsPromptTitle": "ඔබ කලින් බෙදාගත් ලැයිස්තු ආයාත කරන්නද?",
     "importEditableListsPromptBody": "මෙම ගිණුමට සම්බන්ධ බෙදාගත් ලැයිස්තු — ඔබ සෑදූ ඒවා මෙන්ම ඔබ සංස්කාරකවරයෙකු ලෙස එක් කර ඇති ඒවාද — අප ලබාගෙන මෙම උපාංගයේ ස්ථාපනය කරමු. පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත; නම් ගැටුම්වලට සංඛ්‍යාත්මක ප්‍රත්‍යයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ඔබ සබැඳිව සිටින විට සංස්කරණ ස්වයංක්‍රීයව සමමුහුර්ත වේ.",
     "importEditableListsActionImport": "ආයාත කරන්න",

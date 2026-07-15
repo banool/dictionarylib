@@ -262,8 +262,6 @@
         }
     },
 
-    "listNameAllowedChars": "No special characters besides these are allowed: , . - _ !",
-
     "importEditableListsPromptTitle": "Import your shared lists?",
     "importEditableListsPromptBody": "We'll fetch any shared lists tied to this account — both the ones you created and the ones you've been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you're online.",
     "importEditableListsActionImport": "Import",
@@ -453,6 +451,14 @@
     "favouritesListName": "Favourites",
     "listNameErrorEmpty": "List name cannot be empty",
     "listNameErrorInvalid": "Invalid list name",
+    "listNameErrorTooLong": "List name is too long (at most {maxLength} characters)",
+    "@listNameErrorTooLong": {
+        "placeholders": {
+            "maxLength": {
+                "type": "int"
+            }
+        }
+    },
     "listNameErrorReserved": "List name \"{name}\" is reserved",
     "@listNameErrorReserved": {
         "placeholders": {

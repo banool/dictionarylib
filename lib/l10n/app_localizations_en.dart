@@ -555,10 +555,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
-  String get listNameAllowedChars =>
-      'No special characters besides these are allowed: , . - _ !';
-
-  @override
   String get importEditableListsPromptTitle => 'Import your shared lists?';
 
   @override
@@ -837,6 +833,11 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get listNameErrorInvalid => 'Invalid list name';
+
+  @override
+  String listNameErrorTooLong(int maxLength) {
+    return 'List name is too long (at most $maxLength characters)';
+  }
 
   @override
   String listNameErrorReserved(String name) {

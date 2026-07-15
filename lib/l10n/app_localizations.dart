@@ -1085,12 +1085,6 @@ abstract class DictLibLocalizations {
   /// **'Couldn\'t delete your account: {message}'**
   String settingsDeleteAccountFailed(String message);
 
-  /// No description provided for @listNameAllowedChars.
-  ///
-  /// In en, this message translates to:
-  /// **'No special characters besides these are allowed: , . - _ !'**
-  String get listNameAllowedChars;
-
   /// No description provided for @importEditableListsPromptTitle.
   ///
   /// In en, this message translates to:
@@ -1540,6 +1534,12 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Invalid list name'**
   String get listNameErrorInvalid;
+
+  /// No description provided for @listNameErrorTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'List name is too long (at most {maxLength} characters)'**
+  String listNameErrorTooLong(int maxLength);
 
   /// No description provided for @listNameErrorReserved.
   ///

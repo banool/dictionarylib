@@ -559,10 +559,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
-  String get listNameAllowedChars =>
-      'මේවා හැර වෙනත් විශේෂ අක්ෂර අවසර නැත: , . - _ !';
-
-  @override
   String get importEditableListsPromptTitle =>
       'ඔබ කලින් බෙදාගත් ලැයිස්තු ආයාත කරන්නද?';
 
@@ -843,6 +839,11 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get listNameErrorInvalid => 'වලංගු නොවන ලැයිස්තු නම';
+
+  @override
+  String listNameErrorTooLong(int maxLength) {
+    return 'List name is too long (at most $maxLength characters)';
+  }
 
   @override
   String listNameErrorReserved(String name) {

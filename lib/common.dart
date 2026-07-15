@@ -36,6 +36,12 @@ const String KEY_HIDDEN_SIGNS_OF_THE_DAY = "hidden_signs_of_the_day";
 
 const String KEY_FAVOURITES_ENTRIES = "favourites_words";
 
+// Max length of a user-defined list name. Matches the shared-list display
+// name cap (maxDisplayNameLen in sharing/sync_api.dart) and the server's
+// MAX_DISPLAY_NAME_LEN, so a local list stays shareable — keep the three in
+// sync.
+const int maxListNameLength = 80;
+
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS = "last_data_check_time";
 const String KEY_DICTIONARY_DATA_CURRENT_VERSION = "current_data_version";
 const String KEY_HIDE_FLASHCARDS_FEATURE = "hide_flashcards_feature";

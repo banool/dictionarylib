@@ -568,10 +568,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
-  String get listNameAllowedChars =>
-      'இவற்றைத் தவிர வேறு சிறப்பு எழுத்துகள் அனுமதிக்கப்படவில்லை: , . - _ !';
-
-  @override
   String get importEditableListsPromptTitle =>
       'உங்கள் பகிரப்பட்ட பட்டியல்களை இறக்குமதி செய்யவா?';
 
@@ -855,6 +851,11 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get listNameErrorInvalid => 'தவறான பட்டியல் பெயர்';
+
+  @override
+  String listNameErrorTooLong(int maxLength) {
+    return 'List name is too long (at most $maxLength characters)';
+  }
 
   @override
   String listNameErrorReserved(String name) {
