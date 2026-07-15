@@ -368,8 +368,8 @@ class ListsService {
   /// validity rules.
   ///
   /// [preferredName] is tried first. If it can't round-trip through
-  /// `getKeyFromName` (empty, reserved, or contains characters the
-  /// validator rejects), the algorithm switches to [fallbackBase] — which
+  /// `getKeyFromName` (empty, too long, or the reserved favourites name),
+  /// the algorithm switches to [fallbackBase] — which
   /// callers should pick from their own localisation (e.g. "Imported
   /// list", "Duplicated list"). Either way, a numeric suffix is appended
   /// until the resulting key is free.
@@ -386,8 +386,8 @@ class ListsService {
     for (var n = 2;; n++) {
       final k = EntryList.getKeyFromName(candidate);
       if (!userEntryListManager.getEntryLists().containsKey(k)) return k;
-      // Space + digit only — the validNameCharacters regex doesn't allow
-      // parens, so "$base ($n)" would re-throw inside getKeyFromName.
+      // Disambiguate with a " $n" suffix (space + digit) — keeps the
+      // derived name readable and always survives getKeyFromName.
       candidate = '$safeBase $n';
     }
   }

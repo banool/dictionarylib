@@ -22,15 +22,19 @@ class CategoryEntryListManager implements EntryListManager {
     // multiple categories, a single entry can appear in multiple entry lists.
     for (Entry e in entriesGlobal.cast<Entry>()) {
       for (var category in e.getCategories()) {
-        var cleanCategory = removeNonMatchingCharacters(
-            category, EntryList.validNameCharacters);
-
-        if (cleanCategory == "") {
+        // Category names come from the dictionary data, not user input, but
+        // they run through the same key derivation as user lists — so any
+        // printable text (emoji included) is preserved. Skip a category only
+        // when it can't form a valid list name (empty/whitespace, too long,
+        // or the reserved favourites name); getKeyFromName throws in those
+        // cases. Suffix length must equal 6, so "_categ" is short for
+        // "_category".
+        String key;
+        try {
+          key = EntryList.getKeyFromName(category, suffix: "_categ");
+        } on EntryListNameException {
           continue;
         }
-
-        // Suffix lengths must equal 6, so this is a short form of "_category".
-        var key = EntryList.getKeyFromName(cleanCategory, suffix: "_categ");
 
         if (!categoryToEntries.containsKey(key)) {
           categoryToEntries[key] = [];
@@ -65,16 +69,4 @@ class CategoryEntryListManager implements EntryListManager {
   LinkedHashMap<String, EntryList> getEntryLists() {
     return LinkedHashMap.from(_entryLists);
   }
-}
-
-// Helper function to remove illegal characters from the category name so we can
-// use it as the key for an entry list.
-String removeNonMatchingCharacters(String input, RegExp pattern) {
-  // Find all matches of the pattern in the input string
-  Iterable<RegExpMatch> matches = pattern.allMatches(input);
-
-  // Concatenate all matched substrings
-  String result = matches.map((m) => m.group(0)).join('');
-
-  return result;
 }

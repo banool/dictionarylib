@@ -31,14 +31,17 @@ import 'package:http/testing.dart';
 class FakeEntry extends Entry {
   final String _key;
   final List<SubEntry> _subEntries;
+  final List<String> _categories;
   FakeEntry(
     this._key, {
     List<String>? videos,
     List<FakeSubEntryFixture>? subEntries,
+    List<String> categories = const [],
   })  : assert(
             videos == null || subEntries == null,
             'pass `videos:` (single-sub-entry shorthand) OR `subEntries:` '
             '(explicit list), not both'),
+        _categories = categories,
         _subEntries = subEntries != null
             ? subEntries.map((f) => f._build()).toList()
             : (videos == null || videos.isEmpty)
@@ -49,7 +52,7 @@ class FakeEntry extends Entry {
   @override
   String? getPhrase(Locale locale) => _key;
   @override
-  List<String> getCategories() => const [];
+  List<String> getCategories() => _categories;
   @override
   EntryType getEntryType() => EntryType.WORD;
   @override

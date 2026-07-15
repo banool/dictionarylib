@@ -120,7 +120,7 @@ enum EntryListNameError {
   /// Name was empty or whitespace-only.
   empty,
 
-  /// Name contained characters outside [EntryList.validNameCharacters].
+  /// Name contained characters outside the old allowed-character whitelist.
   /// No longer produced by [EntryList.getKeyFromName] (which now accepts
   /// any printable text); kept for compatibility.
   invalidChars,
@@ -190,16 +190,6 @@ class EntryListNameException implements Exception {
 /// view groups them under a single entry row but the underlying
 /// container preserves per-video insertion order.
 class EntryList {
-  // TODO: Confirm that this works as intended for Sinhala and Tamil.
-  // The pattern allows all Unicode letters and numbers, whitespace, and the
-  // literal punctuation comma, dot, underscore, exclamation mark, and dash.
-  // The dash sits last in the class so it is a literal dash and not a range —
-  // putting it between '.' and '_' would form the range U+002E–U+005F, which
-  // would silently admit '/ : ; < = > ? @ [ \ ] ^' and more. If any other
-  // special character is present the pattern won't match and validation fails.
-  static final validNameCharacters =
-      RegExp(r'^[\p{L}\p{N}\s,._!-]*' '\u0024', unicode: true);
-
   String key;
 
   /// Canonical container. Insertion-ordered set of saved videos.
