@@ -117,11 +117,24 @@ void main() {
       }
     });
 
-    test('a literal underscore in a typed name displays as a space (lossy)',
+    test('tolerates underscores by default, displaying them as spaces (lossy)',
         () {
+      // The default path (data-derived callers: community lists, imports)
+      // keeps the pre-existing lossy behaviour rather than rejecting.
       final key = EntryList.getKeyFromName('a_b');
       expect(key, 'a_b_words');
       expect(EntryList.getNameFromKey(key), 'a b');
+    });
+
+    test('rejects underscores when rejectUnderscores is set (typed names)', () {
+      expect(
+        () => EntryList.getKeyFromName('a_b', rejectUnderscores: true),
+        throwsA(isA<EntryListNameException>()
+            .having((e) => e.kind, 'kind', EntryListNameError.underscore)),
+      );
+      // A space is fine; only the literal underscore is refused.
+      expect(() => EntryList.getKeyFromName('a b', rejectUnderscores: true),
+          returnsNormally);
     });
   });
 

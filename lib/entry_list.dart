@@ -128,6 +128,12 @@ enum EntryListNameError {
   /// Name exceeded [maxListNameLength] characters.
   tooLong,
 
+  /// Name contained an underscore, which the storage key can't tell apart
+  /// from a space. Only raised on the user-typed create/rename paths
+  /// (`getKeyFromName(..., rejectUnderscores: true)`); data-derived callers
+  /// (community lists, imports) tolerate underscores.
+  underscore,
+
   /// Name matched one of [EntryList._reservedNamesLower].
   reserved,
 
@@ -156,6 +162,8 @@ class EntryListNameException implements Exception {
         return l.listNameErrorInvalid;
       case EntryListNameError.tooLong:
         return l.listNameErrorTooLong(maxListNameLength);
+      case EntryListNameError.underscore:
+        return l.listNameErrorUnderscore;
       case EntryListNameError.reserved:
         return l.listNameErrorReserved(name);
       case EntryListNameError.alreadyExists:
@@ -171,6 +179,8 @@ class EntryListNameException implements Exception {
         return 'Invalid list name';
       case EntryListNameError.tooLong:
         return 'List name is too long (max $maxListNameLength characters)';
+      case EntryListNameError.underscore:
+        return "List names can't contain underscores; use a space instead";
       case EntryListNameError.reserved:
         return 'List name "$name" is reserved';
       case EntryListNameError.alreadyExists:
@@ -321,7 +331,8 @@ class EntryList {
   static bool isReservedDisplayName(String name) =>
       _reservedNamesLower.contains(name.trim().toLowerCase());
 
-  static String getKeyFromName(String name, {String suffix = "_words"}) {
+  static String getKeyFromName(String name,
+      {String suffix = "_words", bool rejectUnderscores = false}) {
     if (suffix.length != SUFFIX_LENGTH) {
       // Programmer error, not user-facing; assert in debug, ignore in
       // release. Callers control the suffix.
@@ -337,6 +348,15 @@ class EntryList {
     // through the key untouched: they contain no space or underscore, and
     // the 6-char ASCII suffix stripped by getNameFromKey never splits a
     // surrogate pair.
+    //
+    // The key stores spaces as underscores, so an underscore in the name
+    // is indistinguishable from a space on the way back. User-typed paths
+    // pass [rejectUnderscores] to refuse the ambiguity outright; data-
+    // derived callers (community lists, imports) leave it off and let the
+    // underscore display as a space.
+    if (rejectUnderscores && trimmed.contains('_')) {
+      throw EntryListNameException(EntryListNameError.underscore, trimmed);
+    }
     if (trimmed.length > maxListNameLength) {
       throw EntryListNameException(EntryListNameError.tooLong, trimmed);
     }

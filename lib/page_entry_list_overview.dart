@@ -757,7 +757,7 @@ Future<bool> applyRenameListDialog(BuildContext context, EntryList list) {
     context,
     currentName: list.getName(context),
     onRename: (newName) async {
-      final newKey = EntryList.getKeyFromName(newName);
+      final newKey = EntryList.getKeyFromName(newName, rejectUnderscores: true);
       await userEntryListManager.renameEntryList(list.key, newKey);
     },
   );
@@ -799,7 +799,8 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
     var confirmed = await confirmAlert(context, body, title: l.listNewList);
     if (confirmed) {
       try {
-        final key = EntryList.getKeyFromName(controller.text);
+        final key =
+            EntryList.getKeyFromName(controller.text, rejectUnderscores: true);
         await userEntryListManager.createEntryList(key);
       } on EntryListNameException catch (e) {
         if (context.mounted) {

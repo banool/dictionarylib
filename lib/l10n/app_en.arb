@@ -459,6 +459,7 @@
             }
         }
     },
+    "listNameErrorUnderscore": "List names can't contain underscores; use a space instead",
     "listNameErrorReserved": "List name \"{name}\" is reserved",
     "@listNameErrorReserved": {
         "placeholders": {

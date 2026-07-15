@@ -846,6 +846,10 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
+  String get listNameErrorUnderscore =>
+      'List names can\'t contain underscores; use a space instead';
+
+  @override
   String listNameErrorReserved(String name) {
     return 'ලැයිස්තු නම \"$name\" වෙන් කර ඇත';
   }

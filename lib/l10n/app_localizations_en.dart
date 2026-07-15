@@ -840,6 +840,10 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
+  String get listNameErrorUnderscore =>
+      'List names can\'t contain underscores; use a space instead';
+
+  @override
   String listNameErrorReserved(String name) {
     return 'List name \"$name\" is reserved';
   }

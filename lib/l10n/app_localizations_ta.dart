@@ -858,6 +858,10 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
+  String get listNameErrorUnderscore =>
+      'List names can\'t contain underscores; use a space instead';
+
+  @override
   String listNameErrorReserved(String name) {
     return 'பட்டியல் பெயர் \"$name\" ஒதுக்கப்பட்டுள்ளது';
   }

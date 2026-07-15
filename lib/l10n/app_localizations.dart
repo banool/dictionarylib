@@ -1541,6 +1541,12 @@ abstract class DictLibLocalizations {
   /// **'List name is too long (at most {maxLength} characters)'**
   String listNameErrorTooLong(int maxLength);
 
+  /// No description provided for @listNameErrorUnderscore.
+  ///
+  /// In en, this message translates to:
+  /// **'List names can\'t contain underscores; use a space instead'**
+  String get listNameErrorUnderscore;
+
   /// No description provided for @listNameErrorReserved.
   ///
   /// In en, this message translates to:
