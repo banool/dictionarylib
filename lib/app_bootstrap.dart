@@ -38,20 +38,24 @@ class DictAppBootstrapConfig {
   /// ForceUpgradePage.
   final String yankedVersionsUrl;
 
-  /// The app's knob base URL.
+  /// The app's knob base URL (where per-key knob files live on GitHub raw).
+  /// Currently unread — every knob the apps once fetched is now hardcoded to
+  /// its long-standing value — but retained as the base for [readKnob] so a
+  /// live knob can be reintroduced without re-plumbing.
   final String knobUrlBase;
 
   /// Extra startup work run concurrently with the other best-effort metadata
-  /// fetches (e.g. SLSL's use_cdn_url knob read). The entry load waits on these
-  /// (so [setupMediaAndEntryLoader] can read them) but the advisory / yanked /
-  /// flashcards fetches do not. Must not throw for anything short of "the app
-  /// cannot run".
+  /// fetches. Currently none of the apps use this — it's the wiring point for a
+  /// future per-app startup fetch, e.g. a live knob read via [readKnob]. The
+  /// entry load waits on these (so [setupMediaAndEntryLoader] can read whatever
+  /// they set) but the advisory / yanked fetches do not. Must not throw for
+  /// anything short of "the app cannot run".
   final List<Future<void> Function()> extraStartupTasks;
 
   /// Set [mediaBaseUrls] and build the app's EntryLoader. Awaits
-  /// [extraStartupTasks] (so it can read knobs they fetch, e.g. use_cdn_url) and
-  /// runs before the entry load (so the list / review migrations can resolve /
-  /// strip saved-video paths against the bases).
+  /// [extraStartupTasks] (so it can read anything they fetch) and runs before
+  /// the entry load (so the list / review migrations can resolve / strip
+  /// saved-video paths against the bases).
   final Future<EntryLoader> Function() setupMediaAndEntryLoader;
 
   final SharingConfig sharingConfig;
@@ -67,11 +71,11 @@ class DictAppBootstrapConfig {
 /// first frame. To add startup work, wire a new future to the futures it truly
 /// depends on; don't reach for a new "phase".
 ///
-/// Timing: the best-effort metadata fetches (advisories, the flashcards knob,
-/// the yanked check, the app's extra knobs) all run concurrently once the local
-/// HTTP prerequisites are ready, so a slow/offline network delays startup by at
-/// most one [kMetadataFetchTimeout], not the sum. The essential entry load runs
-/// concurrently with them, gated only on the extra knobs it needs.
+/// Timing: the best-effort metadata fetches (advisories, the yanked check, any
+/// app extraStartupTasks) all run concurrently once the local HTTP
+/// prerequisites are ready, so a slow/offline network delays startup by at most
+/// one [kMetadataFetchTimeout], not the sum. The essential entry load runs
+/// concurrently with them, gated only on the extra startup tasks it needs.
 ///
 /// [checkYankedVersion] and [handleNativeSplash] default to true for real app
 /// launches; the integration harness passes false (a forced upgrade must not
@@ -107,17 +111,18 @@ Future<void> setupDictionaryApp(
   final httpReady = setupHttpPrerequisites();
 
   // Best-effort metadata. Each awaits only what it needs; none blocks another,
-  // and none throws (advisories → null, knob → cached/default on failure).
+  // and none throws (advisories → null on failure). Knobs are no longer fetched
+  // here — enableFlashcardsKnob and the apps' former knobs are hardcoded to
+  // their long-standing values (see globals); the readKnob mechanism and the
+  // extraStartupTasks hook below remain for reintroducing a live knob.
   final advisoriesReady = () async {
     // packageInfo gates version-bounded advisory filtering.
     await Future.wait([httpReady, packageInfoReady]);
     advisoriesResponse = await getAdvisories(config.advisoriesUrl);
   }();
-  final flashcardsKnobReady = () async {
-    await httpReady;
-    enableFlashcardsKnob =
-        await readKnob(config.knobUrlBase, "enable_flashcards", true);
-  }();
+  // Runs config.extraStartupTasks (currently empty for every app — safe: an
+  // empty list settles immediately). Kept as the concurrent slot for any future
+  // per-app startup fetch, e.g. a live knob read.
   final extraKnobsReady = () async {
     await httpReady;
     await Future.wait(config.extraStartupTasks.map((task) => task()));
@@ -151,12 +156,12 @@ Future<void> setupDictionaryApp(
     deviceInfoReady,
     httpReady,
     advisoriesReady,
-    flashcardsKnobReady,
     yankedCheckReady,
     entriesReady,
   ]);
 
-  // Derived from the flashcards knob (awaited above).
+  // Derived from enableFlashcardsKnob (hardcoded; see globals) plus the user's
+  // hide-revision switch.
   showFlashcards = getShowFlashcards();
 
   // One-shot migration of stored DolphinSR review history from the v1 master id

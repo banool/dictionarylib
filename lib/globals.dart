@@ -82,7 +82,15 @@ late SharedPreferences sharedPreferences;
 late MyCacheManager myCacheManager;
 
 // Values of the knobs.
-late bool enableFlashcardsKnob;
+//
+// enable_flashcards has read `true` for everyone for years, so the app no
+// longer fetches it at startup — it's hardcoded here. The knob *mechanism*
+// (readKnob in common.dart, DictAppBootstrapConfig.knobUrlBase,
+// extraStartupTasks) is deliberately kept for future use: to make this a live
+// knob again, restore the readKnob call in setupDictionaryApp. The GitHub knob
+// file is intentionally left in place so old app versions that still fetch it
+// keep working.
+bool enableFlashcardsKnob = true;
 
 // This is whether to show the flashcard stuff as a result of the knob + switch.
 late bool showFlashcards;
