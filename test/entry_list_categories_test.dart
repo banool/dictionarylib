@@ -27,6 +27,30 @@ void main() {
     expect(names.where((n) => n == 'Animals 🐘').length, 1);
   });
 
+  test(
+      'orders lists by first language character, ignoring leading emoji '
+      'and case', () {
+    entriesGlobal = <Entry>{
+      FakeEntry('a', categories: const [
+        'Zebra',
+        '🎉 Party', // sorts as "Party", not after everything else.
+        'apple',
+        'Banana',
+        '🐘 Elephant', // sorts as "Elephant".
+      ]),
+    };
+    // Emoji-prefixed lists land in their alphabetical slot rather than being
+    // bumped to the end by the emoji's (high) code point, and the compare is
+    // case-insensitive ('apple' before 'Banana').
+    expect(communityListNames(), <String>[
+      'apple',
+      'Banana',
+      '🐘 Elephant',
+      '🎉 Party',
+      'Zebra',
+    ]);
+  });
+
   test('skips categories that cannot form a valid list name', () {
     entriesGlobal = <Entry>{
       FakeEntry('a', categories: [

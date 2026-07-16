@@ -101,13 +101,30 @@ bool getShouldUseHorizontalLayout(BuildContext context) {
   return shouldUseHorizontalDisplay;
 }
 
+/// Leading characters that aren't a letter in any script — emoji, symbols,
+/// punctuation, whitespace, digits. Stripped before display sorting so a name
+/// orders by its first *language* character rather than by the code point of
+/// whatever decoration precedes it. Hoisted so it's compiled once, not per
+/// comparison. `unicode: true` is required for the `\p{L}` property escape.
+final RegExp _leadingNonLetters = RegExp(r'^[^\p{L}]+', unicode: true);
+
 /// Case-insensitive lexicographic comparison for *display* sorting, so mixed
 /// case sorts sensibly ("Apple", "banana", "Cat") instead of all capitals
-/// first the way raw code-unit order (String.compareTo) does. Strings that
-/// differ only by case fall back to a stable code-unit compare so the order is
-/// deterministic.
+/// first the way raw code-unit order (String.compareTo) does.
+///
+/// Leading non-letter characters are ignored so the sort keys off the first
+/// language character (English / Sinhala / Tamil). Without this a list named
+/// "🎉 Party" sorts after every plain-letter name, because the emoji's code
+/// point sits far above the letters — surprising when browsing lists in order.
+///
+/// Strings that compare equal after both transforms (e.g. differ only by case,
+/// or only by a stripped prefix) fall back to a stable code-unit compare of the
+/// originals, so the order is deterministic and distinct strings never compare
+/// equal — important where this comparator keys a SplayTreeMap.
 int compareDisplayNames(String a, String b) {
-  final c = a.toLowerCase().compareTo(b.toLowerCase());
+  final aKey = a.replaceFirst(_leadingNonLetters, '');
+  final bKey = b.replaceFirst(_leadingNonLetters, '');
+  final c = aKey.toLowerCase().compareTo(bKey.toLowerCase());
   return c != 0 ? c : a.compareTo(b);
 }
 
