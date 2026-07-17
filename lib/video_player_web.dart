@@ -2,6 +2,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import 'analytics.dart';
 import 'common.dart' show getShouldUseHorizontalLayout, printAndLog;
 import 'globals.dart' show mediaFallbackUrlsFor;
 import 'hearth.dart' show HearthVideoFrame;
@@ -139,6 +140,11 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
         // If unmounted mid-init, leave the controller in the map for the
         // dispose() loop to tear down — don't double-dispose here.
         if (!mounted) return;
+        // A non-primary host initialising means the primary failed: a
+        // "degraded but recovered" CDN-health signal.
+        if (i > 0) {
+          Analytics.track('video_fallback', props: {'host_index': i});
+        }
         controller.setLooping(true);
         controller.setVolume(0);
         controller.setPlaybackSpeed(_playbackSpeed);
@@ -150,6 +156,10 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
         printAndLog(
             'web video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e');
         if (isLast) {
+          // Every host failed — the user sees the error widget. Key
+          // "poor connection / broken CDN" signal (web).
+          Analytics.track('video_load_failed',
+              props: {'error_type': Analytics.errorType(e)});
           // Keep the failed controller so build() shows the error widget.
           if (mounted) setState(() {});
         } else {

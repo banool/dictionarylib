@@ -8,6 +8,7 @@ import 'package:store_redirect/store_redirect.dart';
 import 'package:mailto/mailto.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_loader.dart';
 import 'flashcards_logic.dart';
@@ -551,6 +552,8 @@ Future<void> _setThemeMode(ThemeMode themeMode) async {
   await sharedPreferences.setInt(KEY_THEME_MODE, themeMode.index);
   // We set this to affect the theme at runtime.
   themeNotifier.value = themeMode;
+  Analytics.track('theme_changed',
+      props: {'setting': 'mode', 'value': themeMode.name});
 }
 
 Future<void> _setThemeVariant(AppThemeVariant variant) async {
@@ -558,6 +561,8 @@ Future<void> _setThemeVariant(AppThemeVariant variant) async {
   await sharedPreferences.setString(KEY_THEME_VARIANT, variant.name);
   // Drives the live theme switch via the app's MaterialApp.
   themeVariantNotifier.value = variant;
+  Analytics.track('theme_changed',
+      props: {'setting': 'variant', 'value': variant.name});
 }
 
 /// Prompt the user about pulling down any lists tied to their current

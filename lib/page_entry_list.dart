@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dictionarylib/analytics.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/entry_types.dart';
@@ -142,10 +143,18 @@ class EntryListPageState extends State<EntryListPage> {
     final messenger = ScaffoldMessenger.of(context);
     final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
         "Couldn't update your lists. Please try again.";
+    final isShared = widget.entryList is SyncedEntryList;
     try {
       await widget.entryList.addAllVideosOfEntry(entry);
+      Analytics.track('save',
+          props: {'granularity': 'entry', 'is_shared': isShared});
     } catch (e) {
       printAndLog("Failed to add entry to list ${widget.entryList.key}: $e");
+      Analytics.track('save_failed', props: {
+        'granularity': 'entry',
+        'is_shared': isShared,
+        'error_type': Analytics.errorType(e),
+      });
       if (mounted) showSnackVia(messenger, failMessage);
     } finally {
       if (mounted) {

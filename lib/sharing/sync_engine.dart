@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
+import '../analytics.dart';
 import '../common.dart';
 import '../entry_list.dart';
 import '../globals.dart';
@@ -824,6 +825,7 @@ class SyncEngine {
       source: source,
     );
     await _manager.insert(list);
+    Analytics.track('list_created', props: {'shared': true});
     return list;
   }
 
@@ -876,6 +878,7 @@ class SyncEngine {
         savedVideos: _hydrateSavedVideos(remote.entries),
       );
       await _manager.insert(list);
+      Analytics.track('list_followed', props: {'role': 'viewer'});
       return list;
     });
   }
@@ -936,6 +939,7 @@ class SyncEngine {
         savedVideos: _hydrateSavedVideos(snapshot.entries),
       );
       await _manager.insert(editorList);
+      Analytics.track('list_followed', props: {'role': 'editor'});
       return editorList;
     });
   }
@@ -1017,6 +1021,7 @@ class SyncEngine {
       current.meta.lastKnownSeq = snapshot.lastSeq;
       current.meta.cachedMembers = snapshot.members;
       await current.writeMeta();
+      Analytics.track('list_renamed');
       sharing.bumpState();
     });
   }

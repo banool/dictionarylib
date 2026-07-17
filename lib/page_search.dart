@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
@@ -85,6 +88,11 @@ class SearchPageState extends State<SearchPage> {
 
   String? searchTerm;
 
+  /// Debounces the anonymous `search_performed` analytics event: search runs on
+  /// every keystroke (incremental results), but we only want one event once the
+  /// query settles, so it isn't emitted per character.
+  Timer? _searchAnalyticsDebounce;
+
   final _searchFieldController = TextEditingController();
 
   @override
@@ -103,6 +111,7 @@ class SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _searchAnalyticsDebounce?.cancel();
     _searchFieldController.dispose();
     super.dispose();
   }
@@ -111,6 +120,19 @@ class SearchPageState extends State<SearchPage> {
     setState(() {
       entriesSearched =
           searchList(context, searchTerm, entryTypes, entriesGlobal, {});
+    });
+    // Emit one anonymous analytics event once the query settles (never the term
+    // itself — only its bucketed length, the bucketed result count, and how many
+    // entry-type filters are active).
+    _searchAnalyticsDebounce?.cancel();
+    if (searchTerm.trim().isEmpty) return;
+    final resultCount = entriesSearched.length;
+    _searchAnalyticsDebounce = Timer(const Duration(milliseconds: 1200), () {
+      Analytics.track('search_performed', props: {
+        'term_length_bucket': Analytics.bucket(searchTerm.trim().length),
+        'result_count_bucket': Analytics.bucket(resultCount),
+        'filters_count': entryTypes.length,
+      });
     });
   }
 
@@ -424,6 +446,8 @@ class SearchPageState extends State<SearchPage> {
       hidden.add(key);
       await sharedPreferences.setStringList(
           KEY_HIDDEN_SIGNS_OF_THE_DAY, hidden);
+      // The entry key is deliberately NOT sent — only that the action happened.
+      Analytics.track('sign_of_the_day_hidden');
     }
     if (mounted) setState(() {});
   }

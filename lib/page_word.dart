@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
@@ -10,6 +11,7 @@ import 'globals.dart';
 import 'hearth.dart';
 import 'lists_service.dart';
 import 'save_video_sheet.dart';
+import 'sharing/synced_entry_list.dart';
 import 'saved_video.dart';
 import 'theme.dart';
 import 'video_player_screen.dart';
@@ -1090,15 +1092,25 @@ class _BookmarkButtonState extends State<_BookmarkButton> {
       final saved = target.containsVideo(v);
       // Capture before the await so we don't touch BuildContext across the gap.
       final messenger = ScaffoldMessenger.of(context);
+      final isShared = target is SyncedEntryList;
       Future<void> toggle() async {
         try {
           if (saved) {
             await target.removeVideo(v);
           } else {
             await target.addVideo(v);
+            Analytics.track('save',
+                props: {'granularity': 'video', 'is_shared': isShared});
           }
         } catch (e) {
           printAndLog("Failed to toggle video in list ${target.key}: $e");
+          if (!saved) {
+            Analytics.track('save_failed', props: {
+              'granularity': 'video',
+              'is_shared': isShared,
+              'error_type': Analytics.errorType(e),
+            });
+          }
           if (mounted) {
             showSnackVia(messenger, l.saveVideoFailed);
           }

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../analytics.dart';
 import '../../common.dart';
 import '../../globals.dart';
 import '../../l10n/app_localizations.dart';
@@ -133,7 +134,10 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
           if (ctx.mounted) Navigator.of(ctx).pop(session);
         } on ProviderSignInException catch (e) {
           // Platform SDK rejection (cancel, missing credential, etc.).
-          // The wrapper has already logged the underlying error.
+          // The wrapper has already logged the underlying error. `kind` cleanly
+          // separates a user cancel from a real error (no PII in the enum name).
+          Analytics.track('sign_in_failed',
+              props: {'provider': provider.name, 'reason': e.kind.name});
           setLocal(() {
             inflight = null;
             error = _localiseProviderError(l, e.kind);
@@ -142,6 +146,10 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
           // Server rejected the provider credential.
           printAndLog('sign-in (${provider.name}): server rejected '
               '(${e.kind}): ${e.message}');
+          Analytics.track('sign_in_failed', props: {
+            'provider': provider.name,
+            'reason': 'server_rejected',
+          });
           setLocal(() {
             inflight = null;
             error = localisedSyncError(ctx, e,
@@ -153,6 +161,10 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
           // generic l10n string — we never want raw English exception
           // text in the UI.
           printAndLog('sign-in (${provider.name}): unexpected: $e');
+          Analytics.track('sign_in_failed', props: {
+            'provider': provider.name,
+            'reason': 'unexpected',
+          });
           setLocal(() {
             inflight = null;
             error = l.signInFailed;

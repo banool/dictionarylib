@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dictionarylib/analytics.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
@@ -145,6 +146,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   /// doesn't read as a successful refresh.
   Future<void> _refreshSynced() async {
     if (!sharing.isEnabled) return;
+    Analytics.track('pull_to_refresh', props: {'scope': 'overview'});
     try {
       await retryWithFeedback(
         () async {
@@ -802,6 +804,7 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
         final key =
             EntryList.getKeyFromName(controller.text, rejectUnderscores: true);
         await userEntryListManager.createEntryList(key);
+        Analytics.track('list_created', props: {'shared': false});
       } on EntryListNameException catch (e) {
         if (context.mounted) {
           showSnack(context, '${l.listFailedToMake}: ${e.localise(context)}.',

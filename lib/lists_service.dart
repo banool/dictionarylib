@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
 
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_list.dart';
 import 'globals.dart';
@@ -172,6 +173,7 @@ class ListsService {
   /// refresh on the shared-list and members pages.
   Future<void> refreshSyncedList(SyncedEntryList list) async {
     if (!sharing.isEnabled) return;
+    Analytics.track('pull_to_refresh', props: {'scope': 'list'});
     await sharing.engine.refreshList(list.listId);
   }
 

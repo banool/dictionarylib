@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'advisories.dart';
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_loader.dart';
 import 'entry_types.dart';
@@ -28,6 +29,7 @@ class DictAppBootstrapConfig {
     this.extraStartupTasks = const [],
     required this.setupMediaAndEntryLoader,
     required this.sharingConfig,
+    this.aptabaseAppKey = '',
   });
 
   /// The app's advisories file (GitHub raw). Fetched best-effort at startup.
@@ -59,6 +61,12 @@ class DictAppBootstrapConfig {
   final Future<EntryLoader> Function() setupMediaAndEntryLoader;
 
   final SharingConfig sharingConfig;
+
+  /// Public Aptabase app key (format `A-REG-0000000000`) for privacy-first
+  /// anonymous analytics. Empty (the default) disables analytics entirely — a
+  /// safe no-op — so an app that hasn't configured one, and the test /
+  /// integration harness, collect nothing. See [Analytics].
+  final String aptabaseAppKey;
 }
 
 /// The shared body of the apps' `setup()`.
@@ -159,6 +167,13 @@ Future<void> setupDictionaryApp(
     yankedCheckReady,
     entriesReady,
   ]);
+
+  // Privacy-first anonymous analytics (Aptabase). A no-op unless the app passed
+  // a key. Initialised here — after the barrier — so package + device info (its
+  // global properties) are already loaded, and it never blocks the first frame
+  // (init only sets up an in-memory buffer + timer; the first network send is
+  // fire-and-forget).
+  await Analytics.init(config.aptabaseAppKey);
 
   // Derived from enableFlashcardsKnob (hardcoded; see globals) plus the user's
   // hide-revision switch.

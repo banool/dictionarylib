@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dictionarylib/analytics.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
@@ -130,6 +131,10 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     if (cardLimit > 0 && numCardsToReview > cardLimit) {
       numCardsToReview = cardLimit;
     }
+    Analytics.track('revision_started', props: {
+      'cards_bucket': Analytics.bucket(numCardsToReview),
+      'strategy': widget.revisionStrategy.name,
+    });
     nextCard();
   }
 
@@ -156,6 +161,14 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     // a success, so report it as one.
     if (reviewsWritten) return true;
     reviewsWritten = true;
+    // Single-shot point (guarded above), so revision_completed fires exactly
+    // once per session regardless of how it ends (natural end, out of cards, or
+    // the user closing early).
+    final reviewed = getCardsReviewed();
+    Analytics.track('revision_completed', props: {
+      'cards_bucket': Analytics.bucket(reviewed),
+      'early_exit': reviewed < numCardsToReview,
+    });
     try {
       switch (widget.revisionStrategy) {
         case RevisionStrategy.SpacedRepetition:

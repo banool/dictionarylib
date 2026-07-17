@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
+import '../../analytics.dart';
 import '../sharing_config.dart';
 import 'apple_sign_in.dart';
 import 'auth_api.dart';
@@ -107,6 +108,7 @@ class AuthService {
   Future<AuthSession> signIn(AuthProvider provider) async {
     final session = await _signInImpl(provider);
     await _store.save(session);
+    Analytics.track('sign_in_success', props: {'provider': provider.name});
     return session;
   }
 

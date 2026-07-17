@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
@@ -253,6 +254,11 @@ class _DictRootAppState extends State<DictRootApp> {
   GoRouter _buildRouter() {
     return GoRouter(
         navigatorKey: rootNavigatorKey,
+        // Anonymous screen-view analytics (base path only; no query/path params
+        // ever leave the device). Only attached when analytics is enabled.
+        observers: [
+          if (Analytics.isEnabled) AnalyticsNavigatorObserver(),
+        ],
         initialLocation: kDebugMode && _kDebugInitialLocation.isNotEmpty
             ? _kDebugInitialLocation
             : SEARCH_ROUTE,
@@ -280,6 +286,7 @@ class _DictRootAppState extends State<DictRootApp> {
                 // search state) on every router rebuild — the other tabs don't
                 // do this. The route path already keys the page.
                 return NoTransitionPage(
+                  name: SEARCH_ROUTE, // for the screen-view analytics observer
                   child: _buildSearchPage(
                     initialQuery: initialQuery,
                     navigateToFirstMatch: navigateToFirstMatch,
@@ -290,6 +297,7 @@ class _DictRootAppState extends State<DictRootApp> {
               path: LISTS_ROUTE,
               pageBuilder: (BuildContext context, GoRouterState state) {
                 return NoTransitionPage(
+                  name: LISTS_ROUTE, // for the screen-view analytics observer
                   child: EntryListsOverviewPage(
                     buildEntryListWidgetCallback: (entryList) => EntryListPage(
                       entryList: entryList,
@@ -304,9 +312,11 @@ class _DictRootAppState extends State<DictRootApp> {
                 var controller =
                     widget.config.buildFlashcardsLandingPageController();
                 return NoTransitionPage(
+                    name:
+                        REVISION_ROUTE, // for the screen-view analytics observer
                     child: FlashcardsLandingPage(
-                  controller: controller,
-                ));
+                      controller: controller,
+                    ));
               }),
           GoRoute(
               path: '/share/:listId',
@@ -320,6 +330,7 @@ class _DictRootAppState extends State<DictRootApp> {
                 // shares mounts a fresh page.
                 return NoTransitionPage(
                   key: ValueKey('share-$id-${invite ?? ''}'),
+                  name: '/share', // base only (no list id) for analytics
                   child: SharedListLandingPage(
                     listId: id,
                     inviteToken:
@@ -332,20 +343,23 @@ class _DictRootAppState extends State<DictRootApp> {
               path: SETTINGS_ROUTE,
               pageBuilder: (BuildContext context, GoRouterState state) {
                 return NoTransitionPage(
+                    name:
+                        SETTINGS_ROUTE, // for the screen-view analytics observer
                     child: SettingsPage(
-                  appName: widget.config.appName,
-                  additionalTopWidgets:
-                      widget.config.buildSettingsTopWidgets?.call(context) ??
+                      appName: widget.config.appName,
+                      additionalTopWidgets: widget
+                              .config.buildSettingsTopWidgets
+                              ?.call(context) ??
                           const [],
-                  buildLegalInformationChildren:
-                      widget.config.buildLegalInformationChildren,
-                  reportDataProblemUrl: widget.config.reportDataProblemUrl,
-                  reportAppProblemUrl: widget.config.reportAppProblemUrl,
-                  iOSAppId: widget.config.iOSAppId,
-                  androidAppId: widget.config.androidAppId,
-                  privacyPolicyUrl: widget.config.privacyPolicyUrl,
-                  termsOfServiceUrl: widget.config.termsOfServiceUrl,
-                ));
+                      buildLegalInformationChildren:
+                          widget.config.buildLegalInformationChildren,
+                      reportDataProblemUrl: widget.config.reportDataProblemUrl,
+                      reportAppProblemUrl: widget.config.reportAppProblemUrl,
+                      iOSAppId: widget.config.iOSAppId,
+                      androidAppId: widget.config.androidAppId,
+                      privacyPolicyUrl: widget.config.privacyPolicyUrl,
+                      termsOfServiceUrl: widget.config.termsOfServiceUrl,
+                    ));
               }),
           GoRoute(
               path: "$WORD_ROUTE/:key",
@@ -356,6 +370,7 @@ class _DictRootAppState extends State<DictRootApp> {
                 // /word/<x> URL) → fall back to search rather than a broken page.
                 if (entry == null) {
                   return NoTransitionPage(
+                    name: SEARCH_ROUTE, // fallback shows search
                     child: _buildSearchPage(),
                   );
                 }
@@ -367,6 +382,7 @@ class _DictRootAppState extends State<DictRootApp> {
                 // tearing it down and rebuilding (which would reset the carousel).
                 return NoTransitionPage(
                   key: ValueKey('word-$key'),
+                  name: WORD_ROUTE, // base only (no entry key) for analytics
                   child: EntryPage(
                     entry: entry,
                     config: widget.config.wordPageConfig,

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dictionarylib/analytics.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
@@ -102,6 +103,10 @@ Future<void> _showPlaybackSpeedSheet(BuildContext context,
                       : null,
                   onTap: () {
                     Navigator.of(ctx).pop();
+                    if (s != current) {
+                      Analytics.track('playback_speed_changed',
+                          props: {'speed': s.name});
+                    }
                     onChanged(s);
                   },
                 ),
@@ -194,11 +199,13 @@ class _PlayerData {
   // Track if initial play/pause has been set to avoid calling on every rebuild.
   bool initialPlaybackSet = false;
   StreamSubscription? _playingSubscription;
+  StreamSubscription? _errorSubscription;
 
   _PlayerData({required this.player, required this.controller});
 
   void dispose() {
     _playingSubscription?.cancel();
+    _errorSubscription?.cancel();
     player.dispose();
   }
 }
@@ -431,6 +438,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     final playerData = players[idx];
     if (playerData == null) return;
 
+    // media_kit reports load/playback failures (bad host, DNS failure, decode
+    // error) asynchronously on stream.error — open() does NOT throw and the
+    // width-timeout below swallows its own timeout — so without this listener a
+    // failed video just shows a black frame forever and nothing is recorded.
+    // Fire once, and only for a genuine *load* failure (the video never played);
+    // ignore transient errors after successful playback. Surfacing the error
+    // also makes the error widget appear (matching the web player).
+    playerData._errorSubscription = playerData.player.stream.error.listen((e) {
+      if (playerData.hasPlayedOnce || playerData.error != null) return;
+      printAndLog("Video failed to load (stream.error): $e");
+      Analytics.track('video_load_failed',
+          props: {'error_type': Analytics.errorType(e)});
+      if (mounted) {
+        setState(() {
+          playerData.error = "$e";
+        });
+      }
+    });
+
     // The saved-video identity is a media *path*; [mediaLink] is that path
     // resolved against the preferred base (mediaBaseUrls.first). Recover a
     // candidate URL for every configured host so a download failure on the
@@ -448,6 +474,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         printAndLog(
             "Resolving video ${candidates[i]} (candidate ${i + 1}/${candidates.length})");
         mediaSource = await _resolveOneSource(candidates[i], shouldCache);
+        // A non-primary host succeeding means the primary failed to
+        // resolve/cache: a "degraded but recovered" signal for CDN health.
+        // Rare (only fires when a fallback host is actually used).
+        if (i > 0) {
+          Analytics.track('video_fallback', props: {'host_index': i});
+        }
         break;
       } catch (e) {
         lastError = e;
@@ -528,6 +560,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       }
     } catch (e) {
       printAndLog("Error loading video: $e");
+      // Synchronous open/setup failure. Guard so we don't double-count with the
+      // stream.error listener above (which handles the async failures).
+      if (playerData.error == null) {
+        Analytics.track('video_load_failed',
+            props: {'error_type': Analytics.errorType(e)});
+      }
       if (mounted) {
         setState(() {
           playerData.error = "$e";

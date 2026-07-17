@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'analytics.dart';
 import 'common.dart';
 import 'entry_list.dart';
 import 'l10n/app_localizations.dart';
@@ -101,14 +102,25 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
       final messenger = ScaffoldMessenger.of(context);
       final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
           "Couldn't update your lists. Please try again.";
+      final isShared = widget.list is SyncedEntryList;
       try {
         if (saved) {
           await widget.list.removeVideo(widget.video);
         } else {
           await widget.list.addVideo(widget.video);
+          Analytics.track('save',
+              props: {'granularity': 'video', 'is_shared': isShared});
         }
       } catch (e) {
         printAndLog("Failed to toggle video in list ${widget.list.key}: $e");
+        // Only a failed *add* is a failed save (removes aren't saves).
+        if (!saved) {
+          Analytics.track('save_failed', props: {
+            'granularity': 'video',
+            'is_shared': isShared,
+            'error_type': Analytics.errorType(e),
+          });
+        }
         if (mounted) {
           showSnackVia(messenger, failMessage);
         }
