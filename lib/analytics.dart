@@ -51,11 +51,12 @@ class Analytics {
   static const String _sdkVersion = 'dictionarylib-aptabase@1';
 
   /// Cloud regions are encoded in the app key (`A-EU-…` / `A-US-…`); the `DEV`
-  /// region points at a local Aptabase for manual testing. Self-hosted keys
-  /// (`A-SH-…`) would need an explicit host and are intentionally unsupported.
+  /// region points at a local Aptabase for manual testing. `A-SH-…` keys are
+  /// self-hosted and resolve to our own Aptabase instance below.
   static const Map<String, String> _regionHosts = {
     'EU': 'https://eu.aptabase.com',
     'US': 'https://us.aptabase.com',
+    'SH': 'https://analytics.auslandictionary.org',
     'DEV': 'http://localhost:3000',
   };
 
