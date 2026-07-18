@@ -252,13 +252,17 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                         [KEY_FAVOURITES_ENTRIES])
                     .toSet();
 
+            // Persist + repaint the tick only. The heavy part — rebuilding
+            // the whole DolphinSR session — happens once when the sheet
+            // closes: doing it per tick starves the checkbox repaint on slow
+            // devices once many big lists are selected (the tick appears to
+            // do nothing even though the selection was saved).
             void toggle(String key) {
               final s = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
                       [KEY_FAVOURITES_ENTRIES])
                   .toSet();
               if (!s.add(key)) s.remove(key);
               sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, s.toList());
-              setState(() => updateRevisionSettings());
               setSheet(() {});
             }
 
@@ -344,13 +348,17 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
           });
         },
       );
+      // Apply whatever the sheet changed in one pass (see toggle above).
+      if (mounted) updateRevisionSettings();
     }
 
     // An outlined card wrapping rows separated by hairline dividers.
-    Widget settingsCard(List<Widget> rows, {EdgeInsetsGeometry? padding}) {
+    Widget settingsCard(List<Widget> rows,
+        {EdgeInsetsGeometry? padding, double? maxHeight}) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: HearthRowGroup(rows: rows, padding: padding),
+        child:
+            HearthRowGroup(rows: rows, padding: padding, maxHeight: maxHeight),
       );
     }
 
@@ -397,11 +405,23 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       };
     }
 
+    // With many lists selected (all 47 community lists is a real case) the
+    // sources card would swallow the page, so past a handful of rows it
+    // becomes its own capped scrollable. The always-visible scrollbar plus a
+    // row cut off at the boundary signal the overflow; the count in the
+    // section label says how many there are in total.
+    final bool capSources = sourceRows.length > 8;
+    final double sourcesMaxHeight =
+        (MediaQuery.of(context).size.height * 0.45).clamp(0.0, 480.0);
+
     final listChildren = <Widget>[
       // --- Revision sources ---
-      HearthSectionLabel(l.flashcardsRevisionSources,
+      HearthSectionLabel(
+          capSources
+              ? "${l.flashcardsRevisionSources} · ${sourceRows.length}"
+              : l.flashcardsRevisionSources,
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 8)),
-      settingsCard(sourceRows),
+      settingsCard(sourceRows, maxHeight: capSources ? sourcesMaxHeight : null),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
         child: Align(

@@ -523,20 +523,57 @@ class _HearthRowDivider extends StatelessWidget {
 /// The canonical "settings group": a [HearthCard] wrapping [rows] separated by
 /// hairline dividers. Used by the settings and flashcards-landing screens so
 /// the grouped-rows look stays in one place.
-class HearthRowGroup extends StatelessWidget {
+class HearthRowGroup extends StatefulWidget {
   final List<Widget> rows;
   final EdgeInsetsGeometry? padding;
 
-  const HearthRowGroup({required this.rows, this.padding, super.key});
+  /// When set, the group's rows scroll within this height bound (with an
+  /// always-visible scrollbar) instead of growing without limit. For groups
+  /// whose row count is user-driven and can reach dozens (e.g. the revision
+  /// sources card), so they don't swallow the whole page.
+  final double? maxHeight;
+
+  const HearthRowGroup(
+      {required this.rows, this.padding, this.maxHeight, super.key});
+
+  @override
+  State<HearthRowGroup> createState() => _HearthRowGroupState();
+}
+
+class _HearthRowGroupState extends State<HearthRowGroup> {
+  // Scrollbar and scroll view must share a controller: this group usually
+  // sits inside the page's own scrollable, so the scrollbar can't rely on
+  // finding a PrimaryScrollController.
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final kids = <Widget>[];
-    for (var i = 0; i < rows.length; i++) {
+    for (var i = 0; i < widget.rows.length; i++) {
       if (i > 0) kids.add(const _HearthRowDivider());
-      kids.add(rows[i]);
+      kids.add(widget.rows[i]);
     }
-    return HearthCard(padding: padding, child: Column(children: kids));
+    Widget child = Column(children: kids);
+    if (widget.maxHeight != null) {
+      child = ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: widget.maxHeight!),
+        child: Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: child,
+          ),
+        ),
+      );
+    }
+    return HearthCard(padding: widget.padding, child: child);
   }
 }
 
