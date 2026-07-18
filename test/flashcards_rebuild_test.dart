@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
@@ -15,9 +16,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// mutated instance and replays the canonical review set instead.
 
 /// Two cards' worth of masters, each with the standard word↔sign pair of
-/// combinations. Built directly (rather than via [getMastersFromVideos],
-/// which shuffles) so a test's expected card set is deterministic; the
-/// rebuild path doesn't care how the masters were produced.
+/// combinations. Built directly (rather than via [getMastersFromVideos])
+/// so a test's expected card set is deterministic; the rebuild path
+/// doesn't care how the masters were produced.
 List<Master> _twoMasters() => const [
       Master(
         id: 'apple',
@@ -182,7 +183,7 @@ void main() {
       final rebuilt = rebuildDolphin(di, [answer]);
 
       expect(rebuilt.masters, same(di.masters));
-      expect(rebuilt.seedReviews, same(di.seedReviews));
+      expect(rebuilt.orderSeed, di.orderSeed);
       expect(rebuilt.sessionReviews, same(di.sessionReviews));
       expect(rebuilt.masterToVideoMap, same(di.masterToVideoMap));
 
@@ -220,11 +221,11 @@ void main() {
         'rebuilt dolphin schedules identically to a same-seed manual build '
         'from the canonical one-per-card review set — including nextCard '
         'ordering', () {
-      // The cross-session seed reviews are intentionally re-randomised
-      // each session (random card order is a feature), so comparing
-      // nextCard against a *fresh* getDolphinInformationFromVideos isn't
-      // deterministic. To pin the M2 invariant at the ordering level we
-      // build the ground-truth dolphin with the SAME retained seeds.
+      // The card order is intentionally re-randomised each session
+      // (random order is a feature), so comparing nextCard against a
+      // *fresh* getDolphinInformationFromVideos isn't deterministic. To
+      // pin the M2 invariant at the ordering level we build the
+      // ground-truth dolphin with the SAME order seed.
       final masters = _twoMasters();
       final di = getDolphinInformationFromVideos([], masters, reviews: []);
 
@@ -236,10 +237,11 @@ void main() {
       final answer = _review('apple', Rating.Hard, t2);
       final rebuilt = rebuildDolphin(di, [answer]);
 
-      // Ground truth: same masters, same seeds, only the latest review.
+      // Ground truth: same masters, same order seed, only the latest
+      // review.
       final truth = DolphinSR();
-      truth.addMasters(masters);
-      truth.addReviews(di.seedReviews);
+      truth.addMasters(masters,
+          shuffleCardOrder: true, random: Random(di.orderSeed));
       truth.addReviews([answer]);
 
       _expectSameSchedule(rebuilt.dolphin, truth);

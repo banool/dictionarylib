@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:dolphinsr_dart/dolphinsr_dart.dart';
 import 'package:flutter/material.dart';
@@ -63,7 +64,7 @@ class DolphinInformation {
     required this.dolphin,
     required this.masterToVideoMap,
     required this.masters,
-    required this.seedReviews,
+    required this.orderSeed,
     required this.sessionReviews,
   });
 
@@ -80,17 +81,14 @@ class DolphinInformation {
   /// rebuild needs the original list to hand to a new instance).
   final List<Master> masters;
 
-  /// The exact seed reviews used to randomise card order when no real
-  /// history exists. Retained verbatim — they're built from a shuffle
-  /// plus staggered epoch timestamps, so a deterministic rebuild can
-  /// only reproduce the same ordering by re-applying these exact
-  /// reviews rather than regenerating them. See
-  /// [getDolphinInformationFromVideos].
-  final List<Review> seedReviews;
+  /// The seed for the shuffled order DolphinSR serves fresh cards in
+  /// (see `addMasters(shuffleCardOrder:)`). Retained so a mid-session
+  /// rebuild reproduces the same card order.
+  final int orderSeed;
 
   /// The persisted reviews (already filtered to this build's masters /
-  /// combinations) that were applied on top of [seedReviews]. Retained
-  /// so a rebuild doesn't have to re-filter the caller's raw history.
+  /// combinations) that were applied to [dolphin]. Retained so a
+  /// rebuild doesn't have to re-filter the caller's raw history.
   final List<Review> sessionReviews;
 }
 
@@ -199,7 +197,9 @@ List<Master> getMastersFromVideos(Locale revisionLocale,
       combinations: combinations,
     ));
   }
-  masters.shuffle();
+  // No shuffle here: the card order (per combination, not just per
+  // master) is shuffled by DolphinSR itself via addMasters'
+  // shuffleCardOrder, seeded so rebuilds reproduce it.
   printAndLog("Built ${masters.length} masters");
   return masters;
 }
@@ -210,97 +210,49 @@ int getNumCards(DolphinSR dolphin) {
 
 DolphinInformation getDolphinInformationFromVideos(
     List<ResolvedSavedVideo> videos, List<Master> masters,
-    {List<Review>? reviews}) {
+    {List<Review>? reviews, int? orderSeed}) {
   reviews = reviews ?? [];
   final masterToVideoMap = <String, ResolvedSavedVideo>{};
   for (final r in videos) {
     masterToVideoMap[savedVideoMasterId(r.video)] = r;
   }
-  var dolphin = DolphinSR();
-  dolphin.addMasters(masters);
-
-  // Seed reviews with rating=Again at staggered epoch timestamps so
-  // cards come out in a random order from `nextCard` when no real
-  // history exists. Same trick as the v1 implementation.
+  // Fresh cards come out of nextCard() in DolphinSR's shuffled insertion
+  // order; the seed makes the shuffle reproducible so a mid-session
+  // rebuild keeps the same order. (This replaced the old trick of seeding
+  // every card with a synthetic Again review at staggered epoch
+  // timestamps, whose timestamps could collide with real reviews at scale
+  // and blank the revision tab.)
   //
-  // The spacing must keep every seed timestamp before any real review
-  // timestamp: DolphinSR throws if a review is applied whose ts is older
-  // than the card's current lastReviewed, and the shuffle re-assigns seed
-  // timestamps to different cards on every rebuild. A previous 1e8 ms
-  // spacing meant ~17k+ cards pushed the last seeds past the present day,
-  // so a user with older real reviews would (probabilistically, per
-  // rebuild) hit that throw inside the landing page's build and get a
-  // blank revision tab. 1s spacing keeps the whole range within hours of
-  // 1970 while still giving pickMostDue a strict, shuffled order.
-  final mastersEntries = <MapEntry<String, Combination>>[];
-  for (final m in masters) {
-    for (final c in m.combinations!) {
-      mastersEntries.add(MapEntry(m.id!, c));
-    }
-  }
-  mastersEntries.shuffle();
-  final seedReviews = <Review>[];
-  int epoch = 1000000;
-  for (final e in mastersEntries) {
-    seedReviews.add(Review(
-        master: e.key,
-        combination: e.value,
-        ts: DateTime.fromMillisecondsSinceEpoch(epoch),
-        rating: Rating.Again));
-    epoch += 1000;
-  }
-  dolphin.addReviews(seedReviews);
+  // The skip policy makes DolphinSR drop, not throw on, out-of-order
+  // reviews (e.g. a history written while a device clock misbehaved) —
+  // this runs during the landing page's build, where an uncaught throw
+  // renders as a blank ErrorWidget with no way back.
+  final seed = orderSeed ?? Random().nextInt(1 << 31);
+  final dolphin =
+      DolphinSR(outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip);
+  dolphin.addMasters(masters, shuffleCardOrder: true, random: Random(seed));
 
   // Filter to reviews for known masters / combinations — DolphinSR
-  // crashes on unknown masters. Don't write the filtered set back; the
+  // throws on unknown masters. Don't write the filtered set back; the
   // dropped reviews may still be valid for a future session that
   // includes their masters.
   final filteredReviews = filterReviewsToMasters(reviews, masters);
-  printAndLog(
-      "Added ${filteredReviews.length} total reviews to Dolphin (excluding seed reviews)");
-  // DolphinSR requires per-card ascending timestamps and throws otherwise.
-  // Stored reviews are appended chronologically so they normally already
-  // are, but a device clock that jumped around can interleave them; sorting
-  // makes those apply cleanly (rebuildDolphin sorts its replay the same way).
+  // Sort so per-card order is chronological even if the stored history
+  // was written out of order (rebuildDolphin sorts its replay the same
+  // way).
   filteredReviews.sort((a, b) => a.ts!.compareTo(b.ts!));
-  var sessionReviews = filteredReviews;
-  try {
-    dolphin.addReviews(filteredReviews);
-  } catch (e) {
-    // Last-resort net: this runs during the landing page's build, where an
-    // uncaught throw renders as a blank ErrorWidget with no way back (which
-    // is exactly what the old seed/review timestamp collision did). Rebuild
-    // and salvage per review, dropping only the ones that genuinely can't
-    // apply — those degrade to "due earlier than scheduled" for this
-    // session only; the stored history itself is never modified here.
-    // addReviews mutates in place, so after a partial failure the DolphinSR
-    // must be rebuilt, not reused.
-    printAndLog(
-        "Bulk-applying ${filteredReviews.length} stored reviews to Dolphin "
-        "failed ($e); retrying individually");
-    dolphin = DolphinSR();
-    dolphin.addMasters(masters);
-    dolphin.addReviews(seedReviews);
-    final applied = <Review>[];
-    for (final r in filteredReviews) {
-      try {
-        dolphin.addReviews([r]);
-        applied.add(r);
-      } catch (_) {
-        // Skip just this review.
-      }
-    }
-    sessionReviews = applied;
-    printAndLog(
-        "Applied ${applied.length}/${filteredReviews.length} stored reviews; "
-        "dropped the rest as unappliable");
+  dolphin.addReviews(filteredReviews);
+  printAndLog("Added ${filteredReviews.length} stored reviews to Dolphin");
+  if (dolphin.skippedOutOfOrderReviews > 0) {
+    printAndLog("Skipped ${dolphin.skippedOutOfOrderReviews} out-of-order "
+        "stored reviews (kept on disk, not applied this session)");
   }
   return DolphinInformation(
     dolphin: dolphin,
     masterToVideoMap: masterToVideoMap,
     masters: masters,
-    seedReviews: seedReviews,
-    sessionReviews: sessionReviews,
+    orderSeed: seed,
+    sessionReviews: filteredReviews,
   );
 }
 
@@ -328,23 +280,22 @@ List<Review> filterReviewsToMasters(
 /// in place — the only correct fix is to discard the old instance and
 /// replay the canonical review set.
 ///
-/// [di] supplies the original masters and the exact seed reviews used
-/// to build it (so card ordering stays deterministic). [sessionAnswers]
+/// [di] supplies the original masters and the card-order seed used to
+/// build it (so card ordering stays deterministic). [sessionAnswers]
 /// is the latest review per card from the live session (typically
 /// `answers.values`).
 ///
-/// Reviews are sorted by timestamp before being applied: DolphinSR's
-/// `applyToCardState` throws if a review predates a card's current
-/// `lastReviewed`, and seed reviews use 1970-era epochs while persisted
-/// and session reviews use real timestamps, so ascending-ts order is
-/// the only safe order. The returned [DolphinInformation] carries the
-/// same masters / seed reviews / persisted reviews so it too can be
+/// Reviews are sorted by timestamp before being applied so per-card
+/// order is chronological (out-of-order leftovers are dropped by the
+/// skip policy rather than throwing). The returned [DolphinInformation]
+/// carries the same masters / seed / persisted reviews so it too can be
 /// rebuilt.
 DolphinInformation rebuildDolphin(
     DolphinInformation di, Iterable<Review> sessionAnswers) {
-  final dolphin = DolphinSR();
-  dolphin.addMasters(di.masters);
-  dolphin.addReviews(di.seedReviews);
+  final dolphin =
+      DolphinSR(outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip);
+  dolphin.addMasters(di.masters,
+      shuffleCardOrder: true, random: Random(di.orderSeed));
 
   // Apply persisted history plus the session's latest-per-card answers,
   // filtered to this build's masters and sorted ascending by ts. The
@@ -361,7 +312,7 @@ DolphinInformation rebuildDolphin(
     dolphin: dolphin,
     masterToVideoMap: di.masterToVideoMap,
     masters: di.masters,
-    seedReviews: di.seedReviews,
+    orderSeed: di.orderSeed,
     sessionReviews: di.sessionReviews,
   );
 }

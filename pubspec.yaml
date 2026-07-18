@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.3.99
+version: 0.3.100
 
 publish_to: 'none'
 
@@ -22,7 +22,7 @@ dependencies:
       url: https://github.com/banool/dolphhinsr_dart.git
       # Pinned to a commit (not a branch) so resolution is reproducible;
       # consuming apps must pin the same ref or pub fails to solve.
-      ref: 33ae39bf066ddb7e1169c97f56f5c9f2930a2f0b
+      ref: 016df21ffc2496df5a3d2042a503f72f5b6bdc00
   edit_distance: ^0.5.0-nullsafety.0
   flutter:
     sdk: flutter
