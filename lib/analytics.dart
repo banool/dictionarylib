@@ -45,6 +45,13 @@ class Analytics {
   /// How often buffered events are flushed to the network.
   static const Duration _flushInterval = Duration(seconds: 30);
 
+  /// Give up on a single flush POST after this long. The ingest host is a
+  /// self-hosted VM; if it half-opens (accepts the socket but never responds)
+  /// an un-timed-out post would never complete, and the periodic timer would
+  /// keep piling up in-flight requests. On timeout the batch is requeued
+  /// (bounded) for the next tick, same as any other network failure.
+  static const Duration _flushTimeout = Duration(seconds: 10);
+
   /// Flush eagerly once this many events are buffered.
   static const int _maxBuffer = 25;
 
@@ -87,30 +94,45 @@ class Analytics {
   /// analytics is collected. Never throws.
   static Future<void> init(String appKey) async {
     if (_enabled || appKey.isEmpty || _isUnderTest) return;
-    final parts = appKey.split('-');
-    final host = parts.length == 3 ? _regionHosts[parts[1]] : null;
-    if (host == null) {
-      printAndLog('Analytics: Aptabase key looks invalid; analytics disabled');
-      return;
+    // init runs on the app bootstrap path, so it must never throw — a failure
+    // here would drop the whole app to the error screen. Any unexpected error
+    // (e.g. constructing the lifecycle listener) disables analytics cleanly and
+    // is swallowed; the app carries on without it.
+    try {
+      final parts = appKey.split('-');
+      final host = parts.length == 3 ? _regionHosts[parts[1]] : null;
+      if (host == null) {
+        printAndLog(
+            'Analytics: Aptabase key looks invalid; analytics disabled');
+        return;
+      }
+      _appKey = appKey;
+      _ingestUrl = Uri.parse('$host/api/v0/events');
+      _sessionId = _newSessionId();
+      _enabled = true;
+
+      // Flush on a timer and whenever the app is backgrounded (mobile apps are
+      // often killed from the background, so this is where events would be lost).
+      _timer = Timer.periodic(_flushInterval, (_) => unawaited(_flush()));
+      _lifecycle = AppLifecycleListener(
+        onInactive: () => unawaited(_flush()),
+        onPause: () => unawaited(_flush()),
+      );
+
+      track('app_opened');
+      // Flush the launch event promptly so daily-active-user counts are reliable
+      // even for very short sessions.
+      unawaited(_flush());
+      printAndLog(
+          'Analytics initialised (anonymous, no persistent identifier)');
+    } catch (e) {
+      printAndLog('Analytics: init failed, disabled: $e');
+      _timer?.cancel();
+      _timer = null;
+      _lifecycle?.dispose();
+      _lifecycle = null;
+      _enabled = false;
     }
-    _appKey = appKey;
-    _ingestUrl = Uri.parse('$host/api/v0/events');
-    _sessionId = _newSessionId();
-    _enabled = true;
-
-    // Flush on a timer and whenever the app is backgrounded (mobile apps are
-    // often killed from the background, so this is where events would be lost).
-    _timer = Timer.periodic(_flushInterval, (_) => unawaited(_flush()));
-    _lifecycle = AppLifecycleListener(
-      onInactive: () => unawaited(_flush()),
-      onPause: () => unawaited(_flush()),
-    );
-
-    track('app_opened');
-    // Flush the launch event promptly so daily-active-user counts are reliable
-    // even for very short sessions.
-    unawaited(_flush());
-    printAndLog('Analytics initialised (anonymous, no persistent identifier)');
   }
 
   /// Record an event. [props] values must be strings or numbers; booleans are
@@ -219,14 +241,16 @@ class Analytics {
     final batch = List<Map<String, dynamic>>.from(_buffer);
     _buffer.clear();
     try {
-      final resp = await http.post(
-        url,
-        headers: {
-          'App-Key': _appKey,
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(batch),
-      );
+      final resp = await http
+          .post(
+            url,
+            headers: {
+              'App-Key': _appKey,
+              'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: jsonEncode(batch),
+          )
+          .timeout(_flushTimeout);
       if (resp.statusCode >= 500) {
         // Transient server error — requeue (bounded) for the next tick.
         _requeue(batch);

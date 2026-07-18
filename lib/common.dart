@@ -36,10 +36,14 @@ const String KEY_HIDDEN_SIGNS_OF_THE_DAY = "hidden_signs_of_the_day";
 
 const String KEY_FAVOURITES_ENTRIES = "favourites_words";
 
-// Max length of a user-defined list name. Matches the shared-list display
-// name cap (maxDisplayNameLen in sharing/sync_api.dart) and the server's
-// MAX_DISPLAY_NAME_LEN, so a local list stays shareable — keep the three in
-// sync.
+// Max length of a user-defined list name, measured in UTF-16 code units (Dart
+// `String.length`; each non-BMP emoji counts as 2). Matches the shared-list
+// display-name cap (maxDisplayNameLen in sharing/sync_api.dart) and the server's
+// MAX_DISPLAY_NAME_LEN in the backend's workers/src/validation.ts, which measures
+// the same unit (JS `String.length`) with the same cap. Both the create and
+// rename paths validate the *trimmed* name and send that trimmed value, so the
+// client and server agree exactly. Keep all four in sync — value AND unit — so a
+// local list stays shareable.
 const int maxListNameLength = 80;
 
 const String KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS = "last_data_check_time";
