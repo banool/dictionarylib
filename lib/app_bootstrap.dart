@@ -185,6 +185,13 @@ Future<void> setupDictionaryApp(
   // walks the dictionary to resolve legacy master ids.
   await migrateLegacyReviewsIfNeeded();
 
+  // The stored review history is append-only and replayed in full when building
+  // a revision session, so its size bounds both startup-adjacent work and how
+  // long that replay takes on slow devices. Logged so user reports show when a
+  // history has grown big enough to need compaction.
+  printAndLog(
+      "Stored review history: ${sharedPreferences.getStringList(KEY_STORED_REVIEWS)?.length ?? 0} reviews");
+
   // Opt in to the shared-lists feature. Runs after the entry load because the
   // synced-list manager resolves owner-share metadata against
   // userEntryListManager, which the entry load initializes.
