@@ -216,12 +216,22 @@ DolphinInformation getDolphinInformationFromVideos(
   for (final r in videos) {
     masterToVideoMap[savedVideoMasterId(r.video)] = r;
   }
-  final dolphin = DolphinSR();
+  var dolphin = DolphinSR();
   dolphin.addMasters(masters);
 
   // Seed reviews with rating=Again at staggered epoch timestamps so
   // cards come out in a random order from `nextCard` when no real
   // history exists. Same trick as the v1 implementation.
+  //
+  // The spacing must keep every seed timestamp before any real review
+  // timestamp: DolphinSR throws if a review is applied whose ts is older
+  // than the card's current lastReviewed, and the shuffle re-assigns seed
+  // timestamps to different cards on every rebuild. A previous 1e8 ms
+  // spacing meant ~17k+ cards pushed the last seeds past the present day,
+  // so a user with older real reviews would (probabilistically, per
+  // rebuild) hit that throw inside the landing page's build and get a
+  // blank revision tab. 1s spacing keeps the whole range within hours of
+  // 1970 while still giving pickMostDue a strict, shuffled order.
   final mastersEntries = <MapEntry<String, Combination>>[];
   for (final m in masters) {
     for (final c in m.combinations!) {
@@ -237,7 +247,7 @@ DolphinInformation getDolphinInformationFromVideos(
         combination: e.value,
         ts: DateTime.fromMillisecondsSinceEpoch(epoch),
         rating: Rating.Again));
-    epoch += 100000000;
+    epoch += 1000;
   }
   dolphin.addReviews(seedReviews);
 
@@ -248,13 +258,49 @@ DolphinInformation getDolphinInformationFromVideos(
   final filteredReviews = filterReviewsToMasters(reviews, masters);
   printAndLog(
       "Added ${filteredReviews.length} total reviews to Dolphin (excluding seed reviews)");
-  dolphin.addReviews(filteredReviews);
+  // DolphinSR requires per-card ascending timestamps and throws otherwise.
+  // Stored reviews are appended chronologically so they normally already
+  // are, but a device clock that jumped around can interleave them; sorting
+  // makes those apply cleanly (rebuildDolphin sorts its replay the same way).
+  filteredReviews.sort((a, b) => a.ts!.compareTo(b.ts!));
+  var sessionReviews = filteredReviews;
+  try {
+    dolphin.addReviews(filteredReviews);
+  } catch (e) {
+    // Last-resort net: this runs during the landing page's build, where an
+    // uncaught throw renders as a blank ErrorWidget with no way back (which
+    // is exactly what the old seed/review timestamp collision did). Rebuild
+    // and salvage per review, dropping only the ones that genuinely can't
+    // apply — those degrade to "due earlier than scheduled" for this
+    // session only; the stored history itself is never modified here.
+    // addReviews mutates in place, so after a partial failure the DolphinSR
+    // must be rebuilt, not reused.
+    printAndLog(
+        "Bulk-applying ${filteredReviews.length} stored reviews to Dolphin "
+        "failed ($e); retrying individually");
+    dolphin = DolphinSR();
+    dolphin.addMasters(masters);
+    dolphin.addReviews(seedReviews);
+    final applied = <Review>[];
+    for (final r in filteredReviews) {
+      try {
+        dolphin.addReviews([r]);
+        applied.add(r);
+      } catch (_) {
+        // Skip just this review.
+      }
+    }
+    sessionReviews = applied;
+    printAndLog(
+        "Applied ${applied.length}/${filteredReviews.length} stored reviews; "
+        "dropped the rest as unappliable");
+  }
   return DolphinInformation(
     dolphin: dolphin,
     masterToVideoMap: masterToVideoMap,
     masters: masters,
     seedReviews: seedReviews,
-    sessionReviews: filteredReviews,
+    sessionReviews: sessionReviews,
   );
 }
 
