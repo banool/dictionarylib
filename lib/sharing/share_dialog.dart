@@ -251,8 +251,9 @@ Future<bool> showShareLinkDialog({
                   Builder(builder: (btnCtx) {
                     return FilledButton.tonalIcon(
                       onPressed: () async {
-                        await Share.share(shareUrl,
-                            sharePositionOrigin: sharePositionOrigin(btnCtx));
+                        await SharePlus.instance.share(ShareParams(
+                            text: shareUrl,
+                            sharePositionOrigin: sharePositionOrigin(btnCtx)));
                       },
                       icon: const Icon(Icons.share),
                       label: Text(l.shareLinkShareButton),

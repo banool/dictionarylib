@@ -440,7 +440,7 @@ void showSnackVia(ScaffoldMessengerState messenger, String message,
   ));
 }
 
-/// Anchor rect for `Share.share`'s `sharePositionOrigin`. iOS uses this to
+/// Anchor rect for share_plus's `sharePositionOrigin`. iOS uses this to
 /// position the share popover (required on iPad; required by recent
 /// share_plus versions on iPhone too). Pass a context from inside the
 /// button you want the popover to emerge from.
