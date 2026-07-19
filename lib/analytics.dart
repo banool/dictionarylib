@@ -195,11 +195,20 @@ class Analytics {
 
   /// Coarse, non-identifying classification of an error for failure events.
   /// Never send the raw exception — it can contain URLs, media paths, or list
-  /// keys (all PII per this file's discipline). Returns one of
-  /// `network` / `timeout` / `other`.
+  /// keys (all PII per this file's discipline). Returns one of a small fixed
+  /// set of classes: `timeout` / `http_403` / `http_404` / `http_4xx` /
+  /// `http_5xx` / `network` / `open_failed` / `decode` / `other`.
   static String errorType(Object? e) {
     final s = (e?.toString() ?? '').toLowerCase();
     if (s.contains('timeout') || s.contains('timed out')) return 'timeout';
+    // flutter_cache_manager's download failure carries the response code as
+    // "Invalid statusCode: NNN". The class (not the URL) is all we take.
+    final status = RegExp(r'statuscode: (\d{3})').firstMatch(s)?.group(1);
+    if (status != null) {
+      if (status == '403') return 'http_403';
+      if (status == '404') return 'http_404';
+      return status.startsWith('5') ? 'http_5xx' : 'http_4xx';
+    }
     if (s.contains('socketexception') ||
         s.contains('failed host lookup') ||
         s.contains('resolve hostname') ||
@@ -211,6 +220,15 @@ class Analytics {
         s.contains('network') ||
         s.contains('tcp:')) {
       return 'network';
+    }
+    // mpv reports demuxer/transport failures as "Failed to open <url>" on
+    // stream.error with no cause attached; keep it as its own class rather
+    // than folding it into `other` so player-level failures are visible.
+    if (s.contains('failed to open')) return 'open_failed';
+    if (s.contains('recognize file format') ||
+        s.contains('decod') ||
+        s.contains('codec')) {
+      return 'decode';
     }
     return 'other';
   }

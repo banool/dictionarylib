@@ -438,6 +438,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     final playerData = players[idx];
     if (playerData == null) return;
 
+    // Whether the source handed to the player ended up being a cached local
+    // file or a network URL — assigned once resolution below finishes. A
+    // failure on a local file means the bytes were fetched fine (decode/codec
+    // problem); a failure on a URL points at connectivity or the CDN.
+    String? sourceKind;
+
     // media_kit reports load/playback failures (bad host, DNS failure, decode
     // error) asynchronously on stream.error — open() does NOT throw and the
     // width-timeout below swallows its own timeout — so without this listener a
@@ -448,8 +454,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     playerData._errorSubscription = playerData.player.stream.error.listen((e) {
       if (playerData.hasPlayedOnce || playerData.error != null) return;
       printAndLog("Video failed to load (stream.error): $e");
-      Analytics.track('video_load_failed',
-          props: {'error_type': Analytics.errorType(e)});
+      Analytics.track('video_load_failed', props: {
+        'error_type': Analytics.errorType(e),
+        'source_kind': sourceKind ?? 'unknown',
+      });
       if (mounted) {
         setState(() {
           playerData.error = "$e";
@@ -492,8 +500,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     if (mediaSource == null) {
       printAndLog(
           "All ${candidates.length} candidate(s) failed to resolve; handing the preferred URL to the player directly: $lastError");
+      // The download exceptions here are the informative ones (SocketException,
+      // HTTP status) — the player's own stream.error that typically follows is
+      // just an opaque "Failed to open", so record the cause while we have it.
+      Analytics.track('video_resolve_failed', props: {
+        'error_type': Analytics.errorType(lastError),
+        'candidates': candidates.length,
+      });
       mediaSource = candidates.first;
     }
+    sourceKind =
+        mediaSource.startsWith('/') || mediaSource.startsWith('file://')
+            ? 'file'
+            : 'url';
 
     try {
       // Disable audio completely to prevent interrupting other audio (like music).
@@ -563,8 +582,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       // Synchronous open/setup failure. Guard so we don't double-count with the
       // stream.error listener above (which handles the async failures).
       if (playerData.error == null) {
-        Analytics.track('video_load_failed',
-            props: {'error_type': Analytics.errorType(e)});
+        Analytics.track('video_load_failed', props: {
+          'error_type': Analytics.errorType(e),
+          'source_kind': sourceKind,
+        });
       }
       if (mounted) {
         setState(() {

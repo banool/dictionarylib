@@ -157,9 +157,13 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
             'web video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e');
         if (isLast) {
           // Every host failed — the user sees the error widget. Key
-          // "poor connection / broken CDN" signal (web).
-          Analytics.track('video_load_failed',
-              props: {'error_type': Analytics.errorType(e)});
+          // "poor connection / broken CDN" signal (web). Web never plays from
+          // a local file; the constant source_kind just keeps the event's
+          // shape uniform with the native player's.
+          Analytics.track('video_load_failed', props: {
+            'error_type': Analytics.errorType(e),
+            'source_kind': 'url'
+          });
           // Keep the failed controller so build() shows the error widget.
           if (mounted) setState(() {});
         } else {
