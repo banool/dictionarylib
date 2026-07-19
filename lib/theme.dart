@@ -375,8 +375,14 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       );
 
   ButtonStyle filledLikeStyle(Color bg, Color fg) => ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll(bg),
-        foregroundColor: WidgetStatePropertyAll(fg),
+        backgroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.disabled)
+                ? t.onSurface.withValues(alpha: 0.12)
+                : bg),
+        foregroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.disabled)
+                ? t.onSurface.withValues(alpha: 0.38)
+                : fg),
         elevation: const WidgetStatePropertyAll(0.0),
         minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
         padding:
