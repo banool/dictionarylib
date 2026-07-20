@@ -29,8 +29,7 @@ The client side of the shared-lists feature lives in `lib/sharing/`. The backend
 
 ## Shared app infrastructure
 
-This repo is also the canonical home for infrastructure shared by the two app
-repos (auslan_dictionary, slsl_dictionary):
+The shared release/CI tooling (reusable workflows, release/promote/screenshot scripts) used to live here; it moved to [banool/appci](https://github.com/banool/appci) in 2026-07, which serves all three apps (auslan_dictionary, slsl_dictionary, kombio_scorekeeper). This repo is back to being just the shared Flutter package, plus:
 
 ### dictionarylib_test_support
 
@@ -42,64 +41,18 @@ the same commit. Each app keeps thin `integration_test/*_test.dart` stubs plus
 two config files (`integration_test/test_config.dart`,
 `integration_test/multi_device/md_config.dart`).
 
-### Reusable GitHub workflows (.github/workflows/app-*.yaml)
-
-Called from the app repos via
-`uses: banool/dictionarylib/.github/workflows/<name>@main`:
-
-- `app-format.yaml` — dart format gate. Inputs: `working_directory`,
-  `flutter_version`, `format_paths`. No secrets.
-- `app-release-android.yaml` — flutter test (+ optionally build appbundle and
-  upload to the Play internal track). Inputs: `package_name` (required),
-  `working_directory`, `flutter_version`, `upload` (false = test-only).
-  Secrets: `UPLOAD_KEYSTORE`, `KEY_PROPERTIES`, `ANDROID_SERVICE_ACCOUNT_JSON`.
-- `app-web-deploy.yaml` — Flutter web build → Cloudflare Pages. Inputs:
-  `project_name`, `production_branch` (both required), `working_directory`,
-  `flutter_version`. Secrets: `CLOUDFLARE_API_TOKEN` (required),
-  `CLOUDFLARE_ACCOUNT_ID` (optional; non-secret literal fallback baked in).
-- `app-pages-deploy.yaml` — static site → Cloudflare Pages. Inputs:
-  `project_name`, `production_branch` (required), `working_directory`
-  (default `site`), `node_version`. Same secrets as app-web-deploy.
-
-Note: editing a reusable workflow here never triggers the app CIs. After a
-change, bump the app's `.force` sentinel (ci) or `gh workflow run` (web/pages,
-they keep workflow_dispatch) to exercise it.
-
-### Shared scripts (scripts/)
-
-Resolved by the apps via the sibling-checkout convention (a `dictionarylib`
-clone next to the app repo), overridable with `DICTIONARYLIB_DIR`:
-
-- `scripts/multi_device_run.sh` — canonical multi-device e2e driver. Each
-  app's `integration_test/multi_device/run.sh` is a ~15-line wrapper setting
-  `MD_APP_DIR`, `MD_BUNDLE_ID`, `MD_ANDROID_PKG`, `MD_APP_ID`.
-- `scripts/ios_upload.sh` — canonical TestFlight build/upload of an internal
-  build (auth precheck, invalid-cert/profile cleanup, automatic signing). Each
-  app's `ios/upload.sh` is a wrapper setting `UPLOAD_APP_DIR`, `UPLOAD_BUNDLE_ID`.
-- `scripts/promote.sh` — canonical promotion of an already-uploaded build to a
-  wider audience via a mandatory `--stage {beta,external}` flag. `beta` sends
-  the build to the external TestFlight group (iOS) and the beta track (Android)
-  with "What to Test" notes; `external` releases to the App Store and Play
-  production with "What's New" notes. Each app's `promote.sh` is a wrapper
-  setting `PROMOTE_APP_DIR`, `PROMOTE_BUNDLE_ID`, `PROMOTE_PACKAGE_NAME`,
-  `PROMOTE_BETA_GROUP`. Drives the helper scripts below; env-var configured.
-- `scripts/appstore_release.py` / `scripts/appstore_beta.py` /
-  `scripts/play_release.py` — App Store Connect and Google Play helpers invoked
-  by `promote.sh` (external release, TestFlight beta promotion, and Play
-  track-to-track promotion respectively). Fully env-var configured, stdlib-only.
-- `scripts/take_screenshots_lib.py` / `scripts/upload_screenshots_lib.py` —
-  canonical store-screenshot capture/upload. Each app's
-  `screenshots/take_screenshots.py` and `screenshots/upload_screenshots.py`
-  are wrappers that import these via `sys.path` and call
-  `configure(...)` + `main()` with the app's device matrix, locale maps,
-  bundle ids, and poster-video source.
+Note the screenshot suite here is coupled to appci: the slugs it captures must
+match the `app_store_shots` / `play_shots` curation lists in the apps'
+`screenshots/upload_screenshots.py`, and `_posterUrlFor` in
+`lib/video_player_screen.dart` must keep matching `poster_name()` in appci's
+`take_screenshots_lib.py`.
 
 ### Copy-pair policy: .githooks/pre-commit and bump_version.sh
 
-The canonical shapes live in this repo; the apps carry deliberate byte-similar
-copies (this can't ship through a pub dependency). The apps' `bump_version.sh`
-bumps **patch + build number**; this repo's variant bumps patch only (a library
-has no build number) — that difference is intentional. The bump is
-unconditional on every commit **by design**: CI builds and uploads store
-releases on a broad set of changes, and store uploads reject a reused version
-code. Never gate the bump behind a path filter.
+Each repo carries its own copy of the pre-commit hook and `bump_version.sh`
+(this can't ship through a pub dependency; appci holds the canonical reference
+copy). The apps' `bump_version.sh` bumps **patch + build number**; this repo's
+variant bumps patch only (a library has no build number) — that difference is
+intentional. The bump is unconditional on every commit **by design**: CI builds
+and uploads store releases on a broad set of changes, and store uploads reject
+a reused version code. Never gate the bump behind a path filter.
