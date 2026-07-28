@@ -9,7 +9,7 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_flashcards.dart';
 import 'package:dictionarylib/page_revision_history.dart';
 import 'package:dictionarylib/revision.dart';
-import 'package:dolphinsr_dart/dolphinsr_dart.dart';
+import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;

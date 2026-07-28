@@ -8,7 +8,7 @@ import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dictionarylib/theme.dart' show constrainContentWidth;
 import 'package:dictionarylib/video_player_screen.dart';
-import 'package:dolphinsr_dart/dolphinsr_dart.dart';
+import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 

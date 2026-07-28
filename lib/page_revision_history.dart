@@ -7,7 +7,7 @@ import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/page_flashcards_landing.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dictionarylib/theme.dart' show kRadiusBox, kRadiusCard;
-import 'package:dolphinsr_dart/dolphinsr_dart.dart';
+import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/material.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
