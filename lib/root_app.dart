@@ -129,6 +129,11 @@ Future<void> defaultNavigateToEntryPage(
     await Navigator.push(
       context,
       MaterialPageRoute(
+        // Named so the screen-view observer counts entry opens. Without this
+        // `settings.name` is null and the observer skips the route entirely,
+        // which made /word invisible on mobile (only the web branch above,
+        // which goes through the router, was ever recorded).
+        settings: const RouteSettings(name: WORD_ROUTE),
         builder: (context) => EntryPage(
             entry: entry,
             config: config,
@@ -281,11 +286,16 @@ class _DictRootAppState extends State<DictRootApp> {
                 bool navigateToFirstMatch =
                     state.uri.queryParameters["navigate_to_first_match"] ==
                         "true";
-                // No per-rebuild key: a `UniqueKey()` here forced the whole
-                // SearchPage to be torn down and rebuilt from scratch (losing
-                // search state) on every router rebuild — the other tabs don't
-                // do this. The route path already keys the page.
+                // A *stable* key, never `UniqueKey()`: a fresh key per rebuild
+                // forced the whole SearchPage to be torn down and rebuilt from
+                // scratch, losing search state on every router rebuild. A
+                // constant key is preserved across rebuilds but still differs
+                // from the other tabs' keys, which is what makes
+                // `Page.canUpdate` false when switching tabs — without that the
+                // Navigator swaps the child in place and never notifies the
+                // screen-view observer.
                 return NoTransitionPage(
+                  key: const ValueKey(SEARCH_ROUTE),
                   name: SEARCH_ROUTE, // for the screen-view analytics observer
                   child: _buildSearchPage(
                     initialQuery: initialQuery,
@@ -297,6 +307,8 @@ class _DictRootAppState extends State<DictRootApp> {
               path: LISTS_ROUTE,
               pageBuilder: (BuildContext context, GoRouterState state) {
                 return NoTransitionPage(
+                  // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
+                  key: const ValueKey(LISTS_ROUTE),
                   name: LISTS_ROUTE, // for the screen-view analytics observer
                   child: EntryListsOverviewPage(
                     buildEntryListWidgetCallback: (entryList) => EntryListPage(
@@ -312,6 +324,8 @@ class _DictRootAppState extends State<DictRootApp> {
                 var controller =
                     widget.config.buildFlashcardsLandingPageController();
                 return NoTransitionPage(
+                    // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
+                    key: const ValueKey(REVISION_ROUTE),
                     name:
                         REVISION_ROUTE, // for the screen-view analytics observer
                     child: FlashcardsLandingPage(
@@ -343,6 +357,8 @@ class _DictRootAppState extends State<DictRootApp> {
               path: SETTINGS_ROUTE,
               pageBuilder: (BuildContext context, GoRouterState state) {
                 return NoTransitionPage(
+                    // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
+                    key: const ValueKey(SETTINGS_ROUTE),
                     name:
                         SETTINGS_ROUTE, // for the screen-view analytics observer
                     child: SettingsPage(

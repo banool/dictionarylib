@@ -202,11 +202,29 @@ String _normaliseForSearch(String phrase) {
 
 // Search a list of entries and return top matching items.
 List<Entry> searchList(BuildContext context, String searchTerm,
-    List<EntryType> entryTypes, Set<Entry> entries, Set<Entry> fallback) {
+        List<EntryType> entryTypes, Set<Entry> entries, Set<Entry> fallback) =>
+    searchListWithMeta(context, searchTerm, entryTypes, entries, fallback)
+        .entries;
+
+/// [searchList], plus the distance of the single best match.
+///
+/// The returned list is capped at [SEARCH_FOR_NUM_ITEMS], which makes its
+/// *length* useless as a measure of how well a query did — nearly every query
+/// fills the cap. [bestDistance] is the honest signal: 0.0 is an exact match and
+/// 1.0 is no similarity at all, so a large value means the dictionary had
+/// nothing close to what the user typed. It is null when nothing matched.
+/// Callers that only want the entries should use [searchList].
+({List<Entry> entries, double? bestDistance}) searchListWithMeta(
+    BuildContext context,
+    String searchTerm,
+    List<EntryType> entryTypes,
+    Set<Entry> entries,
+    Set<Entry> fallback) {
   final SplayTreeMap<double, List<Entry>> st =
       SplayTreeMap<double, List<Entry>>();
   if (searchTerm == "") {
-    return List.from(fallback);
+    // An empty query isn't a search, so there is no match quality to report.
+    return (entries: List.from(fallback), bestDistance: null);
   }
   searchTerm = searchTerm.toLowerCase();
   JaroWinkler d = JaroWinkler();
@@ -233,7 +251,9 @@ List<Entry> searchList(BuildContext context, String searchTerm,
       break;
     }
   }
-  return out;
+  // firstKey() is the lowest distance, i.e. the closest match, because the
+  // SplayTreeMap is sorted by distance.
+  return (entries: out, bestDistance: st.isEmpty ? null : st.firstKey());
 }
 
 /// A confirm/cancel alert.

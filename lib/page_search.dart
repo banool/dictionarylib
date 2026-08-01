@@ -117,23 +117,53 @@ class SearchPageState extends State<SearchPage> {
   }
 
   void search(String searchTerm, List<EntryType> entryTypes) {
+    final result =
+        searchListWithMeta(context, searchTerm, entryTypes, entriesGlobal, {});
     setState(() {
-      entriesSearched =
-          searchList(context, searchTerm, entryTypes, entriesGlobal, {});
+      entriesSearched = result.entries;
     });
     // Emit one anonymous analytics event once the query settles (never the term
-    // itself — only its bucketed length, the bucketed result count, and how many
-    // entry-type filters are active).
+    // itself — only its bucketed length, how close the best match was, the
+    // bucketed result count, and how many entry-type filters are active).
     _searchAnalyticsDebounce?.cancel();
     if (searchTerm.trim().isEmpty) return;
     final resultCount = entriesSearched.length;
+    final matchStrength = _matchStrength(result.bestDistance);
     _searchAnalyticsDebounce = Timer(const Duration(milliseconds: 1200), () {
       Analytics.track('search_performed', props: {
         'term_length_bucket': Analytics.bucket(searchTerm.trim().length),
+        // How close the *best* match was. This is the trustworthy measure of
+        // whether the dictionary had what the user wanted; result_count_bucket
+        // is capped by SEARCH_FOR_NUM_ITEMS and is near-constant.
+        'top_match_strength': matchStrength,
         'result_count_bucket': Analytics.bucket(resultCount),
         'filters_count': entryTypes.length,
       });
     });
+  }
+
+  /// Bucket a JaroWinkler distance (0.0 = identical, 1.0 = nothing in common)
+  /// into a coarse label. Null means nothing matched at all.
+  ///
+  /// A rising share of `weak`/`none` means people are searching for signs the
+  /// dictionary doesn't have — which is the point of collecting this.
+  ///
+  /// The cut-offs are calibrated against measured distances rather than picked
+  /// for roundness. JaroWinkler's shared-prefix bonus makes it far more generous
+  /// than it first looks, so the bands have to be tight:
+  ///
+  ///   dog/dog 0.000 · dog/dogs 0.058 · dog/dodge 0.107 · helicopter/help 0.140
+  ///   covid/cover 0.187 · dogzzqxwv/dodge 0.356 · xylophone/x-ray 0.459
+  ///   zzqxwv/zebra 0.544 · nothing in common 1.000
+  ///
+  /// So `close` has to stop below ~0.11: `covid`/`cover` and `helicopter`/`help`
+  /// are plainly *different words* and must not be reported as a good match.
+  static String _matchStrength(double? distance) {
+    if (distance == null) return 'none';
+    if (distance <= 0.0) return 'exact'; // we have exactly what they typed
+    if (distance < 0.1) return 'close'; // a typo or inflection of what we have
+    if (distance < 0.4) return 'weak'; // vaguely similar; probably not it
+    return 'none'; // we don't have it
   }
 
   void clearSearch() {
