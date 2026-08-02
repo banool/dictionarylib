@@ -695,6 +695,24 @@ abstract class DictLibLocalizations {
   /// **'This list has {count} entries, but shared lists are capped at {max}. Remove some entries and try again.'**
   String shareTooManyEntriesBody(int count, int max);
 
+  /// No description provided for @shareListTooLargeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This list is too large to share. Remove some entries and try again.'**
+  String get shareListTooLargeBody;
+
+  /// No description provided for @shareTooManyListsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many shared lists'**
+  String get shareTooManyListsTitle;
+
+  /// No description provided for @shareTooManyListsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can share up to {max} lists. Stop sharing one of your existing lists to make room.'**
+  String shareTooManyListsBody(int max);
+
   /// No description provided for @shareLinkDialogTitle.
   ///
   /// In en, this message translates to:
@@ -1510,6 +1528,12 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'This list changed a lot while you were offline — review your recent edits.'**
   String get engineSnapshotCatchUpSnack;
+
+  /// No description provided for @engineListFullSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'This shared list is full ({max} entries) — your latest additions weren\'t shared.'**
+  String engineListFullSnack(int max);
 
   /// No description provided for @importedListFallbackName.
   ///

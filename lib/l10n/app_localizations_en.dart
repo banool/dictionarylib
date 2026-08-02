@@ -334,6 +334,18 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
+  String get shareListTooLargeBody =>
+      'This list is too large to share. Remove some entries and try again.';
+
+  @override
+  String get shareTooManyListsTitle => 'Too many shared lists';
+
+  @override
+  String shareTooManyListsBody(int max) {
+    return 'You can share up to $max lists. Stop sharing one of your existing lists to make room.';
+  }
+
+  @override
   String get shareLinkDialogTitle => 'List shared';
 
   @override
@@ -821,6 +833,11 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   @override
   String get engineSnapshotCatchUpSnack =>
       'This list changed a lot while you were offline — review your recent edits.';
+
+  @override
+  String engineListFullSnack(int max) {
+    return 'This shared list is full ($max entries) — your latest additions weren\'t shared.';
+  }
 
   @override
   String get importedListFallbackName => 'Imported list';

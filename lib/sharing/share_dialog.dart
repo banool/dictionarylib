@@ -34,6 +34,27 @@ String? _validateDisplayName(BuildContext context, String s) {
   return null;
 }
 
+/// Single-button "we can't share this" dialog, used for each of the
+/// create-time limits the share flow pre-empts.
+Future<void> _showLimitDialog(
+  BuildContext context, {
+  required String title,
+  required String body,
+}) async {
+  final l = DictLibLocalizations.of(context)!;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: Text(body),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(ctx).pop(), child: Text(l.alertOk)),
+      ],
+    ),
+  );
+}
+
 /// Show the "Share this list" dialog and create the synced list on confirm.
 /// Returns the new [SyncedEntryList] on success, null if the user cancelled.
 ///
@@ -46,23 +67,49 @@ Future<SyncedEntryList?> showShareDialog({
 }) async {
   if (!sharing.isEnabled) return null;
 
-  // Server caps entries per list — refuse client-side with a friendly
-  // message rather than letting the network call surface a generic 400.
-  // Checked before allocating any dialog state so the early-return
-  // path doesn't have to clean up controllers.
+  // Pre-flight the server's create-time limits with a friendly message
+  // rather than letting the network call surface a generic 400/403/413.
+  // All checked before allocating any dialog state so the early-return
+  // paths don't have to clean up controllers.
+  //
+  // These are fast paths, not the enforcement point — the device may not
+  // know about lists created elsewhere, and only the server can settle a
+  // race between two devices. The server re-checks and the error branches
+  // below handle the refusal.
+  final l = DictLibLocalizations.of(context)!;
+
+  // 1. Entries per list.
   if (sourceList.savedVideos.length > maxEntriesPerList) {
-    final l = DictLibLocalizations.of(context)!;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.shareTooManyEntriesTitle),
-        content: Text(l.shareTooManyEntriesBody(
-            sourceList.savedVideos.length, maxEntriesPerList)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(), child: Text(l.alertOk)),
-        ],
-      ),
+    await _showLimitDialog(
+      context,
+      title: l.shareTooManyEntriesTitle,
+      body: l.shareTooManyEntriesBody(
+          sourceList.savedVideos.length, maxEntriesPerList),
+    );
+    return null;
+  }
+
+  // 2. Encoded create-body size. A list can sit under the entry cap and
+  // still blow the body cap if its entry keys / media paths are long, so
+  // the count check above isn't sufficient on its own.
+  if (estimateCreateBodyBytes(sourceList.savedVideos) > maxCreateBodyBytes) {
+    await _showLimitDialog(
+      context,
+      title: l.shareTooManyEntriesTitle,
+      body: l.shareListTooLargeBody,
+    );
+    return null;
+  }
+
+  // 3. Lists owned by this user. Orphaned wrappers are excluded — the
+  // server has already 404/410'd those, so they aren't holding a slot.
+  final liveOwned =
+      sharing.lists.ownedLists.where((owned) => !owned.meta.orphaned).length;
+  if (liveOwned >= maxListsPerUser) {
+    await _showLimitDialog(
+      context,
+      title: l.shareTooManyListsTitle,
+      body: l.shareTooManyListsBody(maxListsPerUser),
     );
     return null;
   }

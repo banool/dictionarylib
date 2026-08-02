@@ -116,6 +116,9 @@
     "unshareToDeleteTooltip": "මෙම ලැයිස්තුව මැකීමට පෙර එය බෙදා ගැනීම නවත්වන්න.",
     "shareTooManyEntriesTitle": "බෙදා ගැනීමට ලැයිස්තුව ඉතා විශාලයි",
     "shareTooManyEntriesBody": "මෙම ලැයිස්තුවේ ඇතුළත් කිරීම් {count}ක් ඇත, නමුත් බෙදාගත් ලැයිස්තු {max}කට සීමා වේ. සමහර ඇතුළත් කිරීම් ඉවත් කර නැවත උත්සාහ කරන්න.",
+    "shareListTooLargeBody": "මෙම ලැයිස්තුව බෙදා ගැනීමට ඉතා විශාලයි. සමහර ඇතුළත් කිරීම් ඉවත් කර නැවත උත්සාහ කරන්න.",
+    "shareTooManyListsTitle": "බෙදාගත් ලැයිස්තු ඉතා වැඩියි",
+    "shareTooManyListsBody": "ඔබට ලැයිස්තු {max}ක් දක්වා බෙදා ගත හැකිය. ඉඩ සෑදීමට ඔබගේ දැනට පවතින ලැයිස්තුවක් බෙදා ගැනීම නවත්වන්න.",
 
     "shareLinkDialogTitle": "ලැයිස්තුව බෙදා ගන්නා ලදී",
     "shareLinkDialogBody": "මෙම සබැඳිය ඇති ඕනෑම අයෙකුට \"{displayName}\" වෙත දායක විය හැක:",
@@ -270,6 +273,7 @@
     "engineSessionExpiredSnackAction": "පුරනය වන්න",
     "engineRemovedAsEditorSnack": "ඔබ තවදුරටත් මෙම ලැයිස්තුවේ සංස්කාරකයෙකු නොවේ",
     "engineSnapshotCatchUpSnack": "ඔබ නොබැඳිව සිටියදී මෙම ලැයිස්තුව බොහෝ සෙයින් වෙනස් විය — ඔබගේ මෑත සංස්කරණ සමාලෝචනය කරන්න.",
+    "engineListFullSnack": "මෙම බෙදාගත් ලැයිස්තුව පිරී ඇත (ඇතුළත් කිරීම් {max}ක්) — ඔබගේ නවතම එකතු කිරීම් බෙදා නොගැනිණි.",
     "importedListFallbackName": "ආයාත කළ ලැයිස්තුව",
     "favouritesListName": "ප්‍රියතම",
     "listNameErrorEmpty": "ලැයිස්තු නම හිස් විය නොහැක",
