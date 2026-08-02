@@ -81,7 +81,17 @@ const int _createBodyBytesPerEntry = 24;
 /// `schemaVersion` fields and their keys. Generous on purpose — the
 /// estimate must never come in under the real body, or it would wave
 /// through a share the server then 413s.
-const int _createBodyEnvelopeBytes = 256;
+///
+/// Sized for the realistic worst case, which is bigger than it looks:
+/// the display name isn't known yet when the pre-flight runs (the user
+/// types it after), so this must cover a full [maxDisplayNameLen]-char
+/// name in a non-Latin script — 80 UTF-16 units of Sinhala/Tamil is
+/// ~240 UTF-8 bytes, which alone blows a smaller allowance — plus the
+/// generated listId and ~130 bytes of fixed syntax. Not sized for
+/// `\uXXXX`-escape pathology (control chars can't come from a text
+/// field), which keeps the estimate inside the tightness bound the
+/// tests hold it to.
+const int _createBodyEnvelopeBytes = 512;
 
 /// Conservative estimate of the encoded `POST /v1/lists` body size for
 /// [entries], in bytes. Used by the share dialog to pre-empt a 413
