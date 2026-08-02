@@ -287,10 +287,11 @@ Future<void> _attemptTestSignIn(
   final l = DictLibLocalizations.of(context)!;
   final userIdCtl = TextEditingController(text: cfg.defaultUserIdPrefix);
   final displayNameCtl = TextEditingController(text: cfg.defaultDisplayName);
-  try {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => DisposeOnUnmount(
+      notifiers: [userIdCtl, displayNameCtl],
+      child: AlertDialog(
         title: Text(l.signInTestPromptTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -318,27 +319,24 @@ Future<void> _attemptTestSignIn(
               child: Text(l.signInTestPromptConfirm)),
         ],
       ),
+    ),
+  );
+  if (ok != true) return;
+  try {
+    final session = await sharing.auth.signInWithTestToken(
+      testAuthToken: cfg.testAuthToken,
+      userId: userIdCtl.text.trim(),
+      displayName: displayNameCtl.text.trim().isEmpty
+          ? null
+          : displayNameCtl.text.trim(),
     );
-    if (ok != true) return;
-    try {
-      final session = await sharing.auth.signInWithTestToken(
-        testAuthToken: cfg.testAuthToken,
-        userId: userIdCtl.text.trim(),
-        displayName: displayNameCtl.text.trim().isEmpty
-            ? null
-            : displayNameCtl.text.trim(),
-      );
-      if (context.mounted) Navigator.of(context).pop(session);
-    } on SyncException catch (e) {
-      setError(localisedSyncError(context, e,
-          notFoundMessage: l.signInFailed, unknownMessage: e.message));
-    } catch (e) {
-      printAndLog('test sign-in: unexpected: $e');
-      setError(l.signInFailed);
-    }
-  } finally {
-    disposeAfterFrame(userIdCtl);
-    disposeAfterFrame(displayNameCtl);
+    if (context.mounted) Navigator.of(context).pop(session);
+  } on SyncException catch (e) {
+    setError(localisedSyncError(context, e,
+        notFoundMessage: l.signInFailed, unknownMessage: e.message));
+  } catch (e) {
+    printAndLog('test sign-in: unexpected: $e');
+    setError(l.signInFailed);
   }
 }
 
