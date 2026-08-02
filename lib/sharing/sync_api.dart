@@ -45,7 +45,7 @@ const int maxDisplayNameLen = 80;
 /// share dialog refuses to publish a list larger than this with a
 /// friendly message rather than letting the create call surface a
 /// generic 400.
-const int maxEntriesPerList = 10000;
+const int maxEntriesPerList = 500;
 
 /// Mirror of the server's `MAX_LISTS_PER_USER` cap on lists a single
 /// user may own. Editor memberships on other people's lists don't count
@@ -57,13 +57,16 @@ const int maxEntriesPerList = 10000;
 /// seen), so the 403 handling is the real backstop.
 const int maxListsPerUser = 100;
 
-/// Mirror of the server's `MAX_CREATE_BODY_BYTES` — the request-body
-/// ceiling on `POST /v1/lists`, the one route whose body scales with the
-/// list size. A list can be under [maxEntriesPerList] and still exceed
-/// this if its entry keys and media paths are unusually long, so the
-/// share dialog estimates the encoded size too rather than trusting the
-/// entry count alone.
-const int maxCreateBodyBytes = 4 * 1024 * 1024;
+/// Mirror of the server's `MAX_BODY_BYTES` — the ceiling on any request
+/// body, including the `POST /v1/lists` that seeds a whole list.
+///
+/// A list can sit under [maxEntriesPerList] and still exceed this if its
+/// entry keys and media paths are unusually long, so the share dialog
+/// estimates the encoded size too rather than trusting the entry count
+/// alone. That gap is narrow but real: a full 500-entry list of typical
+/// entries is only ~30 KB, yet the per-entry length limits would permit
+/// far more.
+const int maxCreateBodyBytes = 64 * 1024;
 
 /// Fixed JSON overhead per entry in a create body: the object braces,
 /// both quoted key names, the colons, and the comma separating this
