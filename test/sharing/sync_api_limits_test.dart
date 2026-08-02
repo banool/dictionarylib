@@ -136,7 +136,7 @@ void main() {
       // failure that matters: it would wave through a body the server
       // then rejects. Compared against the full create body, envelope
       // included, since that is what actually goes over the wire.
-      for (final count in [1, 200, 5000]) {
+      for (final count in [1, 200, maxEntriesPerList]) {
         final entries = [
           for (var i = 0; i < count; i++) v('entry$i', '/mp4video/11/$i.mp4'),
         ];
