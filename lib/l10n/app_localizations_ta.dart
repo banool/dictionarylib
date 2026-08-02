@@ -850,7 +850,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get engineSnapshotCatchUpSnack =>
-      'நீங்கள் ஆஃப்லைனில் இருந்தபோது இந்தப் பட்டியல் நிறையை மாறியது — உங்கள் சமீபத்திய திருத்தங்களை மதிப்பாய்வு செய்யவும்.';
+      'நீங்கள் ஆஃப்லைனில் இருந்தபோது இந்தப் பட்டியல் நிறைய மாறியது — உங்கள் சமீபத்திய திருத்தங்களை மதிப்பாய்வு செய்யவும்.';
 
   @override
   String engineListFullSnack(int max) {

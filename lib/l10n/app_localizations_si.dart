@@ -224,7 +224,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'වීඩියෝ $countක් සුරැකිණි',
-      one: 'වීඩියෝ 1ක් සුරැකිණි',
+      one: 'වීඩියෝ $countක් සුරැකිණි',
     );
     return '$_temp0';
   }
@@ -965,7 +965,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'ප්‍රතිඵල $count',
-      one: 'ප්‍රතිඵල 1',
+      one: 'ප්‍රතිඵල $count',
     );
     return '$_temp0';
   }
@@ -1017,7 +1017,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'වචන $count',
-      one: 'වචන 1',
+      one: 'වචන $count',
     );
     return '$_temp0';
   }
@@ -1035,7 +1035,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       days,
       locale: localeName,
       other: 'දින $days ක අඛණ්ඩතාව',
-      one: 'දින 1 ක අඛණ්ඩතාව',
+      one: 'දින $days ක අඛණ්ඩතාව',
     );
     return '$_temp0';
   }
@@ -1050,7 +1050,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'සංඥා $count',
-      one: 'සංඥා 1',
+      one: 'සංඥා $count',
     );
     return '$_temp0';
   }
@@ -1098,7 +1098,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'ෆ්ලෑෂ්කාඩ් $count',
-      one: 'ෆ්ලෑෂ්කාඩ් 1',
+      one: 'ෆ්ලෑෂ්කාඩ් $count',
     );
     return '$_temp0';
   }
@@ -1141,7 +1141,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'කලාප $count',
-      one: 'කලාප 1',
+      one: 'කලාප $count',
     );
     return '$_temp0';
   }
@@ -1186,7 +1186,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'සංඥා $countක් සංශෝධනය කළා',
-      one: 'සංඥා 1ක් සංශෝධනය කළා',
+      one: 'සංඥා $countක් සංශෝධනය කළා',
     );
     return 'හොඳ වැඩක් — $_temp0';
   }
@@ -1221,7 +1221,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       count,
       locale: localeName,
       other: 'ලැයිස්තු $countකට සුරකින ලදී',
-      one: 'ලැයිස්තු 1කට සුරකින ලදී',
+      one: 'ලැයිස්තු $countකට සුරකින ලදී',
     );
     return '$_temp0';
   }
