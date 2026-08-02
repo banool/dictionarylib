@@ -50,6 +50,42 @@ SavedVideo _v(String entryKey) =>
   return (engine: engine, manager: manager, auth: auth, requests: requests);
 }
 
+/// `/sync` stub that rejects every op in the batch. Mirrors the envelope
+/// [stubSyncApplyAll] builds (members block included — the response
+/// parser requires it) but with `status: rejected`, optionally carrying
+/// the machine-readable [reasonCode] the server stamps on a list-full
+/// refusal.
+Future<http.Response> _stubSyncRejectAll(
+  http.Request req, {
+  String? reasonCode,
+  String reason = 'rejected by the server',
+}) async {
+  final body = jsonDecode(req.body) as Map<String, dynamic>;
+  final ops = (body['ops'] as List<dynamic>).cast<Map<String, dynamic>>();
+  return http.Response(
+    jsonEncode({
+      'appliedSeq': body['lastKnownSeq'],
+      'applied': [
+        for (final op in ops)
+          {
+            'opId': op['opId'],
+            'status': 'rejected',
+            'reason': reason,
+            if (reasonCode != null) 'reasonCode': reasonCode,
+          }
+      ],
+      'missedOps': <Map<String, dynamic>>[],
+      'snapshot': null,
+      'members': {
+        'owner': {'userId': 'apple:test-user', 'displayName': 'Test User'},
+        'editors': <Map<String, dynamic>>[],
+      },
+    }),
+    200,
+    headers: {'content-type': 'application/json'},
+  );
+}
+
 /// Construct a local list seeded with one saved video per entry key in
 /// [keys] (the synthetic `videoFor(key)` URL).
 Future<EntryList> _localListWith(String localKey, List<String> keys) async {
@@ -462,6 +498,47 @@ void main() {
       // Server state (apple) plus the still-pending local edit (banana).
       expect(list.savedVideos, containsAll({_v('apple'), _v('banana')}));
       expect(notifications, contains(SyncNotification.snapshotCatchUp));
+    });
+
+    test('list-full rejection notifies and drops the op without retrying',
+        () async {
+      final notifications = <SyncNotification>[];
+      final ctx = _makeEngine((req) async =>
+          _stubSyncRejectAll(req, reasonCode: opRejectedReasonListFull));
+      final sub = ctx.engine.notifications.listen(notifications.add);
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+
+      await ctx.engine.pushAllDirty();
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(notifications, contains(SyncNotification.listFull));
+      expect(list.meta.pendingOps, isEmpty,
+          reason: 'a rejected op has no inverse; it must not be retried');
+      // The engine deliberately does not roll the local list back — the
+      // caller (listsService) applied the save locally before enqueuing,
+      // and the user keeps it. The notification is what tells them the
+      // shared copy didn't get it.
+      expect(list.savedVideos, contains(_v('apple')),
+          reason: 'the rejection must not disturb existing local entries');
+    });
+
+    test('a non-list-full rejection does not fire the listFull notification',
+        () async {
+      final notifications = <SyncNotification>[];
+      // Same rejection path, no reasonCode — the shape an older server
+      // sends, and what any other rejection reason looks like.
+      final ctx = _makeEngine((req) async => _stubSyncRejectAll(req));
+      final sub = ctx.engine.notifications.listen(notifications.add);
+      final list = await setUpOwnedList(ctx.engine, ctx.manager);
+      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+
+      await ctx.engine.pushAllDirty();
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(notifications, isNot(contains(SyncNotification.listFull)));
     });
 
     test('no session → flush is a no-op, ops stay queued', () async {

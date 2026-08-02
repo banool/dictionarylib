@@ -45,7 +45,61 @@ const int maxDisplayNameLen = 80;
 /// share dialog refuses to publish a list larger than this with a
 /// friendly message rather than letting the create call surface a
 /// generic 400.
-const int maxEntriesPerList = 500;
+const int maxEntriesPerList = 10000;
+
+/// Mirror of the server's `MAX_LISTS_PER_USER` cap on lists a single
+/// user may own. Editor memberships on other people's lists don't count
+/// against it.
+///
+/// The share dialog pre-empts this using the device's own owned-list
+/// count, but that's only a fast path: the authoritative count lives
+/// server-side (another device may have created lists this one hasn't
+/// seen), so the 403 handling is the real backstop.
+const int maxListsPerUser = 100;
+
+/// Mirror of the server's `MAX_CREATE_BODY_BYTES` — the request-body
+/// ceiling on `POST /v1/lists`, the one route whose body scales with the
+/// list size. A list can be under [maxEntriesPerList] and still exceed
+/// this if its entry keys and media paths are unusually long, so the
+/// share dialog estimates the encoded size too rather than trusting the
+/// entry count alone.
+const int maxCreateBodyBytes = 4 * 1024 * 1024;
+
+/// Fixed JSON overhead per entry in a create body: the object braces,
+/// both quoted key names, the colons, and the comma separating this
+/// entry from the next — i.e. everything in `{"entry":"…","video":"…"},`
+/// that isn't the two values. The exact cost is 23 plus a separating
+/// comma for all but the last entry; counting the comma unconditionally
+/// keeps the estimate on the safe side.
+const int _createBodyBytesPerEntry = 24;
+
+/// Allowance for everything in the create body that isn't the entries:
+/// the enclosing array brackets, the `listId` / `displayName` /
+/// `schemaVersion` fields and their keys. Generous on purpose — the
+/// estimate must never come in under the real body, or it would wave
+/// through a share the server then 413s.
+const int _createBodyEnvelopeBytes = 256;
+
+/// Conservative estimate of the encoded `POST /v1/lists` body size for
+/// [entries], in bytes. Used by the share dialog to pre-empt a 413
+/// before making the call.
+///
+/// Deliberately an estimate rather than an exact measure — encoding the
+/// body twice for a 10k-entry list to save a round trip isn't a good
+/// trade. It counts UTF-8 bytes of each entry key and media path plus
+/// fixed per-entry and envelope overhead. Backslash escaping is ignored:
+/// it only ever makes the real body bigger, and only for characters that
+/// don't occur in entry keys or media paths. The server re-checks for
+/// real; this just buys a good error message instead of a bare 413.
+int estimateCreateBodyBytes(Iterable<SavedVideo> entries) {
+  var total = _createBodyEnvelopeBytes;
+  for (final e in entries) {
+    total += _createBodyBytesPerEntry +
+        utf8.encode(e.entryKey).length +
+        utf8.encode(e.mediaPath).length;
+  }
+  return total;
+}
 
 /// Parse an HTTP-date header value (RFC 7231) into unix seconds, or 0
 /// if the header is missing / malformed.
@@ -74,6 +128,22 @@ const String _forbidReasonWrongApp = 'wrong_app';
 /// `workers/src/list_do.ts` in the private backend repo — keep in lockstep.
 const String _invalidBodyReasonStaleCursor = 'stale_cursor';
 
+/// Discriminator the worker stamps on a 403's `details.reason` when a
+/// create is refused because the caller already owns [maxListsPerUser]
+/// lists. Mirrors `FORBID_REASON_LIST_LIMIT` in
+/// `workers/src/validation.ts` in the private backend repo — keep in
+/// lockstep. Consumers use [SyncException.isListLimitReached].
+const String _forbidReasonListLimit = 'list_limit';
+
+/// Machine-readable `reasonCode` the server sets on a rejected
+/// `addEntry` op outcome when the list is already at
+/// [maxEntriesPerList]. Mirrors `OP_REJECT_REASON_LIST_FULL` in
+/// `workers/src/validation.ts` in the private backend repo.
+///
+/// Matched on instead of the human-readable `reason` prose, which is
+/// free text and may be reworded.
+const String opRejectedReasonListFull = 'list_full';
+
 /// Error envelope returned by the API.
 class SyncException implements Exception {
   final SyncErrorKind kind;
@@ -89,6 +159,22 @@ class SyncException implements Exception {
   bool get isWrongAppForbid =>
       kind == SyncErrorKind.forbidden &&
       details?['reason'] == _forbidReasonWrongApp;
+
+  /// True if this is the server refusing a create because the caller is
+  /// already at the [maxListsPerUser] ceiling. Only ever raised by
+  /// `POST /v1/lists`, never by a sync/state call, so it can't be
+  /// confused with the membership 403 that demotes an editor.
+  bool get isListLimitReached =>
+      kind == SyncErrorKind.forbidden &&
+      details?['reason'] == _forbidReasonListLimit;
+
+  /// The server-advertised list ceiling that came back with an
+  /// [isListLimitReached] error, falling back to the compiled-in
+  /// [maxListsPerUser] when the server didn't send one (older worker).
+  int get listLimit {
+    final v = details?['limit'];
+    return v is int ? v : maxListsPerUser;
+  }
 
   /// Transient transport/server conditions worth retrying, and worth
   /// surfacing to the user on a foreground action — as opposed to terminal
@@ -421,12 +507,21 @@ class OpOutcome {
   final String opId;
   final OpStatus status;
   final int? seq;
+
+  /// Human-readable rejection prose. For logs — match on [reasonCode].
   final String? reason;
+
+  /// Stable machine-readable rejection discriminator (currently only
+  /// [opRejectedReasonListFull]). Null on older servers that predate the
+  /// field, and on non-rejected outcomes.
+  final String? reasonCode;
+
   const OpOutcome({
     required this.opId,
     required this.status,
     this.seq,
     this.reason,
+    this.reasonCode,
   });
   factory OpOutcome.fromJson(Map<String, dynamic> json) => OpOutcome(
         opId: json['opId'] as String,
@@ -437,7 +532,13 @@ class OpOutcome {
         },
         seq: json['seq'] as int?,
         reason: json['reason'] as String?,
+        reasonCode: json['reasonCode'] as String?,
       );
+
+  /// True when this op was refused because the list is already at the
+  /// server's entry ceiling.
+  bool get isListFullRejection =>
+      status == OpStatus.rejected && reasonCode == opRejectedReasonListFull;
 }
 
 /// Materialised op-log row returned in /sync `missedOps`.

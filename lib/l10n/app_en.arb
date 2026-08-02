@@ -143,6 +143,14 @@
             "max": { "type": "int" }
         }
     },
+    "shareListTooLargeBody": "This list is too large to share. Remove some entries and try again.",
+    "shareTooManyListsTitle": "Too many shared lists",
+    "shareTooManyListsBody": "You can share up to {max} lists. Stop sharing one of your existing lists to make room.",
+    "@shareTooManyListsBody": {
+        "placeholders": {
+            "max": { "type": "int" }
+        }
+    },
 
     "shareLinkDialogTitle": "List shared",
     "shareLinkDialogBody": "Anyone with this link can subscribe to \"{displayName}\":",
@@ -447,6 +455,12 @@
     "engineSessionExpiredSnackAction": "Sign in",
     "engineRemovedAsEditorSnack": "You're no longer an editor of this list",
     "engineSnapshotCatchUpSnack": "This list changed a lot while you were offline — review your recent edits.",
+    "engineListFullSnack": "This shared list is full ({max} entries) — your latest additions weren't shared.",
+    "@engineListFullSnack": {
+        "placeholders": {
+            "max": { "type": "int" }
+        }
+    },
     "importedListFallbackName": "Imported list",
     "favouritesListName": "Favourites",
     "listNameErrorEmpty": "List name cannot be empty",

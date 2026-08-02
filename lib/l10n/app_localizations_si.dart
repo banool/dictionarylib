@@ -335,6 +335,18 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
+  String get shareListTooLargeBody =>
+      'මෙම ලැයිස්තුව බෙදා ගැනීමට ඉතා විශාලයි. සමහර ඇතුළත් කිරීම් ඉවත් කර නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get shareTooManyListsTitle => 'බෙදාගත් ලැයිස්තු ඉතා වැඩියි';
+
+  @override
+  String shareTooManyListsBody(int max) {
+    return 'ඔබට ලැයිස්තු $maxක් දක්වා බෙදා ගත හැකිය. ඉඩ සෑදීමට ඔබගේ දැනට පවතින ලැයිස්තුවක් බෙදා ගැනීම නවත්වන්න.';
+  }
+
+  @override
   String get shareLinkDialogTitle => 'ලැයිස්තුව බෙදා ගන්නා ලදී';
 
   @override
@@ -827,6 +839,11 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String get engineSnapshotCatchUpSnack =>
       'ඔබ නොබැඳිව සිටියදී මෙම ලැයිස්තුව බොහෝ සෙයින් වෙනස් විය — ඔබගේ මෑත සංස්කරණ සමාලෝචනය කරන්න.';
+
+  @override
+  String engineListFullSnack(int max) {
+    return 'මෙම බෙදාගත් ලැයිස්තුව පිරී ඇත (ඇතුළත් කිරීම් $maxක්) — ඔබගේ නවතම එකතු කිරීම් බෙදා නොගැනිණි.';
+  }
 
   @override
   String get importedListFallbackName => 'ආයාත කළ ලැයිස්තුව';

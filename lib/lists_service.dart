@@ -449,6 +449,12 @@ String localisedSyncError(
   required String unknownMessage,
 }) {
   final l = DictLibLocalizations.of(context)!;
+  // Checked ahead of the switch: this is a 403, but "you're at your list
+  // limit" is a different thing to tell the user than "you don't have
+  // permission", and only the reason discriminator separates them.
+  if (e.isListLimitReached) {
+    return l.shareTooManyListsBody(e.listLimit);
+  }
   switch (e.kind) {
     case SyncErrorKind.notFound:
       return notFoundMessage;

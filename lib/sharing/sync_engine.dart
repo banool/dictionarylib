@@ -83,6 +83,13 @@ enum SyncNotification {
   /// can no longer see. UI surfaces an advisory banner so the user
   /// can reconcile manually.
   snapshotCatchUp,
+
+  /// The server refused one or more `addEntry` ops because the list is
+  /// already at its entry ceiling ([maxEntriesPerList]). The entries stay
+  /// in the local list but will never reach the server, so the local
+  /// mirror is knowingly ahead of the shared copy. Surfaced so the
+  /// addition doesn't silently look like it worked.
+  listFull,
 }
 
 /// Push / pull engine for [SyncedEntryList]s.
@@ -436,14 +443,24 @@ class SyncEngine {
     // 1. Drop applied + duplicate ops from the queue. For rejected,
     // log + drop — there's no inverse to revert.
     final ackedIds = <String>{};
+    var hitListFull = false;
     for (final outcome in response.applied) {
       ackedIds.add(outcome.opId);
       if (outcome.status == OpStatus.rejected) {
         printAndLog('SyncEngine: ${list.listId} op ${outcome.opId} rejected: '
             '${outcome.reason}');
+        if (outcome.isListFullRejection) hitListFull = true;
       }
     }
     list.meta.pendingOps.removeWhere((o) => ackedIds.contains(o.opId));
+
+    // A rejected op has no inverse, so the entry stays local while the
+    // server never gets it. Every other rejection reason is a client bug
+    // (bad args, wrong shape) that the user can't act on, but this one is
+    // both expected and actionable — "your list is full" — so it's the
+    // one we surface. Fired once per batch however many ops were
+    // refused, so filling a list doesn't spray snackbars.
+    if (hitListFull) _notifications.add(SyncNotification.listFull);
 
     // 2. Fold in remote work.
     final snapshot = response.snapshot;
