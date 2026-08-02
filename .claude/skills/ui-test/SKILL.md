@@ -45,6 +45,18 @@ cd /Users/daniel/github/auslan_dictionary && /Users/daniel/.development/flutter/
 ```
 The cwd resets between Bash calls, so `cd ... &&` in the **same** command. Use the absolute flutter path. To exercise a state that has no launch hook, add a temporary one in Dart, drive it, then **revert it** (don't leave debug hooks committed).
 
+## Driving flutter run across Bash calls (hot restart on demand)
+
+`flutter run` is interactive (`r`/`R`/`q` on stdin) but has to run in the background, so give it a FIFO as stdin and write keys to it from any later Bash call (confirmed live 2026-08-02 — this drove a dozen hot restarts across a long session):
+
+```bash
+mkfifo "$TMPDIR/flutter_stdin"
+cd /Users/daniel/github/auslan_dictionary && (tail -f "$TMPDIR/flutter_stdin" | /Users/daniel/.development/flutter/bin/flutter run -d $UDID ... > "$TMPDIR/flutter_run.log" 2>&1 &)
+printf 'R' > "$TMPDIR/flutter_stdin"   # hot restart later; 'q' quits cleanly; tail the log to follow
+```
+
+Two gotchas that cost real time: (1) an edit made to a source file **while the initial build is still compiling** is missed by the change tracker — later hot restarts silently build without it until you `touch` the file and restart again, so if a constant you changed "didn't take", touch + `R`; (2) when waiting on the log for the build to finish, grep for `Flutter run key commands` — greping for `error` false-positives on the SwiftPM plugin warning ("will become an error in a future version").
+
 ## Inspecting the UI
 
 `describe-ui` dumps the full accessibility tree as JSON. Reduce it to just the actionable elements (type, label, value, stable id, tap-point) with this helper:
@@ -69,6 +81,8 @@ PY
 ```
 
 Then act with `tap`/`type`/`swipe`/`batch` — see the `axe` skill for syntax and selector-vs-coordinate guidance. One app-specific note: `type` only lands in a field you've already **tapped to focus** — tap the field first, then type. (Re-inspecting before a batch matters here because Flutter labels shift — see limitations.)
+
+To **clear a text field**, don't tap the on-screen keyboard's delete key — coordinate taps on it don't register (confirmed: repeated taps on the delete key at its describe-ui position left the field untouched). Send HID backspace instead, once per character: `for i in $(seq 1 N); do /opt/homebrew/bin/axe key 42 --udid $UDID; done` (42 = HID usage id for delete/backspace; the field must already have focus). The search screen's visible "Clear" button clears recent-search chips, not the field.
 
 ## Verifying orientation — read the AXFrame, NOT the screenshot
 
