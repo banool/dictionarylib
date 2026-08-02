@@ -74,14 +74,41 @@ const String KEY_THEME_VARIANT = "theme_variant";
 // sync with the startup read in the app's root widget.
 const int DEFAULT_THEME_MODE = 0; // System.
 
-/// Defer disposing [controller] until after the current frame so any widget
-/// still holding a reference (typically a `TextField` inside a closing
-/// dialog) finishes its own disposal first. Disposing synchronously after
-/// `showDialog` returns can fire a "used after dispose" assertion because
-/// `Navigator.pop` completes the future before the dialog widget tree is
-/// unmounted.
-void disposeAfterFrame(ChangeNotifier controller) {
-  WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
+/// Disposes [notifiers] when this widget is unmounted. Wrap a dialog's
+/// content in this to tie controller lifetime to the dialog's real teardown.
+///
+/// This exists because no earlier moment is safe: `showDialog`'s future
+/// completes at `Navigator.pop`, but the dialog then plays its exit
+/// animation, during which its `TextField`s are still live and can rebuild
+/// (pushing a follow-up dialog on top does exactly that). A controller
+/// disposed on pop — even deferred by a frame — trips "used after dispose"
+/// and takes down the tree. Unmount is the one signal that fires strictly
+/// after the route's subtree is gone, transition and all.
+///
+/// Reading a controller's `text` after the dialog closes remains safe: the
+/// awaiting code resumes before the exit animation finishes, and value
+/// reads don't assert on a disposed controller anyway.
+class DisposeOnUnmount extends StatefulWidget {
+  final List<ChangeNotifier> notifiers;
+  final Widget child;
+  const DisposeOnUnmount(
+      {super.key, required this.notifiers, required this.child});
+
+  @override
+  State<DisposeOnUnmount> createState() => _DisposeOnUnmountState();
+}
+
+class _DisposeOnUnmountState extends State<DisposeOnUnmount> {
+  @override
+  void dispose() {
+    for (final n in widget.notifiers) {
+      n.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 const int DATA_CHECK_INTERVAL = 30 * 60 * 1; // 30 minutes.

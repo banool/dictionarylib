@@ -704,9 +704,10 @@ Future<bool> _showRenameDialog(
   // Put the caret at the end so editing starts from the existing name.
   controller.selection =
       TextSelection.collapsed(offset: controller.text.length);
-  try {
-    final l = DictLibLocalizations.of(context)!;
-    final body = Column(
+  final l = DictLibLocalizations.of(context)!;
+  final body = DisposeOnUnmount(
+    notifiers: [controller],
+    child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
@@ -717,38 +718,36 @@ Future<bool> _showRenameDialog(
           textCapitalization: TextCapitalization.words,
         ),
       ],
-    );
-    var confirmed = await confirmAlert(context, body, title: l.listRenameList);
-    if (confirmed) {
-      try {
-        await onRename(controller.text);
-      } on EntryListNameException catch (e) {
-        if (context.mounted) {
-          showSnack(context, '${l.listFailedToRename}: ${e.localise(context)}.',
-              backgroundColor: Theme.of(context).colorScheme.error);
-        }
-        confirmed = false;
-      } on SyncException catch (e) {
-        if (context.mounted) {
-          showSnack(
-              context,
-              '${l.listFailedToRename}: '
-              '${localisedSyncErrorSimple(context, e, l.listFailedToRename)}',
-              backgroundColor: Theme.of(context).colorScheme.error);
-        }
-        confirmed = false;
-      } catch (e) {
-        if (context.mounted) {
-          showSnack(context, '${l.listFailedToRename}: $e.',
-              backgroundColor: Theme.of(context).colorScheme.error);
-        }
-        confirmed = false;
+    ),
+  );
+  var confirmed = await confirmAlert(context, body, title: l.listRenameList);
+  if (confirmed) {
+    try {
+      await onRename(controller.text);
+    } on EntryListNameException catch (e) {
+      if (context.mounted) {
+        showSnack(context, '${l.listFailedToRename}: ${e.localise(context)}.',
+            backgroundColor: Theme.of(context).colorScheme.error);
       }
+      confirmed = false;
+    } on SyncException catch (e) {
+      if (context.mounted) {
+        showSnack(
+            context,
+            '${l.listFailedToRename}: '
+            '${localisedSyncErrorSimple(context, e, l.listFailedToRename)}',
+            backgroundColor: Theme.of(context).colorScheme.error);
+      }
+      confirmed = false;
+    } catch (e) {
+      if (context.mounted) {
+        showSnack(context, '${l.listFailedToRename}: $e.',
+            backgroundColor: Theme.of(context).colorScheme.error);
+      }
+      confirmed = false;
     }
-    return confirmed;
-  } finally {
-    disposeAfterFrame(controller);
   }
+  return confirmed;
 }
 
 /// Returns true if [list] was renamed. Pre-fills the field with the
@@ -784,9 +783,10 @@ Future<bool> applyRenameSharedListDialog(
 // Returns true if a new list was created.
 Future<bool> applyCreateListDialog(BuildContext context) async {
   final controller = TextEditingController();
-  try {
-    final l = DictLibLocalizations.of(context)!;
-    final body = Column(
+  final l = DictLibLocalizations.of(context)!;
+  final body = DisposeOnUnmount(
+    notifiers: [controller],
+    child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
@@ -797,30 +797,28 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
           textCapitalization: TextCapitalization.words,
         ),
       ],
-    );
-    var confirmed = await confirmAlert(context, body, title: l.listNewList);
-    if (confirmed) {
-      try {
-        final key =
-            EntryList.getKeyFromName(controller.text, rejectUnderscores: true);
-        await userEntryListManager.createEntryList(key);
-        Analytics.track('list_created', props: {'shared': false});
-      } on EntryListNameException catch (e) {
-        if (context.mounted) {
-          showSnack(context, '${l.listFailedToMake}: ${e.localise(context)}.',
-              backgroundColor: Theme.of(context).colorScheme.error);
-        }
-        confirmed = false;
-      } catch (e) {
-        if (context.mounted) {
-          showSnack(context, '${l.listFailedToMake}: $e.',
-              backgroundColor: Theme.of(context).colorScheme.error);
-        }
-        confirmed = false;
+    ),
+  );
+  var confirmed = await confirmAlert(context, body, title: l.listNewList);
+  if (confirmed) {
+    try {
+      final key =
+          EntryList.getKeyFromName(controller.text, rejectUnderscores: true);
+      await userEntryListManager.createEntryList(key);
+      Analytics.track('list_created', props: {'shared': false});
+    } on EntryListNameException catch (e) {
+      if (context.mounted) {
+        showSnack(context, '${l.listFailedToMake}: ${e.localise(context)}.',
+            backgroundColor: Theme.of(context).colorScheme.error);
       }
+      confirmed = false;
+    } catch (e) {
+      if (context.mounted) {
+        showSnack(context, '${l.listFailedToMake}: $e.',
+            backgroundColor: Theme.of(context).colorScheme.error);
+      }
+      confirmed = false;
     }
-    return confirmed;
-  } finally {
-    disposeAfterFrame(controller);
   }
+  return confirmed;
 }

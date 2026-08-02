@@ -119,11 +119,12 @@ Future<SyncedEntryList?> showShareDialog({
   String? generalError;
   bool submitting = false;
 
-  try {
-    final result = await showDialog<SyncedEntryList?>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+  return showDialog<SyncedEntryList?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => DisposeOnUnmount(
+      notifiers: [displayCtl],
+      child: StatefulBuilder(builder: (ctx, setLocal) {
         final l = DictLibLocalizations.of(ctx)!;
         Future<void> doShare() async {
           final displayName = displayCtl.text.trim();
@@ -222,11 +223,8 @@ Future<SyncedEntryList?> showShareDialog({
           ],
         );
       }),
-    );
-    return result;
-  } finally {
-    disposeAfterFrame(displayCtl);
-  }
+    ),
+  );
 }
 
 /// Shown after a share succeeds, or when the user re-opens an existing
@@ -428,11 +426,12 @@ Future<SyncedEntryList?> showSubscribeDialog(
   // generic phrasing in the meantime.
   String? inviteName;
 
-  try {
-    return await showDialog<SyncedEntryList?>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+  return showDialog<SyncedEntryList?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => DisposeOnUnmount(
+      notifiers: [inputCtl],
+      child: StatefulBuilder(builder: (ctx, setLocal) {
         final l = DictLibLocalizations.of(ctx)!;
 
         // Already have this list — open it and say so. The snackbar shows on
@@ -610,8 +609,6 @@ Future<SyncedEntryList?> showSubscribeDialog(
           ],
         );
       }),
-    );
-  } finally {
-    disposeAfterFrame(inputCtl);
-  }
+    ),
+  );
 }
