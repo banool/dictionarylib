@@ -83,7 +83,6 @@ class Sharing with ChangeNotifier {
       auth: SharingAuthConfig(
         appleBundleId: '',
         googleServerClientId: '',
-        facebookAppId: '',
       ),
     );
     final api = SyncApi(dummyConfig);

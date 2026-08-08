@@ -141,7 +141,6 @@ const kTestSharingConfig = SharingConfig(
   auth: SharingAuthConfig(
     appleBundleId: 'com.example.test',
     googleServerClientId: 'test.google.client.id',
-    facebookAppId: 'test-fb-app-id',
   ),
 );
 

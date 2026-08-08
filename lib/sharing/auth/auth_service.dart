@@ -1,14 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../analytics.dart';
 import '../sharing_config.dart';
 import 'apple_sign_in.dart';
 import 'auth_api.dart';
 import 'auth_store.dart';
-import 'facebook_sign_in.dart';
 import 'google_sign_in.dart';
 import 'microsoft_sign_in.dart';
 
@@ -28,8 +26,7 @@ import 'microsoft_sign_in.dart';
 /// IMPORTANT: identities are scoped to the provider (`<provider>:<sub>`),
 /// so a user whose account lives on a disabled provider can never reach
 /// their owned lists again after signing out. Only retire a provider whose
-/// user base is empty or has been migrated. (Facebook was disabled while
-/// its sign-in had never worked broadly, so its user base was empty.)
+/// user base is empty or has been migrated.
 ///
 /// [AuthProvider.test] is deliberately absent — it's never offered in the
 /// dialog and is gated separately (kDebugMode on the client; ENVIRONMENT +
@@ -37,7 +34,6 @@ import 'microsoft_sign_in.dart';
 const Map<AuthProvider, bool> _socialProviderEnabled = {
   AuthProvider.apple: true,
   AuthProvider.google: true,
-  AuthProvider.facebook: false,
   AuthProvider.microsoft: true,
 };
 
@@ -82,14 +78,6 @@ class AuthService {
         return appleSignInAvailable();
       case AuthProvider.google:
         return true;
-      case AuthProvider.facebook:
-        // Facebook is Limited Login (OIDC) only — the Worker deliberately
-        // has no classic Graph-token verification path. Limited Login is
-        // an iOS-only Facebook SDK feature, and the Android plugin
-        // ignores the tracking request and can only mint classic Graph
-        // tokens, so on Android the button would always fail server-side
-        // verification. Hide it there rather than offer a dead end.
-        return defaultTargetPlatform != TargetPlatform.android;
       case AuthProvider.microsoft:
         // Needs the Azure client id everywhere, plus at least one
         // registered redirect URI on Android. Hide the button rather than
@@ -131,8 +119,6 @@ class AuthService {
       case AuthProvider.microsoft:
         return _api.signInWithMicrosoft(
             idToken: await signInWithMicrosoft(_config.auth));
-      case AuthProvider.facebook:
-        return _api.signInWithFacebook(accessToken: await signInWithFacebook());
       case AuthProvider.test:
         throw StateError('signIn(AuthProvider.test) — use '
             'signInWithTestToken() directly; the test provider isn\'t '
@@ -150,13 +136,11 @@ class AuthService {
     final session = _store.current;
     if (session == null) return;
     // Apple doesn't expose a sign-out on the device (the user manages
-    // it under Settings → Apple ID); Google, Facebook, and Microsoft do.
+    // it under Settings → Apple ID); Google and Microsoft do.
     // Test sessions are server-minted and have nothing to clear.
     switch (session.provider) {
       case AuthProvider.google:
         await signOutOfGoogle(_config.auth);
-      case AuthProvider.facebook:
-        await signOutOfFacebook();
       case AuthProvider.microsoft:
         await signOutOfMicrosoft(_config.auth);
       case AuthProvider.apple:
@@ -169,7 +153,7 @@ class AuthService {
   /// Drop the local session without touching the platform SDKs. Used
   /// when the server tells us the session is invalid (401/forbidden) —
   /// we still want the user to see "you're signed out" without an extra
-  /// network call to Google/Facebook.
+  /// network call to the provider.
   Future<void> dropSessionLocally() => _store.clear();
 
   /// Permanently delete the signed-in user's account on the server (all

@@ -139,11 +139,11 @@ void main() {
     test('AuthSession.fromJson parses minimal valid input', () {
       final session = AuthSession.fromJson({
         'sessionToken': 'jwt-min',
-        'provider': 'facebook',
+        'provider': 'microsoft',
         'signedInAtMillis': 42,
       });
       expect(session.sessionToken, 'jwt-min');
-      expect(session.provider, AuthProvider.facebook);
+      expect(session.provider, AuthProvider.microsoft);
       expect(session.userId, '',
           reason: 'userId is empty for pre-cutover persisted sessions; UI '
               'treats empty as "viewer is unknown" and skips the "(you)" '

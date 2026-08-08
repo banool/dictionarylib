@@ -31,8 +31,8 @@ class SharingConfig {
 
   /// OAuth provider client identifiers. Required to sign in with each
   /// provider; the matching `aud` value(s) must be in the Worker's env
-  /// (`APPLE_AUDIENCES`, `GOOGLE_AUDIENCES`, `FACEBOOK_APP_ID`,
-  /// `MICROSOFT_CLIENT_ID`). See the private backend repo's `MANUAL_SETUP.md`.
+  /// (`APPLE_AUDIENCES`, `GOOGLE_AUDIENCES`, `MICROSOFT_CLIENT_ID`). See
+  /// the private backend repo's `MANUAL_SETUP.md`.
   final SharingAuthConfig auth;
 
   /// Optional: enables a "Test sign-in" affordance in the sign-in
@@ -79,7 +79,7 @@ class SharingConfig {
 
 /// OAuth provider client identifiers per app. Apple Sign In uses the iOS
 /// bundle id natively (no per-app config), but Android / web flows need a
-/// Services id; both Google and Facebook need explicit client / app ids.
+/// Services id; Google and Microsoft need explicit client ids.
 class SharingAuthConfig {
   /// iOS bundle identifier used as the Apple `aud` claim on iOS Sign in
   /// with Apple. Matches one of the entries in the Worker's
@@ -109,20 +109,16 @@ class SharingAuthConfig {
   /// the private backend repo's `MANUAL_SETUP.md` §2.
   final String googleServerClientId;
 
-  /// Facebook app id (numeric string). Matches the Worker's
-  /// `FACEBOOK_APP_ID`.
-  final String facebookAppId;
-
   /// Microsoft Entra (Azure AD) application (client) id. Matches the
   /// Worker's `MICROSOFT_CLIENT_ID`. Null treats Microsoft as unconfigured
   /// for this app, so the button never shows rather than failing at
-  /// sign-in time. Provisioning: the private backend repo's `MANUAL_SETUP.md` §4.
+  /// sign-in time. Provisioning: the private backend repo's `MANUAL_SETUP.md` §3.
   final String? microsoftClientId;
 
   /// Android-only MSAL redirect URIs,
   /// `msauth://<android-package>/<url-encoded-base64-signature-hash>`, one
   /// per signing cert the app ships under (each registered in Azure and in
-  /// the manifest — see MANUAL_SETUP §4). iOS derives its redirect URI
+  /// the manifest — see MANUAL_SETUP §3). iOS derives its redirect URI
   /// from the bundle id and needs none of these. The sign-in wrapper picks
   /// whichever matches the running build's actual signature:
   ///
@@ -147,7 +143,6 @@ class SharingAuthConfig {
   const SharingAuthConfig({
     required this.appleBundleId,
     required this.googleServerClientId,
-    required this.facebookAppId,
     this.appleServicesId,
     this.appleRedirectUri,
     this.microsoftClientId,

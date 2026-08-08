@@ -23,7 +23,7 @@ import 'sign_in_exception.dart';
 Future<AuthSession?>? _inflightSignIn;
 final ValueNotifier<String?> _inflightContextMessage = ValueNotifier(null);
 
-/// Sign-in dialog with Apple / Google / Microsoft / Facebook buttons.
+/// Sign-in dialog with Apple / Google / Microsoft buttons.
 ///
 /// [contextMessage] replaces the default "to share a list…" body so
 /// callers can frame the dialog for the situation (accepting an
@@ -222,16 +222,6 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
                     : null,
               ),
             ],
-            if (sharing.auth.isProviderAvailable(AuthProvider.facebook)) ...[
-              const SizedBox(height: 8),
-              _ProviderButton(
-                label: l.signInWithFacebook,
-                icon: const FaIcon(FontAwesomeIcons.facebook),
-                onPressed: inflight == null
-                    ? () => attempt(AuthProvider.facebook)
-                    : null,
-              ),
-            ],
             // Test-only affordance. Visible only in debug builds AND
             // when the consuming app configures [TestSignInConfig].
             // Sends to the worker's gated test-provider path —
@@ -395,8 +385,8 @@ class _ProviderButton extends StatelessWidget {
       // full-width button.
       style: FilledButton.styleFrom(alignment: Alignment.centerLeft),
       // Brand glyphs have different intrinsic widths (Apple is narrow, Google /
-      // Facebook wider), which would shift each label to a different x. Pin the
-      // icon into a fixed-width, centred slot so all the labels line up. The
+      // Microsoft wider), which would shift each label to a different x. Pin
+      // the icon into a fixed-width, centred slot so all the labels line up. The
       // logo stays put while signing in — the Cancel button shows the spinner.
       icon: SizedBox(width: 26, child: Center(child: icon)),
       label: Text(label),

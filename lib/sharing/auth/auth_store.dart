@@ -122,8 +122,8 @@ class AuthSession {
   final String userId;
 
   /// User's display name as resolved at sign-in time. Sourced server-
-  /// side via the provider (Google `name` claim, Facebook `/me?fields=name`)
-  /// or the Apple first-sign-in passthrough; falls back to the
+  /// side via the provider (e.g. the Google `name` claim) or the Apple
+  /// first-sign-in passthrough; falls back to the
   /// server's previously-stored value in `users/<hash>.json`. Empty
   /// only when nothing has ever been captured for this user.
   final String displayName;
@@ -167,7 +167,6 @@ class AuthSession {
 enum AuthProvider {
   apple,
   google,
-  facebook,
   microsoft,
 
   /// Integration-test bypass — only ever set when [AuthApi.signInWithTestToken]
@@ -187,8 +186,6 @@ extension AuthProviderLabel on AuthProvider {
         return l.providerApple;
       case AuthProvider.google:
         return l.providerGoogle;
-      case AuthProvider.facebook:
-        return l.providerFacebook;
       case AuthProvider.microsoft:
         return l.providerMicrosoft;
       case AuthProvider.test:

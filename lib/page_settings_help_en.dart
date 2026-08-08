@@ -42,7 +42,7 @@ Widget getSettingsHelpPageEn() {
       "Signing in gives you an account, which is what makes list sharing work. With "
           "an account you can share your own lists, accept invitations to help edit "
           "other people's, and keep all of that in sync across your devices.",
-      "You can sign in with Apple, Google, Microsoft or Facebook — you'll see "
+      "You can sign in with Apple, Google or Microsoft — you'll see "
           "whichever of these are available on your device. If you only want to "
           "search, save Favourites and revise, you don't need to sign in at all.",
     ],

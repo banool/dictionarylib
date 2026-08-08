@@ -105,7 +105,6 @@ DictAppBootstrapConfig _mdBootstrapConfig() => DictAppBootstrapConfig(
         auth: SharingAuthConfig(
           appleBundleId: mdConfig.appleBundleId,
           googleServerClientId: 'unused-in-md-tests',
-          facebookAppId: 'unused-in-md-tests',
         ),
         testSignIn: const TestSignInConfig(
           testAuthToken: mdTestAuthToken,

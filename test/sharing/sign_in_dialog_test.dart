@@ -85,8 +85,7 @@ void main() {
 
   /// The "last time you signed in with X" hint must not name a provider
   /// whose button is no longer offered (killswitched or platform-hidden) —
-  /// e.g. a pre-killswitch Facebook user should not be teased with a
-  /// provider they can't tap.
+  /// a user should not be teased with a provider they can't tap.
   testWidgets('last-used hint is suppressed for unavailable providers',
       (tester) async {
     Future<void> openDialogWithLastProvider(String providerName) async {
@@ -104,12 +103,12 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // Facebook is killswitched (and hidden on this host platform anyway),
-    // so the hint must not appear.
-    await openDialogWithLastProvider('facebook');
+    // Microsoft is unconfigured in kTestSharingConfig (no client id), so its
+    // button is hidden and the hint must not appear either.
+    await openDialogWithLastProvider('microsoft');
     var l = DictLibLocalizations.of(
         tester.element(find.byType(_CaptureContext).first))!;
-    expect(find.text(l.signInLastUsedHint(l.providerFacebook)), findsNothing,
+    expect(find.text(l.signInLastUsedHint(l.providerMicrosoft)), findsNothing,
         reason: 'no hint for a provider with no button');
     await tester.tap(find.text(l.alertCancel));
     await tester.pumpAndSettle();

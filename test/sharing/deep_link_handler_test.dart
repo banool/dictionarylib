@@ -19,7 +19,6 @@ const _config = SharingConfig(
     // mirror that in the test fixture to avoid confusing future readers.
     appleBundleId: 'com.banool.auslanDictionary',
     googleServerClientId: 'test.google.client.id',
-    facebookAppId: 'test-fb-app-id',
   ),
 );
 

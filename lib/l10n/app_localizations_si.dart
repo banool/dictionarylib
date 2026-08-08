@@ -396,9 +396,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get signInWithMicrosoft => 'Microsoft සමඟ දිගටම';
 
   @override
-  String get signInWithFacebook => 'Facebook සමඟ දිගටම';
-
-  @override
   String get signInFailed =>
       'පුරනය වීම අසාර්ථක විය. කරුණාකර නැවත උත්සාහ කරන්න.';
 
@@ -421,9 +418,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get providerMicrosoft => 'Microsoft';
-
-  @override
-  String get providerFacebook => 'Facebook';
 
   @override
   String get providerTest => 'පරීක්ෂණ සැසිය';

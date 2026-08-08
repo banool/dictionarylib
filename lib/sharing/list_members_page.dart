@@ -24,7 +24,7 @@ import 'synced_entry_list.dart';
 /// A member's display name only refreshes when *that member* does a
 /// /sync — the server's `refreshActorDisplayName` updates the cached
 /// name from the actor's own JWT claim. So if a co-editor renames
-/// themselves at Google / Facebook and doesn't open the app, their
+/// themselves at their provider and doesn't open the app, their
 /// name here stays stale until they do. This is intentional: avoids
 /// a round-trip per member on every load, and means historical
 /// `actorDisplayName` snapshots in the op log keep their git-commit-

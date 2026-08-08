@@ -395,9 +395,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get signInWithMicrosoft => 'Continue with Microsoft';
 
   @override
-  String get signInWithFacebook => 'Continue with Facebook';
-
-  @override
   String get signInFailed => 'Sign-in failed. Please try again.';
 
   @override
@@ -419,9 +416,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get providerMicrosoft => 'Microsoft';
-
-  @override
-  String get providerFacebook => 'Facebook';
 
   @override
   String get providerTest => 'Test session';

@@ -803,12 +803,6 @@ abstract class DictLibLocalizations {
   /// **'Continue with Microsoft'**
   String get signInWithMicrosoft;
 
-  /// No description provided for @signInWithFacebook.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue with Facebook'**
-  String get signInWithFacebook;
-
   /// No description provided for @signInFailed.
   ///
   /// In en, this message translates to:
@@ -850,12 +844,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Microsoft'**
   String get providerMicrosoft;
-
-  /// No description provided for @providerFacebook.
-  ///
-  /// In en, this message translates to:
-  /// **'Facebook'**
-  String get providerFacebook;
 
   /// No description provided for @providerTest.
   ///
