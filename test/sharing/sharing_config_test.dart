@@ -18,8 +18,10 @@ void main() {
   );
 
   test('shareUrlFor composes the public URL', () {
-    expect(config.shareUrlFor('greetings-101'),
-        'https://share.auslandictionary.com/l/greetings-101');
+    expect(
+      config.shareUrlFor('greetings-101'),
+      'https://share.auslandictionary.com/l/greetings-101',
+    );
   });
 
   test('shareUrlFor does not add slashes when base lacks one', () {

@@ -57,9 +57,12 @@ class WebLimitationsCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(heading,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    heading,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   if (body != null) ...[
                     const SizedBox(height: 6),
                     Text(body!, style: theme.textTheme.bodyMedium),
@@ -71,7 +74,8 @@ class WebLimitationsCard extends StatelessWidget {
                       children: [
                         Text('•  ', style: theme.textTheme.bodyMedium),
                         Expanded(
-                            child: Text(p, style: theme.textTheme.bodyMedium)),
+                          child: Text(p, style: theme.textTheme.bodyMedium),
+                        ),
                       ],
                     ),
                   ],
@@ -79,20 +83,27 @@ class WebLimitationsCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     if (footerUrl != null)
                       InkWell(
-                        onTap: () => launchUrl(Uri.parse(footerUrl!),
-                            mode: LaunchMode.externalApplication),
-                        child: Text(footer!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                              decorationColor: theme.colorScheme.primary,
-                            )),
+                        onTap: () => launchUrl(
+                          Uri.parse(footerUrl!),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: Text(
+                          footer!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.primary,
+                            decoration: TextDecoration.underline,
+                            decorationColor: theme.colorScheme.primary,
+                          ),
+                        ),
                       )
                     else
-                      Text(footer!,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        footer!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                   ],
                 ],
               ),

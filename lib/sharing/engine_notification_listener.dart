@@ -39,23 +39,27 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
     final l = DictLibLocalizations.of(context)!;
     switch (notification) {
       case SyncNotification.sessionExpired:
-        messenger.showSnackBar(SnackBar(
-          content: Text(l.engineSessionExpiredSnack),
-          action: SnackBarAction(
-            label: l.engineSessionExpiredSnackAction,
-            onPressed: () async {
-              if (!sharing.isEnabled) return;
-              final dialogContext = rootNavigatorKey.currentContext;
-              if (dialogContext == null || !dialogContext.mounted) return;
-              final session = await showSignInDialog(dialogContext,
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(l.engineSessionExpiredSnack),
+            action: SnackBarAction(
+              label: l.engineSessionExpiredSnackAction,
+              onPressed: () async {
+                if (!sharing.isEnabled) return;
+                final dialogContext = rootNavigatorKey.currentContext;
+                if (dialogContext == null || !dialogContext.mounted) return;
+                final session = await showSignInDialog(
+                  dialogContext,
                   contextMessage: DictLibLocalizations.of(dialogContext)!
-                      .signInDialogContextResume);
-              // Pages repaint via their `sharing.addListener` hooks once
-              // the sync lands; nothing page-specific to do here.
-              if (session != null) unawaited(sharing.engine.syncAll());
-            },
+                      .signInDialogContextResume,
+                );
+                // Pages repaint via their `sharing.addListener` hooks once
+                // the sync lands; nothing page-specific to do here.
+                if (session != null) unawaited(sharing.engine.syncAll());
+              },
+            ),
           ),
-        ));
+        );
       case SyncNotification.removedAsEditor:
         showSnackVia(messenger, l.engineRemovedAsEditorSnack);
       case SyncNotification.snapshotCatchUp:

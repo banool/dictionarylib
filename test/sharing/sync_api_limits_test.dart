@@ -22,7 +22,7 @@ http.Response _errorResponse(
         'code': code,
         'message': message,
         if (details != null) 'details': details,
-      }
+      },
     }),
     status,
   );
@@ -31,12 +31,14 @@ http.Response _errorResponse(
 void main() {
   group('SyncException.isListLimitReached', () {
     test('true for a 403 carrying the list_limit reason', () {
-      final e = SyncException.fromResponse(_errorResponse(
-        403,
-        'FORBIDDEN',
-        'you can own at most 100 shared lists; unshare one to make room',
-        details: {'reason': 'list_limit', 'limit': 100},
-      ));
+      final e = SyncException.fromResponse(
+        _errorResponse(
+          403,
+          'FORBIDDEN',
+          'you can own at most 100 shared lists; unshare one to make room',
+          details: {'reason': 'list_limit', 'limit': 100},
+        ),
+      );
       expect(e.kind, SyncErrorKind.forbidden);
       expect(e.isListLimitReached, isTrue);
       expect(e.listLimit, 100);
@@ -44,29 +46,34 @@ void main() {
 
     test('false for a plain membership 403', () {
       final e = SyncException.fromResponse(
-          _errorResponse(403, 'FORBIDDEN', 'not a member'));
+        _errorResponse(403, 'FORBIDDEN', 'not a member'),
+      );
       expect(e.isListLimitReached, isFalse);
     });
 
     test('false for the wrong-app 403 (the other reason discriminator)', () {
-      final e = SyncException.fromResponse(_errorResponse(
-        403,
-        'FORBIDDEN',
-        'wrong app',
-        details: {'reason': 'wrong_app'},
-      ));
+      final e = SyncException.fromResponse(
+        _errorResponse(
+          403,
+          'FORBIDDEN',
+          'wrong app',
+          details: {'reason': 'wrong_app'},
+        ),
+      );
       expect(e.isListLimitReached, isFalse);
       expect(e.isWrongAppForbid, isTrue);
     });
 
     test('listLimit falls back to the compiled-in cap when absent', () {
       // An older worker that stamps the reason but not the limit.
-      final e = SyncException.fromResponse(_errorResponse(
-        403,
-        'FORBIDDEN',
-        'too many lists',
-        details: {'reason': 'list_limit'},
-      ));
+      final e = SyncException.fromResponse(
+        _errorResponse(
+          403,
+          'FORBIDDEN',
+          'too many lists',
+          details: {'reason': 'list_limit'},
+        ),
+      );
       expect(e.isListLimitReached, isTrue);
       expect(e.listLimit, maxListsPerUser);
     });
@@ -110,8 +117,10 @@ void main() {
         SavedVideo(entryKey: entry, mediaPath: path);
 
     test('is just the envelope allowance for an empty list', () {
-      expect(estimateCreateBodyBytes(const <SavedVideo>[]),
-          lessThan(maxCreateBodyBytes));
+      expect(
+        estimateCreateBodyBytes(const <SavedVideo>[]),
+        lessThan(maxCreateBodyBytes),
+      );
       expect(estimateCreateBodyBytes(const <SavedVideo>[]), greaterThan(0));
     });
 
@@ -141,19 +150,27 @@ void main() {
           for (var i = 0; i < count; i++) v('entry$i', '/mp4video/11/$i.mp4'),
         ];
         final actual = utf8
-            .encode(jsonEncode({
-              'listId': 'greetings101',
-              'displayName': 'Greetings 101',
-              'entries': entries.map((e) => e.toJson()).toList(),
-              'schemaVersion': supportedSchemaVersion,
-            }))
+            .encode(
+              jsonEncode({
+                'listId': 'greetings101',
+                'displayName': 'Greetings 101',
+                'entries': entries.map((e) => e.toJson()).toList(),
+                'schemaVersion': supportedSchemaVersion,
+              }),
+            )
             .length;
         final estimate = estimateCreateBodyBytes(entries);
-        expect(estimate, greaterThanOrEqualTo(actual),
-            reason: 'estimate must not undershoot at $count entries');
+        expect(
+          estimate,
+          greaterThanOrEqualTo(actual),
+          reason: 'estimate must not undershoot at $count entries',
+        );
         // ...and not so loose that it refuses shares that would work.
-        expect(estimate, lessThan((actual * 1.2).round() + 512),
-            reason: 'estimate must stay tight at $count entries');
+        expect(
+          estimate,
+          lessThan((actual * 1.2).round() + 512),
+          reason: 'estimate must stay tight at $count entries',
+        );
       }
     });
 

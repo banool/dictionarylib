@@ -17,8 +17,9 @@ import '../helpers.dart';
 void runThemePickerSuite(DictAppTestConfig cfg) {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('app theme picker options line up under the dialog title',
-      (WidgetTester tester) async {
+  testWidgets('app theme picker options line up under the dialog title', (
+    WidgetTester tester,
+  ) async {
     await cfg.setup();
 
     tester.view.physicalSize = const Size(1080, 2400);
@@ -39,19 +40,28 @@ void runThemePickerSuite(DictAppTestConfig cfg) {
     await tester.tap(appThemeRow);
     await settle(tester);
 
-    expect(find.byType(AlertDialog), findsOneWidget,
-        reason: 'tapping the App theme row should open the picker dialog');
+    expect(
+      find.byType(AlertDialog),
+      findsOneWidget,
+      reason: 'tapping the App theme row should open the picker dialog',
+    );
 
     // Scope every lookup to the dialog: the settings row behind the scrim
     // also shows "App theme" (its title) and "Hearth" (its current-value
     // trailing), so an unscoped find.text would match two widgets.
     final dialog = find.byType(AlertDialog);
-    final dialogTitle =
-        find.descendant(of: dialog, matching: find.text('App theme'));
-    final hearthOption =
-        find.descendant(of: dialog, matching: find.text('Hearth'));
-    final classicOption =
-        find.descendant(of: dialog, matching: find.text('Classic'));
+    final dialogTitle = find.descendant(
+      of: dialog,
+      matching: find.text('App theme'),
+    );
+    final hearthOption = find.descendant(
+      of: dialog,
+      matching: find.text('Hearth'),
+    );
+    final classicOption = find.descendant(
+      of: dialog,
+      matching: find.text('Classic'),
+    );
     expect(dialogTitle, findsOneWidget);
     expect(hearthOption, findsOneWidget);
     expect(classicOption, findsOneWidget);
@@ -62,9 +72,15 @@ void runThemePickerSuite(DictAppTestConfig cfg) {
 
     // Options align with each other and, crucially, with the title — not
     // outdented to its left as the pre-fix 15dp inset left them.
-    expect((hearthLeft - classicLeft).abs(), lessThan(1.0),
-        reason: 'the two options should share a left edge');
-    expect((hearthLeft - titleLeft).abs(), lessThan(2.0),
-        reason: 'options should line up under the title, not sit outdented');
+    expect(
+      (hearthLeft - classicLeft).abs(),
+      lessThan(1.0),
+      reason: 'the two options should share a left edge',
+    );
+    expect(
+      (hearthLeft - titleLeft).abs(),
+      lessThan(2.0),
+      reason: 'options should line up under the title, not sit outdented',
+    );
   });
 }

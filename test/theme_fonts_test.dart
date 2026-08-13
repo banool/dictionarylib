@@ -50,12 +50,17 @@ void main() {
         classicSeed: Colors.blue,
       );
       // Body text → Hanken Grotesk.
-      expect(theme.textTheme.bodyMedium?.fontFamily, contains('HankenGrotesk'),
-          reason: 'body text should use Hanken Grotesk ($brightness)');
+      expect(
+        theme.textTheme.bodyMedium?.fontFamily,
+        contains('HankenGrotesk'),
+        reason: 'body text should use Hanken Grotesk ($brightness)',
+      );
       // Display / headline text → Bricolage Grotesque.
-      expect(theme.textTheme.displayLarge?.fontFamily,
-          contains('BricolageGrotesque'),
-          reason: 'display text should use Bricolage Grotesque ($brightness)');
+      expect(
+        theme.textTheme.displayLarge?.fontFamily,
+        contains('BricolageGrotesque'),
+        reason: 'display text should use Bricolage Grotesque ($brightness)',
+      );
     }
   });
 }

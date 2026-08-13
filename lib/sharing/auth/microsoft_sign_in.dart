@@ -77,8 +77,9 @@ Future<SingleAccountPca> _ensurePca(SharingAuthConfig auth) async {
   // immediately, a sideloaded release APK falls through to the
   // upload-key URI.
   final isAndroid = !kIsWeb && Platform.isAndroid;
-  final redirectUris =
-      isAndroid ? _androidRedirectUriCandidates(auth) : <String?>[null];
+  final redirectUris = isAndroid
+      ? _androidRedirectUriCandidates(auth)
+      : <String?>[null];
   if (redirectUris.isEmpty) {
     // Android can't complete the redirect without a registered URI.
     throw ProviderSignInException(SignInErrorKind.notConfigured);
@@ -103,8 +104,10 @@ Future<SingleAccountPca> _ensurePca(SharingAuthConfig auth) async {
       _pca = pca;
       return pca;
     } catch (e) {
-      printAndLog('microsoft sign-in: client init failed for '
-          '${redirectUri ?? '<derived>'} ($e)');
+      printAndLog(
+        'microsoft sign-in: client init failed for '
+        '${redirectUri ?? '<derived>'} ($e)',
+      );
     }
   }
   throw ProviderSignInException(SignInErrorKind.notConfigured);

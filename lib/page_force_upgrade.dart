@@ -18,7 +18,8 @@ abstract class YankedVersionChecker {
   Future<void> throwIfShouldUpgrade() async {
     if (packageInfo == null) {
       printAndLog(
-          "packageInfo is null, can't decide whether app is a yanked version. Not forcing upgrade.");
+        "packageInfo is null, can't decide whether app is a yanked version. Not forcing upgrade.",
+      );
       return;
     }
     var version = packageInfo!.version;
@@ -27,7 +28,8 @@ abstract class YankedVersionChecker {
 
     if (yankedVersions.contains(version)) {
       printAndLog(
-          "User is running yanked version, throwing exception to force upgrade");
+        "User is running yanked version, throwing exception to force upgrade",
+      );
       throw YankedVersionError(version, yankedVersions);
     }
   }
@@ -53,16 +55,19 @@ class GitHubYankedVersionChecker extends YankedVersionChecker {
   @override
   Future<List<String>> getYankedVersions() async {
     try {
-      var response =
-          await http.get(Uri.parse(uri)).timeout(kMetadataFetchTimeout);
+      var response = await http
+          .get(Uri.parse(uri))
+          .timeout(kMetadataFetchTimeout);
       if (response.statusCode != 200) {
         throw Exception(
-            "HTTP response for getting yanked versions was non 200: ${response.statusCode}");
+          "HTTP response for getting yanked versions was non 200: ${response.statusCode}",
+        );
       }
       return response.body.split("\n");
     } catch (e) {
       printAndLog(
-          "Failed to get yanked versions, continuing without raising an error: $e");
+        "Failed to get yanked versions, continuing without raising an error: $e",
+      );
       return [];
     }
   }
@@ -74,11 +79,12 @@ class ForceUpgradePage extends StatelessWidget {
   final String iOSAppId;
   final String androidAppId;
 
-  const ForceUpgradePage(
-      {super.key,
-      required this.error,
-      required this.iOSAppId,
-      required this.androidAppId});
+  const ForceUpgradePage({
+    super.key,
+    required this.error,
+    required this.iOSAppId,
+    required this.androidAppId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -90,11 +96,14 @@ class ForceUpgradePage extends StatelessWidget {
     Widget updateButton = Container();
     if (Platform.isIOS || Platform.isAndroid) {
       updateButton = OutlinedButton(
-          onPressed: () async {
-            await StoreRedirect.redirect(
-                iOSAppId: iOSAppId, androidAppId: androidAppId);
-          },
-          child: const Text("Update"));
+        onPressed: () async {
+          await StoreRedirect.redirect(
+            iOSAppId: iOSAppId,
+            androidAppId: androidAppId,
+          );
+        },
+        child: const Text("Update"),
+      );
     }
 
     List<Widget> children = [
@@ -109,22 +118,21 @@ class ForceUpgradePage extends StatelessWidget {
     ];
 
     return MaterialApp(
-        title: "Update",
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-            body: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: children,
-                        ),
-                      ),
-                    ),
-                  ],
-                ))));
+      title: "Update",
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(child: Column(children: children)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

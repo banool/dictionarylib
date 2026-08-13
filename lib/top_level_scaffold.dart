@@ -45,10 +45,12 @@ class TopLevelScaffold extends StatelessWidget {
     ];
 
     if (getShowLists()) {
-      items.add(BottomNavigationBarItem(
-        icon: const Icon(Icons.view_list),
-        label: DictLibLocalizations.of(context)!.listsTitle,
-      ));
+      items.add(
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.view_list),
+          label: DictLibLocalizations.of(context)!.listsTitle,
+        ),
+      );
     }
 
     if (getShowFlashcards()) {
@@ -60,10 +62,12 @@ class TopLevelScaffold extends StatelessWidget {
       );
     }
 
-    items.add(BottomNavigationBarItem(
-      icon: const Icon(Icons.settings),
-      label: DictLibLocalizations.of(context)!.settingsTitle,
-    ));
+    items.add(
+      BottomNavigationBarItem(
+        icon: const Icon(Icons.settings),
+        label: DictLibLocalizations.of(context)!.settingsTitle,
+      ),
+    );
 
     // In the Hearth look, tab roots use a large left-aligned display title.
     // Classic keeps its centred title so it matches the original design.
@@ -71,17 +75,20 @@ class TopLevelScaffold extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
-          title: Text(title),
-          titleTextStyle: hearth
-              ? textTheme.headlineMedium?.copyWith(
-                  fontSize: 26, color: Theme.of(context).colorScheme.onSurface)
-              : null,
-          titleSpacing: hearth ? 20 : null,
-          toolbarHeight: hearth ? 64 : null,
-          actions: buildActionButtons(actions ?? []),
-          centerTitle: !hearth,
-          bottom: underAppBar,
-          surfaceTintColor: Colors.transparent),
+        title: Text(title),
+        titleTextStyle: hearth
+            ? textTheme.headlineMedium?.copyWith(
+                fontSize: 26,
+                color: Theme.of(context).colorScheme.onSurface,
+              )
+            : null,
+        titleSpacing: hearth ? 20 : null,
+        toolbarHeight: hearth ? 64 : null,
+        actions: buildActionButtons(actions ?? []),
+        centerTitle: !hearth,
+        bottom: underAppBar,
+        surfaceTintColor: Colors.transparent,
+      ),
       // On tablets the tab pages centre their content at a readable
       // measure instead of stretching phone rows across the full panel.
       body: constrainContentWidth(context, body),

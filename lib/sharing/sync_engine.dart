@@ -29,7 +29,9 @@ class AsyncLock {
     return () async {
       try {
         await prev;
-      } catch (_) {/* prior body errored; don't propagate to next */}
+      } catch (_) {
+        /* prior body errored; don't propagate to next */
+      }
       try {
         return await body();
       } finally {
@@ -188,9 +190,9 @@ class SyncEngine {
     required SyncApi api,
     required SyncedEntryListManager manager,
     required AuthService auth,
-  })  : _api = api,
-        _manager = manager,
-        _auth = auth;
+  }) : _api = api,
+       _manager = manager,
+       _auth = auth;
 
   void dispose() {
     for (final s in _state.values) {
@@ -224,7 +226,10 @@ class SyncEngine {
   }
 
   Future<void> _enqueueOp(
-      String listId, String type, Map<String, dynamic> args) async {
+    String listId,
+    String type,
+    Map<String, dynamic> args,
+  ) async {
     final list = _manager.get(listId);
     if (list == null) return;
     if (!_isEditableRole(list.meta.role) || list.meta.orphaned) return;
@@ -294,8 +299,13 @@ class SyncEngine {
     final dirty = _manager.editableLists
         .where((l) => l.meta.pendingOps.isNotEmpty)
         .toList();
-    await Future.wait(dirty.map((l) => _drainListPending(l.listId).catchError(
-        (e) => printAndLog('SyncEngine: drain ${l.listId} failed: $e'))));
+    await Future.wait(
+      dirty.map(
+        (l) => _drainListPending(l.listId).catchError(
+          (e) => printAndLog('SyncEngine: drain ${l.listId} failed: $e'),
+        ),
+      ),
+    );
   }
 
   /// Loop [_flushOps] for one list until its queue is empty or a
@@ -356,20 +366,30 @@ class SyncEngine {
 
     final futures = <Future<void>>[];
     for (final l in _manager.editableLists) {
-      futures.add(_flushAndDrain(l.listId, rethrowOnError: true)
-          .catchError((e) => recordFailure('sync editable ${l.listId}', e)));
+      futures.add(
+        _flushAndDrain(
+          l.listId,
+          rethrowOnError: true,
+        ).catchError((e) => recordFailure('sync editable ${l.listId}', e)),
+      );
     }
     for (final l in _manager.subscribedLists) {
-      futures.add(_pullSubscribed(l.listId,
-              rethrowOnError: true, forceFresh: forceFresh)
-          .catchError((e) => recordFailure('pull sub ${l.listId}', e)));
+      futures.add(
+        _pullSubscribed(
+          l.listId,
+          rethrowOnError: true,
+          forceFresh: forceFresh,
+        ).catchError((e) => recordFailure('pull sub ${l.listId}', e)),
+      );
     }
     await Future.wait(futures);
     return failures;
   }
 
-  Future<void> _flushAndDrain(String listId,
-      {bool rethrowOnError = false}) async {
+  Future<void> _flushAndDrain(
+    String listId, {
+    bool rethrowOnError = false,
+  }) async {
     await _flushOps(listId, rethrowOnError: rethrowOnError);
     await _drainListPending(listId);
   }
@@ -400,8 +420,9 @@ class SyncEngine {
       // Snapshot the queue. New ops added during the request go to the
       // tail and will be picked up by the next flush iteration.
       final fullQueueLen = list.meta.pendingOps.length;
-      final batchLen =
-          fullQueueLen > _maxOpsPerBatch ? _maxOpsPerBatch : fullQueueLen;
+      final batchLen = fullQueueLen > _maxOpsPerBatch
+          ? _maxOpsPerBatch
+          : fullQueueLen;
       final batch = list.meta.pendingOps.sublist(0, batchLen);
       final opsForWire = batch.map((o) => o.toJson()).toList();
 
@@ -447,8 +468,10 @@ class SyncEngine {
     for (final outcome in response.applied) {
       ackedIds.add(outcome.opId);
       if (outcome.status == OpStatus.rejected) {
-        printAndLog('SyncEngine: ${list.listId} op ${outcome.opId} rejected: '
-            '${outcome.reason}');
+        printAndLog(
+          'SyncEngine: ${list.listId} op ${outcome.opId} rejected: '
+          '${outcome.reason}',
+        );
         if (outcome.isListFullRejection) hitListFull = true;
       }
     }
@@ -518,7 +541,10 @@ class SyncEngine {
   }
 
   Future<void> _handleSyncError(
-      SyncedEntryList list, SyncException e, List<PendingOp> batch) async {
+    SyncedEntryList list,
+    SyncException e,
+    List<PendingOp> batch,
+  ) async {
     final listId = list.listId;
     // The stale-cursor 400 is recoverable (server lost state relative
     // to our cursor); handle it before the generic invalidBody branch
@@ -541,7 +567,8 @@ class SyncEngine {
         // over a deploy mismatch, so just back off and retry.
         if (e.isWrongAppForbid) {
           printAndLog(
-              'SyncEngine: $listId 403 (wrong_app) — backing off, NOT demoting');
+            'SyncEngine: $listId 403 (wrong_app) — backing off, NOT demoting',
+          );
           _scheduleBackoffRetry(list, null);
           break;
         }
@@ -560,8 +587,13 @@ class SyncEngine {
         // user sees the canonical (read-only) state instead of their
         // last-known editor view. Best-effort; if the pull fails the
         // next syncAll catches it.
-        unawaited(_pullSubscribed(listId).catchError((err) =>
-            printAndLog('SyncEngine: post-demote pull $listId failed: $err')));
+        unawaited(
+          _pullSubscribed(listId).catchError(
+            (err) => printAndLog(
+              'SyncEngine: post-demote pull $listId failed: $err',
+            ),
+          ),
+        );
       case SyncErrorKind.notFound:
       case SyncErrorKind.gone:
         await _handleNotFoundOrGone(list, e.kind, 'sync');
@@ -579,8 +611,9 @@ class SyncEngine {
         // so drop them — pending queue must self-heal. Should be
         // unreachable in normal use; indicates a client bug.
         printAndLog(
-            'SyncEngine: sync $listId failed unrecoverably (${e.kind}), '
-            'dropping ${batch.length} op(s) from the queue: $e');
+          'SyncEngine: sync $listId failed unrecoverably (${e.kind}), '
+          'dropping ${batch.length} op(s) from the queue: $e',
+        );
         final dropIds = batch.map((o) => o.opId).toSet();
         list.meta.pendingOps.removeWhere((o) => dropIds.contains(o.opId));
         try {
@@ -603,11 +636,15 @@ class SyncEngine {
     final listId = list.listId;
     final session = _auth.store.current;
     if (session == null) return;
-    printAndLog('SyncEngine: $listId cursor ahead of server '
-        '(lastKnownSeq=${list.meta.lastKnownSeq}) — re-adopting server state');
+    printAndLog(
+      'SyncEngine: $listId cursor ahead of server '
+      '(lastKnownSeq=${list.meta.lastKnownSeq}) — re-adopting server state',
+    );
     try {
       final snapshot = await _api.getState(
-          listId: listId, sessionToken: session.sessionToken);
+        listId: listId,
+        sessionToken: session.sessionToken,
+      );
       _adoptSnapshot(list, snapshot);
       // Re-apply the queued local edits so they survive the reset and
       // get re-sent against the fresh cursor.
@@ -647,7 +684,10 @@ class SyncEngine {
   /// occurrences; until then the engine backs off and retries with all
   /// local state preserved.
   Future<void> _handleNotFoundOrGone(
-      SyncedEntryList list, SyncErrorKind kind, String context) async {
+    SyncedEntryList list,
+    SyncErrorKind kind,
+    String context,
+  ) async {
     if (kind == SyncErrorKind.gone) {
       await _markOrphaned(list, 'gone on $context');
       return;
@@ -655,14 +695,18 @@ class SyncEngine {
     final state = _stateOf(list.listId);
     state.consecutiveNotFound++;
     if (state.consecutiveNotFound < _notFoundOrphanThreshold) {
-      printAndLog('SyncEngine: ${list.listId} 404 on $context '
-          '(${state.consecutiveNotFound}/$_notFoundOrphanThreshold) — '
-          'backing off before treating the list as gone');
+      printAndLog(
+        'SyncEngine: ${list.listId} 404 on $context '
+        '(${state.consecutiveNotFound}/$_notFoundOrphanThreshold) — '
+        'backing off before treating the list as gone',
+      );
       _scheduleBackoffRetry(list, null);
       return;
     }
     await _markOrphaned(
-        list, '$_notFoundOrphanThreshold consecutive 404s on $context');
+      list,
+      '$_notFoundOrphanThreshold consecutive 404s on $context',
+    );
   }
 
   int? _parseRetryAfter(dynamic raw) {
@@ -707,8 +751,10 @@ class SyncEngine {
       // (the user's own data, which predates the share) so it reverts to a
       // plain local list; for an editor it deletes the local mirror entirely
       // (it was only ever a copy of someone else's list).
-      printAndLog('SyncEngine: ${list.listId} $reason — '
-          'share gone, dropping ${list.meta.role.name} mirror');
+      printAndLog(
+        'SyncEngine: ${list.listId} $reason — '
+        'share gone, dropping ${list.meta.role.name} mirror',
+      );
       try {
         await _manager.removeLocal(list.listId);
       } catch (e) {
@@ -740,8 +786,11 @@ class SyncEngine {
   /// [forceFresh] is set by user-initiated pull-to-refresh so the public
   /// GET bypasses the worker's edge cache and reads the current R2
   /// snapshot (see [SyncApi.getList]); background polls leave it false.
-  Future<void> _pullSubscribed(String listId,
-      {bool rethrowOnError = false, bool forceFresh = false}) {
+  Future<void> _pullSubscribed(
+    String listId, {
+    bool rethrowOnError = false,
+    bool forceFresh = false,
+  }) {
     return _stateOf(listId).lock.synchronized(() async {
       final local = _manager.get(listId);
       if (local == null) return;
@@ -751,8 +800,11 @@ class SyncEngine {
       // fine — `replaceEntriesFromServer` operates on the wrapper's
       // entries set, which is the right thing in either case.
       try {
-        final result = await _api.getList(local.listId,
-            ifNoneMatch: local.meta.etag, forceFresh: forceFresh);
+        final result = await _api.getList(
+          local.listId,
+          ifNoneMatch: local.meta.etag,
+          forceFresh: forceFresh,
+        );
         final state = _stateOf(listId);
         state.backoffSeconds = null;
         state.consecutiveNotFound = 0;
@@ -821,7 +873,8 @@ class SyncEngine {
         if (e.kind == SyncErrorKind.idCollision &&
             attempt < _createKeyMaxAttempts) {
           printAndLog(
-              'SyncEngine: key collision on $listId, retrying with a new key');
+            'SyncEngine: key collision on $listId, retrying with a new key',
+          );
           continue;
         }
         rethrow;
@@ -878,7 +931,9 @@ class SyncEngine {
       final result = await _api.getList(listId);
       if (result is! FetchOk) {
         throw SyncException(
-            SyncErrorKind.server, 'unexpected 304 on fresh fetch');
+          SyncErrorKind.server,
+          'unexpected 304 on fresh fetch',
+        );
       }
       final remote = result.list;
       final list = SyncedEntryList.subscriber(
@@ -918,7 +973,10 @@ class SyncEngine {
     }
     return _stateOf(listId).lock.synchronized(() async {
       final snapshot = await _api.acceptInvite(
-          listId: listId, token: token, sessionToken: session.sessionToken);
+        listId: listId,
+        token: token,
+        sessionToken: session.sessionToken,
+      );
 
       final existing = _manager.get(listId);
       if (existing != null && _isEditableRole(existing.meta.role)) {
@@ -973,7 +1031,9 @@ class SyncEngine {
       throw StateError('createInvite: no current session');
     }
     return _api.createInvite(
-        listId: listId, sessionToken: session.sessionToken);
+      listId: listId,
+      sessionToken: session.sessionToken,
+    );
   }
 
   /// Owner-only: remove an editor by user id.
@@ -983,7 +1043,10 @@ class SyncEngine {
       throw StateError('removeEditor: no current session');
     }
     await _api.removeEditor(
-        listId: listId, userIdOrMe: userId, sessionToken: session.sessionToken);
+      listId: listId,
+      userIdOrMe: userId,
+      sessionToken: session.sessionToken,
+    );
     await _flushOps(listId);
   }
 
@@ -996,9 +1059,10 @@ class SyncEngine {
     if (session != null) {
       try {
         await _api.removeEditor(
-            listId: listId,
-            userIdOrMe: 'me',
-            sessionToken: session.sessionToken);
+          listId: listId,
+          userIdOrMe: 'me',
+          sessionToken: session.sessionToken,
+        );
       } on SyncException catch (e) {
         const ignorable = {
           SyncErrorKind.notFound,
@@ -1023,14 +1087,20 @@ class SyncEngine {
   /// poll. Held under the per-list lock so it can't interleave with a
   /// concurrent flush for the same list.
   Future<void> renameOwned(
-      String listId, String displayName, String sessionToken) async {
+    String listId,
+    String displayName,
+    String sessionToken,
+  ) async {
     final list = _manager.get(listId);
     if (list == null || list.meta.role != ListRole.owner) {
       throw StateError('renameOwned: $listId is not owner-role');
     }
     await _stateOf(listId).lock.synchronized(() async {
       final snapshot = await _api.renameList(
-          listId: listId, displayName: displayName, sessionToken: sessionToken);
+        listId: listId,
+        displayName: displayName,
+        sessionToken: sessionToken,
+      );
       final current = _manager.get(listId);
       if (current == null) return;
       current.meta.displayName = snapshot.displayName;
@@ -1051,7 +1121,9 @@ class SyncEngine {
     if (session != null) {
       try {
         await _api.deleteList(
-            listId: listId, sessionToken: session.sessionToken);
+          listId: listId,
+          sessionToken: session.sessionToken,
+        );
       } on SyncException catch (e) {
         const ignorable = {
           SyncErrorKind.notFound,
@@ -1113,8 +1185,13 @@ class SyncEngine {
       if (list.meta.pendingOps.isEmpty) continue;
       list.meta.pendingOps.clear();
       _clearListState(list.listId);
-      writes.add(list.writeMeta().catchError((e) => printAndLog(
-          'SyncEngine: clearAllPendingOps writeMeta ${list.listId} failed: $e')));
+      writes.add(
+        list.writeMeta().catchError(
+          (e) => printAndLog(
+            'SyncEngine: clearAllPendingOps writeMeta ${list.listId} failed: $e',
+          ),
+        ),
+      );
     }
     await Future.wait(writes);
     sharing.bumpState();

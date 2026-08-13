@@ -45,10 +45,7 @@ class AppleSignInResult {
   /// updated server-side.
   final String freshName;
 
-  const AppleSignInResult({
-    required this.idToken,
-    this.freshName = '',
-  });
+  const AppleSignInResult({required this.idToken, this.freshName = ''});
 }
 
 /// Trigger the platform's Sign in with Apple flow.

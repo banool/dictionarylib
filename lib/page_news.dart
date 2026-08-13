@@ -21,11 +21,8 @@ class NewsPage extends StatelessWidget {
     final hasNew = advisoriesResponse?.newAdvisories ?? false;
 
     // A centred, scroll-safe wrapper for the zero-content states.
-    Widget centeredState(Widget child) => Center(
-          child: SingleChildScrollView(
-            child: child,
-          ),
-        );
+    Widget centeredState(Widget child) =>
+        Center(child: SingleChildScrollView(child: child));
 
     Widget body;
     if (advisoriesResponse == null) {
@@ -117,10 +114,11 @@ class _AdvisoryCard extends StatelessWidget {
                   child: Text(
                     advisory.date,
                     style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
-                        color: cs.onSurfaceVariant),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 if (isNew)

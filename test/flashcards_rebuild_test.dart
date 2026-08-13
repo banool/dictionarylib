@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dolphinsr/dolphinsr.dart';
@@ -20,30 +21,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// so a test's expected card set is deterministic; the rebuild path
 /// doesn't care how the masters were produced.
 List<Master> _twoMasters() => const [
-      Master(
-        id: 'apple',
-        fields: ['apple', VIDEO_LINKS_MARKER],
-        combinations: [
-          Combination(front: [0], back: [1]),
-          Combination(front: [1], back: [0]),
-        ],
-      ),
-      Master(
-        id: 'banana',
-        fields: ['banana', VIDEO_LINKS_MARKER],
-        combinations: [
-          Combination(front: [0], back: [1]),
-          Combination(front: [1], back: [0]),
-        ],
-      ),
-    ];
+  Master(
+    id: 'apple',
+    fields: ['apple', VIDEO_LINKS_MARKER],
+    combinations: [
+      Combination(front: [0], back: [1]),
+      Combination(front: [1], back: [0]),
+    ],
+  ),
+  Master(
+    id: 'banana',
+    fields: ['banana', VIDEO_LINKS_MARKER],
+    combinations: [
+      Combination(front: [0], back: [1]),
+      Combination(front: [1], back: [0]),
+    ],
+  ),
+];
 
 const _wordToSign = Combination(front: [0], back: [1]);
 
-Review _review(String master, Rating rating, DateTime ts,
-    {Combination combination = _wordToSign}) {
+Review _review(
+  String master,
+  Rating rating,
+  DateTime ts, {
+  Combination combination = _wordToSign,
+}) {
   return Review(
-      master: master, combination: combination, ts: ts, rating: rating);
+    master: master,
+    combination: combination,
+    ts: ts,
+    rating: rating,
+  );
 }
 
 /// Compare two DolphinSR instances by the schedule buckets their cards
@@ -86,14 +95,18 @@ void main() {
           id: 'apple',
           fields: ['apple', VIDEO_LINKS_MARKER],
           combinations: [
-            Combination(front: [0], back: [1])
+            Combination(front: [0], back: [1]),
           ],
         ),
       ];
       final reviews = [
         _review('apple', Rating.Good, DateTime(2024, 1, 1)),
-        _review('apple', Rating.Good, DateTime(2024, 1, 2),
-            combination: const Combination(front: [1], back: [0])),
+        _review(
+          'apple',
+          Rating.Good,
+          DateTime(2024, 1, 2),
+          combination: const Combination(front: [1], back: [0]),
+        ),
       ];
       final out = filterReviewsToMasters(reviews, masters);
       expect(out, hasLength(1));
@@ -111,8 +124,7 @@ void main() {
   });
 
   group('rebuildDolphin — one review per card', () {
-    test(
-        're-rating a card does not accumulate phantom reviews: the rebuilt '
+    test('re-rating a card does not accumulate phantom reviews: the rebuilt '
         'state matches a fresh build with only the latest review', () {
       final masters = _twoMasters();
       final di = getDolphinInformationFromVideos([], masters, reviews: []);
@@ -134,14 +146,16 @@ void main() {
 
       // Ground truth: a brand-new session built from the masters + the
       // single persisted review (exactly what next launch reconstructs).
-      final nextSession =
-          getDolphinInformationFromVideos([], masters, reviews: [latestAnswer]);
+      final nextSession = getDolphinInformationFromVideos(
+        [],
+        masters,
+        reviews: [latestAnswer],
+      );
 
       _expectSameSchedule(rebuilt.dolphin, nextSession.dolphin);
     });
 
-    test(
-        'rebuilt dolphin equals next-session rebuild across persisted '
+    test('rebuilt dolphin equals next-session rebuild across persisted '
         'history + multiple re-rated session answers', () {
       final masters = _twoMasters();
       // Pre-existing persisted history from earlier sessions.
@@ -149,15 +163,21 @@ void main() {
         _review('apple', Rating.Good, DateTime(2024, 12, 1, 10)),
         _review('banana', Rating.Good, DateTime(2024, 12, 2, 10)),
       ];
-      final di =
-          getDolphinInformationFromVideos([], masters, reviews: existing);
+      final di = getDolphinInformationFromVideos(
+        [],
+        masters,
+        reviews: existing,
+      );
 
       // This session: answer both cards, then re-rate apple. Phantom
       // reviews pile into the live instance.
       final a1 = _review('apple', Rating.Good, DateTime(2025, 1, 1, 9, 0, 0));
       final a2 = _review('banana', Rating.Hard, DateTime(2025, 1, 1, 9, 0, 2));
-      final a1Final =
-          _review('apple', Rating.Hard, DateTime(2025, 1, 1, 9, 0, 4));
+      final a1Final = _review(
+        'apple',
+        Rating.Hard,
+        DateTime(2025, 1, 1, 9, 0, 4),
+      );
       di.dolphin.addReviews([a1]);
       di.dolphin.addReviews([a2]);
       di.dolphin.addReviews([a1Final]);
@@ -167,19 +187,24 @@ void main() {
 
       // Next session reconstructs from existing + the persisted session
       // answers (one per card).
-      final nextSession = getDolphinInformationFromVideos([], masters,
-          reviews: [...existing, ...answers]);
+      final nextSession = getDolphinInformationFromVideos(
+        [],
+        masters,
+        reviews: [...existing, ...answers],
+      );
 
       _expectSameSchedule(rebuilt.dolphin, nextSession.dolphin);
     });
 
-    test(
-        'rebuild preserves the DolphinInformation carry-along fields so it '
+    test('rebuild preserves the DolphinInformation carry-along fields so it '
         'can itself be rebuilt again', () {
       final masters = _twoMasters();
       final di = getDolphinInformationFromVideos([], masters, reviews: []);
-      final answer =
-          _review('apple', Rating.Good, DateTime(2025, 1, 1, 9, 0, 0));
+      final answer = _review(
+        'apple',
+        Rating.Good,
+        DateTime(2025, 1, 1, 9, 0, 0),
+      );
       final rebuilt = rebuildDolphin(di, [answer]);
 
       expect(rebuilt.masters, same(di.masters));
@@ -189,16 +214,21 @@ void main() {
 
       // A second rebuild (re-rating again) must still work — proves the
       // retained masters/seed survive the first rebuild intact.
-      final answer2 =
-          _review('apple', Rating.Hard, DateTime(2025, 1, 1, 9, 0, 5));
+      final answer2 = _review(
+        'apple',
+        Rating.Hard,
+        DateTime(2025, 1, 1, 9, 0, 5),
+      );
       final rebuilt2 = rebuildDolphin(rebuilt, [answer2]);
-      final nextSession =
-          getDolphinInformationFromVideos([], masters, reviews: [answer2]);
+      final nextSession = getDolphinInformationFromVideos(
+        [],
+        masters,
+        reviews: [answer2],
+      );
       _expectSameSchedule(rebuilt2.dolphin, nextSession.dolphin);
     });
 
-    test(
-        'reviews are applied in ascending ts order regardless of the order '
+    test('reviews are applied in ascending ts order regardless of the order '
         'they arrive in answers (DolphinSR throws on out-of-order apply)', () {
       final masters = _twoMasters();
       // Persisted history is OLDER than the session answers; if the
@@ -207,18 +237,23 @@ void main() {
       final existing = [
         _review('apple', Rating.Good, DateTime(2024, 6, 1, 10)),
       ];
-      final di =
-          getDolphinInformationFromVideos([], masters, reviews: existing);
+      final di = getDolphinInformationFromVideos(
+        [],
+        masters,
+        reviews: existing,
+      );
 
       // Hand answers in a deliberately reversed (newest-first) order.
-      final newer =
-          _review('apple', Rating.Good, DateTime(2025, 1, 2, 9, 0, 0));
+      final newer = _review(
+        'apple',
+        Rating.Good,
+        DateTime(2025, 1, 2, 9, 0, 0),
+      );
       // rebuildDolphin must sort internally — this must not throw.
       expect(() => rebuildDolphin(di, [newer]), returnsNormally);
     });
 
-    test(
-        'rebuilt dolphin schedules identically to a same-seed manual build '
+    test('rebuilt dolphin schedules identically to a same-seed manual build '
         'from the canonical one-per-card review set — including nextCard '
         'ordering', () {
       // The card order is intentionally re-randomised each session
@@ -240,8 +275,11 @@ void main() {
       // Ground truth: same masters, same order seed, only the latest
       // review.
       final truth = DolphinSR();
-      truth.addMasters(masters,
-          shuffleCardOrder: true, random: Random(di.orderSeed));
+      truth.addMasters(
+        masters,
+        shuffleCardOrder: true,
+        random: Random(di.orderSeed),
+      );
       truth.addReviews([answer]);
 
       _expectSameSchedule(rebuilt.dolphin, truth);

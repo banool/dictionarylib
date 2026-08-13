@@ -205,8 +205,9 @@ class ListsService {
   /// server-supplied display name can't be turned into a valid local
   /// storage key. Optional so test code can call this without a
   /// widget tree; pass a real context from real callers.
-  Future<ImportEditableListsResult> importEditableLists(
-      {BuildContext? context}) async {
+  Future<ImportEditableListsResult> importEditableLists({
+    BuildContext? context,
+  }) async {
     if (!sharing.isEnabled) {
       throw StateError('sharing is not configured for this app');
     }
@@ -214,8 +215,9 @@ class ListsService {
     if (session == null) {
       throw StateError('importEditableLists: not signed in');
     }
-    final userLists =
-        await sharing.api.userLists(sessionToken: session.sessionToken);
+    final userLists = await sharing.api.userLists(
+      sessionToken: session.sessionToken,
+    );
     var imported = 0;
     var skipped = 0;
     final total =
@@ -258,8 +260,10 @@ class ListsService {
     //     others from importing.
     Future<_FetchResult> fetch(String listId) async {
       try {
-        final snapshot = await sharing.api
-            .getState(listId: listId, sessionToken: session.sessionToken);
+        final snapshot = await sharing.api.getState(
+          listId: listId,
+          sessionToken: session.sessionToken,
+        );
         return _FetchResult(listId: listId, snapshot: snapshot);
       } on SyncException catch (e) {
         if (e.kind == SyncErrorKind.unauthorized ||
@@ -279,7 +283,7 @@ class ListsService {
     final importedListFallback = context == null
         ? 'Imported list'
         : DictLibLocalizations.of(context)?.importedListFallbackName ??
-            'Imported list';
+              'Imported list';
 
     for (final result in ownedResults) {
       final snapshot = result.snapshot;
@@ -320,18 +324,22 @@ class ListsService {
       } else {
         if (existing != null) await sharing.lists.removeLocal(result.listId);
         localKey = allocateLocalKey(
-            preferredName: snapshot.displayName,
-            fallbackBase: importedListFallback);
+          preferredName: snapshot.displayName,
+          fallbackBase: importedListFallback,
+        );
         await userEntryListManager.createEntryList(localKey);
         local = userEntryListManager.getEntryLists()[localKey]!;
       }
       local.savedVideos.addAll(snapshot.entries);
       await local.write();
-      await sharing.lists.insert(SyncedEntryList.ownerFromSnapshot(
+      await sharing.lists.insert(
+        SyncedEntryList.ownerFromSnapshot(
           snapshot: snapshot,
           source: local,
           localKey: localKey,
-          nowSecs: nowSecs));
+          nowSecs: nowSecs,
+        ),
+      );
       imported++;
     }
 
@@ -343,26 +351,31 @@ class ListsService {
       }
       final existing = sharing.lists.get(result.listId);
       if (existing != null) await sharing.lists.removeLocal(result.listId);
-      await sharing.lists.insert(SyncedEntryList.editor(
-        meta: SyncedListMeta(
-          listId: snapshot.listId,
-          displayName: snapshot.displayName,
-          role: ListRole.editor,
-          lastKnownSeq: snapshot.lastSeq,
-          etag: null,
-          lastSyncedAt: nowSecs,
-          serverUpdatedAt: snapshot.updatedAt,
-          orphaned: false,
-          cachedMembers: snapshot.members,
+      await sharing.lists.insert(
+        SyncedEntryList.editor(
+          meta: SyncedListMeta(
+            listId: snapshot.listId,
+            displayName: snapshot.displayName,
+            role: ListRole.editor,
+            lastKnownSeq: snapshot.lastSeq,
+            etag: null,
+            lastSyncedAt: nowSecs,
+            serverUpdatedAt: snapshot.updatedAt,
+            orphaned: false,
+            cachedMembers: snapshot.members,
+          ),
+          savedVideos: LinkedHashSet<SavedVideo>.from(snapshot.entries),
         ),
-        savedVideos: LinkedHashSet<SavedVideo>.from(snapshot.entries),
-      ));
+      );
       imported++;
     }
 
     sharing.bumpState();
     return ImportEditableListsResult(
-        imported: imported, skipped: skipped, total: total);
+      imported: imported,
+      skipped: skipped,
+      total: total,
+    );
   }
 
   /// Allocate a local list key derived from a display name that's free in
@@ -375,8 +388,10 @@ class ListsService {
   /// callers should pick from their own localisation (e.g. "Imported
   /// list", "Duplicated list"). Either way, a numeric suffix is appended
   /// until the resulting key is free.
-  String allocateLocalKey(
-      {required String preferredName, required String fallbackBase}) {
+  String allocateLocalKey({
+    required String preferredName,
+    required String fallbackBase,
+  }) {
     String safeBase;
     try {
       EntryList.getKeyFromName(preferredName);
@@ -385,7 +400,7 @@ class ListsService {
       safeBase = fallbackBase;
     }
     var candidate = safeBase;
-    for (var n = 2;; n++) {
+    for (var n = 2; ; n++) {
       final k = EntryList.getKeyFromName(candidate);
       if (!userEntryListManager.getEntryLists().containsKey(k)) return k;
       // Disambiguate with a " $n" suffix (space + digit) — keeps the
@@ -431,8 +446,12 @@ String localisedSyncErrorSimple(
   SyncException e,
   String fallback,
 ) {
-  return localisedSyncError(context, e,
-      notFoundMessage: fallback, unknownMessage: fallback);
+  return localisedSyncError(
+    context,
+    e,
+    notFoundMessage: fallback,
+    unknownMessage: fallback,
+  );
 }
 
 /// User-facing message for a [SyncException]. The notFound branch is

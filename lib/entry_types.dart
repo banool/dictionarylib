@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'l10n/app_localizations.dart';
 
-enum EntryType {
-  WORD,
-  PHRASE,
-  FINGERSPELLING,
-}
+enum EntryType { WORD, PHRASE, FINGERSPELLING }
 
 String getEntryTypePretty(BuildContext context, EntryType entryType) {
   switch (entryType) {
@@ -123,7 +119,8 @@ const Map<String, String> LANGUAGE_CODE_TO_PRETTY = {
 };
 
 Map<String, Locale> LANGUAGE_CODE_TO_LOCALE = Map.fromEntries(
-    LANGUAGE_CODE_TO_PRETTY.keys.map((e) => MapEntry(e, Locale(e))));
+  LANGUAGE_CODE_TO_PRETTY.keys.map((e) => MapEntry(e, Locale(e))),
+);
 
 Locale LOCALE_ENGLISH = LANGUAGE_CODE_TO_LOCALE[LANGUAGE_CODE_ENGLISH]!;
 Locale LOCALE_SINHALA = LANGUAGE_CODE_TO_LOCALE[LANGUAGE_CODE_SINHALA]!;

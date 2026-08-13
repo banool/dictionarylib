@@ -12,11 +12,12 @@ class ErrorFallback extends StatelessWidget {
   final StackTrace stackTrace;
   final String appName;
 
-  const ErrorFallback(
-      {super.key,
-      required this.error,
-      required this.stackTrace,
-      required this.appName});
+  const ErrorFallback({
+    super.key,
+    required this.error,
+    required this.stackTrace,
+    required this.appName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -56,13 +57,8 @@ class ErrorFallback extends StatelessWidget {
         textAlign: TextAlign.center,
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
-      Text(
-        "$error",
-        textAlign: TextAlign.center,
-      ),
-      Text(
-        "$stackTrace",
-      ),
+      Text("$error", textAlign: TextAlign.center),
+      Text("$stackTrace"),
       const Padding(padding: EdgeInsets.only(top: 20)),
       const Text(
         "Background logs",
@@ -78,45 +74,45 @@ class ErrorFallback extends StatelessWidget {
       for (String key in sharedPreferences.getKeys()) {
         s += "$key: ${sharedPreferences.get(key).toString()}\n";
       }
-      children.add(const Text(
-        "Shared Preferences",
-        textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ));
-      children.add(Text(
-        s,
-        textAlign: TextAlign.left,
-      ));
+      children.add(
+        const Text(
+          "Shared Preferences",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      );
+      children.add(Text(s, textAlign: TextAlign.left));
     } catch (e) {
       children.add(Text("Failed to get shared prefs: $e"));
     }
 
     var packageDeviceInfo = getPackageDeviceInfo();
     children.add(const Padding(padding: EdgeInsets.only(top: 20)));
-    children.add(const Text(
-      "Package and device info",
-      textAlign: TextAlign.center,
-      style: TextStyle(fontWeight: FontWeight.bold),
-    ));
+    children.add(
+      const Text(
+        "Package and device info",
+        textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
     children.addAll(packageDeviceInfo);
 
     return MaterialApp(
-        title: appName,
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-            body: Padding(
-                padding: const EdgeInsets.all(15),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: children,
-                        ),
-                      ),
-                    ),
-                  ],
-                ))));
+      title: appName,
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(child: Column(children: children)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

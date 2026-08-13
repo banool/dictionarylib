@@ -53,7 +53,7 @@ class WordPageConfig {
   /// is a different app-local class in each app; the callback downcasts to its
   /// own type. The shared page maps this over the locale-filtered list.
   final Widget Function(BuildContext context, dynamic definition)
-      buildDefinition;
+  buildDefinition;
 
   /// The sub-entry's region(s) as a display string. Auslan reads its
   /// `MySubEntry.getRegionsString()`; SLSL maps `getRegions()` through its
@@ -70,7 +70,7 @@ class WordPageConfig {
   /// English word + current variation); SLSL builds the language dropdown,
   /// whose selection calls [WordPageActionContext.setLocaleOverride].
   final List<Widget> Function(BuildContext context, WordPageActionContext ctx)
-      buildExtraAppBarActions;
+  buildExtraAppBarActions;
 }
 
 /// The live state the app-bar-actions builder needs from the page: which
@@ -226,7 +226,9 @@ class _EntryPageState extends State<EntryPage> {
   Widget _maybeWebDrag(Widget child) {
     if (!kIsWeb) return child;
     return ScrollConfiguration(
-        behavior: const WebDragScrollBehavior(), child: child);
+      behavior: const WebDragScrollBehavior(),
+      child: child,
+    );
   }
 
   @override
@@ -237,57 +239,58 @@ class _EntryPageState extends State<EntryPage> {
     final locale = localeOverride ?? Localizations.localeOf(context);
 
     return InheritedPlaybackSpeed(
-        playbackSpeed: playbackSpeed,
-        child: Localizations.override(
-            context: context,
-            locale: locale,
-            child: Builder(builder: (context) {
-              final subEntries = widget.entry.getSubEntries();
-              final phrase = widget.entry.getPhrase(locale) ??
-                  DictLibLocalizations.of(context)!.wordDataMissing;
+      playbackSpeed: playbackSpeed,
+      child: Localizations.override(
+        context: context,
+        locale: locale,
+        child: Builder(
+          builder: (context) {
+            final subEntries = widget.entry.getSubEntries();
+            final phrase =
+                widget.entry.getPhrase(locale) ??
+                DictLibLocalizations.of(context)!.wordDataMissing;
 
-              final actions = <Widget>[
-                ...widget.config.buildExtraAppBarActions(
+            final actions = <Widget>[
+              ...widget.config.buildExtraAppBarActions(
+                context,
+                WordPageActionContext(
+                  entry: widget.entry,
+                  currentVariation: currentPage,
+                  setLocaleOverride: (l) => setState(() => localeOverride = l),
+                ),
+              ),
+              getPlaybackSpeedDropdownWidget((p) {
+                setState(() {
+                  playbackSpeed = p!;
+                });
+                showSnack(
                   context,
-                  WordPageActionContext(
-                    entry: widget.entry,
-                    currentVariation: currentPage,
-                    setLocaleOverride: (l) =>
-                        setState(() => localeOverride = l),
-                  ),
-                ),
-                getPlaybackSpeedDropdownWidget(
-                  (p) {
-                    setState(() {
-                      playbackSpeed = p!;
-                    });
-                    showSnack(context,
-                        "${DictLibLocalizations.of(context)!.setPlaybackSpeedTo} ${getPlaybackSpeedString(p!)}",
-                        duration: const Duration(milliseconds: 1000));
-                  },
-                  current: playbackSpeed,
-                ),
-              ];
+                  "${DictLibLocalizations.of(context)!.setPlaybackSpeedTo} ${getPlaybackSpeedString(p!)}",
+                  duration: const Duration(milliseconds: 1000),
+                );
+              }, current: playbackSpeed),
+            ];
 
-              return Scaffold(
-                appBar: AppBar(
-                  title: Text(phrase),
-                  actions: buildActionButtons(actions),
-                  // A cold-start web deep link to /word/<key> is the navigation
-                  // root with nothing to pop back to; give it an explicit way
-                  // back to search. Normal in-app navigation keeps the default
-                  // back arrow.
-                  leading: kIsWeb && !Navigator.of(context).canPop()
-                      ? IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => context.go('/'),
-                        )
-                      : null,
-                ),
-                // On web, wrap so a mouse can drag-swipe between variations
-                // (Flutter disables mouse-drag scrolling by default, freezing
-                // the swipe). Native uses its default behaviour.
-                body: _maybeWebDrag(PageView.builder(
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(phrase),
+                actions: buildActionButtons(actions),
+                // A cold-start web deep link to /word/<key> is the navigation
+                // root with nothing to pop back to; give it an explicit way
+                // back to search. Normal in-app navigation keeps the default
+                // back arrow.
+                leading: kIsWeb && !Navigator.of(context).canPop()
+                    ? IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => context.go('/'),
+                      )
+                    : null,
+              ),
+              // On web, wrap so a mouse can drag-swipe between variations
+              // (Flutter disables mouse-drag scrolling by default, freezing
+              // the swipe). Native uses its default behaviour.
+              body: _maybeWebDrag(
+                PageView.builder(
                   controller: _pageController,
                   itemCount: subEntries.length,
                   itemBuilder: (context, index) => SubEntryPage(
@@ -296,8 +299,9 @@ class _EntryPageState extends State<EntryPage> {
                     config: widget.config,
                     subEntryIndex: index,
                     subEntryCount: subEntries.length,
-                    initialVideoIndex:
-                        index == currentPage ? _focusedVideoInitialIndex : null,
+                    initialVideoIndex: index == currentPage
+                        ? _focusedVideoInitialIndex
+                        : null,
                     // No saving on web (no account / favourites there).
                     showSaveButton: widget.showFavouritesButton && !kIsWeb,
                     saveToList: widget.saveToList,
@@ -309,36 +313,51 @@ class _EntryPageState extends State<EntryPage> {
                     onPrevVariation: kIsWeb
                         ? () => _pageController.previousPage(
                             duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut)
+                            curve: Curves.easeInOut,
+                          )
                         : null,
                     onNextVariation: kIsWeb
                         ? () => _pageController.nextPage(
                             duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut)
+                            curve: Curves.easeInOut,
+                          )
                         : null,
                   ),
                   onPageChanged: onPageChanged,
-                )),
-              );
-            })));
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 
-Widget? _relatedEntriesWidget(BuildContext context, SubEntry subEntry,
-    bool shouldUseHorizontalDisplay, WordPageConfig config) {
+Widget? _relatedEntriesWidget(
+  BuildContext context,
+  SubEntry subEntry,
+  bool shouldUseHorizontalDisplay,
+  WordPageConfig config,
+) {
   return getInnerRelatedEntriesWidget(
-      context: context,
-      subEntry: subEntry,
-      shouldUseHorizontalDisplay: shouldUseHorizontalDisplay,
-      getRelatedEntry: config.getRelatedEntry,
-      navigateToEntryPage: config.navigateToEntryPage);
+    context: context,
+    subEntry: subEntry,
+    shouldUseHorizontalDisplay: shouldUseHorizontalDisplay,
+    getRelatedEntry: config.getRelatedEntry,
+    navigateToEntryPage: config.navigateToEntryPage,
+  );
 }
 
 /// A quiet footer under the definitions: a demoted "See also" related-words
 /// line first, then a globe + region line beneath it, separated from the
 /// content above by a hairline.
-Widget _buildWordFooter(BuildContext context, SubEntry subEntry,
-    Widget? keywordsWidget, WordPageConfig config) {
+Widget _buildWordFooter(
+  BuildContext context,
+  SubEntry subEntry,
+  Widget? keywordsWidget,
+  WordPageConfig config,
+) {
   final cs = Theme.of(context).colorScheme;
   final region = config.regionsString(context, subEntry);
   final hasRegion = region.trim().isNotEmpty;
@@ -358,17 +377,19 @@ Widget _buildWordFooter(BuildContext context, SubEntry subEntry,
         if (hasRegion)
           Padding(
             padding: EdgeInsets.only(top: keywordsWidget != null ? 8 : 0),
-            child: Row(children: [
-              Icon(Icons.public, size: 18, color: cs.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(region,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: cs.onSurfaceVariant)),
-              ),
-            ]),
+            child: Row(
+              children: [
+                Icon(Icons.public, size: 18, color: cs.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    region,
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     ),
@@ -379,13 +400,17 @@ Widget _buildWordFooter(BuildContext context, SubEntry subEntry,
 /// An entry with no definitions for the current locale shows a quiet
 /// placeholder rather than an empty void.
 Widget _definitionsList(
-    BuildContext context, List<dynamic> definitions, WordPageConfig config) {
+  BuildContext context,
+  List<dynamic> definitions,
+  WordPageConfig config,
+) {
   if (definitions.isEmpty) {
     return Center(
-        child: Text(
-      DictLibLocalizations.of(context)!.wordNoDefinitions,
-      textAlign: TextAlign.center,
-    ));
+      child: Text(
+        DictLibLocalizations.of(context)!.wordNoDefinitions,
+        textAlign: TextAlign.center,
+      ),
+    );
   }
   return ListView.builder(
     itemCount: definitions.length,
@@ -412,7 +437,10 @@ _StatusStyle _statusStyle(BuildContext context, String status) {
   switch (status) {
     case "CURRENT":
       return _StatusStyle(
-          cs.tertiaryContainer, cs.onTertiaryContainer, cs.tertiary);
+        cs.tertiaryContainer,
+        cs.onTertiaryContainer,
+        cs.tertiary,
+      );
     case "HISTORICAL":
       final h = Theme.of(context).extension<HearthColors>();
       return _StatusStyle(
@@ -422,7 +450,10 @@ _StatusStyle _statusStyle(BuildContext context, String status) {
       );
     default:
       return _StatusStyle(
-          cs.surfaceContainerHighest, cs.onSurfaceVariant, cs.outline);
+        cs.surfaceContainerHighest,
+        cs.onSurfaceVariant,
+        cs.outline,
+      );
   }
 }
 
@@ -556,7 +587,11 @@ class _SourceSheet extends StatelessWidget {
       top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-            20, 12, 20, 26 + MediaQuery.of(context).viewInsets.bottom),
+          20,
+          12,
+          20,
+          26 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,14 +619,18 @@ class _SourceSheet extends StatelessWidget {
               const SizedBox(height: 6),
               for (var i = 0; i < rows.length; i++)
                 _SourceRowWidget(
-                    field: rows[i], showDivider: i < rows.length - 1),
+                  field: rows[i],
+                  showDivider: i < rows.length - 1,
+                ),
             ],
             if (note != null && note.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(13),
@@ -865,15 +904,19 @@ class SubEntryPageState extends State<SubEntryPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               // Disabled at the ends for a clear "can't go further" cue.
-              _variationArrow(context, Icons.chevron_left,
-                  widget.subEntryIndex > 0 ? widget.onPrevVariation : null),
+              _variationArrow(
+                context,
+                Icons.chevron_left,
+                widget.subEntryIndex > 0 ? widget.onPrevVariation : null,
+              ),
               Flexible(child: label),
               _variationArrow(
-                  context,
-                  Icons.chevron_right,
-                  widget.subEntryIndex < widget.subEntryCount - 1
-                      ? widget.onNextVariation
-                      : null),
+                context,
+                Icons.chevron_right,
+                widget.subEntryIndex < widget.subEntryCount - 1
+                    ? widget.onNextVariation
+                    : null,
+              ),
             ],
           )
         : label;
@@ -885,7 +928,9 @@ class SubEntryPageState extends State<SubEntryPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             HearthDots(
-                count: widget.subEntryCount, index: widget.subEntryIndex),
+              count: widget.subEntryCount,
+              index: widget.subEntryIndex,
+            ),
             const SizedBox(height: 8),
             labelRow,
           ],
@@ -897,7 +942,10 @@ class SubEntryPageState extends State<SubEntryPage>
   /// Web-only compact arrow beside the variation label. `onTap` is null at the
   /// first/last variation, which disables (greys out) the button.
   Widget _variationArrow(
-      BuildContext context, IconData icon, VoidCallback? onTap) {
+    BuildContext context,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     final cs = Theme.of(context).colorScheme;
     final l = DictLibLocalizations.of(context)!;
     return IconButton(
@@ -908,8 +956,9 @@ class SubEntryPageState extends State<SubEntryPage>
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       color: cs.onSurfaceVariant,
       onPressed: onTap,
-      tooltip:
-          icon == Icons.chevron_left ? l.variationPrevious : l.variationNext,
+      tooltip: icon == Icons.chevron_left
+          ? l.variationPrevious
+          : l.variationNext,
     );
   }
 
@@ -954,15 +1003,20 @@ class SubEntryPageState extends State<SubEntryPage>
     if (widget.showSaveButton && getShowLists() && paths.isNotEmpty) {
       final path = paths[_currentVideo.clamp(0, paths.length - 1)];
       bookmarkRow = _BookmarkButton(
-          key: const ValueKey('wordPage.saveButton'),
-          entry: widget.entry,
-          mediaPath: path,
-          saveToList: widget.saveToList);
+        key: const ValueKey('wordPage.saveButton'),
+        entry: widget.entry,
+        mediaPath: path,
+        saveToList: widget.saveToList,
+      );
     }
 
     final shouldUseHorizontalDisplay = getShouldUseHorizontalLayout(context);
     final relatedWordsWidget = _relatedEntriesWidget(
-        context, widget.subEntry, shouldUseHorizontalDisplay, widget.config);
+      context,
+      widget.subEntry,
+      shouldUseHorizontalDisplay,
+      widget.config,
+    );
     final videoIndicator = _videoIndicator(context);
     final variationIndicator = _variationIndicator(context);
     final List<dynamic> definitions = widget.subEntry.getDefinitions(locale);
@@ -976,11 +1030,18 @@ class SubEntryPageState extends State<SubEntryPage>
       if (bookmarkRow != null) children.add(bookmarkRow);
       // Inner tier: which video within this variation (only if >1 recording).
       if (videoIndicator != null) children.add(videoIndicator);
-      children.add(Expanded(
-          child: _definitionsList(context, definitions, widget.config)));
+      children.add(
+        Expanded(child: _definitionsList(context, definitions, widget.config)),
+      );
       // Quiet footer: a demoted "See also" line, then the region info.
-      children.add(_buildWordFooter(
-          context, widget.subEntry, relatedWordsWidget, widget.config));
+      children.add(
+        _buildWordFooter(
+          context,
+          widget.subEntry,
+          relatedWordsWidget,
+          widget.config,
+        ),
+      );
       // Outer tier: which variation of the word, anchored at the bottom.
       children.add(variationIndicator);
       return Column(
@@ -1004,41 +1065,49 @@ class SubEntryPageState extends State<SubEntryPage>
           children: [
             Expanded(
               flex: 5,
-              child: LayoutBuilder(builder: (context, pane) {
-                // VideoPlayerScreen expands to fill whatever bounded height
-                // it's given (centring the video inside), so cap its box at the
-                // height of one video and let Flexible shrink it when a cramped
-                // landscape phone can't fit that plus the controls. The
-                // constant-height box also keeps the save button and dots at
-                // the same spot on every page, whatever each video's aspect
-                // ratio and however many recordings it has (the indicator slot
-                // below reserves its space when there's one).
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
+              child: LayoutBuilder(
+                builder: (context, pane) {
+                  // VideoPlayerScreen expands to fill whatever bounded height
+                  // it's given (centring the video inside), so cap its box at the
+                  // height of one video and let Flexible shrink it when a cramped
+                  // landscape phone can't fit that plus the controls. The
+                  // constant-height box also keeps the save button and dots at
+                  // the same spot on every page, whatever each video's aspect
+                  // ratio and however many recordings it has (the indicator slot
+                  // below reserves its space when there's one).
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
                             maxHeight:
-                                pane.maxWidth / widget.config.videoAspectRatio),
-                        child: videoWithPill,
+                                pane.maxWidth / widget.config.videoAspectRatio,
+                          ),
+                          child: videoWithPill,
+                        ),
                       ),
-                    ),
-                    if (bookmarkRow != null) bookmarkRow,
-                    if (videoIndicatorSlot != null) videoIndicatorSlot,
-                  ],
-                );
-              }),
+                      if (bookmarkRow != null) bookmarkRow,
+                      if (videoIndicatorSlot != null) videoIndicatorSlot,
+                    ],
+                  );
+                },
+              ),
             ),
             Expanded(
               flex: 4,
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 children: [
-                  ...definitions
-                      .map((d) => widget.config.buildDefinition(context, d)),
-                  _buildWordFooter(context, widget.subEntry, relatedWordsWidget,
-                      widget.config),
+                  ...definitions.map(
+                    (d) => widget.config.buildDefinition(context, d),
+                  ),
+                  _buildWordFooter(
+                    context,
+                    widget.subEntry,
+                    relatedWordsWidget,
+                    widget.config,
+                  ),
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Center(child: variationIndicator),
@@ -1082,7 +1151,9 @@ class _BookmarkButtonState extends State<_BookmarkButton> {
   @override
   Widget build(BuildContext context) {
     final v = SavedVideo(
-        entryKey: widget.entry.getKey(), mediaPath: widget.mediaPath);
+      entryKey: widget.entry.getKey(),
+      mediaPath: widget.mediaPath,
+    );
     final l = DictLibLocalizations.of(context)!;
 
     // Direct mode: we came from a specific list, so the button just adds (or
@@ -1099,17 +1170,22 @@ class _BookmarkButtonState extends State<_BookmarkButton> {
             await target.removeVideo(v);
           } else {
             await target.addVideo(v);
-            Analytics.track('save',
-                props: {'granularity': 'video', 'is_shared': isShared});
+            Analytics.track(
+              'save',
+              props: {'granularity': 'video', 'is_shared': isShared},
+            );
           }
         } catch (e) {
           printAndLog("Failed to toggle video in list ${target.key}: $e");
           if (!saved) {
-            Analytics.track('save_failed', props: {
-              'granularity': 'video',
-              'is_shared': isShared,
-              'error_type': Analytics.errorType(e),
-            });
+            Analytics.track(
+              'save_failed',
+              props: {
+                'granularity': 'video',
+                'is_shared': isShared,
+                'error_type': Analytics.errorType(e),
+              },
+            );
           }
           if (mounted) {
             showSnackVia(messenger, l.saveVideoFailed);

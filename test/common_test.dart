@@ -11,13 +11,20 @@ void main() {
     });
 
     test('ignores a leading emoji so it sorts by the first letter', () {
-      expect(sorted(['Zebra', '🎉 Party', 'apple']),
-          ['apple', '🎉 Party', 'Zebra']);
+      expect(sorted(['Zebra', '🎉 Party', 'apple']), [
+        'apple',
+        '🎉 Party',
+        'Zebra',
+      ]);
     });
 
     test('ignores any run of leading non-letters (emoji, symbols, spaces)', () {
-      expect(sorted(['🌟🎊 Wonderful', '  apple', '#hash', 'zebra']),
-          ['  apple', '#hash', '🌟🎊 Wonderful', 'zebra']);
+      expect(sorted(['🌟🎊 Wonderful', '  apple', '#hash', 'zebra']), [
+        '  apple',
+        '#hash',
+        '🌟🎊 Wonderful',
+        'zebra',
+      ]);
     });
 
     test('keeps Sinhala and Tamil letters as sort keys', () {

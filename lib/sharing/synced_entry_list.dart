@@ -93,18 +93,18 @@ class PendingOp {
   });
 
   Map<String, dynamic> toJson() => {
-        'opId': opId,
-        'type': type,
-        'args': args,
-        'clientTs': clientTs,
-      };
+    'opId': opId,
+    'type': type,
+    'args': args,
+    'clientTs': clientTs,
+  };
 
   factory PendingOp.fromJson(Map<String, dynamic> json) => PendingOp(
-        opId: json['opId'] as String,
-        type: json['type'] as String,
-        args: Map<String, dynamic>.from(json['args'] as Map),
-        clientTs: json['clientTs'] as int,
-      );
+    opId: json['opId'] as String,
+    type: json['type'] as String,
+    args: Map<String, dynamic>.from(json['args'] as Map),
+    clientTs: json['clientTs'] as int,
+  );
 }
 
 /// Mutable per-list metadata persisted alongside the entry payload.
@@ -161,25 +161,27 @@ class SyncedListMeta {
   }) : pendingOps = pendingOps ?? <PendingOp>[];
 
   Map<String, dynamic> toJson() => {
-        'schemaVersion': sharedSchemaVersion,
-        'listId': listId,
-        'displayName': displayName,
-        'role': role.name,
-        'lastKnownSeq': lastKnownSeq,
-        'etag': etag,
-        'lastSyncedAt': lastSyncedAt,
-        'serverUpdatedAt': serverUpdatedAt,
-        'orphaned': orphaned,
-        'sourceLocalKey': sourceLocalKey,
-        'pendingOps': pendingOps.map((o) => o.toJson()).toList(),
-        'cachedMembers': cachedMembers?.toJson(),
-      };
+    'schemaVersion': sharedSchemaVersion,
+    'listId': listId,
+    'displayName': displayName,
+    'role': role.name,
+    'lastKnownSeq': lastKnownSeq,
+    'etag': etag,
+    'lastSyncedAt': lastSyncedAt,
+    'serverUpdatedAt': serverUpdatedAt,
+    'orphaned': orphaned,
+    'sourceLocalKey': sourceLocalKey,
+    'pendingOps': pendingOps.map((o) => o.toJson()).toList(),
+    'cachedMembers': cachedMembers?.toJson(),
+  };
 
   static SyncedListMeta? fromJson(Map<String, dynamic> json) {
     final v = json['schemaVersion'] as int? ?? sharedSchemaVersion;
     if (v != sharedSchemaVersion) {
-      printAndLog('SyncedListMeta.fromJson: unsupported schemaVersion $v '
-          '(build supports $sharedSchemaVersion); dropping blob');
+      printAndLog(
+        'SyncedListMeta.fromJson: unsupported schemaVersion $v '
+        '(build supports $sharedSchemaVersion); dropping blob',
+      );
       return null;
     }
     final roleName = json['role'];
@@ -188,8 +190,10 @@ class SyncedListMeta {
         .cast<ListRole?>()
         .firstWhere((_) => true, orElse: () => null);
     if (role == null) {
-      printAndLog('SyncedListMeta.fromJson: unknown role "$roleName"; '
-          'dropping blob');
+      printAndLog(
+        'SyncedListMeta.fromJson: unknown role "$roleName"; '
+        'dropping blob',
+      );
       return null;
     }
     final cachedMembersRaw = json['cachedMembers'] as Map<String, dynamic>?;
@@ -203,7 +207,8 @@ class SyncedListMeta {
       serverUpdatedAt: json['serverUpdatedAt'] as int?,
       orphaned: json['orphaned'] as bool? ?? false,
       sourceLocalKey: json['sourceLocalKey'] as String?,
-      pendingOps: (json['pendingOps'] as List<dynamic>?)
+      pendingOps:
+          (json['pendingOps'] as List<dynamic>?)
               ?.map((e) => PendingOp.fromJson(e as Map<String, dynamic>))
               .toList() ??
           <PendingOp>[],
@@ -235,27 +240,31 @@ class SyncedEntryList extends EntryList {
 
   /// Owner-mode constructor. Shares the source list's storage key
   /// and saved-videos set by reference.
-  SyncedEntryList.owner({
-    required this.meta,
-    required EntryList source,
-  })  : ownerSource = source,
-        super(source.key, source.savedVideos,
-            meta.role == ListRole.owner && !meta.orphaned);
+  SyncedEntryList.owner({required this.meta, required EntryList source})
+    : ownerSource = source,
+      super(
+        source.key,
+        source.savedVideos,
+        meta.role == ListRole.owner && !meta.orphaned,
+      );
 
   /// Editor-mode constructor. Independent local mirror, mutable.
   SyncedEntryList.editor({
     required this.meta,
     required LinkedHashSet<SavedVideo> savedVideos,
-  })  : ownerSource = null,
-        super(sharedPayloadStorageKey(meta.listId), savedVideos,
-            meta.role == ListRole.editor && !meta.orphaned);
+  }) : ownerSource = null,
+       super(
+         sharedPayloadStorageKey(meta.listId),
+         savedVideos,
+         meta.role == ListRole.editor && !meta.orphaned,
+       );
 
   /// Subscriber-mode constructor. Independent mirror, read-only.
   SyncedEntryList.subscriber({
     required this.meta,
     required LinkedHashSet<SavedVideo> savedVideos,
-  })  : ownerSource = null,
-        super(sharedPayloadStorageKey(meta.listId), savedVideos, false);
+  }) : ownerSource = null,
+       super(sharedPayloadStorageKey(meta.listId), savedVideos, false);
 
   /// Owner-mode factory for the "import my lists from the server on a
   /// fresh device" path.
@@ -359,7 +368,9 @@ class SyncedEntryList extends EntryList {
 
   Future<void> writeMeta() async {
     await sharedPreferences.setString(
-        sharedMetaStorageKey(meta.listId), jsonEncode(meta.toJson()));
+      sharedMetaStorageKey(meta.listId),
+      jsonEncode(meta.toJson()),
+    );
   }
 
   /// Replace the entire saved-videos set from a server response.
@@ -426,27 +437,33 @@ class SyncedEntryList extends EntryList {
   static SyncedEntryList? loadFromRaw(String listId) {
     final metaRaw = sharedPreferences.getString(sharedMetaStorageKey(listId));
     if (metaRaw == null) return null;
-    final meta =
-        SyncedListMeta.fromJson(jsonDecode(metaRaw) as Map<String, dynamic>);
+    final meta = SyncedListMeta.fromJson(
+      jsonDecode(metaRaw) as Map<String, dynamic>,
+    );
     if (meta == null) return null;
     SyncedEntryList? list;
     if (meta.role == ListRole.owner) {
       final sourceKey = meta.sourceLocalKey;
       if (sourceKey == null) {
-        printAndLog('SyncedEntryList: owner meta $listId has no '
-            'sourceLocalKey; dropping');
+        printAndLog(
+          'SyncedEntryList: owner meta $listId has no '
+          'sourceLocalKey; dropping',
+        );
         return null;
       }
       final source = userEntryListManager.getEntryLists()[sourceKey];
       if (source == null) {
-        printAndLog('SyncedEntryList: owner meta $listId points at '
-            'missing local source "$sourceKey"; dropping');
+        printAndLog(
+          'SyncedEntryList: owner meta $listId points at '
+          'missing local source "$sourceKey"; dropping',
+        );
         return null;
       }
       list = SyncedEntryList.owner(meta: meta, source: source);
     } else {
-      final entries =
-          EntryList.loadSavedVideos(sharedPayloadStorageKey(listId));
+      final entries = EntryList.loadSavedVideos(
+        sharedPayloadStorageKey(listId),
+      );
       if (meta.role == ListRole.editor) {
         list = SyncedEntryList.editor(meta: meta, savedVideos: entries);
       } else {
@@ -480,7 +497,8 @@ class SyncedEntryListManager {
 
   /// All lists the user can edit (owner or editor).
   Iterable<SyncedEntryList> get editableLists => _lists.values.where(
-      (l) => l.meta.role == ListRole.owner || l.meta.role == ListRole.editor);
+    (l) => l.meta.role == ListRole.owner || l.meta.role == ListRole.editor,
+  );
 
   SyncedEntryList? get(String listId) => _lists[listId];
 
@@ -496,8 +514,10 @@ class SyncedEntryListManager {
       if (loaded != null) {
         lists[k] = loaded;
       } else {
-        printAndLog('SyncedEntryListManager: index entry "$k" '
-            'is unloadable; cleaning up shared-prefs entries');
+        printAndLog(
+          'SyncedEntryListManager: index entry "$k" '
+          'is unloadable; cleaning up shared-prefs entries',
+        );
         orphanedKeys.add(k);
       }
     }
@@ -506,15 +526,21 @@ class SyncedEntryListManager {
         unawaited(sharedPreferences.remove(sharedMetaStorageKey(k)));
         unawaited(sharedPreferences.remove(sharedPayloadStorageKey(k)));
       }
-      unawaited(sharedPreferences.setStringList(
-          KEY_SHARED_LIST_IDS, lists.keys.toList()));
+      unawaited(
+        sharedPreferences.setStringList(
+          KEY_SHARED_LIST_IDS,
+          lists.keys.toList(),
+        ),
+      );
     }
     return SyncedEntryListManager(lists);
   }
 
   Future<void> _writeIndex() async {
     await sharedPreferences.setStringList(
-        KEY_SHARED_LIST_IDS, _lists.keys.toList());
+      KEY_SHARED_LIST_IDS,
+      _lists.keys.toList(),
+    );
   }
 
   Future<void> insert(SyncedEntryList list) async {

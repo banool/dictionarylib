@@ -97,12 +97,10 @@ class DeepLinkHandler {
   bool _started = false;
 
   DeepLinkHandler({required this.config, AppLinks? appLinks})
-      : _appLinks = appLinks,
-        _initialLinkGetter = null,
-        _linkStream = null {
-    _controller = StreamController<SharePayload>.broadcast(
-      onListen: _onListen,
-    );
+    : _appLinks = appLinks,
+      _initialLinkGetter = null,
+      _linkStream = null {
+    _controller = StreamController<SharePayload>.broadcast(onListen: _onListen);
   }
 
   /// Test-only constructor that bypasses the [AppLinks] platform plugin
@@ -115,12 +113,10 @@ class DeepLinkHandler {
     required this.config,
     required Future<Uri?> Function() initialLinkGetter,
     required Stream<Uri> linkStream,
-  })  : _appLinks = null,
-        _initialLinkGetter = initialLinkGetter,
-        _linkStream = linkStream {
-    _controller = StreamController<SharePayload>.broadcast(
-      onListen: _onListen,
-    );
+  }) : _appLinks = null,
+       _initialLinkGetter = initialLinkGetter,
+       _linkStream = linkStream {
+    _controller = StreamController<SharePayload>.broadcast(onListen: _onListen);
   }
 
   /// Broadcast stream of share payloads parsed out of incoming URLs.
@@ -156,9 +152,12 @@ class DeepLinkHandler {
     } catch (e) {
       printAndLog('DeepLinkHandler: initial link error: $e');
     }
-    _sub = stream.listen(_handle, onError: (Object e) {
-      printAndLog('DeepLinkHandler: stream error: $e');
-    });
+    _sub = stream.listen(
+      _handle,
+      onError: (Object e) {
+        printAndLog('DeepLinkHandler: stream error: $e');
+      },
+    );
   }
 
   void dispose() {
@@ -181,8 +180,10 @@ class DeepLinkHandler {
     _lastEmitted = payload;
     _lastEmittedAt = now;
     final hasInvite = payload.isInvite;
-    printAndLog('DeepLinkHandler: matched share link for "${payload.listId}"'
-        '${hasInvite ? " (with invite token)" : ""}');
+    printAndLog(
+      'DeepLinkHandler: matched share link for "${payload.listId}"'
+      '${hasInvite ? " (with invite token)" : ""}',
+    );
     if (!_controller.hasListener) {
       // Cold-start: nobody's subscribed yet. Buffer for replay.
       _pendingInitial = payload;
@@ -253,11 +254,14 @@ SharePayload? parseShareInput(String input, SharingConfig config) {
     final lIdx = segs.indexOf('l');
     if (lIdx >= 0 && lIdx + 1 < segs.length) {
       final inviteRaw = uri.queryParameters['invite'];
-      return _normaliseAndValidate(SharePayload(
-        listId: segs[lIdx + 1],
-        inviteToken:
-            inviteRaw != null && inviteRaw.isNotEmpty ? inviteRaw : null,
-      ));
+      return _normaliseAndValidate(
+        SharePayload(
+          listId: segs[lIdx + 1],
+          inviteToken: inviteRaw != null && inviteRaw.isNotEmpty
+              ? inviteRaw
+              : null,
+        ),
+      );
     }
     return null;
   }

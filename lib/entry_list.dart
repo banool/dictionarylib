@@ -1,4 +1,5 @@
 import 'dart:collection';
+
 import 'package:flutter/material.dart';
 
 import 'common.dart';
@@ -73,7 +74,8 @@ List<String> _migrateListV1toV2(List<String> raw) {
     final entry = keyedByEnglishEntriesGlobal[item];
     if (entry == null) {
       printAndLog(
-          'EntryList: legacy entry "$item" not in dictionary; dropping');
+        'EntryList: legacy entry "$item" not in dictionary; dropping',
+      );
       continue;
     }
     for (final sub in entry.getSubEntries()) {
@@ -105,8 +107,12 @@ List<String> _migrateListV2toV3(List<String> raw) {
       continue;
     }
     final path = mediaPathForUrl(value);
-    out.add(SavedVideo(entryKey: parsed.entryKey, mediaPath: path ?? value)
-        .toStorage());
+    out.add(
+      SavedVideo(
+        entryKey: parsed.entryKey,
+        mediaPath: path ?? value,
+      ).toStorage(),
+    );
   }
   return out;
 }
@@ -251,10 +257,14 @@ class EntryList {
       // Persist the migrated, de-duplicated form and stamp the version so
       // the next launch is a plain read. Fire-and-forget: the in-memory
       // result above is already authoritative.
-      printAndLog('EntryList $key: migrated v$storedVersion → '
-          'v$listSchemaVersion (${out.length} saved videos)');
+      printAndLog(
+        'EntryList $key: migrated v$storedVersion → '
+        'v$listSchemaVersion (${out.length} saved videos)',
+      );
       sharedPreferences.setStringList(
-          key, out.map((v) => v.toStorage()).toList());
+        key,
+        out.map((v) => v.toStorage()).toList(),
+      );
       sharedPreferences.setInt(_listSchemaVersionKey(key), listSchemaVersion);
     }
     printAndLog("Loaded ${out.length} saved videos in list $key");
@@ -265,8 +275,9 @@ class EntryList {
     if (key == KEY_FAVOURITES_ENTRIES) {
       // The favourites star uses the warm accent (gold) colour.
       return Builder(
-          builder: (context) =>
-              Icon(Icons.star, color: Theme.of(context).colorScheme.secondary));
+        builder: (context) =>
+            Icon(Icons.star, color: Theme.of(context).colorScheme.secondary),
+      );
     }
     if (inEditMode) {
       return const Icon(Icons.drag_handle);
@@ -331,8 +342,11 @@ class EntryList {
   static bool isReservedDisplayName(String name) =>
       _reservedNamesLower.contains(name.trim().toLowerCase());
 
-  static String getKeyFromName(String name,
-      {String suffix = "_words", bool rejectUnderscores = false}) {
+  static String getKeyFromName(
+    String name, {
+    String suffix = "_words",
+    bool rejectUnderscores = false,
+  }) {
     if (suffix.length != SUFFIX_LENGTH) {
       // Programmer error, not user-facing; assert in debug, ignore in
       // release. Callers control the suffix.
@@ -370,9 +384,13 @@ class EntryList {
   /// flag alongside so a later load doesn't re-run the legacy expand.
   Future<void> write() async {
     await sharedPreferences.setStringList(
-        key, savedVideos.map((v) => v.toStorage()).toList());
+      key,
+      savedVideos.map((v) => v.toStorage()).toList(),
+    );
     await sharedPreferences.setInt(
-        _listSchemaVersionKey(key), listSchemaVersion);
+      _listSchemaVersionKey(key),
+      listSchemaVersion,
+    );
   }
 
   /// Assert that this list is not the source of an owner-mode share.
@@ -384,13 +402,15 @@ class EntryList {
   /// list — bypassing the wrapper — would NOT enqueue, and the
   /// server's view would silently diverge from the user's local one.
   void _assertNotOwnerShared() {
-    assert(() {
-      if (!sharing.isEnabled) return true;
-      return sharing.lists.ownerForSourceKey(key) == null;
-    }(),
-        'EntryList "$key" is mutated directly while an owner-mode shared '
-        'wrapper is observing it — go through the SyncedEntryList wrapper '
-        'so the mutation enqueues a sync op (see ListsService.ownedShareFor).');
+    assert(
+      () {
+        if (!sharing.isEnabled) return true;
+        return sharing.lists.ownerForSourceKey(key) == null;
+      }(),
+      'EntryList "$key" is mutated directly while an owner-mode shared '
+      'wrapper is observing it — go through the SyncedEntryList wrapper '
+      'so the mutation enqueues a sync op (see ListsService.ownedShareFor).',
+    );
   }
 
   // -------- Read API --------
@@ -414,7 +434,7 @@ class EntryList {
     final key = entry.getKey();
     return [
       for (final v in savedVideos)
-        if (v.entryKey == key) v
+        if (v.entryKey == key) v,
     ];
   }
 
@@ -510,7 +530,7 @@ class UserEntryListManager implements EntryListManager {
     printAndLog("Loading entry lists...");
     List<String> entryListKeys =
         sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS) ??
-            [KEY_FAVOURITES_ENTRIES];
+        [KEY_FAVOURITES_ENTRIES];
     LinkedHashMap<String, EntryList> entryLists = LinkedHashMap();
     for (String key in entryListKeys) {
       entryLists[key] = EntryList.fromRaw(key);
@@ -522,7 +542,9 @@ class UserEntryListManager implements EntryListManager {
   Future<void> createEntryList(String key) async {
     if (_entryLists.containsKey(key)) {
       throw EntryListNameException(
-          EntryListNameError.alreadyExists, EntryList.getNameFromKey(key));
+        EntryListNameError.alreadyExists,
+        EntryList.getNameFromKey(key),
+      );
     }
     _entryLists[key] = EntryList.fromRaw(key);
     await _entryLists[key]!.write();
@@ -548,11 +570,15 @@ class UserEntryListManager implements EntryListManager {
     if (oldKey == newKey) return;
     if (oldKey == KEY_FAVOURITES_ENTRIES) {
       throw EntryListNameException(
-          EntryListNameError.reserved, EntryList.getNameFromKey(oldKey));
+        EntryListNameError.reserved,
+        EntryList.getNameFromKey(oldKey),
+      );
     }
     if (_entryLists.containsKey(newKey)) {
       throw EntryListNameException(
-          EntryListNameError.alreadyExists, EntryList.getNameFromKey(newKey));
+        EntryListNameError.alreadyExists,
+        EntryList.getNameFromKey(newKey),
+      );
     }
     final existing = _entryLists[oldKey];
     if (existing == null) return;
@@ -577,7 +603,9 @@ class UserEntryListManager implements EntryListManager {
 
   Future<void> writeEntryListKeys() async {
     await sharedPreferences.setStringList(
-        KEY_ENTRY_LIST_KEYS, _entryLists.keys.toList());
+      KEY_ENTRY_LIST_KEYS,
+      _entryLists.keys.toList(),
+    );
   }
 
   // Given an item that moved from index prev to index current,
@@ -585,7 +613,8 @@ class UserEntryListManager implements EntryListManager {
   void reorder(int prev, int updated) {
     if (prev == 0 || updated == 0) {
       printAndLog(
-          "Refusing to reorder with favourites list: $prev and $updated");
+        "Refusing to reorder with favourites list: $prev and $updated",
+      );
       return;
     }
     printAndLog("Moving item from $prev to $updated");

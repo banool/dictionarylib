@@ -107,7 +107,8 @@ const int _createBodyEnvelopeBytes = 512;
 int estimateCreateBodyBytes(Iterable<SavedVideo> entries) {
   var total = _createBodyEnvelopeBytes;
   for (final e in entries) {
-    total += _createBodyBytesPerEntry +
+    total +=
+        _createBodyBytesPerEntry +
         utf8.encode(e.entryKey).length +
         utf8.encode(e.mediaPath).length;
   }
@@ -228,14 +229,17 @@ class SyncException implements Exception {
         envelope = (decoded['error'] as Map<String, dynamic>);
         message = envelope['message'] as String? ?? message;
       }
-    } catch (_) {/* keep the HTTP-status fallback */}
+    } catch (_) {
+      /* keep the HTTP-status fallback */
+    }
     final code = envelope?['code'] as String?;
     final details = envelope?['details'] as Map<String, dynamic>?;
 
     final kind = switch (resp.statusCode) {
-      400 => code == 'MISSING_HEADER'
-          ? SyncErrorKind.missingHeader
-          : SyncErrorKind.invalidBody,
+      400 =>
+        code == 'MISSING_HEADER'
+            ? SyncErrorKind.missingHeader
+            : SyncErrorKind.invalidBody,
       401 => SyncErrorKind.unauthorized,
       403 => SyncErrorKind.forbidden,
       404 => SyncErrorKind.notFound,
@@ -243,9 +247,10 @@ class SyncException implements Exception {
       410 => SyncErrorKind.gone,
       413 => SyncErrorKind.payloadTooLarge,
       429 => SyncErrorKind.rateLimited,
-      _ => resp.statusCode >= 500
-          ? SyncErrorKind.server
-          : SyncErrorKind.unknownClient,
+      _ =>
+        resp.statusCode >= 500
+            ? SyncErrorKind.server
+            : SyncErrorKind.unknownClient,
     };
 
     final detailsOut = <String, dynamic>{...?details};
@@ -355,7 +360,9 @@ class RemoteList {
     final lastSeq = json['lastSeq'];
     if (lastSeq is! int) {
       throw SyncException(
-          SyncErrorKind.server, 'list payload missing required field lastSeq');
+        SyncErrorKind.server,
+        'list payload missing required field lastSeq',
+      );
     }
     return RemoteList(
       listId: json['listId'] as String,
@@ -376,20 +383,26 @@ class RemoteList {
 List<SavedVideo> _parseEntriesArray(dynamic raw) {
   if (raw is! List) {
     throw SyncException(
-        SyncErrorKind.server, 'entries must be an array of objects');
+      SyncErrorKind.server,
+      'entries must be an array of objects',
+    );
   }
   final out = <SavedVideo>[];
   for (var i = 0; i < raw.length; i++) {
     final item = raw[i];
     if (item is! Map) {
       throw SyncException(
-          SyncErrorKind.server, 'entries[$i] must be an object');
+        SyncErrorKind.server,
+        'entries[$i] must be an object',
+      );
     }
     final entry = item['entry'];
     final video = item['video'];
     if (entry is! String || video is! String) {
-      throw SyncException(SyncErrorKind.server,
-          'entries[$i] must have string `entry` and `video` fields');
+      throw SyncException(
+        SyncErrorKind.server,
+        'entries[$i] must have string `entry` and `video` fields',
+      );
     }
     // The `video` field carries the media path (the wire shape is
     // unchanged — it has always been an opaque string to the server).
@@ -402,9 +415,10 @@ void _validateSchemaVersion(Map<String, dynamic> json) {
   final v = json['schemaVersion'];
   if (v != supportedSchemaVersion) {
     throw SyncException(
-        SyncErrorKind.server,
-        'unsupported schemaVersion ${v ?? "(missing)"} '
-        '(client supports $supportedSchemaVersion). Update the app.');
+      SyncErrorKind.server,
+      'unsupported schemaVersion ${v ?? "(missing)"} '
+      '(client supports $supportedSchemaVersion). Update the app.',
+    );
   }
 }
 
@@ -417,11 +431,13 @@ class MemberRef {
   final String displayName;
   const MemberRef({required this.userId, required this.displayName});
   factory MemberRef.fromJson(Map<String, dynamic> json) => MemberRef(
-        userId: json['userId'] as String,
-        displayName: json['displayName'] as String,
-      );
-  Map<String, dynamic> toJson() =>
-      {'userId': userId, 'displayName': displayName};
+    userId: json['userId'] as String,
+    displayName: json['displayName'] as String,
+  );
+  Map<String, dynamic> toJson() => {
+    'userId': userId,
+    'displayName': displayName,
+  };
 }
 
 /// An editor's identity with provenance ("added by X on date").
@@ -435,17 +451,17 @@ class EditorRef extends MemberRef {
     required this.addedBy,
   });
   factory EditorRef.fromJson(Map<String, dynamic> json) => EditorRef(
-        userId: json['userId'] as String,
-        displayName: json['displayName'] as String,
-        addedAt: json['addedAt'] as int,
-        addedBy: json['addedBy'] as String,
-      );
+    userId: json['userId'] as String,
+    displayName: json['displayName'] as String,
+    addedAt: json['addedAt'] as int,
+    addedBy: json['addedBy'] as String,
+  );
   @override
   Map<String, dynamic> toJson() => {
-        ...super.toJson(),
-        'addedAt': addedAt,
-        'addedBy': addedBy,
-      };
+    ...super.toJson(),
+    'addedAt': addedAt,
+    'addedBy': addedBy,
+  };
 }
 
 /// Full membership view of a list. Owner is always present; editors
@@ -456,16 +472,16 @@ class MembersBlock {
   const MembersBlock({required this.owner, required this.editors});
 
   factory MembersBlock.fromJson(Map<String, dynamic> json) => MembersBlock(
-        owner: MemberRef.fromJson(json['owner'] as Map<String, dynamic>),
-        editors: (json['editors'] as List<dynamic>)
-            .map((e) => EditorRef.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    owner: MemberRef.fromJson(json['owner'] as Map<String, dynamic>),
+    editors: (json['editors'] as List<dynamic>)
+        .map((e) => EditorRef.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'owner': owner.toJson(),
-        'editors': editors.map((e) => e.toJson()).toList(),
-      };
+    'owner': owner.toJson(),
+    'editors': editors.map((e) => e.toJson()).toList(),
+  };
 }
 
 /// Full authenticated snapshot from /state or /sync (catch-up case).
@@ -537,16 +553,16 @@ class OpOutcome {
     this.reasonCode,
   });
   factory OpOutcome.fromJson(Map<String, dynamic> json) => OpOutcome(
-        opId: json['opId'] as String,
-        status: switch (json['status'] as String) {
-          'applied' => OpStatus.applied,
-          'duplicate' => OpStatus.duplicate,
-          _ => OpStatus.rejected,
-        },
-        seq: json['seq'] as int?,
-        reason: json['reason'] as String?,
-        reasonCode: json['reasonCode'] as String?,
-      );
+    opId: json['opId'] as String,
+    status: switch (json['status'] as String) {
+      'applied' => OpStatus.applied,
+      'duplicate' => OpStatus.duplicate,
+      _ => OpStatus.rejected,
+    },
+    seq: json['seq'] as int?,
+    reason: json['reason'] as String?,
+    reasonCode: json['reasonCode'] as String?,
+  );
 
   /// True when this op was refused because the list is already at the
   /// server's entry ceiling.
@@ -574,13 +590,13 @@ class AppliedOp {
     required this.serverTs,
   });
   factory AppliedOp.fromJson(Map<String, dynamic> json) => AppliedOp(
-        seq: json['seq'] as int,
-        type: json['type'] as String,
-        args: json['args'] as Map<String, dynamic>,
-        userId: json['userId'] as String,
-        actorDisplayName: json['actorDisplayName'] as String? ?? '',
-        serverTs: json['serverTs'] as int,
-      );
+    seq: json['seq'] as int,
+    type: json['type'] as String,
+    args: json['args'] as Map<String, dynamic>,
+    userId: json['userId'] as String,
+    actorDisplayName: json['actorDisplayName'] as String? ?? '',
+    serverTs: json['serverTs'] as int,
+  );
 }
 
 /// Response to POST /v1/lists/:id/sync.
@@ -695,16 +711,19 @@ class SyncApi {
   final http.Client _client;
   final Duration timeout;
 
-  SyncApi(this.config,
-      {http.Client? client, this.timeout = const Duration(seconds: 10)})
-      : _client = client ?? http.Client();
+  SyncApi(
+    this.config, {
+    http.Client? client,
+    this.timeout = const Duration(seconds: 10),
+  }) : _client = client ?? http.Client();
 
   void close() => _client.close();
 
   Uri _listUrl(String key) =>
       Uri.parse('${config.apiBaseUrl}/v1/lists/${Uri.encodeComponent(key)}');
   Uri _listSubUrl(String key, String sub) => Uri.parse(
-      '${config.apiBaseUrl}/v1/lists/${Uri.encodeComponent(key)}/$sub');
+    '${config.apiBaseUrl}/v1/lists/${Uri.encodeComponent(key)}/$sub',
+  );
   Uri _listsUrl() => Uri.parse('${config.apiBaseUrl}/v1/lists');
   Uri _ownedListsUrl() => Uri.parse('${config.apiBaseUrl}/v1/my-lists');
 
@@ -755,19 +774,28 @@ class SyncApi {
   /// otherwise hide a just-made change from a reader in a different colo
   /// (cache invalidation on write is colo-local). Background/passive polls
   /// leave it false and stay on the cheap cached path.
-  Future<FetchResult> getList(String listId,
-      {String? ifNoneMatch, bool forceFresh = false}) async {
+  Future<FetchResult> getList(
+    String listId, {
+    String? ifNoneMatch,
+    bool forceFresh = false,
+  }) async {
     final headers = _baseHeaders();
     if (ifNoneMatch != null) headers['if-none-match'] = ifNoneMatch;
     if (forceFresh) headers['cache-control'] = 'no-cache';
-    final resp =
-        await _request(method: 'GET', url: _listUrl(listId), headers: headers);
+    final resp = await _request(
+      method: 'GET',
+      url: _listUrl(listId),
+      headers: headers,
+    );
     if (resp.statusCode == 304) return FetchNotModified();
     if (resp.statusCode == 200) {
       final etag = resp.headers['etag'] ?? '';
       final json = jsonDecode(resp.body) as Map<String, dynamic>;
       return FetchOk(
-          RemoteList.fromJson(json), etag, _parseLastModifiedSeconds(resp));
+        RemoteList.fromJson(json),
+        etag,
+        _parseLastModifiedSeconds(resp),
+      );
     }
     throw SyncException.fromResponse(resp);
   }
@@ -785,7 +813,8 @@ class SyncApi {
     );
     if (resp.statusCode == 200) {
       return ListSnapshot.fromJson(
-          jsonDecode(resp.body) as Map<String, dynamic>);
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
     }
     throw SyncException.fromResponse(resp);
   }
@@ -815,7 +844,8 @@ class SyncApi {
     );
     if (resp.statusCode == 200) {
       return SyncResponse.fromJson(
-          jsonDecode(resp.body) as Map<String, dynamic>);
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
     }
     throw SyncException.fromResponse(resp);
   }
@@ -860,7 +890,8 @@ class SyncApi {
     );
     if (resp.statusCode == 200) {
       return ListSnapshot.fromJson(
-          jsonDecode(resp.body) as Map<String, dynamic>);
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
     }
     throw SyncException.fromResponse(resp);
   }
@@ -895,17 +926,19 @@ class SyncApi {
       return UserListsResult(
         ownedListIds:
             (json['ownedListIds'] as List<dynamic>?)?.cast<String>() ??
-                const [],
+            const [],
         editorListIds:
             (json['editorListIds'] as List<dynamic>?)?.cast<String>() ??
-                const [],
+            const [],
       );
     }
     throw SyncException.fromResponse(resp);
   }
 
-  Future<void> deleteList(
-      {required String listId, required String sessionToken}) async {
+  Future<void> deleteList({
+    required String listId,
+    required String sessionToken,
+  }) async {
     final resp = await _request(
       method: 'DELETE',
       url: _listUrl(listId),
@@ -935,7 +968,8 @@ class SyncApi {
     );
     if (resp.statusCode == 200) {
       return ListSnapshot.fromJson(
-          jsonDecode(resp.body) as Map<String, dynamic>);
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
     }
     throw SyncException.fromResponse(resp);
   }

@@ -21,8 +21,9 @@ void runPhaseAOwnerShares(MdSuiteConfig cfg) {
   mdConfig = cfg;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('owner shares a list and mints an editor invite',
-      (WidgetTester tester) async {
+  testWidgets('owner shares a list and mints an editor invite', (
+    WidgetTester tester,
+  ) async {
     await mdRequireServer();
     await mdSetup();
 
@@ -42,14 +43,16 @@ void runPhaseAOwnerShares(MdSuiteConfig cfg) {
     await userEntryListManager.createEntryList(mdListKey);
     final localList = userEntryListManager.getEntryLists()[mdListKey]!;
     for (final entry in [first, second]) {
-      await localList.addVideo(SavedVideo(
-        entryKey: entry.getKey(),
-        mediaPath: entry
-            .getSubEntries()
-            .firstWhere((s) => s.getMedia().isNotEmpty)
-            .getMedia()
-            .first,
-      ));
+      await localList.addVideo(
+        SavedVideo(
+          entryKey: entry.getKey(),
+          mediaPath: entry
+              .getSubEntries()
+              .firstWhere((s) => s.getMedia().isNotEmpty)
+              .getMedia()
+              .first,
+        ),
+      );
     }
 
     await mdPumpApp(tester);
@@ -57,23 +60,31 @@ void runPhaseAOwnerShares(MdSuiteConfig cfg) {
     // Lists tab → My Lists → open the seeded list.
     await mdOpenListsTab(tester);
     await mdOpenOverviewTab(tester, mdL10n.listMyLists);
-    expect(find.text(mdListName), findsOneWidget,
-        reason: 'the seeded list should be visible on My Lists');
+    expect(
+      find.text(mdListName),
+      findsOneWidget,
+      reason: 'the seeded list should be visible on My Lists',
+    );
     await tester.tap(find.text(mdListName));
     await settle(tester);
 
     // Share it: share icon → share dialog → Share.
     await tester.tap(find.byIcon(Icons.share));
     await settle(tester);
-    expect(find.text(mdL10n.shareDialogShareButton), findsOneWidget,
-        reason: 'the share dialog should be open');
+    expect(
+      find.text(mdL10n.shareDialogShareButton),
+      findsOneWidget,
+      reason: 'the share dialog should be open',
+    );
     await tester.tap(find.text(mdL10n.shareDialogShareButton));
 
     // Sharing does a real network round-trip; wait for the share-link
     // dialog that follows it.
-    await mdWaitForUi(tester,
-        () => find.text(mdL10n.shareLinkDoneButton).evaluate().isNotEmpty,
-        reason: 'share-link dialog after sharing');
+    await mdWaitForUi(
+      tester,
+      () => find.text(mdL10n.shareLinkDoneButton).evaluate().isNotEmpty,
+      reason: 'share-link dialog after sharing',
+    );
     await tester.tap(find.text(mdL10n.shareLinkDoneButton));
     await settle(tester);
 
@@ -81,19 +92,27 @@ void runPhaseAOwnerShares(MdSuiteConfig cfg) {
     final owned = sharing.lists.editableLists
         .where((l) => l.meta.displayName == mdListName)
         .toList();
-    expect(owned, hasLength(1),
-        reason: 'sharing should install exactly one owned synced list');
+    expect(
+      owned,
+      hasLength(1),
+      reason: 'sharing should install exactly one owned synced list',
+    );
     final listId = owned.single.meta.listId;
 
     // Server truth: the list exists with both entries.
     final serverKeys = await mdServerEntryKeys(listId);
-    expect(serverKeys, unorderedEquals([first.getKey(), second.getKey()]),
-        reason: 'server list should contain exactly the two seeded entries');
+    expect(
+      serverKeys,
+      unorderedEquals([first.getKey(), second.getKey()]),
+      reason: 'server list should contain exactly the two seeded entries',
+    );
 
     // Mint the invite the way the members page does.
     final session = sharing.auth.store.current!;
-    final invite = await sharing.api
-        .createInvite(listId: listId, sessionToken: session.sessionToken);
+    final invite = await sharing.api.createInvite(
+      listId: listId,
+      sessionToken: session.sessionToken,
+    );
     final inviteUrl = sharing.config.inviteUrlFor(listId, invite.token);
 
     mdEmit('LIST_ID', listId);

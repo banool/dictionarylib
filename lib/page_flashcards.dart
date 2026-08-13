@@ -16,19 +16,21 @@ import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 /// nav arrows). Auslan renders its `MySubEntry.getRegionsString()`; SLSL uses
 /// its `getRegionalInformationWidget`. The region is hidden until [revealed].
 typedef FlashcardsRegionInfoBuilder = Widget Function(
-    BuildContext context,
-    ResolvedSavedVideo resolved,
-    bool shouldUseHorizontalDisplay,
-    bool revealed);
+  BuildContext context,
+  ResolvedSavedVideo resolved,
+  bool shouldUseHorizontalDisplay,
+  bool revealed,
+);
 
 /// App-specific app-bar actions placed BEFORE the shared playback-speed
 /// dropdown. Auslan returns the Signbank link (using the English [word] +
 /// `MySubEntry.index`); SLSL has none (the field is null).
 typedef FlashcardsAppBarActionsBuilder = List<Widget> Function(
-    BuildContext context,
-    {required String word,
-    required ResolvedSavedVideo resolved,
-    required bool revealed});
+  BuildContext context, {
+  required String word,
+  required ResolvedSavedVideo resolved,
+  required bool revealed,
+});
 
 /// The per-app knobs the shared flashcards page reads. The two dictionary apps
 /// run the identical DolphinSR review session but differ in a few leaf
@@ -131,10 +133,13 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     if (cardLimit > 0 && numCardsToReview > cardLimit) {
       numCardsToReview = cardLimit;
     }
-    Analytics.track('revision_started', props: {
-      'cards_bucket': Analytics.bucket(numCardsToReview),
-      'strategy': widget.revisionStrategy.name,
-    });
+    Analytics.track(
+      'revision_started',
+      props: {
+        'cards_bucket': Analytics.bucket(numCardsToReview),
+        'strategy': widget.revisionStrategy.name,
+      },
+    );
     nextCard();
   }
 
@@ -165,10 +170,13 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     // once per session regardless of how it ends (natural end, out of cards, or
     // the user closing early).
     final reviewed = getCardsReviewed();
-    Analytics.track('revision_completed', props: {
-      'cards_bucket': Analytics.bucket(reviewed),
-      'early_exit': reviewed < numCardsToReview,
-    });
+    Analytics.track(
+      'revision_completed',
+      props: {
+        'cards_bucket': Analytics.bucket(reviewed),
+        'early_exit': reviewed < numCardsToReview,
+      },
+    );
     try {
       switch (widget.revisionStrategy) {
         case RevisionStrategy.SpacedRepetition:
@@ -210,13 +218,15 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   void _showWriteFailedSnack() {
     final l = DictLibLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(
-      content: Text(l.flashcardsSaveFailed),
-      action: SnackBarAction(
-        label: l.sharedListLandingTryAgain,
-        onPressed: _retryWriteReviews,
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l.flashcardsSaveFailed),
+        action: SnackBarAction(
+          label: l.sharedListLandingTryAgain,
+          onPressed: _retryWriteReviews,
+        ),
       ),
-    ));
+    );
   }
 
   /// Retry a failed end-of-session write. Clears the single-shot guard
@@ -301,8 +311,11 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     return answers.values.length;
   }
 
-  void completeCard(DRCard card,
-      {Rating rating = Rating.Good, DateTime? when}) {
+  void completeCard(
+    DRCard card, {
+    Rating rating = Rating.Good,
+    DateTime? when,
+  }) {
     // Don't ack second taps if a timer is running.
     if (nextCardTimer != null) {
       return;
@@ -314,10 +327,11 @@ class FlashcardsPageState extends State<FlashcardsPage> {
       ts = DateTime.now();
     }
     Review review = Review(
-        master: card.master!,
-        combination: card.combination!,
-        ts: ts,
-        rating: rating);
+      master: card.master!,
+      combination: card.combination!,
+      ts: ts,
+      rating: rating,
+    );
     Rating? previousRating = answers[card]?.rating;
     bool shouldNavigate = answers.containsKey(card);
     setState(() {
@@ -466,8 +480,12 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   }
 
   Widget buildFlashcardWidget(
-      DRCard card, ResolvedSavedVideo resolved, String word,
-      {required bool wordToSign, required bool revealed}) {
+    DRCard card,
+    ResolvedSavedVideo resolved,
+    String word, {
+    required bool wordToSign,
+    required bool revealed,
+  }) {
     final l = DictLibLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     var shouldUseHorizontalDisplay = getShouldUseHorizontalLayout(context);
@@ -496,19 +514,23 @@ class FlashcardsPageState extends State<FlashcardsPage> {
       } else {
         double top = shouldUseHorizontalDisplay ? 100 : 120;
         topWidget = Container(
-            padding: EdgeInsets.only(top: top, bottom: 70),
-            child: Text(l.studyPromptWordToSign,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20)));
+          padding: EdgeInsets.only(top: top, bottom: 70),
+          child: Text(
+            l.studyPromptWordToSign,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20),
+          ),
+        );
       }
     } else {
       topWidget = tappableVideo;
     }
 
     Widget bottomWidget = Text(
-        wordToSign || revealed ? word : l.studyPromptSignToWord,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 20));
+      wordToSign || revealed ? word : l.studyPromptSignToWord,
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 20),
+    );
 
     Widget? ratingButtonsRow;
     if (revealed) {
@@ -519,16 +541,24 @@ class FlashcardsPageState extends State<FlashcardsPage> {
             child: Row(
               children: [
                 Expanded(
-                    child: KeyedSubtree(
-                        key: const ValueKey("ratingButton.forgot"),
-                        child: getRatingButton(
-                            Rating.Hard, forgotRatingWidgetActive))),
+                  child: KeyedSubtree(
+                    key: const ValueKey("ratingButton.forgot"),
+                    child: getRatingButton(
+                      Rating.Hard,
+                      forgotRatingWidgetActive,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: KeyedSubtree(
-                        key: const ValueKey("ratingButton.gotIt"),
-                        child: getRatingButton(
-                            Rating.Good, rememberedRatingWidgetActive))),
+                  child: KeyedSubtree(
+                    key: const ValueKey("ratingButton.gotIt"),
+                    child: getRatingButton(
+                      Rating.Good,
+                      rememberedRatingWidgetActive,
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -539,11 +569,15 @@ class FlashcardsPageState extends State<FlashcardsPage> {
             child: Row(
               children: [
                 Expanded(
-                    child: KeyedSubtree(
-                        key: const ValueKey("ratingButton.next"),
-                        child: getRatingButton(
-                            Rating.Easy, forgotRatingWidgetActive,
-                            isNext: true))),
+                  child: KeyedSubtree(
+                    key: const ValueKey("ratingButton.next"),
+                    child: getRatingButton(
+                      Rating.Easy,
+                      forgotRatingWidgetActive,
+                      isNext: true,
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -554,20 +588,20 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     List<Widget> openDictionaryEntryWidgets = [
       const Padding(padding: EdgeInsets.only(top: 24)),
       TextButton(
-          onPressed: () =>
-              widget.config.navigateToEntryPage(context, resolved.entry, true),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l.openDictionaryEntry,
-                style:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.arrow_forward, size: 16),
-            ],
-          ))
+        onPressed: () =>
+            widget.config.navigateToEntryPage(context, resolved.entry, true),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l.openDictionaryEntry,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.arrow_forward, size: 16),
+          ],
+        ),
+      ),
     ];
 
     // The region line, flanked by plain (no-fill) back/forward arrows that are
@@ -588,11 +622,13 @@ class FlashcardsPageState extends State<FlashcardsPage> {
           message: forward ? l.revisionNextCard : l.revisionPreviousCard,
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Icon(forward ? Icons.chevron_right : Icons.chevron_left,
-                size: 30,
-                color: enabled
-                    ? cs.onSurfaceVariant
-                    : cs.onSurfaceVariant.withValues(alpha: 0.25)),
+            child: Icon(
+              forward ? Icons.chevron_right : Icons.chevron_left,
+              size: 30,
+              color: enabled
+                  ? cs.onSurfaceVariant
+                  : cs.onSurfaceVariant.withValues(alpha: 0.25),
+            ),
           ),
         ),
       );
@@ -607,20 +643,26 @@ class FlashcardsPageState extends State<FlashcardsPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 52),
                 child: widget.config.buildRegionInfo(
-                    context, resolved, shouldUseHorizontalDisplay, revealed),
+                  context,
+                  resolved,
+                  shouldUseHorizontalDisplay,
+                  revealed,
+                ),
               ),
             ),
           ),
           Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: Center(child: navArrow(false))),
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Center(child: navArrow(false)),
+          ),
           Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: Center(child: navArrow(true))),
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Center(child: navArrow(true)),
+          ),
         ],
       ),
     );
@@ -716,13 +758,16 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l = DictLibLocalizations.of(context)!;
-    int numCardsRemembered =
-        answers.values.where((e) => e.rating == Rating.Good).length;
-    int numCardsForgotten =
-        answers.values.where((e) => e.rating == Rating.Hard).length;
+    int numCardsRemembered = answers.values
+        .where((e) => e.rating == Rating.Good)
+        .length;
+    int numCardsForgotten = answers.values
+        .where((e) => e.rating == Rating.Hard)
+        .length;
     int totalAnswers = answers.length;
-    double rememberRate =
-        totalAnswers == 0 ? 0 : numCardsRemembered / totalAnswers;
+    double rememberRate = totalAnswers == 0
+        ? 0
+        : numCardsRemembered / totalAnswers;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
@@ -759,10 +804,11 @@ class FlashcardsPageState extends State<FlashcardsPage> {
           l.sessionComplete.toUpperCase(),
           textAlign: TextAlign.center,
           style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.6,
-              color: cs.primary),
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.6,
+            color: cs.primary,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -773,26 +819,36 @@ class FlashcardsPageState extends State<FlashcardsPage> {
         const SizedBox(height: 26),
         Center(
           child: HearthRing(
-              percent: rememberRate, size: 140, centerLabel: l.summarySuccess),
+            percent: rememberRate,
+            size: 140,
+            centerLabel: l.summarySuccess,
+          ),
         ),
         const SizedBox(height: 28),
         Row(
           children: [
             Expanded(
-                child: HearthStatTile(
-                    value: "$totalAnswers", label: l.summaryCards)),
+              child: HearthStatTile(
+                value: "$totalAnswers",
+                label: l.summaryCards,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: HearthStatTile(
-                    value: "$numCardsRemembered",
-                    label: l.summaryGotIt,
-                    valueColor: cs.tertiary)),
+              child: HearthStatTile(
+                value: "$numCardsRemembered",
+                label: l.summaryGotIt,
+                valueColor: cs.tertiary,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: HearthStatTile(
-                    value: "$numCardsForgotten",
-                    label: l.summaryForgot,
-                    valueColor: cs.error)),
+              child: HearthStatTile(
+                value: "$numCardsForgotten",
+                label: l.summaryForgot,
+                valueColor: cs.error,
+              ),
+            ),
           ],
         ),
       ],
@@ -815,7 +871,8 @@ class FlashcardsPageState extends State<FlashcardsPage> {
         // the dictionary data changed mid-session). Skip to the next card
         // rather than crash.
         printAndLog(
-            "No resolved video for master ${card.master}; skipping card");
+          "No resolved video for master ${card.master}; skipping card",
+        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           showSnack(context, l.flashcardsCardUnavailable);
@@ -836,31 +893,48 @@ class FlashcardsPageState extends State<FlashcardsPage> {
       bool videoIsShowing = currentCardRevealed || !wordToSign;
 
       body = Center(
-          child: InheritedPlaybackSpeed(
-              playbackSpeed: playbackSpeed,
-              child: buildFlashcardWidget(card, resolved, word,
-                  wordToSign: wordToSign, revealed: currentCardRevealed)));
+        child: InheritedPlaybackSpeed(
+          playbackSpeed: playbackSpeed,
+          child: buildFlashcardWidget(
+            card,
+            resolved,
+            word,
+            wordToSign: wordToSign,
+            revealed: currentCardRevealed,
+          ),
+        ),
+      );
       // 1-based position of the current card in the session sequence. Using the
       // position (rather than the answered-count) keeps the counter correct when
       // the user steps back to revisit an earlier card.
       appBarTitle = "${_pos + 1} / $numCardsToReview";
       // App-specific app-bar extras (e.g. Auslan's Signbank link) before the
       // shared playback-speed dropdown; SLSL adds none.
-      actions.addAll(widget.config.buildExtraAppBarActions?.call(
-            context,
-            word: word,
-            resolved: resolved,
-            revealed: currentCardRevealed,
-          ) ??
-          const <Widget>[]);
-      actions.add(getPlaybackSpeedDropdownWidget((p) {
-        setState(() {
-          playbackSpeed = p!;
-        });
-        showSnack(context,
-            "${DictLibLocalizations.of(context)!.setPlaybackSpeedTo} ${getPlaybackSpeedString(playbackSpeed)}",
-            duration: const Duration(milliseconds: 1000));
-      }, enabled: videoIsShowing, current: playbackSpeed));
+      actions.addAll(
+        widget.config.buildExtraAppBarActions?.call(
+              context,
+              word: word,
+              resolved: resolved,
+              revealed: currentCardRevealed,
+            ) ??
+            const <Widget>[],
+      );
+      actions.add(
+        getPlaybackSpeedDropdownWidget(
+          (p) {
+            setState(() {
+              playbackSpeed = p!;
+            });
+            showSnack(
+              context,
+              "${DictLibLocalizations.of(context)!.setPlaybackSpeedTo} ${getPlaybackSpeedString(playbackSpeed)}",
+              duration: const Duration(milliseconds: 1000),
+            );
+          },
+          enabled: videoIsShowing,
+          current: playbackSpeed,
+        ),
+      );
     } else {
       body = buildSummaryWidget();
       appBarTitle = l.revisionSummaryTitle;
@@ -874,73 +948,77 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     // from the summary it pops back to the landing page via Navigator.pop(),
     // which isn't gated by canPop.
     return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {},
-        child: Scaffold(
-          appBar: AppBar(
-              centerTitle: true,
-              title: Text(
-                appBarTitle,
-                textAlign: TextAlign.center,
-              ),
-              actions: buildActionButtons(actions),
-              leading: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () async {
-                    // Mid-session the × ends the session early. The answers so
-                    // far are persisted just the same, so show the summary
-                    // first — identical to finishing start-to-finish — rather
-                    // than dropping back to the landing page. _finishSession()
-                    // writes the reviews (and raises the retry banner on
-                    // failure), exactly as the normal session-end path does.
-                    // With nothing answered yet there's nothing to summarise, so
-                    // fall through and just leave.
-                    if (currentCard != null && answers.isNotEmpty) {
-                      nextCardTimer?.cancel();
-                      nextCardTimer = null;
-                      setState(() {
-                        currentCard = null;
-                      });
-                      _finishSession();
-                      return;
-                    }
-                    final navigator = Navigator.of(context);
-                    final ok = await beforePop();
-                    if (!mounted) return;
-                    if (ok) {
-                      navigator.pop();
-                    } else {
-                      // The write failed. Don't drop the user out silently —
-                      // beforePop already reset its single-shot guard, so
-                      // surface the failure and let them retry (re-tapping
-                      // close, or the snack action, re-attempts the write).
-                      setState(() {
-                        reviewWriteFailed = true;
-                      });
-                      _showWriteFailedSnack();
-                    }
-                  }),
-              bottom: currentCard == null
-                  ? null
-                  : PreferredSize(
-                      preferredSize: const Size.fromHeight(3),
-                      // Track the current card's position so the bar matches the
-                      // "x / N" counter and doesn't jump on reveal (revealing
-                      // adds a default answer, which the position is immune to)
-                      // or when the user steps back to an earlier card.
-                      child: Builder(builder: (context) {
-                        final cardsCompleted = _pos;
-                        return LinearProgressIndicator(
-                          value: numCardsToReview > 0
-                              ? (cardsCompleted / numCardsToReview)
-                                  .clamp(0.0, 1.0)
-                              : null,
-                          minHeight: 3,
-                          backgroundColor: cs.surfaceContainerHighest,
-                        );
-                      }),
-                    )),
-          body: body,
-        ));
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(appBarTitle, textAlign: TextAlign.center),
+          actions: buildActionButtons(actions),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () async {
+              // Mid-session the × ends the session early. The answers so
+              // far are persisted just the same, so show the summary
+              // first — identical to finishing start-to-finish — rather
+              // than dropping back to the landing page. _finishSession()
+              // writes the reviews (and raises the retry banner on
+              // failure), exactly as the normal session-end path does.
+              // With nothing answered yet there's nothing to summarise, so
+              // fall through and just leave.
+              if (currentCard != null && answers.isNotEmpty) {
+                nextCardTimer?.cancel();
+                nextCardTimer = null;
+                setState(() {
+                  currentCard = null;
+                });
+                _finishSession();
+                return;
+              }
+              final navigator = Navigator.of(context);
+              final ok = await beforePop();
+              if (!mounted) return;
+              if (ok) {
+                navigator.pop();
+              } else {
+                // The write failed. Don't drop the user out silently —
+                // beforePop already reset its single-shot guard, so
+                // surface the failure and let them retry (re-tapping
+                // close, or the snack action, re-attempts the write).
+                setState(() {
+                  reviewWriteFailed = true;
+                });
+                _showWriteFailedSnack();
+              }
+            },
+          ),
+          bottom: currentCard == null
+              ? null
+              : PreferredSize(
+                  preferredSize: const Size.fromHeight(3),
+                  // Track the current card's position so the bar matches the
+                  // "x / N" counter and doesn't jump on reveal (revealing
+                  // adds a default answer, which the position is immune to)
+                  // or when the user steps back to an earlier card.
+                  child: Builder(
+                    builder: (context) {
+                      final cardsCompleted = _pos;
+                      return LinearProgressIndicator(
+                        value: numCardsToReview > 0
+                            ? (cardsCompleted / numCardsToReview).clamp(
+                                0.0,
+                                1.0,
+                              )
+                            : null,
+                        minHeight: 3,
+                        backgroundColor: cs.surfaceContainerHighest,
+                      );
+                    },
+                  ),
+                ),
+        ),
+        body: body,
+      ),
+    );
   }
 }

@@ -105,16 +105,19 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
               }
               int daysSinceStartOfStreak =
                   (comparison.difference(startOfStreak).inHours / 24).round();
-              longestStreakDays =
-                  max(longestStreakDays, daysSinceStartOfStreak);
+              longestStreakDays = max(
+                longestStreakDays,
+                daysSinceStartOfStreak,
+              );
               startOfStreak = r.ts!;
             }
             previousDateTime = r.ts!;
             i += 1;
           }
 
-          rememberRate =
-              totalAnswers == 0 ? 0 : numCardsRemembered / totalAnswers;
+          rememberRate = totalAnswers == 0
+              ? 0
+              : numCardsRemembered / totalAnswers;
         }
 
         content = reviews.isEmpty
@@ -131,34 +134,49 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
                   // in a tidy 2×2 grid below.
                   Center(
                     child: _ringBox(
-                        context, rememberRate, l.flashcardsSuccessRate),
+                      context,
+                      rememberRate,
+                      l.flashcardsSuccessRate,
+                    ),
                   ),
                   const SizedBox(height: 14),
-                  Row(children: [
-                    Expanded(
+                  Row(
+                    children: [
+                      Expanded(
                         child: HearthStatTile(
-                            value: "$totalAnswers",
-                            label: l.flashcardsTotalReviews)),
-                    const SizedBox(width: 12),
-                    Expanded(
+                          value: "$totalAnswers",
+                          label: l.flashcardsTotalReviews,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: HearthStatTile(
-                            value: "${uniqueMasters.length}",
-                            label: l.flashcardsUniqueWords)),
-                  ]),
+                          value: "${uniqueMasters.length}",
+                          label: l.flashcardsUniqueWords,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(
+                  Row(
+                    children: [
+                      Expanded(
                         child: HearthStatTile(
-                            value: "$numCardsRemembered",
-                            label: l.flashcardsSuccessfulCards,
-                            valueColor: cs.tertiary)),
-                    const SizedBox(width: 12),
-                    Expanded(
+                          value: "$numCardsRemembered",
+                          label: l.flashcardsSuccessfulCards,
+                          valueColor: cs.tertiary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: HearthStatTile(
-                            value: "$numCardsForgotten",
-                            label: l.flashcardsUnsuccessfulCards,
-                            valueColor: cs.error)),
-                  ]),
+                          value: "$numCardsForgotten",
+                          label: l.flashcardsUnsuccessfulCards,
+                          valueColor: cs.error,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               );
         break;
@@ -168,7 +186,9 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
         content = totalRandomReviews == 0
             ? _emptyState(context)
             : HearthStatTile(
-                value: "$totalRandomReviews", label: l.flashcardsTotalReviews);
+                value: "$totalRandomReviews",
+                label: l.flashcardsTotalReviews,
+              );
         break;
     }
 
@@ -185,8 +205,9 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
               RevisionStrategy.SpacedRepetition.pretty,
               RevisionStrategy.Random.pretty,
             ],
-            selected:
-                revisionStrategy == RevisionStrategy.SpacedRepetition ? 0 : 1,
+            selected: revisionStrategy == RevisionStrategy.SpacedRepetition
+                ? 0
+                : 1,
             onChanged: (i) {
               setState(() {
                 revisionStrategy = i == 0
@@ -231,8 +252,11 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
               color: cs.surface,
               borderRadius: BorderRadius.circular(kRadiusBox),
             ),
-            child:
-                Icon(Icons.local_fire_department, size: 28, color: cs.primary),
+            child: Icon(
+              Icons.local_fire_department,
+              size: 28,
+              color: cs.primary,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -242,8 +266,10 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
               children: [
                 Text(
                   DictLibLocalizations.of(context)!.revisionStreak(streakDays),
-                  style: tt.headlineSmall
-                      ?.copyWith(fontSize: 24, color: cs.onPrimaryContainer),
+                  style: tt.headlineSmall?.copyWith(
+                    fontSize: 24,
+                    color: cs.onPrimaryContainer,
+                  ),
                 ),
                 Text(
                   DictLibLocalizations.of(context)!.revisionStreakSubtitle,
@@ -271,8 +297,10 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
         children: [
           HearthRing(percent: rate, size: 104, stroke: 10),
           const SizedBox(height: 8),
-          Text(label,
-              style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
+          ),
         ],
       ),
     );

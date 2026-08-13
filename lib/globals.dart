@@ -23,8 +23,9 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 // MaterialApp listens to this to rebuild with the chosen theme. Initialised
 // from KEY_THEME_VARIANT at startup (see the app's root widget) and updated
 // from the settings page.
-final ValueNotifier<AppThemeVariant> themeVariantNotifier =
-    ValueNotifier(kDefaultThemeVariant);
+final ValueNotifier<AppThemeVariant> themeVariantNotifier = ValueNotifier(
+  kDefaultThemeVariant,
+);
 
 Set<Entry> entriesGlobal = {};
 Map<String, Entry> keyedByEnglishEntriesGlobal = {};
@@ -138,11 +139,13 @@ class MyCacheManager extends CacheManager with ImageCacheManager {
   }
 
   MyCacheManager._()
-      : super(Config(
+    : super(
+        Config(
           key,
           stalePeriod: const Duration(days: NUM_DAYS_TO_CACHE),
           maxNrOfCacheObjects: 500,
-        ));
+        ),
+      );
 }
 
 // The individual startup operations live here as small, single-purpose
@@ -159,7 +162,8 @@ Future<void> loadPackageInfo() async {
     printAndLog("Successfully loaded package info");
   } catch (e) {
     printAndLog(
-        "Failed to get package info: $e (continuing without raising any error)");
+      "Failed to get package info: $e (continuing without raising any error)",
+    );
   }
 }
 
@@ -175,7 +179,8 @@ Future<void> loadDeviceInfo() async {
     printAndLog("Successfully loaded device info");
   } catch (e) {
     printAndLog(
-        "Failed to get device info: $e (continuing without raising any error)");
+      "Failed to get device info: $e (continuing without raising any error)",
+    );
   }
 }
 
@@ -237,7 +242,8 @@ Future<void> loadEntriesIntoGlobal(
   // in it at this point.
   if (entriesGlobalReplacement != null && entriesGlobal.isEmpty) {
     throw Exception(
-        "entriesGlobal is empty after the loading phase despite entriesGlobalReplacement being set.");
+      "entriesGlobal is empty after the loading phase despite entriesGlobalReplacement being set.",
+    );
   }
 
   // At this point if entriesGlobal is empty it means either there was no data
@@ -246,24 +252,28 @@ Future<void> loadEntriesIntoGlobal(
   // friends being set.
   if (entriesGlobal.isEmpty) {
     printAndLog(
-        "No entry data found in local storage, fetching data from the internet and waiting for it before proceeeding...");
+      "No entry data found in local storage, fetching data from the internet and waiting for it before proceeeding...",
+    );
     NewData? newData = await loader.downloadAndApplyNewData(true);
     if (newData == null) {
       // This implies that there is some incompatibility between the data upstream
       // and how the app interprets it.
       throw Exception(
-          "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...");
+        "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...",
+      );
     }
   } else {
     printAndLog(
-        "Entry data was found in local storage, fetching new data from the internet in the background...");
+      "Entry data was found in local storage, fetching new data from the internet in the background...",
+    );
     loader.downloadAndApplyNewData(false);
   }
 
   // A final sanity check to ensure that we have entries data.
   if (entriesGlobal.isEmpty) {
     throw Exception(
-        "entriesGlobal is empty even after the loading phase. The app cannot operate without entries data, throwing...");
+      "entriesGlobal is empty even after the loading phase. The app cannot operate without entries data, throwing...",
+    );
   }
 
   entryLoader = loader;

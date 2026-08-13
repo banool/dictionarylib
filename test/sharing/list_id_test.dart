@@ -7,8 +7,11 @@ void main() {
       for (var i = 0; i < 20; i++) {
         final k = generateListId();
         expect(k.length, 12);
-        expect(RegExp(r'^[a-z2-7]{12}$').hasMatch(k), isTrue,
-            reason: 'unexpected char in $k');
+        expect(
+          RegExp(r'^[a-z2-7]{12}$').hasMatch(k),
+          isTrue,
+          reason: 'unexpected char in $k',
+        );
       }
     });
 

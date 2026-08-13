@@ -43,14 +43,16 @@ Future<void> main() async {
   HttpOverrides.global = null;
 
   if (!await integrationServerReachable()) {
-    final msg = 'no server reachable at $kIntegrationBaseUrl.\nStart one in '
+    final msg =
+        'no server reachable at $kIntegrationBaseUrl.\nStart one in '
         'another terminal from the private backend repo:\n'
         '  cd ../dictionary_backend/workers && bunx wrangler dev --env dev';
     // CI sets REQUIRE_SERVER so a skip can't masquerade as a pass — fail
     // loudly. A plain local `flutter test` leaves it unset and skips.
     if (Platform.environment.containsKey('REQUIRE_SERVER')) {
       fail(
-          '[multi-device] $msg\nREQUIRE_SERVER is set — failing not skipping.');
+        '[multi-device] $msg\nREQUIRE_SERVER is set — failing not skipping.',
+      );
     }
     // ignore: avoid_print
     print('[multi-device] skipping — $msg');
@@ -90,7 +92,10 @@ Future<void> main() async {
 
   /// Owner-side helper: device A shares a local list and returns the wrapper.
   Future<SyncedEntryList> shareOwnedList(
-      String localKey, List<String> keys, String displayName) async {
+    String localKey,
+    List<String> keys,
+    String displayName,
+  ) async {
     await userEntryListManager.createEntryList(localKey);
     final source = userEntryListManager.getEntryLists()[localKey]!;
     for (final k in keys) {
@@ -105,18 +110,20 @@ Future<void> main() async {
 
   /// Editor-side helper: device B owns a list, device A joins as editor.
   Future<(HttpDevice owner, String listId, SyncedEntryList mirror)>
-      joinAsEditor({List<String> initialKeys = const []}) async {
+  joinAsEditor({List<String> initialKeys = const []}) async {
     final owner = await HttpDevice.signIn();
     final listId = await owner.createList(
       displayName: 'B owned list',
       entries: [
         for (final k in initialKeys)
-          {'entry': k, 'video': integrationVideoFor(k)}
+          {'entry': k, 'video': integrationVideoFor(k)},
       ],
     );
     final invite = await owner.createInvite(listId);
-    final mirror =
-        await deviceA.engine.acceptInvite(listId: listId, token: invite);
+    final mirror = await deviceA.engine.acceptInvite(
+      listId: listId,
+      token: invite,
+    );
     return (owner, listId, mirror);
   }
 
@@ -139,8 +146,7 @@ Future<void> main() async {
       expect(await b.entryKeys(listId), unorderedEquals(['apple', 'banana']));
     });
 
-    test(
-        'concurrent offline edit + foreign op converge through server '
+    test('concurrent offline edit + foreign op converge through server '
         'seq order', () async {
       final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['base']);
 
@@ -173,8 +179,7 @@ Future<void> main() async {
       expect(await owner.entryKeys(listId), contains('renamed-during-edit'));
     });
 
-    test(
-        'falling out of the op-log window yields a snapshot catch-up '
+    test('falling out of the op-log window yields a snapshot catch-up '
         'notification and a converged mirror', () async {
       final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['keep']);
 
@@ -198,14 +203,15 @@ Future<void> main() async {
       expect(mirror.meta.pendingOps, isEmpty);
       final serverKeys = await owner.entryKeys(listId);
       expect(serverKeys, unorderedEquals(['keep', 'mine']));
-      expect(mirror.savedVideos.map((v) => v.entryKey),
-          unorderedEquals(serverKeys));
+      expect(
+        mirror.savedVideos.map((v) => v.entryKey),
+        unorderedEquals(serverKeys),
+      );
     }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
   group('role transitions seen from device A', () {
-    test(
-        'removal as editor mid-edit demotes to subscriber and drops the '
+    test('removal as editor mid-edit demotes to subscriber and drops the '
         'queue (documenting current behaviour)', () async {
       final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['x']);
 
@@ -228,8 +234,7 @@ Future<void> main() async {
       expect(await owner.entryKeys(listId), equals(['x']));
     });
 
-    test(
-        'owner account deletion tombstones the list; the editor mirror is '
+    test('owner account deletion tombstones the list; the editor mirror is '
         'dropped on next sync (documenting current behaviour)', () async {
       final (owner, listId, mirror) = await joinAsEditor(initialKeys: ['y']);
       expect(mirror.meta.role, ListRole.editor);
@@ -247,12 +252,14 @@ Future<void> main() async {
 
       // Corrupt the session, then edit: flush must 401, keep the op, and
       // surface the sessionExpired notification.
-      await deviceA.auth.store.save(AuthSession(
-        sessionToken: 'garbage-token',
-        provider: goodSession.provider,
-        displayName: goodSession.displayName,
-        signedInAtMillis: goodSession.signedInAtMillis,
-      ));
+      await deviceA.auth.store.save(
+        AuthSession(
+          sessionToken: 'garbage-token',
+          provider: goodSession.provider,
+          displayName: goodSession.displayName,
+          signedInAtMillis: goodSession.signedInAtMillis,
+        ),
+      );
       await mirror.addVideo(_v('queued-while-expired'));
       await deviceA.engine.pushAllDirty();
 

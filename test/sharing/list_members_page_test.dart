@@ -64,16 +64,17 @@ void main() {
   }
 
   Widget wrap(SyncedEntryList list) => MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
-        supportedLocales: DictLibLocalizations.supportedLocales,
-        home: ListMembersPage(list: list),
-      );
+    localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+    supportedLocales: DictLibLocalizations.supportedLocales,
+    home: ListMembersPage(list: list),
+  );
 
   /// Regression test: removing an editor used to give no progress feedback
   /// while the network call was in flight. The row should swap its remove
   /// button for a spinner until the removal completes.
-  testWidgets('removing an editor shows an inline spinner until it completes',
-      (tester) async {
+  testWidgets('removing an editor shows an inline spinner until it completes', (
+    tester,
+  ) async {
     // Gate the DELETE so we can observe the in-flight UI before it returns.
     final gate = Completer<void>();
     installFakeSharing((req) async {
@@ -83,10 +84,13 @@ void main() {
       }
       if (req.method == 'POST' && req.url.path.endsWith('/sync')) {
         // Post-removal /sync: Bob is gone from the member directory.
-        return stubSyncApplyAll(req, members: {
-          'owner': {'userId': 'apple:alice', 'displayName': 'Alice'},
-          'editors': <Map<String, dynamic>>[],
-        });
+        return stubSyncApplyAll(
+          req,
+          members: {
+            'owner': {'userId': 'apple:alice', 'displayName': 'Alice'},
+            'editors': <Map<String, dynamic>>[],
+          },
+        );
       }
       return http.Response('unexpected ${req.method} ${req.url.path}', 500);
     });
@@ -124,8 +128,9 @@ void main() {
   /// Regression test: an editor who leaves a list used to be left sitting on
   /// the (now-defunct) list page. Leaving should pop all the way back to the
   /// top-level lists overview.
-  testWidgets('leaving a list as an editor returns to the lists overview',
-      (tester) async {
+  testWidgets('leaving a list as an editor returns to the lists overview', (
+    tester,
+  ) async {
     installFakeSharing((req) async {
       if (req.method == 'DELETE' && req.url.path.contains('/editors/')) {
         return http.Response('', 204);
@@ -171,8 +176,11 @@ void main() {
             body: Center(
               child: Builder(
                 builder: (ctx) => TextButton(
-                  onPressed: () => Navigator.of(ctx).push(MaterialPageRoute(
-                      builder: (_) => ListMembersPage(list: list))),
+                  onPressed: () => Navigator.of(ctx).push(
+                    MaterialPageRoute(
+                      builder: (_) => ListMembersPage(list: list),
+                    ),
+                  ),
                   child: const Text('OVERVIEW'),
                 ),
               ),
@@ -181,11 +189,13 @@ void main() {
         ),
       ],
     );
-    await tester.pumpWidget(MaterialApp.router(
-      localizationsDelegates: DictLibLocalizations.localizationsDelegates,
-      supportedLocales: DictLibLocalizations.supportedLocales,
-      routerConfig: router,
-    ));
+    await tester.pumpWidget(
+      MaterialApp.router(
+        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        supportedLocales: DictLibLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Open the members page.
@@ -197,8 +207,12 @@ void main() {
     // Leave → confirm in the dialog.
     await tester.tap(find.text('Leave this list'));
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(
-        of: find.byType(AlertDialog), matching: find.text('Leave this list')));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Leave this list'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Back on the overview; the members page is gone.
@@ -209,8 +223,9 @@ void main() {
 
   /// The invite-editor dialog should offer a QR code (like the regular
   /// subscribe-link dialog it now shares an implementation with).
-  testWidgets('the invite-editor dialog offers a QR-code option',
-      (tester) async {
+  testWidgets('the invite-editor dialog offers a QR-code option', (
+    tester,
+  ) async {
     // The QR dialog is taller than the default 800x600 test surface (fine on
     // a real phone); give it phone-like height so it doesn't overflow.
     await tester.binding.setSurfaceSize(const Size(800, 1200));

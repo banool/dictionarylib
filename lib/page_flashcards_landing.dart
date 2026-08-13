@@ -25,23 +25,37 @@ abstract class FlashcardsLandingPageController {
   List<ResolvedSavedVideo> filterSavedVideos(List<ResolvedSavedVideo> videos);
 
   DolphinInformation getDolphin(
-      List<ResolvedSavedVideo> filteredVideos, List<Review>? existingReviews,
-      {RevisionStrategy? revisionStrategy}) {
+    List<ResolvedSavedVideo> filteredVideos,
+    List<Review>? existingReviews, {
+    RevisionStrategy? revisionStrategy,
+  }) {
     revisionStrategy = revisionStrategy ?? loadRevisionStrategy();
     var wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
     var signToEntry = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
-    var revisionLocale = LANGUAGE_CODE_TO_LOCALE[
-            sharedPreferences.getString(KEY_REVISION_LANGUAGE_CODE)] ??
+    var revisionLocale =
+        LANGUAGE_CODE_TO_LOCALE[sharedPreferences.getString(
+          KEY_REVISION_LANGUAGE_CODE,
+        )] ??
         LOCALE_ENGLISH;
     var masters = getMastersFromVideos(
-        revisionLocale, filteredVideos, wordToSign, signToEntry);
+      revisionLocale,
+      filteredVideos,
+      wordToSign,
+      signToEntry,
+    );
     switch (revisionStrategy) {
       case RevisionStrategy.Random:
-        return getDolphinInformationFromVideos(filteredVideos, masters,
-            reviews: existingReviews);
+        return getDolphinInformationFromVideos(
+          filteredVideos,
+          masters,
+          reviews: existingReviews,
+        );
       case RevisionStrategy.SpacedRepetition:
-        return getDolphinInformationFromVideos(filteredVideos, masters,
-            reviews: existingReviews!);
+        return getDolphinInformationFromVideos(
+          filteredVideos,
+          masters,
+          reviews: existingReviews!,
+        );
     }
   }
 
@@ -50,23 +64,24 @@ abstract class FlashcardsLandingPageController {
   /// navigation. Supplied by each app; the page itself is shared.
   FlashcardsConfig get flashcardsConfig;
 
-  Widget buildFlashcardsPage(
-          {required DolphinInformation dolphinInformation,
-          required RevisionStrategy revisionStrategy,
-          required List<Review> existingReviews}) =>
-      FlashcardsPage(
-        di: dolphinInformation,
-        revisionStrategy: revisionStrategy,
-        existingReviews: existingReviews,
-        config: flashcardsConfig,
-      );
+  Widget buildFlashcardsPage({
+    required DolphinInformation dolphinInformation,
+    required RevisionStrategy revisionStrategy,
+    required List<Review> existingReviews,
+  }) => FlashcardsPage(
+    di: dolphinInformation,
+    revisionStrategy: revisionStrategy,
+    existingReviews: existingReviews,
+    config: flashcardsConfig,
+  );
 
   Widget buildHelpPage(BuildContext context);
 
   List<Widget> getExtraBottomWidgets(
-      BuildContext context,
-      void Function(void Function() fn) setState,
-      void Function() updateRevisionSettings) {
+    BuildContext context,
+    void Function(void Function() fn) setState,
+    void Function() updateRevisionSettings,
+  ) {
     return [];
   }
 
@@ -75,17 +90,19 @@ abstract class FlashcardsLandingPageController {
   /// settings card. Used by apps with extra knobs (e.g. Auslan's sign-region
   /// configurator).
   List<Widget> getExtraSettingsRows(
-      BuildContext context,
-      void Function(void Function() fn) setState,
-      void Function(String key, bool newValue, bool influencesStartValidity)
-          onPrefSwitch,
-      void Function() updateRevisionSettings) {
+    BuildContext context,
+    void Function(void Function() fn) setState,
+    void Function(String key, bool newValue, bool influencesStartValidity)
+    onPrefSwitch,
+    void Function() updateRevisionSettings,
+  ) {
     return [];
   }
 }
 
 RevisionStrategy loadRevisionStrategy() {
-  int revisionStrategyIndex = sharedPreferences.getInt(KEY_REVISION_STRATEGY) ??
+  int revisionStrategyIndex =
+      sharedPreferences.getInt(KEY_REVISION_STRATEGY) ??
       RevisionStrategy.SpacedRepetition.index;
   RevisionStrategy revisionStrategy =
       RevisionStrategy.values[revisionStrategyIndex];
@@ -127,11 +144,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   void initState() {
     super.initState();
     candidateEntryLists = getCandidateEntryLists();
-    _lifecycleObserver = LifecycleEventHandler(resumeCallBack: () async {
-      if (!mounted) return;
-      updateRevisionSettings();
-      printAndLog("Updated revision settings on foregrounding");
-    });
+    _lifecycleObserver = LifecycleEventHandler(
+      resumeCallBack: () async {
+        if (!mounted) return;
+        updateRevisionSettings();
+        printAndLog("Updated revision settings on foregrounding");
+      },
+    );
     WidgetsBinding.instance.addObserver(_lifecycleObserver!);
     updateRevisionSettings();
     initialValueSignToEntry =
@@ -156,11 +175,14 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   }
 
   void updateFilteredSubentries() {
-    var listsToReview = sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+    var listsToReview =
+        sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
         [KEY_FAVOURITES_ENTRIES];
 
-    entryListsToRevise =
-        getEntryListsToRevise(candidateEntryLists, listsToReview);
+    entryListsToRevise = getEntryListsToRevise(
+      candidateEntryLists,
+      listsToReview,
+    );
 
     final resolved = resolveSavedVideos(entryListsToRevise);
 
@@ -200,10 +222,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     if (existingReviews == null) {
       existingReviews = readReviews();
       printAndLog(
-          "Start: Read ${existingReviews!.length} reviews from storage");
+        "Start: Read ${existingReviews!.length} reviews from storage",
+      );
     }
-    dolphinInformation =
-        widget.controller.getDolphin(filteredVideos, existingReviews);
+    dolphinInformation = widget.controller.getDolphin(
+      filteredVideos,
+      existingReviews,
+    );
   }
 
   void updateRevisionSettings() {
@@ -223,10 +248,13 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     // matches what the session will actually serve (FlashcardsPage applies the
     // same cap). 0 = no limit.
     final cardLimit = sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT) ?? 0;
-    final rawCardsToDo =
-        getNumDueCards(dolphinInformation.dolphin, revisionStrategy);
-    final cardsToDo =
-        (cardLimit > 0 && rawCardsToDo > cardLimit) ? cardLimit : rawCardsToDo;
+    final rawCardsToDo = getNumDueCards(
+      dolphinInformation.dolphin,
+      revisionStrategy,
+    );
+    final cardsToDo = (cardLimit > 0 && rawCardsToDo > cardLimit)
+        ? cardLimit
+        : rawCardsToDo;
     final signToWord = sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
     final wordToSign = sharedPreferences.getBool(KEY_WORD_TO_SIGN) ?? true;
     final typesValid = numEnabledFlashcardTypes > 0;
@@ -245,107 +273,125 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         isScrollControlled: true,
         constraints: BoxConstraints(maxHeight: maxSheetHeight),
         builder: (ctx) {
-          return StatefulBuilder(builder: (ctx, setSheet) {
-            final cs = Theme.of(ctx).colorScheme;
-            final selected =
-                (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
-                        [KEY_FAVOURITES_ENTRIES])
-                    .toSet();
+          return StatefulBuilder(
+            builder: (ctx, setSheet) {
+              final cs = Theme.of(ctx).colorScheme;
+              final selected =
+                  (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+                          [KEY_FAVOURITES_ENTRIES])
+                      .toSet();
 
-            // Persist + repaint the tick only. The heavy part — rebuilding
-            // the whole DolphinSR session — happens once when the sheet
-            // closes: doing it per tick starves the checkbox repaint on slow
-            // devices once many big lists are selected (the tick appears to
-            // do nothing even though the selection was saved).
-            void toggle(String key) {
-              final s = (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
-                      [KEY_FAVOURITES_ENTRIES])
-                  .toSet();
-              if (!s.add(key)) s.remove(key);
-              sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, s.toList());
-              setSheet(() {});
-            }
-
-            Widget listRow(EntryList el) => HearthRow(
-                  icon: el.key == KEY_FAVOURITES_ENTRIES
-                      ? Icons.star
-                      : Icons.list_alt,
-                  title: el.getName(context),
-                  trailing: Checkbox(
-                      value: selected.contains(el.key),
-                      onChanged: (_) => toggle(el.key)),
-                  onTap: () => toggle(el.key),
+              // Persist + repaint the tick only. The heavy part — rebuilding
+              // the whole DolphinSR session — happens once when the sheet
+              // closes: doing it per tick starves the checkbox repaint on slow
+              // devices once many big lists are selected (the tick appears to
+              // do nothing even though the selection was saved).
+              void toggle(String key) {
+                final s =
+                    (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
+                            [KEY_FAVOURITES_ENTRIES])
+                        .toSet();
+                if (!s.add(key)) s.remove(key);
+                sharedPreferences.setStringList(
+                  KEY_LISTS_TO_REVIEW,
+                  s.toList(),
                 );
+                setSheet(() {});
+              }
 
-            // A collapsible section. Its expanded/collapsed state is remembered
-            // across sessions in shared prefs.
-            Widget collapsibleSection(
-                String id, String label, Iterable<EntryList> lists) {
-              if (lists.isEmpty) return const SizedBox.shrink();
-              final prefKey = 'flashcards_sources_expanded_$id';
-              return ExpansionTile(
-                // Drop ExpansionTile's default divider lines for a clean look.
-                shape: const Border(),
-                collapsedShape: const Border(),
-                tilePadding: const EdgeInsets.symmetric(horizontal: 20),
-                childrenPadding: EdgeInsets.zero,
-                iconColor: cs.onSurfaceVariant,
-                collapsedIconColor: cs.onSurfaceVariant,
-                initiallyExpanded: sharedPreferences.getBool(prefKey) ?? true,
-                onExpansionChanged: (v) =>
-                    sharedPreferences.setBool(prefKey, v),
-                title: Text(
-                  label.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    color: cs.onSurfaceVariant,
-                  ),
+              Widget listRow(EntryList el) => HearthRow(
+                icon: el.key == KEY_FAVOURITES_ENTRIES
+                    ? Icons.star
+                    : Icons.list_alt,
+                title: el.getName(context),
+                trailing: Checkbox(
+                  value: selected.contains(el.key),
+                  onChanged: (_) => toggle(el.key),
                 ),
-                children: lists.map(listRow).toList(),
+                onTap: () => toggle(el.key),
               );
-            }
 
-            final List<EntryList> myLists = <EntryList>[
-              ...listsService.myLists,
-              if (sharing.isEnabled)
-                ...sharing.lists.editorLists.where((e) => !e.meta.orphaned),
-            ];
-            final List<EntryList> subscribed = sharing.isEnabled
-                ? <EntryList>[...sharing.lists.subscribedLists]
-                : const <EntryList>[];
-            final List<EntryList> community =
-                (sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)
-                    ? const <EntryList>[]
-                    : <EntryList>[
-                        ...communityEntryListManager.getEntryLists().values
-                      ];
+              // A collapsible section. Its expanded/collapsed state is remembered
+              // across sessions in shared prefs.
+              Widget collapsibleSection(
+                String id,
+                String label,
+                Iterable<EntryList> lists,
+              ) {
+                if (lists.isEmpty) return const SizedBox.shrink();
+                final prefKey = 'flashcards_sources_expanded_$id';
+                return ExpansionTile(
+                  // Drop ExpansionTile's default divider lines for a clean look.
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 20),
+                  childrenPadding: EdgeInsets.zero,
+                  iconColor: cs.onSurfaceVariant,
+                  collapsedIconColor: cs.onSurfaceVariant,
+                  initiallyExpanded: sharedPreferences.getBool(prefKey) ?? true,
+                  onExpansionChanged: (v) =>
+                      sharedPreferences.setBool(prefKey, v),
+                  title: Text(
+                    label.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  children: lists.map(listRow).toList(),
+                );
+              }
 
-            return SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
-                        child: Text(l.flashcardsSelectLists,
-                            style: Theme.of(ctx).textTheme.titleLarge),
-                      ),
-                      collapsibleSection('mylists', l.listMyLists, myLists),
-                      collapsibleSection(
-                          'subscribed', l.listSharedWithMeTab, subscribed),
-                      collapsibleSection(
-                          'community', l.listCommunity, community),
-                    ],
+              final List<EntryList> myLists = <EntryList>[
+                ...listsService.myLists,
+                if (sharing.isEnabled)
+                  ...sharing.lists.editorLists.where((e) => !e.meta.orphaned),
+              ];
+              final List<EntryList> subscribed = sharing.isEnabled
+                  ? <EntryList>[...sharing.lists.subscribedLists]
+                  : const <EntryList>[];
+              final List<EntryList> community =
+                  (sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false)
+                  ? const <EntryList>[]
+                  : <EntryList>[
+                      ...communityEntryListManager.getEntryLists().values,
+                    ];
+
+              return SafeArea(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
+                          child: Text(
+                            l.flashcardsSelectLists,
+                            style: Theme.of(ctx).textTheme.titleLarge,
+                          ),
+                        ),
+                        collapsibleSection('mylists', l.listMyLists, myLists),
+                        collapsibleSection(
+                          'subscribed',
+                          l.listSharedWithMeTab,
+                          subscribed,
+                        ),
+                        collapsibleSection(
+                          'community',
+                          l.listCommunity,
+                          community,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          });
+              );
+            },
+          );
         },
       );
       // Apply whatever the sheet changed in one pass (see toggle above).
@@ -353,12 +399,18 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     }
 
     // An outlined card wrapping rows separated by hairline dividers.
-    Widget settingsCard(List<Widget> rows,
-        {EdgeInsetsGeometry? padding, double? maxHeight}) {
+    Widget settingsCard(
+      List<Widget> rows, {
+      EdgeInsetsGeometry? padding,
+      double? maxHeight,
+    }) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child:
-            HearthRowGroup(rows: rows, padding: padding, maxHeight: maxHeight),
+        child: HearthRowGroup(
+          rows: rows,
+          padding: padding,
+          maxHeight: maxHeight,
+        ),
       );
     }
 
@@ -367,22 +419,29 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     for (final e in entryListsToRevise.entries) {
       final el = e.value;
       final count = el.uniqueEntries.length;
-      sourceRows.add(HearthRow(
-        icon: el.key == KEY_FAVOURITES_ENTRIES ? Icons.star : Icons.list_alt,
-        title: el.getName(context),
-        subtitle: l.revisionSignCount(count),
-        onTap: openSourcesPicker,
-      ));
+      sourceRows.add(
+        HearthRow(
+          icon: el.key == KEY_FAVOURITES_ENTRIES ? Icons.star : Icons.list_alt,
+          title: el.getName(context),
+          subtitle: l.revisionSignCount(count),
+          onTap: openSourcesPicker,
+        ),
+      );
     }
     if (sourceRows.isEmpty) {
       sourceRows.add(
-          HearthRow(title: l.revisionNoListsChosen, onTap: openSourcesPicker));
+        HearthRow(title: l.revisionNoListsChosen, onTap: openSourcesPicker),
+      );
     }
 
     // The "Revision settings" card rows — currently the app-specific extras
     // (e.g. Auslan's sign-region configurator).
     final settingRows = widget.controller.getExtraSettingsRows(
-        context, setState, onPrefSwitch, updateRevisionSettings);
+      context,
+      setState,
+      onPrefSwitch,
+      updateRevisionSettings,
+    );
 
     Function()? onPressedStart;
     if (startValid()) {
@@ -390,17 +449,19 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => widget.controller.buildFlashcardsPage(
-                    dolphinInformation: dolphinInformation,
-                    revisionStrategy: revisionStrategy,
-                    existingReviews: existingReviews ?? [],
-                  )),
+            builder: (context) => widget.controller.buildFlashcardsPage(
+              dolphinInformation: dolphinInformation,
+              revisionStrategy: revisionStrategy,
+              existingReviews: existingReviews ?? [],
+            ),
+          ),
         );
         setState(() {
           existingReviews = readReviews();
         });
         printAndLog(
-            "Pop: Read ${existingReviews!.length} reviews from storage");
+          "Pop: Read ${existingReviews!.length} reviews from storage",
+        );
         updateRevisionSettings();
       };
     }
@@ -411,16 +472,17 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     // row cut off at the boundary signal the overflow; the count in the
     // section label says how many there are in total.
     final bool capSources = sourceRows.length > 8;
-    final double sourcesMaxHeight =
-        (MediaQuery.of(context).size.height * 0.45).clamp(0.0, 480.0);
+    final double sourcesMaxHeight = (MediaQuery.of(context).size.height * 0.45)
+        .clamp(0.0, 480.0);
 
     final listChildren = <Widget>[
       // --- Revision sources ---
       HearthSectionLabel(
-          capSources
-              ? "${l.flashcardsRevisionSources} · ${sourceRows.length}"
-              : l.flashcardsRevisionSources,
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8)),
+        capSources
+            ? "${l.flashcardsRevisionSources} · ${sourceRows.length}"
+            : l.flashcardsRevisionSources,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+      ),
       settingsCard(sourceRows, maxHeight: capSources ? sourcesMaxHeight : null),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
@@ -434,19 +496,22 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         ),
       ),
       // --- Flashcard types ---
-      HearthSectionLabel(l.flashcardsTypes,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8)),
+      HearthSectionLabel(
+        l.flashcardsTypes,
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      ),
       settingsCard([
         HearthRow(
           icon: Icons.style,
           title: l.flashcardsSignToWord,
           subtitle: l.flashcardsSignToWordSubtitle,
           trailing: Switch(
-              value: signToWord,
-              onChanged: (v) {
-                onPrefSwitch(KEY_SIGN_TO_WORD, v, true);
-                updateRevisionSettings();
-              }),
+            value: signToWord,
+            onChanged: (v) {
+              onPrefSwitch(KEY_SIGN_TO_WORD, v, true);
+              updateRevisionSettings();
+            },
+          ),
           onTap: () {
             onPrefSwitch(KEY_SIGN_TO_WORD, !signToWord, true);
             updateRevisionSettings();
@@ -457,11 +522,12 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
           title: l.flashcardsWordToSign,
           subtitle: l.flashcardsWordToSignSubtitle,
           trailing: Switch(
-              value: wordToSign,
-              onChanged: (v) {
-                onPrefSwitch(KEY_WORD_TO_SIGN, v, true);
-                updateRevisionSettings();
-              }),
+            value: wordToSign,
+            onChanged: (v) {
+              onPrefSwitch(KEY_WORD_TO_SIGN, v, true);
+              updateRevisionSettings();
+            },
+          ),
           onTap: () {
             onPrefSwitch(KEY_WORD_TO_SIGN, !wordToSign, true);
             updateRevisionSettings();
@@ -471,75 +537,85 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       if (!typesValid)
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Text(l.flashcardsChooseType,
-              style: TextStyle(fontSize: 12.5, color: cs.error)),
+          child: Text(
+            l.flashcardsChooseType,
+            style: TextStyle(fontSize: 12.5, color: cs.error),
+          ),
         ),
       // --- Revision settings ---
-      HearthSectionLabel(l.flashcardsRevisionSettings,
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 8)),
-      settingsCard(
-        [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l.flashcardsStrategyLabel,
-                  style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface)),
-              const SizedBox(height: 10),
-              HearthSegmented(
-                options: [
-                  RevisionStrategy.SpacedRepetition.pretty,
-                  RevisionStrategy.Random.pretty,
-                ],
-                selected: revisionStrategy == RevisionStrategy.SpacedRepetition
-                    ? 0
-                    : 1,
-                onChanged: (i) async {
-                  await sharedPreferences.setInt(
-                      KEY_REVISION_STRATEGY,
-                      i == 0
-                          ? RevisionStrategy.SpacedRepetition.index
-                          : RevisionStrategy.Random.index);
-                  setState(() {
-                    updateRevisionSettings();
-                  });
-                },
-              ),
-              const SizedBox(height: 18),
-              // How many cards a session serves at most. 0 = no limit, and the
-              // choice is remembered across sessions. Label and dropdown sit
-              // together on the left.
-              Row(
-                children: [
-                  Text(l.flashcardsCardLimitLabel,
-                      style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: cs.onSurface)),
-                  const SizedBox(width: 16),
-                  DropdownButton<int>(
-                    value: cardLimit,
-                    items: [
-                      DropdownMenuItem(
-                          value: 0, child: Text(l.flashcardsCardLimitNone)),
-                      for (final n in const [10, 25, 50, 100])
-                        DropdownMenuItem(value: n, child: Text('$n')),
-                    ],
-                    onChanged: (v) {
-                      if (v == null) return;
-                      sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, v);
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-        padding: const EdgeInsets.all(14),
+      HearthSectionLabel(
+        l.flashcardsRevisionSettings,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
       ),
+      settingsCard([
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l.flashcardsStrategyLabel,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
+            HearthSegmented(
+              options: [
+                RevisionStrategy.SpacedRepetition.pretty,
+                RevisionStrategy.Random.pretty,
+              ],
+              selected: revisionStrategy == RevisionStrategy.SpacedRepetition
+                  ? 0
+                  : 1,
+              onChanged: (i) async {
+                await sharedPreferences.setInt(
+                  KEY_REVISION_STRATEGY,
+                  i == 0
+                      ? RevisionStrategy.SpacedRepetition.index
+                      : RevisionStrategy.Random.index,
+                );
+                setState(() {
+                  updateRevisionSettings();
+                });
+              },
+            ),
+            const SizedBox(height: 18),
+            // How many cards a session serves at most. 0 = no limit, and the
+            // choice is remembered across sessions. Label and dropdown sit
+            // together on the left.
+            Row(
+              children: [
+                Text(
+                  l.flashcardsCardLimitLabel,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                DropdownButton<int>(
+                  value: cardLimit,
+                  items: [
+                    DropdownMenuItem(
+                      value: 0,
+                      child: Text(l.flashcardsCardLimitNone),
+                    ),
+                    for (final n in const [10, 25, 50, 100])
+                      DropdownMenuItem(value: n, child: Text('$n')),
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, v);
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ], padding: const EdgeInsets.all(14)),
       // App-specific extra rows (e.g. Auslan's sign-region configurator). Drop
       // the card entirely when an app has none, so there's no empty outlined box.
       // Give it clear separation from the settings card above it.
@@ -547,8 +623,11 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         const SizedBox(height: 16),
         settingsCard(settingRows),
       ],
-      ...widget.controller
-          .getExtraBottomWidgets(context, setState, updateRevisionSettings),
+      ...widget.controller.getExtraBottomWidgets(
+        context,
+        setState,
+        updateRevisionSettings,
+      ),
       const SizedBox(height: 8),
     ];
 
@@ -567,14 +646,19 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         children: [
           Row(
             children: [
-              Text(dueLabel,
-                  style: TextStyle(fontSize: 13.5, color: cs.onSurfaceVariant)),
+              Text(
+                dueLabel,
+                style: TextStyle(fontSize: 13.5, color: cs.onSurfaceVariant),
+              ),
               const Spacer(),
-              Text(l.revisionFlashcardCount(cardsToDo),
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: cs.onSurface)),
+              Text(
+                l.revisionFlashcardCount(cardsToDo),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -592,50 +676,47 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       ),
     );
 
-    Widget body = Column(children: [
-      Expanded(
-        child: ListView(
+    Widget body = Column(
+      children: [
+        Expanded(
+          child: ListView(
             padding: const EdgeInsets.only(top: 4, bottom: 16),
-            children: listChildren),
-      ),
-      startBar,
-    ]);
+            children: listChildren,
+          ),
+        ),
+        startBar,
+      ],
+    );
 
     List<Widget> actions = [
-      buildActionButton(
-        context,
-        const Icon(Icons.timeline),
-        () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => RevisionHistoryPage()),
-          );
-        },
-      ),
-      buildActionButton(
-        context,
-        const Icon(Icons.help),
-        () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => widget.controller.buildHelpPage(context)),
-          );
-        },
-      )
+      buildActionButton(context, const Icon(Icons.timeline), () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RevisionHistoryPage()),
+        );
+      }),
+      buildActionButton(context, const Icon(Icons.help), () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => widget.controller.buildHelpPage(context),
+          ),
+        );
+      }),
     ];
 
     return TopLevelScaffold(
-        body: body, title: l.revisionTitle, actions: actions);
+      body: body,
+      title: l.revisionTitle,
+      actions: actions,
+    );
   }
 }
 
 class LifecycleEventHandler extends WidgetsBindingObserver {
   final AsyncCallback resumeCallBack;
 
-  LifecycleEventHandler({
-    required this.resumeCallBack,
-  });
+  LifecycleEventHandler({required this.resumeCallBack});
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {

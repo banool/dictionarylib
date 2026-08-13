@@ -38,14 +38,20 @@ import '../helpers.dart';
 /// this file that used to read app-specific constants reads this instead.
 late MdSuiteConfig mdConfig;
 
-const String mdApiBaseUrl = String.fromEnvironment('MD_API_BASE_URL',
-    defaultValue: 'http://localhost:8787');
+const String mdApiBaseUrl = String.fromEnvironment(
+  'MD_API_BASE_URL',
+  defaultValue: 'http://localhost:8787',
+);
 
-const String mdTestAuthToken = String.fromEnvironment('MD_TEST_AUTH_TOKEN',
-    defaultValue: 'dev-integration-test-token-please-override');
+const String mdTestAuthToken = String.fromEnvironment(
+  'MD_TEST_AUTH_TOKEN',
+  defaultValue: 'dev-integration-test-token-please-override',
+);
 
-const String mdRunId =
-    String.fromEnvironment('MD_RUN_ID', defaultValue: 'local');
+const String mdRunId = String.fromEnvironment(
+  'MD_RUN_ID',
+  defaultValue: 'local',
+);
 
 const String mdInviteUrl = String.fromEnvironment('MD_INVITE_URL');
 
@@ -86,33 +92,33 @@ Future<void> mdSetup() async {
 /// there are no extraStartupTasks. yankedVersionsUrl is unused (the check is
 /// skipped above).
 DictAppBootstrapConfig _mdBootstrapConfig() => DictAppBootstrapConfig(
-      advisoriesUrl: mdConfig.advisoriesUrl,
-      yankedVersionsUrl: '',
-      knobUrlBase: mdConfig.knobUrlBase,
-      setupMediaAndEntryLoader: () async {
-        mediaBaseUrls = mdConfig.mediaBaseUrls;
-        return mdConfig.buildEntryLoader();
-      },
-      sharingConfig: SharingConfig(
-        appId: mdConfig.appId,
-        appName: mdConfig.appName,
-        apiBaseUrl: mdApiBaseUrl,
-        // Production link shape so minted invite links round-trip through the
-        // same parsing the share/subscribe dialogs apply to real links.
-        shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,
-        shareLinkHost: mdConfig.shareLinkHost,
-        urlScheme: mdConfig.urlScheme,
-        auth: SharingAuthConfig(
-          appleBundleId: mdConfig.appleBundleId,
-          googleServerClientId: 'unused-in-md-tests',
-        ),
-        testSignIn: const TestSignInConfig(
-          testAuthToken: mdTestAuthToken,
-          defaultUserIdPrefix: 'test:md',
-          defaultDisplayName: 'Md Tester',
-        ),
-      ),
-    );
+  advisoriesUrl: mdConfig.advisoriesUrl,
+  yankedVersionsUrl: '',
+  knobUrlBase: mdConfig.knobUrlBase,
+  setupMediaAndEntryLoader: () async {
+    mediaBaseUrls = mdConfig.mediaBaseUrls;
+    return mdConfig.buildEntryLoader();
+  },
+  sharingConfig: SharingConfig(
+    appId: mdConfig.appId,
+    appName: mdConfig.appName,
+    apiBaseUrl: mdApiBaseUrl,
+    // Production link shape so minted invite links round-trip through the
+    // same parsing the share/subscribe dialogs apply to real links.
+    shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,
+    shareLinkHost: mdConfig.shareLinkHost,
+    urlScheme: mdConfig.urlScheme,
+    auth: SharingAuthConfig(
+      appleBundleId: mdConfig.appleBundleId,
+      googleServerClientId: 'unused-in-md-tests',
+    ),
+    testSignIn: const TestSignInConfig(
+      testAuthToken: mdTestAuthToken,
+      defaultUserIdPrefix: 'test:md',
+      defaultDisplayName: 'Md Tester',
+    ),
+  ),
+);
 
 /// Pump the real app and wait until the bottom navigation is up.
 Future<void> mdPumpApp(WidgetTester tester) async {
@@ -121,8 +127,10 @@ Future<void> mdPumpApp(WidgetTester tester) async {
   advisoryShownOnce = true;
   await tester.pumpWidget(mdConfig.buildApp(LOCALE_ENGLISH));
   await mdWaitForUi(
-      tester, () => find.byIcon(Icons.view_list).evaluate().isNotEmpty,
-      reason: 'app should boot to a page with the bottom navigation');
+    tester,
+    () => find.byIcon(Icons.view_list).evaluate().isNotEmpty,
+    reason: 'app should boot to a page with the bottom navigation',
+  );
 }
 
 /// Sign in via the worker's test provider, through the production
@@ -164,10 +172,15 @@ Future<void> mdWaitForUi(
   required String reason,
   Duration timeout = const Duration(seconds: 20),
 }) {
-  return mdWaitFor(tester, () async {
-    await settle(tester);
-    return check();
-  }, reason: reason, timeout: timeout);
+  return mdWaitFor(
+    tester,
+    () async {
+      await settle(tester);
+      return check();
+    },
+    reason: reason,
+    timeout: timeout,
+  );
 }
 
 /// Emit a key=value line for run.sh to scrape from the test output.
@@ -253,17 +266,22 @@ Future<void> mdRequireServer() async {
       fail('worker at $mdApiBaseUrl unhealthy: HTTP ${resp.statusCode}');
     }
   } catch (e) {
-    fail('no worker reachable at $mdApiBaseUrl — start one with: '
-        "bash -c 'cd dictionary_backend/workers && bunx wrangler dev --env dev' "
-        '($e)');
+    fail(
+      'no worker reachable at $mdApiBaseUrl — start one with: '
+      "bash -c 'cd dictionary_backend/workers && bunx wrangler dev --env dev' "
+      '($e)',
+    );
   } finally {
     client.close(force: true);
   }
 }
 
 /// Wait for [finder] to match, then tap its first match.
-Future<void> mdTapWhenVisible(WidgetTester tester, Finder finder,
-    {required String reason}) async {
+Future<void> mdTapWhenVisible(
+  WidgetTester tester,
+  Finder finder, {
+  required String reason,
+}) async {
   await mdWaitForUi(tester, () => finder.evaluate().isNotEmpty, reason: reason);
   await tester.tap(finder.first);
   await settle(tester);
@@ -273,24 +291,34 @@ Future<void> mdTapWhenVisible(WidgetTester tester, Finder finder,
 /// bare byIcon can match an offstage twin inside a tab body (e.g. the
 /// search field's magnifier) — scope to the nav bar.
 Finder mdNavIcon(IconData icon) => find.descendant(
-    of: find.byType(BottomNavigationBar), matching: find.byIcon(icon));
+  of: find.byType(BottomNavigationBar),
+  matching: find.byIcon(icon),
+);
 
 /// Open the Lists tab from anywhere in the app.
 Future<void> mdOpenListsTab(WidgetTester tester) async {
-  await mdTapWhenVisible(tester, mdNavIcon(Icons.view_list),
-      reason: 'Lists tab icon in the bottom navigation');
+  await mdTapWhenVisible(
+    tester,
+    mdNavIcon(Icons.view_list),
+    reason: 'Lists tab icon in the bottom navigation',
+  );
 }
 
 /// Switch to a lists-overview tab by its visible label.
 Future<void> mdOpenOverviewTab(WidgetTester tester, String label) async {
-  await mdTapWhenVisible(tester, find.text(label),
-      reason: 'lists overview tab "$label"');
+  await mdTapWhenVisible(
+    tester,
+    find.text(label),
+    reason: 'lists overview tab "$label"',
+  );
 }
 
 /// Find an entry (with at least one video) whose key is none of [exclude].
 /// Deterministic: first match in iteration order.
 Entry mdEntryWithVideo({Set<String> exclude = const {}}) {
-  return entriesGlobal.firstWhere((e) =>
-      !exclude.contains(e.getKey()) &&
-      e.getSubEntries().any((s) => s.getMedia().isNotEmpty));
+  return entriesGlobal.firstWhere(
+    (e) =>
+        !exclude.contains(e.getKey()) &&
+        e.getSubEntries().any((s) => s.getMedia().isNotEmpty),
+  );
 }

@@ -37,16 +37,17 @@ class FakeEntry extends Entry {
     List<String>? videos,
     List<FakeSubEntryFixture>? subEntries,
     List<String> categories = const [],
-  })  : assert(
-            videos == null || subEntries == null,
-            'pass `videos:` (single-sub-entry shorthand) OR `subEntries:` '
-            '(explicit list), not both'),
-        _categories = categories,
-        _subEntries = subEntries != null
-            ? subEntries.map((f) => f._build()).toList()
-            : (videos == null || videos.isEmpty)
-                ? const []
-                : [_FakeSubEntry(videos)];
+  }) : assert(
+         videos == null || subEntries == null,
+         'pass `videos:` (single-sub-entry shorthand) OR `subEntries:` '
+         '(explicit list), not both',
+       ),
+       _categories = categories,
+       _subEntries = subEntries != null
+           ? subEntries.map((f) => f._build()).toList()
+           : (videos == null || videos.isEmpty)
+           ? const []
+           : [_FakeSubEntry(videos)];
   @override
   String getKey() => _key;
   @override
@@ -95,9 +96,9 @@ void installFakeSecureStorage() {
   TestWidgetsFlutterBinding.ensureInitialized();
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (MethodCall call) async => null,
-  );
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (MethodCall call) async => null,
+      );
 }
 
 /// Base URL the tests treat media as served from. A media path resolves
@@ -157,7 +158,8 @@ const kTestSession = AuthSession(
 /// session at [kTestSession] so writes-that-require-auth don't need a
 /// separate setup step.
 List<http.Request> installFakeSharing(
-    Future<http.Response> Function(http.Request) handle) {
+  Future<http.Response> Function(http.Request) handle,
+) {
   final out = <http.Request>[];
   final client = MockClient((req) async {
     out.add(req);
@@ -166,11 +168,18 @@ List<http.Request> installFakeSharing(
   final api = SyncApi(kTestSharingConfig, client: client);
   final authApi = AuthApi(kTestSharingConfig, client: client);
   final authStore = AuthStore.withSession(kTestSession);
-  final auth =
-      AuthService(config: kTestSharingConfig, api: authApi, store: authStore);
+  final auth = AuthService(
+    config: kTestSharingConfig,
+    api: authApi,
+    store: authStore,
+  );
   final lists = SyncedEntryListManager.fromStartup();
   sharing = Sharing.forTesting(
-      config: kTestSharingConfig, api: api, lists: lists, auth: auth);
+    config: kTestSharingConfig,
+    api: api,
+    lists: lists,
+    auth: auth,
+  );
   return out;
 }
 
@@ -217,15 +226,17 @@ Future<http.Response> stubSyncApplyAll(
       'seq': firstAppliedSeq + i,
     });
   }
-  final appliedSeq =
-      ops.isEmpty ? firstAppliedSeq - 1 : firstAppliedSeq + ops.length - 1;
+  final appliedSeq = ops.isEmpty
+      ? firstAppliedSeq - 1
+      : firstAppliedSeq + ops.length - 1;
   return http.Response(
     jsonEncode({
       'appliedSeq': appliedSeq,
       'applied': applied,
       'missedOps': missedOps,
       'snapshot': snapshot,
-      'members': members ??
+      'members':
+          members ??
           {
             'owner': {'userId': 'apple:test-user', 'displayName': 'Test User'},
             'editors': <Map<String, dynamic>>[],
@@ -253,7 +264,8 @@ Map<String, dynamic> snapshotJson({
   int updatedAt = 1700000000,
   Map<String, dynamic>? members,
 }) {
-  final wireEntries = videoEntries ??
+  final wireEntries =
+      videoEntries ??
       (entries ?? const <String>[])
           .map((k) => {'entry': k, 'video': videoFor(k)})
           .toList();
@@ -266,7 +278,8 @@ Map<String, dynamic> snapshotJson({
     'lastSeq': lastSeq,
     'createdAt': createdAt,
     'updatedAt': updatedAt,
-    'members': members ??
+    'members':
+        members ??
         {
           'owner': {'userId': 'apple:test-user', 'displayName': 'Test User'},
           'editors': <Map<String, dynamic>>[],

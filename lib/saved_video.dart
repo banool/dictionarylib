@@ -71,9 +71,9 @@ class SavedVideo {
   Map<String, String> toJson() => {'entry': entryKey, 'video': mediaPath};
 
   factory SavedVideo.fromJson(Map<String, dynamic> json) => SavedVideo(
-        entryKey: json['entry'] as String,
-        mediaPath: json['video'] as String,
-      );
+    entryKey: json['entry'] as String,
+    mediaPath: json['video'] as String,
+  );
 }
 
 /// Expand an [Entry] to one [SavedVideo] per media item across all

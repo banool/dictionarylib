@@ -32,7 +32,7 @@ Future<T> retryWithFeedback<T>(
 }) async {
   final retriable = shouldRetry ?? isTransientSyncError;
   var delay = firstDelay;
-  for (var attempt = 1;; attempt++) {
+  for (var attempt = 1; ; attempt++) {
     try {
       return await action();
     } catch (e) {
@@ -48,13 +48,14 @@ Future<T> retryWithFeedback<T>(
 /// "Retrying — attempt 2 of 3…". Safe across the retry's async gaps — it
 /// no-ops once [context] is unmounted.
 void Function(int attempt, int maxAttempts) snackRetryFeedback(
-    BuildContext context) {
+  BuildContext context,
+) {
   return (attempt, maxAttempts) {
     if (!context.mounted) return;
     showSnack(
-        context,
-        DictLibLocalizations.of(context)!
-            .retryAttemptSnack(attempt, maxAttempts),
-        replaceCurrent: true);
+      context,
+      DictLibLocalizations.of(context)!.retryAttemptSnack(attempt, maxAttempts),
+      replaceCurrent: true,
+    );
   };
 }

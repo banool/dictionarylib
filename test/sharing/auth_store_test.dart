@@ -11,37 +11,37 @@ import 'package:flutter_test/flutter_test.dart';
 /// the concrete class. Returns a `reset` callback the test can call
 /// between cases.
 ({void Function() reset, void Function(String? blob) seed})
-    installInMemorySecureStorage() {
+installInMemorySecureStorage() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final store = <String, String>{};
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (MethodCall call) async {
-      final args = call.arguments as Map<Object?, Object?>?;
-      final key = args?['key'] as String?;
-      switch (call.method) {
-        case 'read':
-          return store[key];
-        case 'write':
-          final value = args!['value'] as String;
-          store[key!] = value;
-          return null;
-        case 'delete':
-          store.remove(key);
-          return null;
-        case 'deleteAll':
-          store.clear();
-          return null;
-        case 'containsKey':
-          return store.containsKey(key);
-        case 'readAll':
-          return Map<String, String>.from(store);
-        default:
-          return null;
-      }
-    },
-  );
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (MethodCall call) async {
+          final args = call.arguments as Map<Object?, Object?>?;
+          final key = args?['key'] as String?;
+          switch (call.method) {
+            case 'read':
+              return store[key];
+            case 'write':
+              final value = args!['value'] as String;
+              store[key!] = value;
+              return null;
+            case 'delete':
+              store.remove(key);
+              return null;
+            case 'deleteAll':
+              store.clear();
+              return null;
+            case 'containsKey':
+              return store.containsKey(key);
+            case 'readAll':
+              return Map<String, String>.from(store);
+            default:
+              return null;
+          }
+        },
+      );
   return (
     reset: () => store.clear(),
     seed: (String? blob) {
@@ -65,9 +65,9 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      null,
-    );
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          null,
+        );
   });
 
   group('AuthStore', () {
@@ -95,11 +95,13 @@ void main() {
 
     test('clear removes the stored session', () async {
       final store = AuthStore();
-      await store.save(const AuthSession(
-        sessionToken: 'jwt-2',
-        provider: AuthProvider.apple,
-        signedInAtMillis: 1,
-      ));
+      await store.save(
+        const AuthSession(
+          sessionToken: 'jwt-2',
+          provider: AuthProvider.apple,
+          signedInAtMillis: 1,
+        ),
+      );
 
       await store.clear();
       expect(store.current, isNull);
@@ -125,12 +127,14 @@ void main() {
       // this build doesn't know about should fail gracefully — the
       // `firstWhere` throws `StateError`, the broad catch in
       // `_loadOnce` turns it into a null session.
-      seed(jsonEncode({
-        'sessionToken': 'jwt-3',
-        'provider': 'martian',
-        'displayName': '',
-        'signedInAtMillis': 1,
-      }));
+      seed(
+        jsonEncode({
+          'sessionToken': 'jwt-3',
+          'provider': 'martian',
+          'displayName': '',
+          'signedInAtMillis': 1,
+        }),
+      );
       final store = AuthStore();
       final loaded = await store.load();
       expect(loaded, isNull);
@@ -144,10 +148,14 @@ void main() {
       });
       expect(session.sessionToken, 'jwt-min');
       expect(session.provider, AuthProvider.microsoft);
-      expect(session.userId, '',
-          reason: 'userId is empty for pre-cutover persisted sessions; UI '
-              'treats empty as "viewer is unknown" and skips the "(you)" '
-              'marker rather than crashing.');
+      expect(
+        session.userId,
+        '',
+        reason:
+            'userId is empty for pre-cutover persisted sessions; UI '
+            'treats empty as "viewer is unknown" and skips the "(you)" '
+            'marker rather than crashing.',
+      );
       expect(session.displayName, '');
       expect(session.signedInAtMillis, 42);
     });
@@ -180,11 +188,13 @@ void main() {
       expect(store.current!.provider, AuthProvider.test);
     });
 
-    test('AuthStore.withSession(null) starts in a loaded, signed-out state',
-        () {
-      final store = AuthStore.withSession(null);
-      expect(store.loaded, isTrue);
-      expect(store.current, isNull);
-    });
+    test(
+      'AuthStore.withSession(null) starts in a loaded, signed-out state',
+      () {
+        final store = AuthStore.withSession(null);
+        expect(store.loaded, isTrue);
+        expect(store.current, isNull);
+      },
+    );
   });
 }

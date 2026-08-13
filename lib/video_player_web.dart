@@ -6,7 +6,9 @@ import 'analytics.dart';
 import 'common.dart' show getShouldUseHorizontalLayout, printAndLog;
 import 'globals.dart' show mediaFallbackUrlsFor;
 import 'hearth.dart' show HearthVideoFrame;
+
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
+
 import 'video_player_screen.dart'
     show InheritedPlaybackSpeed, getDoubleFromPlaybackSpeed;
 import 'web_drag_scroll_behavior.dart';
@@ -127,11 +129,14 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
   /// controller is kept and played; if every candidate fails the last one is
   /// kept so build()'s hasError branch shows the error widget.
   Future<void> _initControllerWithFallback(
-      int idx, List<String> candidates) async {
+    int idx,
+    List<String> candidates,
+  ) async {
     for (int i = 0; i < candidates.length; i++) {
       final isLast = i == candidates.length - 1;
-      final controller =
-          VideoPlayerController.networkUrl(Uri.parse(candidates[i]));
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(candidates[i]),
+      );
       // Register synchronously so build() shows a spinner and a concurrent
       // _ensureController(idx) skips (it's already keyed).
       _controllers[idx] = controller;
@@ -154,16 +159,17 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
         return;
       } catch (e) {
         printAndLog(
-            'web video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e');
+          'web video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e',
+        );
         if (isLast) {
           // Every host failed — the user sees the error widget. Key
           // "poor connection / broken CDN" signal (web). Web never plays from
           // a local file; the constant source_kind just keeps the event's
           // shape uniform with the native player's.
-          Analytics.track('video_load_failed', props: {
-            'error_type': Analytics.errorType(e),
-            'source_kind': 'url'
-          });
+          Analytics.track(
+            'video_load_failed',
+            props: {'error_type': Analytics.errorType(e), 'source_kind': 'url'},
+          );
           // Keep the failed controller so build() shows the error widget.
           if (mounted) setState(() {});
         } else {
@@ -243,21 +249,27 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
                 alignment: Alignment.center,
                 children: [
                   Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: _arrow(
-                              Icons.chevron_left,
-                              () => _carouselController.previousPage(),
-                              l.videoCarouselPrevious))),
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _arrow(
+                        Icons.chevron_left,
+                        () => _carouselController.previousPage(),
+                        l.videoCarouselPrevious,
+                      ),
+                    ),
+                  ),
                   Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: _arrow(
-                              Icons.chevron_right,
-                              () => _carouselController.nextPage(),
-                              l.videoCarouselNext))),
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _arrow(
+                        Icons.chevron_right,
+                        () => _carouselController.nextPage(),
+                        l.videoCarouselNext,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -270,7 +282,9 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
     final size = MediaQuery.of(context).size;
     final boxConstraints = shouldUseHorizontal
         ? BoxConstraints(
-            maxWidth: size.width * 0.55, maxHeight: size.height * 0.67)
+            maxWidth: size.width * 0.55,
+            maxHeight: size.height * 0.67,
+          )
         : BoxConstraints(maxHeight: size.height * 0.46);
 
     return Container(
@@ -360,15 +374,15 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
   }
 
   Widget _errorWidget(BuildContext context, String link) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: Text(
-            "${DictLibLocalizations.of(context)!.webVideoLoadError}\n$link",
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.all(20),
+    child: Center(
+      child: Text(
+        "${DictLibLocalizations.of(context)!.webVideoLoadError}\n$link",
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 12),
+      ),
+    ),
+  );
 
   Widget _arrow(IconData icon, VoidCallback onTap, String tooltip) {
     return Material(
@@ -427,8 +441,9 @@ class _WebExpandedVideoState extends State<_WebExpandedVideo> {
   /// (most-preferred first) when a host fails to initialise.
   Future<void> _initWithFallback(List<String> candidates) async {
     for (int i = 0; i < candidates.length; i++) {
-      final controller =
-          VideoPlayerController.networkUrl(Uri.parse(candidates[i]));
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(candidates[i]),
+      );
       _controller = controller;
       try {
         await controller.initialize();
@@ -441,7 +456,8 @@ class _WebExpandedVideoState extends State<_WebExpandedVideo> {
         return;
       } catch (e) {
         printAndLog(
-            'web expanded video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e');
+          'web expanded video init failed for ${candidates[i]} (candidate ${i + 1}/${candidates.length}): $e',
+        );
         // Discard and try the next host; keep the last so build() shows its
         // spinner/error state.
         if (i < candidates.length - 1) controller.dispose();

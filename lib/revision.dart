@@ -1,7 +1,4 @@
-enum RevisionStrategy {
-  SpacedRepetition,
-  Random,
-}
+enum RevisionStrategy { SpacedRepetition, Random }
 
 extension PrettyPrint on RevisionStrategy {
   String get pretty {

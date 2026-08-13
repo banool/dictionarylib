@@ -50,8 +50,9 @@ class CategoryEntryListManager implements EntryListManager {
     bool canBeEdited = false;
     // Case-insensitive key order so the community lists read alphabetically
     // rather than capitals-first (ASCII) order.
-    SplayTreeMap<String, EntryList> entryLists =
-        SplayTreeMap(compareDisplayNames);
+    SplayTreeMap<String, EntryList> entryLists = SplayTreeMap(
+      compareDisplayNames,
+    );
     for (String key in categoryToEntries.keys) {
       final saved = LinkedHashSet<SavedVideo>();
       for (final e in categoryToEntries[key]!) {
@@ -61,7 +62,8 @@ class CategoryEntryListManager implements EntryListManager {
     }
 
     printAndLog(
-        "Loaded ${entryLists.length} lists for the community entry list manager");
+      "Loaded ${entryLists.length} lists for the community entry list manager",
+    );
     return CategoryEntryListManager(entryLists);
   }
 

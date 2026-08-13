@@ -79,8 +79,11 @@ class _SaveVideoSheet extends StatelessWidget {
 class _SaveVideoSheetRow extends StatefulWidget {
   final EntryList list;
   final SavedVideo video;
-  const _SaveVideoSheetRow(
-      {super.key, required this.list, required this.video});
+  const _SaveVideoSheetRow({
+    super.key,
+    required this.list,
+    required this.video,
+  });
 
   @override
   State<_SaveVideoSheetRow> createState() => _SaveVideoSheetRowState();
@@ -100,7 +103,8 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
       if (!canEdit) return;
       // Capture before the await so we don't touch BuildContext across the gap.
       final messenger = ScaffoldMessenger.of(context);
-      final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
+      final failMessage =
+          DictLibLocalizations.of(context)?.saveVideoFailed ??
           "Couldn't update your lists. Please try again.";
       final isShared = widget.list is SyncedEntryList;
       try {
@@ -108,18 +112,23 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
           await widget.list.removeVideo(widget.video);
         } else {
           await widget.list.addVideo(widget.video);
-          Analytics.track('save',
-              props: {'granularity': 'video', 'is_shared': isShared});
+          Analytics.track(
+            'save',
+            props: {'granularity': 'video', 'is_shared': isShared},
+          );
         }
       } catch (e) {
         printAndLog("Failed to toggle video in list ${widget.list.key}: $e");
         // Only a failed *add* is a failed save (removes aren't saves).
         if (!saved) {
-          Analytics.track('save_failed', props: {
-            'granularity': 'video',
-            'is_shared': isShared,
-            'error_type': Analytics.errorType(e),
-          });
+          Analytics.track(
+            'save_failed',
+            props: {
+              'granularity': 'video',
+              'is_shared': isShared,
+              'error_type': Analytics.errorType(e),
+            },
+          );
         }
         if (mounted) {
           showSnackVia(messenger, failMessage);
@@ -149,14 +158,21 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(_iconDataFor(widget.list),
-                    size: 21, color: isFav ? cs.secondary : cs.primary),
+                child: Icon(
+                  _iconDataFor(widget.list),
+                  size: 21,
+                  color: isFav ? cs.secondary : cs.primary,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(widget.list.getName(context),
-                    style: const TextStyle(
-                        fontSize: 15.5, fontWeight: FontWeight.w700)),
+                child: Text(
+                  widget.list.getName(context),
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
               Checkbox(

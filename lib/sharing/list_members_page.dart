@@ -77,10 +77,12 @@ class _ListMembersPageState extends State<ListMembersPage> {
     } on SyncException catch (e) {
       if (mounted) {
         showSnack(
-            context,
-            DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
-                localisedSyncErrorSimple(context, e, e.message)),
-            replaceCurrent: true);
+          context,
+          DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
+            localisedSyncErrorSimple(context, e, e.message),
+          ),
+          replaceCurrent: true,
+        );
       }
     }
     if (mounted) setState(() {});
@@ -103,8 +105,9 @@ class _ListMembersPageState extends State<ListMembersPage> {
     });
     try {
       final invite = await retryWithFeedback(
-          () => sharing.engine.createInvite(widget.list.listId),
-          onRetry: snackRetryFeedback(context));
+        () => sharing.engine.createInvite(widget.list.listId),
+        onRetry: snackRetryFeedback(context),
+      );
       final url = sharing.config.inviteUrlFor(widget.list.listId, invite.token);
       // The invite is created — stop the button spinner before opening the
       // result dialog, otherwise it keeps spinning behind the dialog for as
@@ -114,15 +117,23 @@ class _ListMembersPageState extends State<ListMembersPage> {
     } on SyncException catch (e) {
       if (mounted) {
         final l = DictLibLocalizations.of(context)!;
-        setState(() => _generalError = localisedSyncErrorSimple(
-            context, e, l.inviteEditorFailed(e.message)));
+        setState(
+          () => _generalError = localisedSyncErrorSimple(
+            context,
+            e,
+            l.inviteEditorFailed(e.message),
+          ),
+        );
       }
     } on StateError {
       // Session vanished mid-tap (engine throws when there's no current
       // session). Surface as unauthorized so the user knows to sign in.
       if (mounted) {
-        setState(() => _generalError =
-            DictLibLocalizations.of(context)!.shareErrorUnauthorized);
+        setState(
+          () =>
+              _generalError = DictLibLocalizations.of(context)!
+                  .shareErrorUnauthorized,
+        );
       }
     } finally {
       if (mounted) setState(() => _invitingInflight = false);
@@ -151,16 +162,21 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l.membersPageRemoveEditorConfirmTitle(
-            editor.displayName.isEmpty ? editor.userId : editor.displayName)),
+        title: Text(
+          l.membersPageRemoveEditorConfirmTitle(
+            editor.displayName.isEmpty ? editor.userId : editor.displayName,
+          ),
+        ),
         content: Text(l.membersPageRemoveEditorConfirmBody),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(l.alertCancel)),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.alertCancel),
+          ),
           FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(l.membersPageRemoveEditor)),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l.membersPageRemoveEditor),
+          ),
         ],
       ),
     );
@@ -171,18 +187,27 @@ class _ListMembersPageState extends State<ListMembersPage> {
     });
     try {
       await retryWithFeedback(
-          () => sharing.engine.removeEditor(widget.list.listId, editor.userId),
-          onRetry: snackRetryFeedback(context));
+        () => sharing.engine.removeEditor(widget.list.listId, editor.userId),
+        onRetry: snackRetryFeedback(context),
+      );
     } on SyncException catch (e) {
       if (mounted) {
         final ll = DictLibLocalizations.of(context)!;
-        setState(() => _generalError = localisedSyncErrorSimple(
-            context, e, ll.inviteEditorFailed(e.message)));
+        setState(
+          () => _generalError = localisedSyncErrorSimple(
+            context,
+            e,
+            ll.inviteEditorFailed(e.message),
+          ),
+        );
       }
     } on StateError {
       if (mounted) {
-        setState(() => _generalError =
-            DictLibLocalizations.of(context)!.shareErrorUnauthorized);
+        setState(
+          () =>
+              _generalError = DictLibLocalizations.of(context)!
+                  .shareErrorUnauthorized,
+        );
       }
     } finally {
       if (mounted) setState(() => _removingUserId = null);
@@ -198,11 +223,13 @@ class _ListMembersPageState extends State<ListMembersPage> {
         content: Text(l.membersPageLeaveConfirmBody),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(l.alertCancel)),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.alertCancel),
+          ),
           FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(l.membersPageLeaveButton)),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l.membersPageLeaveButton),
+          ),
         ],
       ),
     );
@@ -214,19 +241,28 @@ class _ListMembersPageState extends State<ListMembersPage> {
     var left = false;
     try {
       await retryWithFeedback(
-          () => sharing.engine.leaveAsEditor(widget.list.listId),
-          onRetry: snackRetryFeedback(context));
+        () => sharing.engine.leaveAsEditor(widget.list.listId),
+        onRetry: snackRetryFeedback(context),
+      );
       left = true;
     } on SyncException catch (e) {
       if (mounted) {
         final ll = DictLibLocalizations.of(context)!;
-        setState(() => _generalError = localisedSyncErrorSimple(
-            context, e, ll.leaveListFailed(e.message)));
+        setState(
+          () => _generalError = localisedSyncErrorSimple(
+            context,
+            e,
+            ll.leaveListFailed(e.message),
+          ),
+        );
       }
     } on StateError {
       if (mounted) {
-        setState(() => _generalError =
-            DictLibLocalizations.of(context)!.shareErrorUnauthorized);
+        setState(
+          () =>
+              _generalError = DictLibLocalizations.of(context)!
+                  .shareErrorUnauthorized,
+        );
       }
     } finally {
       // Always release the leave-button spinner while we're still mounted, so
@@ -252,9 +288,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final l = DictLibLocalizations.of(context)!;
     final members = widget.list.meta.cachedMembers;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.membersPageTitle),
-      ),
+      appBar: AppBar(title: Text(l.membersPageTitle)),
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -282,9 +316,11 @@ class _ListMembersPageState extends State<ListMembersPage> {
                       icon: _invitingInflight
                           // onPrimary so the spinner shows on the filled
                           // button background in both themes.
-                          ? buttonSpinner(context,
+                          ? buttonSpinner(
+                              context,
                               size: 14,
-                              color: Theme.of(context).colorScheme.onPrimary)
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            )
                           : const Icon(Icons.person_add),
                       label: Text(l.shareLinkInviteEditorButton),
                     )
@@ -292,25 +328,32 @@ class _ListMembersPageState extends State<ListMembersPage> {
             ),
             if (members == null || members.editors.isEmpty)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(l.membersPageNoEditors,
-                    style: TextStyle(color: Theme.of(context).hintColor)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Text(
+                  l.membersPageNoEditors,
+                  style: TextStyle(color: Theme.of(context).hintColor),
+                ),
               )
             else
               for (final e in members.editors) _buildEditorTile(l, e),
             if (_generalError != null)
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(_generalError!,
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
+                child: Text(
+                  _generalError!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ),
             if (_viewerIsEditor) ...[
               const Divider(),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.tonalIcon(
@@ -318,11 +361,13 @@ class _ListMembersPageState extends State<ListMembersPage> {
                     icon: _leavingInflight
                         // onSecondaryContainer matches the tonal button's
                         // foreground so the spinner shows in both themes.
-                        ? buttonSpinner(context,
+                        ? buttonSpinner(
+                            context,
                             size: 18,
                             color: Theme.of(context)
                                 .colorScheme
-                                .onSecondaryContainer)
+                                .onSecondaryContainer,
+                          )
                         : const Icon(Icons.logout),
                     label: Text(l.membersPageLeaveButton),
                   ),
@@ -337,8 +382,9 @@ class _ListMembersPageState extends State<ListMembersPage> {
 
   Widget _buildMemberTile(MemberRef member) {
     final l = DictLibLocalizations.of(context)!;
-    final base =
-        member.displayName.isEmpty ? member.userId : member.displayName;
+    final base = member.displayName.isEmpty
+        ? member.userId
+        : member.displayName;
     final name = member.userId == _viewerUserId && _viewerUserId.isNotEmpty
         ? l.membersPageNameYou(base)
         : base;
@@ -356,8 +402,9 @@ class _ListMembersPageState extends State<ListMembersPage> {
   Widget _buildSelfOwnerTile() {
     final l = DictLibLocalizations.of(context)!;
     final display = sharing.auth.store.current?.displayName ?? '';
-    final name =
-        display.isEmpty ? l.membersPageYou : l.membersPageNameYou(display);
+    final name = display.isEmpty
+        ? l.membersPageYou
+        : l.membersPageNameYou(display);
     return HearthListRow(
       leading: _initialAvatar(name),
       title: name,
@@ -368,42 +415,49 @@ class _ListMembersPageState extends State<ListMembersPage> {
   /// The leading initial that sits inside [HearthListRow]'s rounded tile.
   Widget _initialAvatar(String name) {
     final cs = Theme.of(context).colorScheme;
-    return Text(_initial(name),
-        style: TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w700, color: cs.primary));
+    return Text(
+      _initial(name),
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: cs.primary,
+      ),
+    );
   }
 
   Widget _buildEditorTile(DictLibLocalizations l, EditorRef editor) {
-    final base =
-        editor.displayName.isEmpty ? editor.userId : editor.displayName;
+    final base = editor.displayName.isEmpty
+        ? editor.userId
+        : editor.displayName;
     final isViewer = editor.userId == _viewerUserId && _viewerUserId.isNotEmpty;
     final name = isViewer ? l.membersPageNameYou(base) : base;
     final addedByName = _resolveAddedByName(editor);
     return HearthListRow(
       leading: _initialAvatar(name),
       title: name,
-      subtitle:
-          addedByName.isEmpty ? null : l.membersPageEditorAddedBy(addedByName),
+      subtitle: addedByName.isEmpty
+          ? null
+          : l.membersPageEditorAddedBy(addedByName),
       showChevron: false,
       trailing: _viewerIsOwner && !isViewer
           ? (_removingUserId == editor.userId
-              // Removal in flight for this editor — swap the button for a
-              // spinner sized to match the IconButton's tap target so the
-              // row doesn't jump.
-              ? SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Center(child: buttonSpinner(context, size: 18)),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.person_remove_outlined),
-                  tooltip: l.membersPageRemoveEditor,
-                  // Disable every remove button while any removal is in
-                  // flight so two can't race.
-                  onPressed: _removingUserId != null
-                      ? null
-                      : () => _removeEditor(editor),
-                ))
+                // Removal in flight for this editor — swap the button for a
+                // spinner sized to match the IconButton's tap target so the
+                // row doesn't jump.
+                ? SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Center(child: buttonSpinner(context, size: 18)),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.person_remove_outlined),
+                    tooltip: l.membersPageRemoveEditor,
+                    // Disable every remove button while any removal is in
+                    // flight so two can't race.
+                    onPressed: _removingUserId != null
+                        ? null
+                        : () => _removeEditor(editor),
+                  ))
           : null,
     );
   }

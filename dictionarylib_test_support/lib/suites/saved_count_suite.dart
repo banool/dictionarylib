@@ -19,87 +19,102 @@ void runSavedCountSuite(DictAppTestConfig cfg) {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'the word-page count tracks every writable list the video is saved in',
-      (WidgetTester tester) async {
-    await cfg.setup();
+    'the word-page count tracks every writable list the video is saved in',
+    (WidgetTester tester) async {
+      await cfg.setup();
 
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 3.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    advisoryShownOnce = true;
+      advisoryShownOnce = true;
 
-    // A deterministic entry: one sub-entry (single bookmark button, no
-    // PageView siblings) with at least one media item. The button saves the
-    // first shown video.
-    final entry = entriesGlobal.firstWhere((e) {
-      final subs = e.getSubEntries();
-      return subs.length == 1 && subs.first.getMedia().isNotEmpty;
-    });
-    final video = SavedVideo(
+      // A deterministic entry: one sub-entry (single bookmark button, no
+      // PageView siblings) with at least one media item. The button saves the
+      // first shown video.
+      final entry = entriesGlobal.firstWhere((e) {
+        final subs = e.getSubEntries();
+        return subs.length == 1 && subs.first.getMedia().isNotEmpty;
+      });
+      final video = SavedVideo(
         entryKey: entry.getKey(),
-        mediaPath: entry.getSubEntries().first.getMedia().first);
+        mediaPath: entry.getSubEntries().first.getMedia().first,
+      );
 
-    final favList =
-        userEntryListManager.getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
-    const secondKey = 'CountTest_words';
+      final favList = userEntryListManager
+          .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+      const secondKey = 'CountTest_words';
 
-    Future<void> cleanup() async {
-      if (favList.containsVideo(video)) await favList.removeVideo(video);
-      if (userEntryListManager.getEntryLists().containsKey(secondKey)) {
-        await userEntryListManager.deleteEntryList(secondKey);
+      Future<void> cleanup() async {
+        if (favList.containsVideo(video)) await favList.removeVideo(video);
+        if (userEntryListManager.getEntryLists().containsKey(secondKey)) {
+          await userEntryListManager.deleteEntryList(secondKey);
+        }
       }
-    }
 
-    await cleanup();
-    await userEntryListManager.createEntryList(secondKey);
-    addTearDown(cleanup);
+      await cleanup();
+      await userEntryListManager.createEntryList(secondKey);
+      addTearDown(cleanup);
 
-    await tester.pumpWidget(cfg.buildApp(LOCALE_ENGLISH));
-    await settle(tester);
+      await tester.pumpWidget(cfg.buildApp(LOCALE_ENGLISH));
+      await settle(tester);
 
-    // Open the entry's word page in picker-sheet mode (no saveToList).
-    cfg.navigateToEntryPage(rootNavigatorKey.currentContext!, entry, true);
-    await settle(tester);
+      // Open the entry's word page in picker-sheet mode (no saveToList).
+      cfg.navigateToEntryPage(rootNavigatorKey.currentContext!, entry, true);
+      await settle(tester);
 
-    final saveButton = find.byKey(const ValueKey('wordPage.saveButton'));
-    expect(saveButton, findsOneWidget);
-    expect(find.text('Save'), findsOneWidget,
-        reason: 'the video starts saved to no lists');
+      final saveButton = find.byKey(const ValueKey('wordPage.saveButton'));
+      expect(saveButton, findsOneWidget);
+      expect(
+        find.text('Save'),
+        findsOneWidget,
+        reason: 'the video starts saved to no lists',
+      );
 
-    final favRow =
-        find.byKey(ValueKey('saveVideoSheet.row.$KEY_FAVOURITES_ENTRIES'));
-    final secondRow = find.byKey(ValueKey('saveVideoSheet.row.$secondKey'));
+      final favRow = find.byKey(
+        ValueKey('saveVideoSheet.row.$KEY_FAVOURITES_ENTRIES'),
+      );
+      final secondRow = find.byKey(ValueKey('saveVideoSheet.row.$secondKey'));
 
-    // --- Save into both lists, close the sheet, expect "Saved to 2 lists". ---
-    await tester.tap(saveButton);
-    await settle(tester);
-    expect(secondRow, findsOneWidget,
-        reason: 'the sheet should offer the second user list as a target');
-    await tester.tap(favRow);
-    await settle(tester);
-    await tester.tap(secondRow);
-    await settle(tester);
-    rootNavigatorKey.currentState!.pop(); // close the sheet
-    await settle(tester);
+      // --- Save into both lists, close the sheet, expect "Saved to 2 lists". ---
+      await tester.tap(saveButton);
+      await settle(tester);
+      expect(
+        secondRow,
+        findsOneWidget,
+        reason: 'the sheet should offer the second user list as a target',
+      );
+      await tester.tap(favRow);
+      await settle(tester);
+      await tester.tap(secondRow);
+      await settle(tester);
+      rootNavigatorKey.currentState!.pop(); // close the sheet
+      await settle(tester);
 
-    expect(favList.containsVideo(video), isTrue);
-    expect(find.text('Saved to 2 lists'), findsOneWidget,
-        reason: 'the count should include both writable lists');
+      expect(favList.containsVideo(video), isTrue);
+      expect(
+        find.text('Saved to 2 lists'),
+        findsOneWidget,
+        reason: 'the count should include both writable lists',
+      );
 
-    // --- Clear both, close, expect the button back to "Save". ---
-    await tester.tap(saveButton);
-    await settle(tester);
-    await tester.tap(favRow);
-    await settle(tester);
-    await tester.tap(secondRow);
-    await settle(tester);
-    rootNavigatorKey.currentState!.pop();
-    await settle(tester);
+      // --- Clear both, close, expect the button back to "Save". ---
+      await tester.tap(saveButton);
+      await settle(tester);
+      await tester.tap(favRow);
+      await settle(tester);
+      await tester.tap(secondRow);
+      await settle(tester);
+      rootNavigatorKey.currentState!.pop();
+      await settle(tester);
 
-    expect(find.text('Saved to 2 lists'), findsNothing);
-    expect(find.text('Save'), findsOneWidget,
-        reason: 'unsaving from every list returns the button to Save');
-  });
+      expect(find.text('Saved to 2 lists'), findsNothing);
+      expect(
+        find.text('Save'),
+        findsOneWidget,
+        reason: 'unsaving from every list returns the button to Save',
+      );
+    },
+  );
 }

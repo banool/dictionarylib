@@ -80,16 +80,16 @@ class Sharing with ChangeNotifier {
       shareLinkHost: '',
       urlScheme: '',
       appName: '',
-      auth: SharingAuthConfig(
-        appleBundleId: '',
-        googleServerClientId: '',
-      ),
+      auth: SharingAuthConfig(appleBundleId: '', googleServerClientId: ''),
     );
     final api = SyncApi(dummyConfig);
     final authApi = AuthApi(dummyConfig);
     final authStore = AuthStore.withSession(null);
-    final auth =
-        AuthService(config: dummyConfig, api: authApi, store: authStore);
+    final auth = AuthService(
+      config: dummyConfig,
+      api: authApi,
+      store: authStore,
+    );
     final lists = SyncedEntryListManager({});
     final engine = SyncEngine(api: api, manager: lists, auth: auth);
     final deepLinks = DeepLinkHandler(config: dummyConfig);
@@ -177,10 +177,7 @@ class Sharing with ChangeNotifier {
     final lists = SyncedEntryListManager.fromStartup();
     final engine = SyncEngine(api: api, manager: lists, auth: auth);
     final deepLinks = DeepLinkHandler(config: config);
-    await Future.wait([
-      authStore.load(),
-      deepLinks.start(),
-    ]);
+    await Future.wait([authStore.load(), deepLinks.start()]);
     final instance = Sharing._(
       config: config,
       api: api,

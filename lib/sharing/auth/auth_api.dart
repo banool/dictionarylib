@@ -25,10 +25,12 @@ class AuthApi {
   final http.Client _client;
   final Duration _timeout;
 
-  AuthApi(this._config,
-      {http.Client? client, Duration timeout = const Duration(seconds: 15)})
-      : _client = client ?? http.Client(),
-        _timeout = timeout;
+  AuthApi(
+    this._config, {
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 15),
+  }) : _client = client ?? http.Client(),
+       _timeout = timeout;
 
   void close() => _client.close();
 
@@ -36,8 +38,9 @@ class AuthApi {
     required String idToken,
     String? displayName,
   }) {
-    return _signIn(AuthProvider.apple, {'idToken': idToken},
-        displayName: displayName);
+    return _signIn(AuthProvider.apple, {
+      'idToken': idToken,
+    }, displayName: displayName);
   }
 
   Future<AuthSession> signInWithGoogle({required String idToken}) {
@@ -61,15 +64,18 @@ class AuthApi {
     required String userId,
     String? displayName,
   }) {
-    return _signIn(
-        AuthProvider.test, {'testAuthToken': testAuthToken, 'userId': userId},
-        displayName: displayName);
+    return _signIn(AuthProvider.test, {
+      'testAuthToken': testAuthToken,
+      'userId': userId,
+    }, displayName: displayName);
   }
 
   /// POST `/v1/auth/sign-in` with `{provider, ...credential, displayName?}`.
   Future<AuthSession> _signIn(
-      AuthProvider provider, Map<String, String> credential,
-      {String? displayName}) async {
+    AuthProvider provider,
+    Map<String, String> credential, {
+    String? displayName,
+  }) async {
     final url = Uri.parse('${_config.apiBaseUrl}/v1/auth/sign-in');
     final body = <String, dynamic>{
       'provider': provider.name,
@@ -80,12 +86,14 @@ class AuthApi {
     http.Response resp;
     try {
       resp = await _client
-          .post(url,
-              headers: {
-                'x-app-id': _config.appId,
-                'content-type': 'application/json',
-              },
-              body: jsonEncode(body))
+          .post(
+            url,
+            headers: {
+              'x-app-id': _config.appId,
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
           .timeout(_timeout);
     } on TimeoutException {
       throw SyncException(SyncErrorKind.network, 'sign-in request timed out');
@@ -124,16 +132,25 @@ class AuthApi {
     final url = Uri.parse('${_config.apiBaseUrl}/v1/account');
     http.Response resp;
     try {
-      resp = await _client.delete(url, headers: {
-        'x-app-id': _config.appId,
-        'authorization': 'Bearer $sessionToken',
-      }).timeout(_timeout);
+      resp = await _client
+          .delete(
+            url,
+            headers: {
+              'x-app-id': _config.appId,
+              'authorization': 'Bearer $sessionToken',
+            },
+          )
+          .timeout(_timeout);
     } on TimeoutException {
       throw SyncException(
-          SyncErrorKind.network, 'delete-account request timed out');
+        SyncErrorKind.network,
+        'delete-account request timed out',
+      );
     } catch (e) {
       throw SyncException(
-          SyncErrorKind.network, 'delete-account network error: $e');
+        SyncErrorKind.network,
+        'delete-account network error: $e',
+      );
     }
     if (resp.statusCode == 200) return;
     throw SyncException.fromResponse(resp);

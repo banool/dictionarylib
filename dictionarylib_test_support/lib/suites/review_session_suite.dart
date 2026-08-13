@@ -25,8 +25,7 @@ const int kSessionCards = 10;
 void runReviewSessionSuite(DictAppTestConfig cfg) {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-      'a 10-card review session reveals, rates, steps back and forward, and '
+  testWidgets('a 10-card review session reveals, rates, steps back and forward, and '
       'persists every review on exit', (WidgetTester tester) async {
     await cfg.setup();
 
@@ -51,8 +50,11 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
       }
       if (saved.length >= 30) break;
     }
-    expect(saved.length, greaterThanOrEqualTo(kSessionCards),
-        reason: 'need enough seed videos to fill the session');
+    expect(
+      saved.length,
+      greaterThanOrEqualTo(kSessionCards),
+      reason: 'need enough seed videos to fill the session',
+    );
 
     final listKey = EntryList.getKeyFromName('ReviewTest');
     if (!userEntryListManager.getEntryLists().containsKey(listKey)) {
@@ -71,7 +73,9 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     // post-session count is exact.
     await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [listKey]);
     await sharedPreferences.setInt(
-        KEY_REVISION_STRATEGY, RevisionStrategy.SpacedRepetition.index);
+      KEY_REVISION_STRATEGY,
+      RevisionStrategy.SpacedRepetition.index,
+    );
     await sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, kSessionCards);
     await sharedPreferences.setBool(KEY_WORD_TO_SIGN, true);
     await sharedPreferences.setBool(KEY_SIGN_TO_WORD, true);
@@ -81,8 +85,9 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
       await sharedPreferences.remove(KEY_STORED_REVIEWS);
       await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
       await cfg.clearFlashcardSettings?.call();
-      await sharedPreferences
-          .setStringList(KEY_LISTS_TO_REVIEW, [KEY_FAVOURITES_ENTRIES]);
+      await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [
+        KEY_FAVOURITES_ENTRIES,
+      ]);
     });
 
     await tester.pumpWidget(cfg.buildApp(LOCALE_ENGLISH));
@@ -92,8 +97,11 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     await tester.tap(find.byIcon(Icons.style));
     await settle(tester);
     final startButton = find.byKey(const ValueKey("startButton"));
-    expect(startButton, findsOneWidget,
-        reason: 'the revision landing page should offer a Start button');
+    expect(
+      startButton,
+      findsOneWidget,
+      reason: 'the revision landing page should offer a Start button',
+    );
     await tester.tap(startButton);
     await settle(tester);
 
@@ -110,8 +118,9 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
       await settle(tester);
       if (forgotIt) {
         await tester.tap(forgot);
-        await tester
-            .pump(const Duration(seconds: 1)); // feedback timer (~750ms)
+        await tester.pump(
+          const Duration(seconds: 1),
+        ); // feedback timer (~750ms)
         await settle(tester);
       } else {
         await tester.tap(gotIt);
@@ -188,12 +197,20 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     // --- Persistence: exactly one review per card, with the single Forgot
     // recorded as Hard and the rest as Good. ---
     final reviews = readReviews();
-    expect(reviews.length, kSessionCards,
-        reason: 'one persisted review per reviewed card');
-    expect(reviews.where((r) => r.rating == Rating.Hard).length, 1,
-        reason: 'the one Forgot rating should persist as Hard');
     expect(
-        reviews.where((r) => r.rating == Rating.Good).length, kSessionCards - 1,
-        reason: 'the remaining ratings should persist as Good');
+      reviews.length,
+      kSessionCards,
+      reason: 'one persisted review per reviewed card',
+    );
+    expect(
+      reviews.where((r) => r.rating == Rating.Hard).length,
+      1,
+      reason: 'the one Forgot rating should persist as Hard',
+    );
+    expect(
+      reviews.where((r) => r.rating == Rating.Good).length,
+      kSessionCards - 1,
+      reason: 'the remaining ratings should persist as Good',
+    );
   });
 }

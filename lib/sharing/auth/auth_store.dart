@@ -21,7 +21,7 @@ class AuthStore extends ChangeNotifier {
   Future<void>? _loadFuture;
 
   AuthStore({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   /// Construct an [AuthStore] pre-populated with [session] and marked
   /// [loaded] — synchronous. Used in two contexts:
@@ -37,9 +37,9 @@ class AuthStore extends ChangeNotifier {
   /// [storage] like normal. Pass `session: null` to construct an
   /// empty-but-loaded store.
   AuthStore.withSession(AuthSession? session, {FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage(),
-        _current = session,
-        _loaded = true;
+    : _storage = storage ?? const FlutterSecureStorage(),
+      _current = session,
+      _loaded = true;
 
   /// The current session, if any. Returns null before [load] has run, or
   /// after sign-out, or if the stored token has been cleared by 401
@@ -67,8 +67,9 @@ class AuthStore extends ChangeNotifier {
       if (raw == null) {
         _current = null;
       } else {
-        _current =
-            AuthSession.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        _current = AuthSession.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
       }
     } catch (_) {
       // Corrupted blob — treat as no session and overwrite next save.
@@ -143,25 +144,24 @@ class AuthSession {
   });
 
   Map<String, dynamic> toJson() => {
-        'sessionToken': sessionToken,
-        'provider': provider.name,
-        'userId': userId,
-        'displayName': displayName,
-        'signedInAtMillis': signedInAtMillis,
-      };
+    'sessionToken': sessionToken,
+    'provider': provider.name,
+    'userId': userId,
+    'displayName': displayName,
+    'signedInAtMillis': signedInAtMillis,
+  };
 
   factory AuthSession.fromJson(Map<String, dynamic> json) => AuthSession(
-        sessionToken: json['sessionToken'] as String,
-        // `firstWhere` throws `StateError` on unknown providers — the
-        // catch in `AuthStore._loadOnce` swallows it and reports no
-        // session, which is the right recovery for "saved a provider
-        // we don't recognise".
-        provider:
-            AuthProvider.values.firstWhere((p) => p.name == json['provider']),
-        userId: json['userId'] as String? ?? '',
-        displayName: json['displayName'] as String? ?? '',
-        signedInAtMillis: json['signedInAtMillis'] as int,
-      );
+    sessionToken: json['sessionToken'] as String,
+    // `firstWhere` throws `StateError` on unknown providers — the
+    // catch in `AuthStore._loadOnce` swallows it and reports no
+    // session, which is the right recovery for "saved a provider
+    // we don't recognise".
+    provider: AuthProvider.values.firstWhere((p) => p.name == json['provider']),
+    userId: json['userId'] as String? ?? '',
+    displayName: json['displayName'] as String? ?? '',
+    signedInAtMillis: json['signedInAtMillis'] as int,
+  );
 }
 
 enum AuthProvider {

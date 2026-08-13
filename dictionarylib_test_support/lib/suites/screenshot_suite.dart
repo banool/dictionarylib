@@ -41,7 +41,9 @@ import '../helpers.dart';
 // actually still get taken.
 
 Future<void> takeScreenshotForAndroid(
-    IntegrationTestWidgetsFlutterBinding binding, String name) async {
+  IntegrationTestWidgetsFlutterBinding binding,
+  String name,
+) async {
   await integrationTestChannel.invokeMethod<void>(
     'convertFlutterSurfaceToImage',
     null,
@@ -56,26 +58,20 @@ Future<void> takeScreenshotForAndroid(
     }
     return null;
   });
-  final List<int>? rawBytes =
-      await integrationTestChannel.invokeMethod<List<int>>(
-    'captureScreenshot',
-    <String, dynamic>{'name': name},
-  );
+  final List<int>? rawBytes = await integrationTestChannel
+      .invokeMethod<List<int>>('captureScreenshot', <String, dynamic>{
+        'name': name,
+      });
   if (rawBytes == null) {
     throw StateError(
-        'Expected a list of bytes, but instead captureScreenshot returned null');
+      'Expected a list of bytes, but instead captureScreenshot returned null',
+    );
   }
-  final Map<String, dynamic> data = {
-    'screenshotName': name,
-    'bytes': rawBytes,
-  };
+  final Map<String, dynamic> data = {'screenshotName': name, 'bytes': rawBytes};
   assert(data.containsKey('bytes'));
   (binding.reportData!['screenshots'] as List<dynamic>).add(data);
 
-  await integrationTestChannel.invokeMethod<void>(
-    'revertFlutterImage',
-    null,
-  );
+  await integrationTestChannel.invokeMethod<void>('revertFlutterImage', null);
 }
 
 /// Give an on-screen video a few seconds of real frames to fetch and paint a
@@ -87,12 +83,14 @@ Future<void> letVideoLoad(WidgetTester tester) async {
 }
 
 Future<void> takeScreenshot(
-    WidgetTester tester,
-    IntegrationTestWidgetsFlutterBinding binding,
-    ScreenshotNameInfo screenshotNameInfo,
-    String localeDirName,
-    String name) async {
-  name = "${screenshotNameInfo.platformName}/$localeDirName/"
+  WidgetTester tester,
+  IntegrationTestWidgetsFlutterBinding binding,
+  ScreenshotNameInfo screenshotNameInfo,
+  String localeDirName,
+  String name,
+) async {
+  name =
+      "${screenshotNameInfo.platformName}/$localeDirName/"
       "${screenshotNameInfo.deviceName}-${screenshotNameInfo.physicalScreenSize}-"
       "${screenshotNameInfo.getAndIncrementCounter().toString().padLeft(2, '0')}-"
       "$name";
@@ -111,10 +109,11 @@ class ScreenshotNameInfo {
   String physicalScreenSize;
   int counter = 1;
 
-  ScreenshotNameInfo(
-      {required this.platformName,
-      required this.deviceName,
-      required this.physicalScreenSize});
+  ScreenshotNameInfo({
+    required this.platformName,
+    required this.deviceName,
+    required this.physicalScreenSize,
+  });
 
   int getAndIncrementCounter() {
     int out = counter;
@@ -145,16 +144,18 @@ class ScreenshotNameInfo {
     }
 
     return ScreenshotNameInfo(
-        platformName: platformName,
-        deviceName: deviceName,
-        physicalScreenSize: physicalScreenSize);
+      platformName: platformName,
+      deviceName: deviceName,
+      physicalScreenSize: physicalScreenSize,
+    );
   }
 }
 
 void runScreenshotSuite(DictAppTestConfig cfg, ScreenshotSuiteConfig shots) {
   // ignore: unnecessary_cast
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized()
-      as IntegrationTestWidgetsFlutterBinding;
+  final binding =
+      IntegrationTestWidgetsFlutterBinding.ensureInitialized()
+          as IntegrationTestWidgetsFlutterBinding;
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -187,7 +188,9 @@ void runScreenshotSuite(DictAppTestConfig cfg, ScreenshotSuiteConfig shots) {
     // pool filters (e.g. regions) wide open so the session always has cards.
     await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [listKey]);
     await sharedPreferences.setInt(
-        KEY_REVISION_STRATEGY, RevisionStrategy.SpacedRepetition.index);
+      KEY_REVISION_STRATEGY,
+      RevisionStrategy.SpacedRepetition.index,
+    );
     await cfg.seedFlashcardSettings?.call();
 
     // Open the lists overview on the My Lists tab, and don't let the advisories
@@ -303,19 +306,24 @@ void runScreenshotSuite(DictAppTestConfig cfg, ScreenshotSuiteConfig shots) {
     // as dead repo bytes — skip them there. The phone captures are the
     // authoritative landscape record.
     final logicalSize = tester.view.physicalSize / tester.view.devicePixelRatio;
-    final rotationIsNoOp = logicalSize.width > logicalSize.height ||
+    final rotationIsNoOp =
+        logicalSize.width > logicalSize.height ||
         (Platform.isIOS && logicalSize.shortestSide >= 600);
     if (rotationIsNoOp) {
       print("Skipping landscape captures: rotation is a no-op here");
     } else {
-      await SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.landscapeLeft]);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+      ]);
       // Give the OS rotation animation time to settle (real frames).
       await letVideoLoad(tester);
 
       // 12. Word page in landscape: video left, definitions right.
       cfg.navigateToEntryPage(
-          rootNavigatorKey.currentContext!, heroEntry, true);
+        rootNavigatorKey.currentContext!,
+        heroEntry,
+        true,
+      );
       await letVideoLoad(tester);
       await capture("wordPageLandscape");
       rootNavigatorKey.currentState!.pop();
@@ -350,8 +358,9 @@ void runScreenshotSuite(DictAppTestConfig cfg, ScreenshotSuiteConfig shots) {
       }
 
       // Restore portrait, then hand orientation control back to the OS.
-      await SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.portraitUp]);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
       await settle(tester);
       await SystemChrome.setPreferredOrientations([]);
     }
@@ -359,8 +368,10 @@ void runScreenshotSuite(DictAppTestConfig cfg, ScreenshotSuiteConfig shots) {
     // Machine-readable completion marker for take_screenshots.py: it
     // verifies this many files with this prefix actually landed on disk,
     // so a drive that dies partway can't pass silently.
-    print("SCREENSHOTS_COMPLETE count=${info.counter - 1} "
-        "prefix=${info.platformName}/${shots.localeDirName}/"
-        "${info.deviceName}-${info.physicalScreenSize}");
+    print(
+      "SCREENSHOTS_COMPLETE count=${info.counter - 1} "
+      "prefix=${info.platformName}/${shots.localeDirName}/"
+      "${info.deviceName}-${info.physicalScreenSize}",
+    );
   });
 }

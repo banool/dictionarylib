@@ -42,67 +42,80 @@ void main() {
         serverUpdatedAt: 1700000000,
         orphaned: false,
       ),
-      savedVideos: LinkedHashSet.of(
-          {SavedVideo(entryKey: 'apple', mediaPath: videoFor('apple'))}),
+      savedVideos: LinkedHashSet.of({
+        SavedVideo(entryKey: 'apple', mediaPath: videoFor('apple')),
+      }),
     );
     await sharing.lists.insert(list);
     return list;
   }
 
   Widget wrap(SyncedEntryList list) => MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
-        supportedLocales: DictLibLocalizations.supportedLocales,
-        home: EntryListPage(
-          entryList: list,
-          navigateToEntryPage: (context, entry, showSaveButtons,
-              {focusVideo, saveToList}) async {},
-        ),
-      );
+    localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+    supportedLocales: DictLibLocalizations.supportedLocales,
+    home: EntryListPage(
+      entryList: list,
+      navigateToEntryPage: (
+        context,
+        entry,
+        showSaveButtons, {
+        focusVideo,
+        saveToList,
+      }) async {},
+    ),
+  );
 
   /// Drag far enough to trigger the [RefreshIndicator] and let it settle
   /// into the refreshing state.
   Future<void> pullToRefresh(WidgetTester tester) async {
     await tester.fling(
-        find.byType(RefreshIndicator), const Offset(0, 300), 1000);
+      find.byType(RefreshIndicator),
+      const Offset(0, 300),
+      1000,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
 
   testWidgets(
-      'unreachable server: pull-to-refresh retries with attempt feedback '
-      'and ends in a snack naming the problem', (tester) async {
-    final requests = installFakeSharing(
-        (req) async => throw http.ClientException('connection refused'));
-    final list = await installSubscribedList();
-    await tester.pumpWidget(wrap(list));
-    await tester.pumpAndSettle();
+    'unreachable server: pull-to-refresh retries with attempt feedback '
+    'and ends in a snack naming the problem',
+    (tester) async {
+      final requests = installFakeSharing(
+        (req) async => throw http.ClientException('connection refused'),
+      );
+      final list = await installSubscribedList();
+      await tester.pumpWidget(wrap(list));
+      await tester.pumpAndSettle();
 
-    await pullToRefresh(tester);
+      await pullToRefresh(tester);
 
-    // Attempt 1 fails immediately, so the attempt-2 notice is up while
-    // the 1s retry delay runs.
-    expect(find.textContaining('attempt 2 of 3'), findsOneWidget);
+      // Attempt 1 fails immediately, so the attempt-2 notice is up while
+      // the 1s retry delay runs.
+      expect(find.textContaining('attempt 2 of 3'), findsOneWidget);
 
-    // Through the 1s delay: attempt 2 fails and its notice replaces the
-    // previous one rather than queueing behind it.
-    await tester.pump(const Duration(milliseconds: 1100));
-    expect(find.textContaining('attempt 3 of 3'), findsOneWidget);
-    expect(find.textContaining('attempt 2 of 3'), findsNothing);
+      // Through the 1s delay: attempt 2 fails and its notice replaces the
+      // previous one rather than queueing behind it.
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(find.textContaining('attempt 3 of 3'), findsOneWidget);
+      expect(find.textContaining('attempt 2 of 3'), findsNothing);
 
-    // Through the 2s delay: attempt 3 fails and the final snack says
-    // specifically what went wrong instead of failing silently.
-    await tester.pump(const Duration(milliseconds: 2100));
-    await tester.pump();
-    expect(find.textContaining('Sync failed'), findsOneWidget);
-    expect(find.textContaining("Couldn't reach the server"), findsOneWidget);
-    expect(requests, hasLength(3), reason: 'three attempts should be made');
+      // Through the 2s delay: attempt 3 fails and the final snack says
+      // specifically what went wrong instead of failing silently.
+      await tester.pump(const Duration(milliseconds: 2100));
+      await tester.pump();
+      expect(find.textContaining('Sync failed'), findsOneWidget);
+      expect(find.textContaining("Couldn't reach the server"), findsOneWidget);
+      expect(requests, hasLength(3), reason: 'three attempts should be made');
 
-    // Drain the snack's auto-dismiss timer so the test ends clean.
-    await tester.pump(const Duration(seconds: 5));
-  });
+      // Drain the snack's auto-dismiss timer so the test ends clean.
+      await tester.pump(const Duration(seconds: 5));
+    },
+  );
 
-  testWidgets('a transient failure that recovers needs no error snack',
-      (tester) async {
+  testWidgets('a transient failure that recovers needs no error snack', (
+    tester,
+  ) async {
     var calls = 0;
     installFakeSharing((req) async {
       calls++;

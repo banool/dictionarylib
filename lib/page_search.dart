@@ -44,7 +44,7 @@ Entry? computeSignOfDay(
   // Roll over at local midnight (not UTC) by indexing off the local date.
   final dayIndex =
       DateTime(now.year, now.month, now.day).millisecondsSinceEpoch ~/
-          Duration.millisecondsPerDay;
+      Duration.millisecondsPerDay;
   return candidates[dayIndex % candidates.length];
 }
 
@@ -65,13 +65,14 @@ class SearchPage extends StatefulWidget {
   /// this. Null → no preview shown.
   final String? Function(Entry entry)? entryDefinitionPreview;
 
-  const SearchPage(
-      {super.key,
-      this.initialQuery,
-      this.navigateToFirstMatch,
-      required this.navigateToEntryPage,
-      required this.includeEntryTypeButton,
-      this.entryDefinitionPreview});
+  const SearchPage({
+    super.key,
+    this.initialQuery,
+    this.navigateToFirstMatch,
+    required this.navigateToEntryPage,
+    required this.includeEntryTypeButton,
+    this.entryDefinitionPreview,
+  });
 
   @override
   SearchPageState createState() => SearchPageState();
@@ -117,8 +118,13 @@ class SearchPageState extends State<SearchPage> {
   }
 
   void search(String searchTerm, List<EntryType> entryTypes) {
-    final result =
-        searchListWithMeta(context, searchTerm, entryTypes, entriesGlobal, {});
+    final result = searchListWithMeta(
+      context,
+      searchTerm,
+      entryTypes,
+      entriesGlobal,
+      {},
+    );
     setState(() {
       entriesSearched = result.entries;
     });
@@ -130,15 +136,18 @@ class SearchPageState extends State<SearchPage> {
     final resultCount = entriesSearched.length;
     final matchStrength = _matchStrength(result.bestDistance);
     _searchAnalyticsDebounce = Timer(const Duration(milliseconds: 1200), () {
-      Analytics.track('search_performed', props: {
-        'term_length_bucket': Analytics.bucket(searchTerm.trim().length),
-        // How close the *best* match was. This is the trustworthy measure of
-        // whether the dictionary had what the user wanted; result_count_bucket
-        // is capped by SEARCH_FOR_NUM_ITEMS and is near-constant.
-        'top_match_strength': matchStrength,
-        'result_count_bucket': Analytics.bucket(resultCount),
-        'filters_count': entryTypes.length,
-      });
+      Analytics.track(
+        'search_performed',
+        props: {
+          'term_length_bucket': Analytics.bucket(searchTerm.trim().length),
+          // How close the *best* match was. This is the trustworthy measure of
+          // whether the dictionary had what the user wanted; result_count_bucket
+          // is capped by SEARCH_FOR_NUM_ITEMS and is near-constant.
+          'top_match_strength': matchStrength,
+          'result_count_bucket': Analytics.bucket(resultCount),
+          'filters_count': entryTypes.length,
+        },
+      );
     });
   }
 
@@ -248,7 +257,8 @@ class SearchPageState extends State<SearchPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         printAndLog(
-            "Navigating to first match because navigateToFirstMatch was set");
+          "Navigating to first match because navigateToFirstMatch was set",
+        );
         widget.navigateToEntryPage(context, entriesSearched[0]!, true);
       });
     }
@@ -302,9 +312,9 @@ class SearchPageState extends State<SearchPage> {
               ),
               if (widget.includeEntryTypeButton)
                 Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child:
-                        EntryTypeMultiPopUpMenu(onChanged: (entryTypes) async {
+                  padding: const EdgeInsets.only(left: 8),
+                  child: EntryTypeMultiPopUpMenu(
+                    onChanged: (entryTypes) async {
                       for (EntryType type in EntryType.values) {
                         String key;
                         if (type == EntryType.WORD) {
@@ -327,7 +337,9 @@ class SearchPageState extends State<SearchPage> {
                           }
                         });
                       }
-                    })),
+                    },
+                  ),
+                ),
             ],
           ),
         ),
@@ -389,14 +401,15 @@ class SearchPageState extends State<SearchPage> {
         child: Row(
           children: [
             Expanded(
-              child: Text(phrase,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(
+                phrase,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            if (tag != null) ...[
-              HearthTag(tag),
-              const SizedBox(width: 8),
-            ],
+            if (tag != null) ...[HearthTag(tag), const SizedBox(width: 8)],
             Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant),
           ],
         ),
@@ -428,7 +441,8 @@ class SearchPageState extends State<SearchPage> {
   Entry? _signOfDay(Locale locale) {
     try {
       // Entries the user has permanently hidden from the sign of the day.
-      final hidden = sharedPreferences
+      final hidden =
+          sharedPreferences
               .getStringList(KEY_HIDDEN_SIGNS_OF_THE_DAY)
               ?.toSet() ??
           const <String>{};
@@ -470,12 +484,14 @@ class SearchPageState extends State<SearchPage> {
     if (confirmed != true) return;
     final hidden =
         sharedPreferences.getStringList(KEY_HIDDEN_SIGNS_OF_THE_DAY) ??
-            <String>[];
+        <String>[];
     final key = entry.getKey();
     if (!hidden.contains(key)) {
       hidden.add(key);
       await sharedPreferences.setStringList(
-          KEY_HIDDEN_SIGNS_OF_THE_DAY, hidden);
+        KEY_HIDDEN_SIGNS_OF_THE_DAY,
+        hidden,
+      );
       // The entry key is deliberately NOT sent — only that the action happened.
       Analytics.track('sign_of_the_day_hidden');
     }
@@ -530,9 +546,13 @@ class SearchPageState extends State<SearchPage> {
                   // chip instead of overflowing the row.
                   label: ConstrainedBox(
                     constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.6),
-                    child:
-                        Text(w, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      maxWidth: MediaQuery.of(context).size.width * 0.6,
+                    ),
+                    child: Text(
+                      w,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   onPressed: () {
                     final entry = _findByPhrase(context, w);
@@ -569,8 +589,9 @@ class SearchPageState extends State<SearchPage> {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(),
-                          child:
-                              Text(MaterialLocalizations.of(ctx).okButtonLabel),
+                          child: Text(
+                            MaterialLocalizations.of(ctx).okButtonLabel,
+                          ),
                         ),
                       ],
                     ),
@@ -600,7 +621,8 @@ class SearchPageState extends State<SearchPage> {
           Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.5),
+                maxWidth: MediaQuery.of(context).size.width * 0.5,
+              ),
               child: WebLimitationsCard(
                 heading: l.webLimitationsHeading,
                 points: [
@@ -644,11 +666,11 @@ class SearchPageState extends State<SearchPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(phrase,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontSize: 22)),
+                Text(
+                  phrase,
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(fontSize: 22),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   preview ??
@@ -656,7 +678,10 @@ class SearchPageState extends State<SearchPage> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 13, color: cs.onSurfaceVariant, height: 1.35),
+                    fontSize: 13,
+                    color: cs.onSurfaceVariant,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -688,42 +713,47 @@ class EntryTypeMultiPopUpMenuState extends State<EntryTypeMultiPopUpMenu> {
 
   Future<void> _showDialog(BuildContext context) async {
     await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title:
-                  Text(DictLibLocalizations.of(context)!.entrySelectEntryTypes),
+              title: Text(
+                DictLibLocalizations.of(context)!.entrySelectEntryTypes,
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: EntryType.values
-                    .map((entryType) => CheckboxListTile(
-                          title: Text(getEntryTypePretty(context, entryType)),
-                          value: _selectedEntryTypes.contains(entryType),
-                          onChanged: (bool? value) {
-                            setState(() {
-                              if (value == true) {
-                                setState(() {
-                                  _selectedEntryTypes.add(entryType);
-                                });
-                              } else {
-                                // Ensure at least one entry type is selected.
-                                if (_selectedEntryTypes.length == 1) {
-                                  return;
-                                }
-                                setState(() {
-                                  _selectedEntryTypes.remove(entryType);
-                                });
+                    .map(
+                      (entryType) => CheckboxListTile(
+                        title: Text(getEntryTypePretty(context, entryType)),
+                        value: _selectedEntryTypes.contains(entryType),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              setState(() {
+                                _selectedEntryTypes.add(entryType);
+                              });
+                            } else {
+                              // Ensure at least one entry type is selected.
+                              if (_selectedEntryTypes.length == 1) {
+                                return;
                               }
-                            });
-                          },
-                        ))
+                              setState(() {
+                                _selectedEntryTypes.remove(entryType);
+                              });
+                            }
+                          });
+                        },
+                      ),
+                    )
                     .toList(),
               ),
             );
-          });
-        });
+          },
+        );
+      },
+    );
   }
 
   @override

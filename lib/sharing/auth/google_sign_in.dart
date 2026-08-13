@@ -12,8 +12,9 @@ Future<void>? _initFuture;
 
 Future<void> _ensureInitialized(SharingAuthConfig auth) async {
   try {
-    return await (_initFuture ??= GoogleSignIn.instance
-        .initialize(serverClientId: auth.googleServerClientId));
+    return await (_initFuture ??= GoogleSignIn.instance.initialize(
+      serverClientId: auth.googleServerClientId,
+    ));
   } catch (e) {
     // A failed init future is cached in `_initFuture`; clear it so the
     // next sign-in attempt can re-try initialize from scratch rather

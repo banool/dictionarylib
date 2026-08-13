@@ -25,8 +25,7 @@ import '../helpers.dart';
 void runSaveVideoSuite(DictAppTestConfig cfg) {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-      'saving an individual video toggles, persists across reload, and '
+  testWidgets('saving an individual video toggles, persists across reload, and '
       'surfaces in the list view', (WidgetTester tester) async {
     await cfg.setup();
 
@@ -56,11 +55,12 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     // The button saves the currently-shown video, which is the first
     // sub-entry's first media path when the page opens with no focusVideo.
     final expected = SavedVideo(
-        entryKey: entry.getKey(),
-        mediaPath: entry.getSubEntries().first.getMedia().first);
+      entryKey: entry.getKey(),
+      mediaPath: entry.getSubEntries().first.getMedia().first,
+    );
 
-    final favList =
-        userEntryListManager.getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+    final favList = userEntryListManager
+        .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
     // Start from a clean slate and leave it clean afterwards, so the test is
     // re-runnable and doesn't pollute the simulator's real favourites.
     Future<void> ensureNotSaved() async {
@@ -69,8 +69,11 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
 
     await ensureNotSaved();
     addTearDown(ensureNotSaved);
-    expect(favList.containsVideo(expected), isFalse,
-        reason: 'precondition: video should not be saved yet');
+    expect(
+      favList.containsVideo(expected),
+      isFalse,
+      reason: 'precondition: video should not be saved yet',
+    );
 
     await tester.pumpWidget(cfg.buildApp(LOCALE_ENGLISH));
     await settle(tester);
@@ -81,42 +84,61 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     await settle(tester);
 
     final saveButton = find.byKey(const ValueKey('wordPage.saveButton'));
-    expect(saveButton, findsOneWidget,
-        reason: 'the per-video bookmark button should be on the word page');
+    expect(
+      saveButton,
+      findsOneWidget,
+      reason: 'the per-video bookmark button should be on the word page',
+    );
 
     // Tap it to open the all-lists save sheet.
     await tester.tap(saveButton);
     await settle(tester);
 
-    final favouritesRow =
-        find.byKey(ValueKey('saveVideoSheet.row.$KEY_FAVOURITES_ENTRIES'));
-    expect(favouritesRow, findsOneWidget,
-        reason: 'the save sheet should list the Favourites list');
+    final favouritesRow = find.byKey(
+      ValueKey('saveVideoSheet.row.$KEY_FAVOURITES_ENTRIES'),
+    );
+    expect(
+      favouritesRow,
+      findsOneWidget,
+      reason: 'the save sheet should list the Favourites list',
+    );
 
     // --- Toggle ON ---
     await tester.tap(favouritesRow);
     await settle(tester);
-    expect(favList.containsVideo(expected), isTrue,
-        reason: 'tapping the row should add the video to Favourites');
+    expect(
+      favList.containsVideo(expected),
+      isTrue,
+      reason: 'tapping the row should add the video to Favourites',
+    );
     // The durable write is what a fresh launch reads back — assert against a
     // straight-from-SharedPreferences reload, not just the in-memory list.
-    expect(EntryList.loadSavedVideos(KEY_FAVOURITES_ENTRIES).contains(expected),
-        isTrue,
-        reason: 'the saved video should persist to storage');
+    expect(
+      EntryList.loadSavedVideos(KEY_FAVOURITES_ENTRIES).contains(expected),
+      isTrue,
+      reason: 'the saved video should persist to storage',
+    );
     // The reloaded list should report the entry, i.e. it would render as a row
     // in the list view.
     expect(
-        EntryList.fromRaw(KEY_FAVOURITES_ENTRIES).containsEntry(entry), isTrue,
-        reason: 'the entry should appear in the reloaded list');
+      EntryList.fromRaw(KEY_FAVOURITES_ENTRIES).containsEntry(entry),
+      isTrue,
+      reason: 'the entry should appear in the reloaded list',
+    );
 
     // --- Toggle OFF (removal also persists) ---
     await tester.tap(favouritesRow);
     await settle(tester);
-    expect(favList.containsVideo(expected), isFalse,
-        reason: 'tapping again should remove the video');
-    expect(EntryList.loadSavedVideos(KEY_FAVOURITES_ENTRIES).contains(expected),
-        isFalse,
-        reason: 'the removal should persist to storage');
+    expect(
+      favList.containsVideo(expected),
+      isFalse,
+      reason: 'tapping again should remove the video',
+    );
+    expect(
+      EntryList.loadSavedVideos(KEY_FAVOURITES_ENTRIES).contains(expected),
+      isFalse,
+      reason: 'the removal should persist to storage',
+    );
 
     // --- Toggle ON again, then verify it shows in the real list UI ---
     await tester.tap(favouritesRow);
@@ -136,7 +158,10 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     await settle(tester);
     await tester.tap(find.byKey(const ValueKey(KEY_FAVOURITES_ENTRIES)));
     await settle(tester);
-    expect(find.byKey(ValueKey(entry.getKey())), findsOneWidget,
-        reason: 'the saved video\'s entry should be a row in the list view');
+    expect(
+      find.byKey(ValueKey(entry.getKey())),
+      findsOneWidget,
+      reason: 'the saved video\'s entry should be a row in the list view',
+    );
   });
 }

@@ -32,10 +32,12 @@ import 'top_level_scaffold.dart'
 // the user's persisted theme. Examples:
 //   flutter run --dart-define=DEBUG_INITIAL_LOCATION='/search?query=dog&navigate_to_first_match=true'
 //   flutter run --dart-define=DEBUG_THEME_VARIANT=classic --dart-define=DEBUG_THEME_MODE=dark
-const String _kDebugInitialLocation =
-    String.fromEnvironment('DEBUG_INITIAL_LOCATION');
-const String _kDebugThemeVariant =
-    String.fromEnvironment('DEBUG_THEME_VARIANT');
+const String _kDebugInitialLocation = String.fromEnvironment(
+  'DEBUG_INITIAL_LOCATION',
+);
+const String _kDebugThemeVariant = String.fromEnvironment(
+  'DEBUG_THEME_VARIANT',
+);
 const String _kDebugThemeMode = String.fromEnvironment('DEBUG_THEME_MODE');
 
 /// The device locale, assigned by the app's main() before runApp. Defaults to
@@ -87,7 +89,7 @@ class DictRootAppConfig {
   final String? Function(Entry entry)? entryDefinitionPreview;
 
   final FlashcardsLandingPageController Function()
-      buildFlashcardsLandingPageController;
+  buildFlashcardsLandingPageController;
 
   /// Extra widgets at the top of the settings page (e.g. a language picker).
   /// Null → none.
@@ -112,10 +114,13 @@ class DictRootAppConfig {
 /// (e.g. the list view) and break its back button. The non-serialisable bits
 /// ([focusVideo], [saveToList]) ride along as `extra`.
 Future<void> defaultNavigateToEntryPage(
-    BuildContext context, Entry entry, bool showFavouritesButton,
-    {SavedVideo? focusVideo,
-    EntryList? saveToList,
-    required WordPageConfig config}) async {
+  BuildContext context,
+  Entry entry,
+  bool showFavouritesButton, {
+  SavedVideo? focusVideo,
+  EntryList? saveToList,
+  required WordPageConfig config,
+}) async {
   if (kIsWeb) {
     await context.push(
       "$WORD_ROUTE/${Uri.encodeComponent(entry.getKey())}",
@@ -135,11 +140,12 @@ Future<void> defaultNavigateToEntryPage(
         // which goes through the router, was ever recorded).
         settings: const RouteSettings(name: WORD_ROUTE),
         builder: (context) => EntryPage(
-            entry: entry,
-            config: config,
-            showFavouritesButton: showFavouritesButton,
-            focusVideo: focusVideo,
-            saveToList: saveToList),
+          entry: entry,
+          config: config,
+          showFavouritesButton: showFavouritesButton,
+          focusVideo: focusVideo,
+          saveToList: saveToList,
+        ),
       ),
     );
   }
@@ -148,10 +154,21 @@ Future<void> defaultNavigateToEntryPage(
 /// Curry [defaultNavigateToEntryPage] with the app's [WordPageConfig] so it
 /// matches the [NavigateToEntryPageFn] typedef used throughout the library.
 NavigateToEntryPageFn makeNavigateToEntryPage(WordPageConfig config) {
-  return (BuildContext context, Entry entry, bool showFavouritesButton,
-      {SavedVideo? focusVideo, EntryList? saveToList}) {
-    return defaultNavigateToEntryPage(context, entry, showFavouritesButton,
-        focusVideo: focusVideo, saveToList: saveToList, config: config);
+  return (
+    BuildContext context,
+    Entry entry,
+    bool showFavouritesButton, {
+    SavedVideo? focusVideo,
+    EntryList? saveToList,
+  }) {
+    return defaultNavigateToEntryPage(
+      context,
+      entry,
+      showFavouritesButton,
+      focusVideo: focusVideo,
+      saveToList: saveToList,
+      config: config,
+    );
   };
 }
 
@@ -159,8 +176,11 @@ NavigateToEntryPageFn makeNavigateToEntryPage(WordPageConfig config) {
 /// wrap this in a thin RootApp of their own that supplies their
 /// [DictRootAppConfig].
 class DictRootApp extends StatefulWidget {
-  const DictRootApp(
-      {super.key, required this.startingLocale, required this.config});
+  const DictRootApp({
+    super.key,
+    required this.startingLocale,
+    required this.config,
+  });
 
   final Locale startingLocale;
   final DictRootAppConfig config;
@@ -169,14 +189,14 @@ class DictRootApp extends StatefulWidget {
   State<DictRootApp> createState() => _DictRootAppState();
 
   static void applyLocaleOverride(BuildContext context, Locale newLocale) {
-    _DictRootAppState state =
-        context.findAncestorStateOfType<_DictRootAppState>()!;
+    _DictRootAppState state = context
+        .findAncestorStateOfType<_DictRootAppState>()!;
     state._setLocale(newLocale);
   }
 
   static void clearLocaleOverride(BuildContext context) {
-    _DictRootAppState state =
-        context.findAncestorStateOfType<_DictRootAppState>()!;
+    _DictRootAppState state = context
+        .findAncestorStateOfType<_DictRootAppState>()!;
     state._setLocale(systemLocale);
   }
 }
@@ -195,8 +215,10 @@ class _DictRootAppState extends State<DictRootApp> {
 
   late final GoRouter router;
 
-  SearchPage _buildSearchPage(
-      {String? initialQuery, bool? navigateToFirstMatch}) {
+  SearchPage _buildSearchPage({
+    String? initialQuery,
+    bool? navigateToFirstMatch,
+  }) {
     return SearchPage(
       navigateToEntryPage: widget.config.navigateToEntryPage,
       initialQuery: initialQuery,
@@ -216,13 +238,15 @@ class _DictRootAppState extends State<DictRootApp> {
     // splash → first frame in both modes.
     themeNotifier.value = ThemeMode
         .values[sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
-    themeVariantNotifier.value =
-        appThemeVariantFromName(sharedPreferences.getString(KEY_THEME_VARIANT));
+    themeVariantNotifier.value = appThemeVariantFromName(
+      sharedPreferences.getString(KEY_THEME_VARIANT),
+    );
     // Debug-only theme overrides (see _kDebug* consts above). No-ops in release
     // and when the corresponding --dart-define isn't set.
     if (kDebugMode && _kDebugThemeMode.isNotEmpty) {
-      themeNotifier.value =
-          _kDebugThemeMode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      themeNotifier.value = _kDebugThemeMode == 'dark'
+          ? ThemeMode.dark
+          : ThemeMode.light;
     }
     if (kDebugMode && _kDebugThemeVariant.isNotEmpty) {
       themeVariantNotifier.value = appThemeVariantFromName(_kDebugThemeVariant);
@@ -258,161 +282,162 @@ class _DictRootAppState extends State<DictRootApp> {
 
   GoRouter _buildRouter() {
     return GoRouter(
-        navigatorKey: rootNavigatorKey,
-        // Anonymous screen-view analytics (base path only; no query/path params
-        // ever leave the device). Only attached when analytics is enabled.
-        observers: [
-          if (Analytics.isEnabled) AnalyticsNavigatorObserver(),
-        ],
-        initialLocation: kDebugMode && _kDebugInitialLocation.isNotEmpty
-            ? _kDebugInitialLocation
-            : SEARCH_ROUTE,
-        // An unknown location (a stale deep-link, a typo'd path, a malformed
-        // share link that didn't match `/share/:listId`) should drop the user
-        // on the search screen rather than a bare error page — search is the
-        // app's home and always safe to render. A malformed `/share/<id>` that
-        // *does* match the route is handled gracefully by the landing page's
-        // own error branch (it surfaces an "expired / unknown list" state).
-        errorBuilder: (context, state) => _buildSearchPage(),
-        routes: [
-          GoRoute(
-            path: "/",
-            redirect: (context, state) => SEARCH_ROUTE,
-          ),
-          GoRoute(
-              path: SEARCH_ROUTE,
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                String? initialQuery = state.uri.queryParameters["query"];
-                bool navigateToFirstMatch =
-                    state.uri.queryParameters["navigate_to_first_match"] ==
-                        "true";
-                // A *stable* key, never `UniqueKey()`: a fresh key per rebuild
-                // forced the whole SearchPage to be torn down and rebuilt from
-                // scratch, losing search state on every router rebuild. A
-                // constant key is preserved across rebuilds but still differs
-                // from the other tabs' keys, which is what makes
-                // `Page.canUpdate` false when switching tabs — without that the
-                // Navigator swaps the child in place and never notifies the
-                // screen-view observer.
-                return NoTransitionPage(
-                  key: const ValueKey(SEARCH_ROUTE),
-                  name: SEARCH_ROUTE, // for the screen-view analytics observer
-                  child: _buildSearchPage(
-                    initialQuery: initialQuery,
-                    navigateToFirstMatch: navigateToFirstMatch,
-                  ),
-                );
-              }),
-          GoRoute(
-              path: LISTS_ROUTE,
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                return NoTransitionPage(
-                  // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
-                  key: const ValueKey(LISTS_ROUTE),
-                  name: LISTS_ROUTE, // for the screen-view analytics observer
-                  child: EntryListsOverviewPage(
-                    buildEntryListWidgetCallback: (entryList) => EntryListPage(
-                      entryList: entryList,
-                      navigateToEntryPage: widget.config.navigateToEntryPage,
-                    ),
-                  ),
-                );
-              }),
-          GoRoute(
-              path: REVISION_ROUTE,
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                var controller =
-                    widget.config.buildFlashcardsLandingPageController();
-                return NoTransitionPage(
-                    // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
-                    key: const ValueKey(REVISION_ROUTE),
-                    name:
-                        REVISION_ROUTE, // for the screen-view analytics observer
-                    child: FlashcardsLandingPage(
-                      controller: controller,
-                    ));
-              }),
-          GoRoute(
-              path: '/share/:listId',
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                final id = state.pathParameters['listId']!;
-                final invite = state.uri.queryParameters['invite'];
-                // Stable key per (listId, inviteToken) so re-tapping the
-                // same share link doesn't tear down + rebuild the page
-                // (which would re-trigger subscribe / sign-in). Different
-                // links still get distinct keys so navigation between
-                // shares mounts a fresh page.
-                return NoTransitionPage(
-                  key: ValueKey('share-$id-${invite ?? ''}'),
-                  name: '/share', // base only (no list id) for analytics
-                  child: SharedListLandingPage(
-                    listId: id,
-                    inviteToken:
-                        invite != null && invite.isNotEmpty ? invite : null,
-                    navigateToEntryPage: widget.config.navigateToEntryPage,
-                  ),
-                );
-              }),
-          GoRoute(
-              path: SETTINGS_ROUTE,
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                return NoTransitionPage(
-                    // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
-                    key: const ValueKey(SETTINGS_ROUTE),
-                    name:
-                        SETTINGS_ROUTE, // for the screen-view analytics observer
-                    child: SettingsPage(
-                      appName: widget.config.appName,
-                      additionalTopWidgets: widget
-                              .config.buildSettingsTopWidgets
-                              ?.call(context) ??
-                          const [],
-                      buildLegalInformationChildren:
-                          widget.config.buildLegalInformationChildren,
-                      reportDataProblemUrl: widget.config.reportDataProblemUrl,
-                      reportAppProblemUrl: widget.config.reportAppProblemUrl,
-                      iOSAppId: widget.config.iOSAppId,
-                      androidAppId: widget.config.androidAppId,
-                      privacyPolicyUrl: widget.config.privacyPolicyUrl,
-                      termsOfServiceUrl: widget.config.termsOfServiceUrl,
-                    ));
-              }),
-          GoRoute(
-              path: "$WORD_ROUTE/:key",
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                final key = Uri.decodeComponent(state.pathParameters['key']!);
-                final entry = keyedByEnglishEntriesGlobal[key];
-                // Unknown / not-yet-loaded word (a stale or hand-typed
-                // /word/<x> URL) → fall back to search rather than a broken page.
-                if (entry == null) {
-                  return NoTransitionPage(
-                    name: SEARCH_ROUTE, // fallback shows search
-                    child: _buildSearchPage(),
-                  );
-                }
-                final args = state.extra is EntryPageArgs
-                    ? state.extra as EntryPageArgs
-                    : null;
-                // Stable key per entry so updating only the ?variation/?video
-                // query as the user swipes preserves the page's state instead of
-                // tearing it down and rebuilding (which would reset the carousel).
-                return NoTransitionPage(
-                  key: ValueKey('word-$key'),
-                  name: WORD_ROUTE, // base only (no entry key) for analytics
-                  child: EntryPage(
-                    entry: entry,
-                    config: widget.config.wordPageConfig,
-                    showFavouritesButton: args?.showFavouritesButton ?? true,
-                    focusVideo: args?.focusVideo,
-                    saveToList: args?.saveToList,
-                    initialVariation: int.tryParse(
-                        state.uri.queryParameters['variation'] ?? ''),
-                    initialVideo:
-                        int.tryParse(state.uri.queryParameters['video'] ?? ''),
-                  ),
-                );
-              }),
-        ]);
+      navigatorKey: rootNavigatorKey,
+      // Anonymous screen-view analytics (base path only; no query/path params
+      // ever leave the device). Only attached when analytics is enabled.
+      observers: [if (Analytics.isEnabled) AnalyticsNavigatorObserver()],
+      initialLocation: kDebugMode && _kDebugInitialLocation.isNotEmpty
+          ? _kDebugInitialLocation
+          : SEARCH_ROUTE,
+      // An unknown location (a stale deep-link, a typo'd path, a malformed
+      // share link that didn't match `/share/:listId`) should drop the user
+      // on the search screen rather than a bare error page — search is the
+      // app's home and always safe to render. A malformed `/share/<id>` that
+      // *does* match the route is handled gracefully by the landing page's
+      // own error branch (it surfaces an "expired / unknown list" state).
+      errorBuilder: (context, state) => _buildSearchPage(),
+      routes: [
+        GoRoute(path: "/", redirect: (context, state) => SEARCH_ROUTE),
+        GoRoute(
+          path: SEARCH_ROUTE,
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            String? initialQuery = state.uri.queryParameters["query"];
+            bool navigateToFirstMatch =
+                state.uri.queryParameters["navigate_to_first_match"] == "true";
+            // A *stable* key, never `UniqueKey()`: a fresh key per rebuild
+            // forced the whole SearchPage to be torn down and rebuilt from
+            // scratch, losing search state on every router rebuild. A
+            // constant key is preserved across rebuilds but still differs
+            // from the other tabs' keys, which is what makes
+            // `Page.canUpdate` false when switching tabs — without that the
+            // Navigator swaps the child in place and never notifies the
+            // screen-view observer.
+            return NoTransitionPage(
+              key: const ValueKey(SEARCH_ROUTE),
+              name: SEARCH_ROUTE, // for the screen-view analytics observer
+              child: _buildSearchPage(
+                initialQuery: initialQuery,
+                navigateToFirstMatch: navigateToFirstMatch,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: LISTS_ROUTE,
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            return NoTransitionPage(
+              // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
+              key: const ValueKey(LISTS_ROUTE),
+              name: LISTS_ROUTE, // for the screen-view analytics observer
+              child: EntryListsOverviewPage(
+                buildEntryListWidgetCallback: (entryList) => EntryListPage(
+                  entryList: entryList,
+                  navigateToEntryPage: widget.config.navigateToEntryPage,
+                ),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: REVISION_ROUTE,
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            var controller = widget.config
+                .buildFlashcardsLandingPageController();
+            return NoTransitionPage(
+              // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
+              key: const ValueKey(REVISION_ROUTE),
+              name: REVISION_ROUTE, // for the screen-view analytics observer
+              child: FlashcardsLandingPage(controller: controller),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/share/:listId',
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            final id = state.pathParameters['listId']!;
+            final invite = state.uri.queryParameters['invite'];
+            // Stable key per (listId, inviteToken) so re-tapping the
+            // same share link doesn't tear down + rebuild the page
+            // (which would re-trigger subscribe / sign-in). Different
+            // links still get distinct keys so navigation between
+            // shares mounts a fresh page.
+            return NoTransitionPage(
+              key: ValueKey('share-$id-${invite ?? ''}'),
+              name: '/share', // base only (no list id) for analytics
+              child: SharedListLandingPage(
+                listId: id,
+                inviteToken: invite != null && invite.isNotEmpty
+                    ? invite
+                    : null,
+                navigateToEntryPage: widget.config.navigateToEntryPage,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: SETTINGS_ROUTE,
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            return NoTransitionPage(
+              // Stable, and distinct from the other tabs — see SEARCH_ROUTE.
+              key: const ValueKey(SETTINGS_ROUTE),
+              name: SETTINGS_ROUTE, // for the screen-view analytics observer
+              child: SettingsPage(
+                appName: widget.config.appName,
+                additionalTopWidgets:
+                    widget.config.buildSettingsTopWidgets?.call(context) ??
+                    const [],
+                buildLegalInformationChildren:
+                    widget.config.buildLegalInformationChildren,
+                reportDataProblemUrl: widget.config.reportDataProblemUrl,
+                reportAppProblemUrl: widget.config.reportAppProblemUrl,
+                iOSAppId: widget.config.iOSAppId,
+                androidAppId: widget.config.androidAppId,
+                privacyPolicyUrl: widget.config.privacyPolicyUrl,
+                termsOfServiceUrl: widget.config.termsOfServiceUrl,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: "$WORD_ROUTE/:key",
+          pageBuilder: (BuildContext context, GoRouterState state) {
+            final key = Uri.decodeComponent(state.pathParameters['key']!);
+            final entry = keyedByEnglishEntriesGlobal[key];
+            // Unknown / not-yet-loaded word (a stale or hand-typed
+            // /word/<x> URL) → fall back to search rather than a broken page.
+            if (entry == null) {
+              return NoTransitionPage(
+                name: SEARCH_ROUTE, // fallback shows search
+                child: _buildSearchPage(),
+              );
+            }
+            final args = state.extra is EntryPageArgs
+                ? state.extra as EntryPageArgs
+                : null;
+            // Stable key per entry so updating only the ?variation/?video
+            // query as the user swipes preserves the page's state instead of
+            // tearing it down and rebuilding (which would reset the carousel).
+            return NoTransitionPage(
+              key: ValueKey('word-$key'),
+              name: WORD_ROUTE, // base only (no entry key) for analytics
+              child: EntryPage(
+                entry: entry,
+                config: widget.config.wordPageConfig,
+                showFavouritesButton: args?.showFavouritesButton ?? true,
+                focusVideo: args?.focusVideo,
+                saveToList: args?.saveToList,
+                initialVariation: int.tryParse(
+                  state.uri.queryParameters['variation'] ?? '',
+                ),
+                initialVideo: int.tryParse(
+                  state.uri.queryParameters['video'] ?? '',
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -427,44 +452,45 @@ class _DictRootAppState extends State<DictRootApp> {
           valueListenable: themeVariantNotifier,
           builder: (context, themeVariant, child) {
             return GestureDetector(
-                onTap: () {
-                  FocusScopeNode currentFocus = FocusScope.of(context);
-                  if (!currentFocus.hasPrimaryFocus &&
-                      currentFocus.focusedChild != null) {
-                    FocusManager.instance.primaryFocus!.unfocus();
-                  }
-                },
-                child: MaterialApp.router(
-                  title: widget.config.appName,
-                  // onGenerateTitle so locale-aware titles work; see
-                  // https://stackoverflow.com/q/77759180/3846032 for why this
-                  // is set manually.
-                  onGenerateTitle: (context) =>
-                      widget.config.appTitle?.call(locale) ??
-                      widget.config.appName,
-                  scaffoldMessengerKey: rootScaffoldMessengerKey,
-                  localizationsDelegates:
-                      DictLibLocalizations.localizationsDelegates,
-                  supportedLocales: LANGUAGE_CODE_TO_LOCALE.values,
-                  locale: locale,
-                  debugShowCheckedModeBanner: false,
-                  // Scale text up on tablet-sized displays so the phone
-                  // layouts don't read as tiny on a 13" panel; phones are
-                  // untouched. See kLargeScreenTextScale.
-                  builder: largeScreenTextScaleBuilder,
-                  themeMode: themeMode,
-                  theme: buildAppTheme(
-                    variant: themeVariant,
-                    brightness: Brightness.light,
-                    classicSeed: widget.config.classicSeed,
-                  ),
-                  darkTheme: buildAppTheme(
-                    variant: themeVariant,
-                    brightness: Brightness.dark,
-                    classicSeed: widget.config.classicSeed,
-                  ),
-                  routerConfig: router,
-                ));
+              onTap: () {
+                FocusScopeNode currentFocus = FocusScope.of(context);
+                if (!currentFocus.hasPrimaryFocus &&
+                    currentFocus.focusedChild != null) {
+                  FocusManager.instance.primaryFocus!.unfocus();
+                }
+              },
+              child: MaterialApp.router(
+                title: widget.config.appName,
+                // onGenerateTitle so locale-aware titles work; see
+                // https://stackoverflow.com/q/77759180/3846032 for why this
+                // is set manually.
+                onGenerateTitle: (context) =>
+                    widget.config.appTitle?.call(locale) ??
+                    widget.config.appName,
+                scaffoldMessengerKey: rootScaffoldMessengerKey,
+                localizationsDelegates:
+                    DictLibLocalizations.localizationsDelegates,
+                supportedLocales: LANGUAGE_CODE_TO_LOCALE.values,
+                locale: locale,
+                debugShowCheckedModeBanner: false,
+                // Scale text up on tablet-sized displays so the phone
+                // layouts don't read as tiny on a 13" panel; phones are
+                // untouched. See kLargeScreenTextScale.
+                builder: largeScreenTextScaleBuilder,
+                themeMode: themeMode,
+                theme: buildAppTheme(
+                  variant: themeVariant,
+                  brightness: Brightness.light,
+                  classicSeed: widget.config.classicSeed,
+                ),
+                darkTheme: buildAppTheme(
+                  variant: themeVariant,
+                  brightness: Brightness.dark,
+                  classicSeed: widget.config.classicSeed,
+                ),
+                routerConfig: router,
+              ),
+            );
           },
         );
       },

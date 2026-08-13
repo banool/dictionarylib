@@ -83,10 +83,7 @@ class AdvisoriesResponse {
   List<Advisory> advisories;
   bool newAdvisories;
 
-  AdvisoriesResponse({
-    required this.advisories,
-    required this.newAdvisories,
-  });
+  AdvisoriesResponse({required this.advisories, required this.newAdvisories});
 }
 
 // Returns the advisories and whether there is a new advisory. It returns them
@@ -101,8 +98,9 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   // Get the advisories file.
   String? rawData;
   try {
-    var result =
-        await http.get(advisoriesFileUri).timeout(kMetadataFetchTimeout);
+    var result = await http
+        .get(advisoriesFileUri)
+        .timeout(kMetadataFetchTimeout);
     rawData = result.body;
   } catch (e) {
     printAndLog("Failed to get advisory: $e");
@@ -183,24 +181,31 @@ Future<AdvisoriesResponse?> getAdvisories(Uri advisoriesFileUri) async {
   await sharedPreferences.setInt(KEY_ADVISORY_VERSION, advisories.length);
 
   printAndLog(
-      "Fetched ${advisories.length} advisories. There are new advisories: $newAdvisories");
+    "Fetched ${advisories.length} advisories. There are new advisories: $newAdvisories",
+  );
 
   return AdvisoriesResponse(
-      advisories: advisories, newAdvisories: newAdvisories);
+    advisories: advisories,
+    newAdvisories: newAdvisories,
+  );
 }
 
 void showAdvisoryDialog({BuildContext? context}) {
   showDialog(
-      context: context ?? rootNavigatorKey.currentContext!,
-      builder: (context) {
-        final maxHeight = MediaQuery.of(context).size.height * 0.7;
-        return AlertDialog(
-            title: Text(
-                DictLibLocalizations.of(context)?.newsTitle ?? "Advisories"),
-            content: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                child: SingleChildScrollView(child: getAdvisoriesInner())));
-      });
+    context: context ?? rootNavigatorKey.currentContext!,
+    builder: (context) {
+      final maxHeight = MediaQuery.of(context).size.height * 0.7;
+      return AlertDialog(
+        title: Text(
+          DictLibLocalizations.of(context)?.newsTitle ?? "Advisories",
+        ),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: SingleChildScrollView(child: getAdvisoriesInner()),
+        ),
+      );
+    },
+  );
 }
 
 Widget getAdvisoriesInner() {
@@ -208,19 +213,20 @@ Widget getAdvisoriesInner() {
 
   List<Widget> children = [];
   for (var advisory in advisories) {
-    children.add(Padding(
+    children.add(
+      Padding(
         padding: const EdgeInsets.only(left: 0),
-        child: Text(
-          advisory.date,
-          textAlign: TextAlign.start,
-        )));
+        child: Text(advisory.date, textAlign: TextAlign.start),
+      ),
+    );
     children.add(advisory.asMarkdown());
     // Add padding between after each item. We remove the last padding later.
     children.add(const SizedBox(height: 40));
   }
 
   return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children.sublist(0, children.length - 1));
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: children.sublist(0, children.length - 1),
+  );
 }

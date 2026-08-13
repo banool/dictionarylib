@@ -49,7 +49,9 @@ Future<void> _showLimitDialog(
       content: Text(body),
       actions: [
         TextButton(
-            onPressed: () => Navigator.of(ctx).pop(), child: Text(l.alertOk)),
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(l.alertOk),
+        ),
       ],
     ),
   );
@@ -84,7 +86,9 @@ Future<SyncedEntryList?> showShareDialog({
       context,
       title: l.shareTooManyEntriesTitle,
       body: l.shareTooManyEntriesBody(
-          sourceList.savedVideos.length, maxEntriesPerList),
+        sourceList.savedVideos.length,
+        maxEntriesPerList,
+      ),
     );
     return null;
   }
@@ -103,8 +107,9 @@ Future<SyncedEntryList?> showShareDialog({
 
   // 3. Lists owned by this user. Orphaned wrappers are excluded — the
   // server has already 404/410'd those, so they aren't holding a slot.
-  final liveOwned =
-      sharing.lists.ownedLists.where((owned) => !owned.meta.orphaned).length;
+  final liveOwned = sharing.lists.ownedLists
+      .where((owned) => !owned.meta.orphaned)
+      .length;
   if (liveOwned >= maxListsPerUser) {
     await _showLimitDialog(
       context,
@@ -124,105 +129,118 @@ Future<SyncedEntryList?> showShareDialog({
     barrierDismissible: false,
     builder: (ctx) => DisposeOnUnmount(
       notifiers: [displayCtl],
-      child: StatefulBuilder(builder: (ctx, setLocal) {
-        final l = DictLibLocalizations.of(ctx)!;
-        Future<void> doShare() async {
-          final displayName = displayCtl.text.trim();
-          final v = _validateDisplayName(ctx, displayName);
-          if (v != null) {
-            setLocal(() => displayError = v);
-            return;
-          }
+      child: StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final l = DictLibLocalizations.of(ctx)!;
+          Future<void> doShare() async {
+            final displayName = displayCtl.text.trim();
+            final v = _validateDisplayName(ctx, displayName);
+            if (v != null) {
+              setLocal(() => displayError = v);
+              return;
+            }
 
-          // Ensure we have a session. If the user hasn't signed in yet
-          // (or their stored session is unreachable for some reason),
-          // pop the sign-in dialog and continue once they're back. Any
-          // failure / cancel there (or an unmount across the gap) aborts
-          // the share cleanly.
-          final session = await ensureSession(ctx);
-          if (session == null || !ctx.mounted) return;
+            // Ensure we have a session. If the user hasn't signed in yet
+            // (or their stored session is unreachable for some reason),
+            // pop the sign-in dialog and continue once they're back. Any
+            // failure / cancel there (or an unmount across the gap) aborts
+            // the share cleanly.
+            final session = await ensureSession(ctx);
+            if (session == null || !ctx.mounted) return;
 
-          setLocal(() {
-            submitting = true;
-            displayError = null;
-            generalError = null;
-          });
-
-          try {
-            final synced = await retryWithFeedback(
-              () => listsService.shareList(
-                sourceList: sourceList,
-                displayName: displayName,
-                sessionToken: session.sessionToken,
-              ),
-              onRetry: snackRetryFeedback(ctx),
-            );
-            if (ctx.mounted) Navigator.of(ctx).pop(synced);
-          } on SyncException catch (e) {
             setLocal(() {
-              submitting = false;
-              generalError = localisedSyncError(ctx, e,
-                  notFoundMessage: e.message, unknownMessage: e.message);
+              submitting = true;
+              displayError = null;
+              generalError = null;
             });
-          }
-        }
 
-        return AlertDialog(
-          title: Text(l.shareDialogTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.shareDialogBody, style: const TextStyle(fontSize: 13)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: displayCtl,
-                  decoration: InputDecoration(
-                    labelText: l.shareDialogDisplayNameLabel,
-                    errorText: displayError,
-                    helperText: l.shareDialogDisplayNameHelper,
-                  ),
-                  enabled: !submitting,
-                  textCapitalization: TextCapitalization.words,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => doShare(),
-                  onChanged: (_) {
-                    if (displayError != null || generalError != null) {
-                      setLocal(() {
-                        displayError = null;
-                        generalError = null;
-                      });
-                    }
-                  },
+            try {
+              final synced = await retryWithFeedback(
+                () => listsService.shareList(
+                  sourceList: sourceList,
+                  displayName: displayName,
+                  sessionToken: session.sessionToken,
                 ),
-                if (generalError != null) ...[
-                  const SizedBox(height: 12),
-                  Text(generalError!,
+                onRetry: snackRetryFeedback(ctx),
+              );
+              if (ctx.mounted) Navigator.of(ctx).pop(synced);
+            } on SyncException catch (e) {
+              setLocal(() {
+                submitting = false;
+                generalError = localisedSyncError(
+                  ctx,
+                  e,
+                  notFoundMessage: e.message,
+                  unknownMessage: e.message,
+                );
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: Text(l.shareDialogTitle),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.shareDialogBody, style: const TextStyle(fontSize: 13)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: displayCtl,
+                    decoration: InputDecoration(
+                      labelText: l.shareDialogDisplayNameLabel,
+                      errorText: displayError,
+                      helperText: l.shareDialogDisplayNameHelper,
+                    ),
+                    enabled: !submitting,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => doShare(),
+                    onChanged: (_) {
+                      if (displayError != null || generalError != null) {
+                        setLocal(() {
+                          displayError = null;
+                          generalError = null;
+                        });
+                      }
+                    },
+                  ),
+                  if (generalError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      generalError!,
                       style: TextStyle(
-                          color: Theme.of(ctx).colorScheme.error,
-                          fontSize: 13)),
+                        color: Theme.of(ctx).colorScheme.error,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: submitting ? null : () => Navigator.of(ctx).pop(null),
-              child: Text(l.alertCancel),
-            ),
-            FilledButton(
-              onPressed: submitting ? null : doShare,
-              // onPrimary so the spinner shows on the filled button background
-              // in both light and dark themes.
-              child: submitting
-                  ? buttonSpinner(ctx,
-                      color: Theme.of(ctx).colorScheme.onPrimary)
-                  : Text(l.shareDialogShareButton),
-            ),
-          ],
-        );
-      }),
+            actions: [
+              TextButton(
+                onPressed: submitting
+                    ? null
+                    : () => Navigator.of(ctx).pop(null),
+                child: Text(l.alertCancel),
+              ),
+              FilledButton(
+                onPressed: submitting ? null : doShare,
+                // onPrimary so the spinner shows on the filled button background
+                // in both light and dark themes.
+                child: submitting
+                    ? buttonSpinner(
+                        ctx,
+                        color: Theme.of(ctx).colorScheme.onPrimary,
+                      )
+                    : Text(l.shareDialogShareButton),
+              ),
+            ],
+          );
+        },
+      ),
     ),
   );
 }
@@ -263,18 +281,25 @@ Future<bool> showShareLinkDialog({
           children: [
             Text(body ?? l.shareLinkDialogBody(displayName)),
             const SizedBox(height: 12),
-            SelectableText(shareUrl,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+            SelectableText(
+              shareUrl,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            ),
             if (footnote != null) ...[
               const SizedBox(height: 8),
-              Text(footnote,
-                  style:
-                      TextStyle(color: Theme.of(ctx).hintColor, fontSize: 12)),
+              Text(
+                footnote,
+                style: TextStyle(color: Theme.of(ctx).hintColor, fontSize: 12),
+              ),
             ],
           ],
         ),
-        actionsPadding:
-            const EdgeInsets.only(left: 24, right: 24, bottom: 16, top: 8),
+        actionsPadding: const EdgeInsets.only(
+          left: 24,
+          right: 24,
+          bottom: 16,
+          top: 8,
+        ),
         actions: [
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -293,17 +318,22 @@ Future<bool> showShareLinkDialog({
                     label: Text(l.shareLinkCopyButton),
                   ),
                   const SizedBox(width: 8),
-                  Builder(builder: (btnCtx) {
-                    return FilledButton.tonalIcon(
-                      onPressed: () async {
-                        await SharePlus.instance.share(ShareParams(
-                            text: shareUrl,
-                            sharePositionOrigin: sharePositionOrigin(btnCtx)));
-                      },
-                      icon: const Icon(Icons.share),
-                      label: Text(l.shareLinkShareButton),
-                    );
-                  }),
+                  Builder(
+                    builder: (btnCtx) {
+                      return FilledButton.tonalIcon(
+                        onPressed: () async {
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              text: shareUrl,
+                              sharePositionOrigin: sharePositionOrigin(btnCtx),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.share),
+                        label: Text(l.shareLinkShareButton),
+                      );
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -334,10 +364,12 @@ Future<bool> showShareLinkDialog({
                         Navigator.of(ctx).pop();
                       },
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(ctx).colorScheme.errorContainer,
-                        foregroundColor:
-                            Theme.of(ctx).colorScheme.onErrorContainer,
+                        backgroundColor: Theme.of(ctx)
+                            .colorScheme
+                            .errorContainer,
+                        foregroundColor: Theme.of(ctx)
+                            .colorScheme
+                            .onErrorContainer,
                       ),
                       icon: const Icon(Icons.cloud_off),
                       label: Text(l.unshareConfirmTitle),
@@ -355,7 +387,10 @@ Future<bool> showShareLinkDialog({
 }
 
 Future<void> _showQrCodeDialog(
-    BuildContext context, String shareUrl, String displayName) async {
+  BuildContext context,
+  String shareUrl,
+  String displayName,
+) async {
   await showDialog<void>(
     context: context,
     builder: (ctx) {
@@ -371,9 +406,11 @@ Future<void> _showQrCodeDialog(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(l.qrCodeDialogBody,
-                  style: const TextStyle(fontSize: 13),
-                  textAlign: TextAlign.center),
+              Text(
+                l.qrCodeDialogBody,
+                style: const TextStyle(fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               // White background so the QR scans cleanly even in dark mode.
               Container(
@@ -387,9 +424,11 @@ Future<void> _showQrCodeDialog(
                 ),
               ),
               const SizedBox(height: 8),
-              SelectableText(shareUrl,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-                  textAlign: TextAlign.center),
+              SelectableText(
+                shareUrl,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -408,8 +447,9 @@ Future<void> _showQrCodeDialog(
 /// key or any of the supported share-URL shapes (see [parseShareInput]).
 /// Returns the resulting [SyncedEntryList] on success, null if the user
 /// cancelled.
-Future<SyncedEntryList?> showSubscribeDialog(
-    {required BuildContext context}) async {
+Future<SyncedEntryList?> showSubscribeDialog({
+  required BuildContext context,
+}) async {
   if (!sharing.isEnabled) return null;
 
   final inputCtl = TextEditingController();
@@ -431,184 +471,212 @@ Future<SyncedEntryList?> showSubscribeDialog(
     barrierDismissible: false,
     builder: (ctx) => DisposeOnUnmount(
       notifiers: [inputCtl],
-      child: StatefulBuilder(builder: (ctx, setLocal) {
-        final l = DictLibLocalizations.of(ctx)!;
+      child: StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final l = DictLibLocalizations.of(ctx)!;
 
-        // Already have this list — open it and say so. The snackbar shows on
-        // the app-level messenger so it survives the dialog closing.
-        void openExisting(SyncedEntryList existing) {
-          final role = existing.meta.role;
-          showSnack(
+          // Already have this list — open it and say so. The snackbar shows on
+          // the app-level messenger so it survives the dialog closing.
+          void openExisting(SyncedEntryList existing) {
+            final role = existing.meta.role;
+            showSnack(
               ctx,
               role == ListRole.owner
                   ? l.alreadyOwnerSnack
                   : role == ListRole.editor
-                      ? l.alreadyEditorSnack
-                      : l.alreadySubscribedSnack);
-          if (role == ListRole.subscriber) {
-            unawaited(sharing.engine.refreshSubscriber(existing.meta.listId));
-          }
-          Navigator.of(ctx).pop(existing);
-        }
-
-        // Best-effort fetch of the list's display name so the invite copy can
-        // name it. Fire-and-forget; failure just leaves the generic phrasing.
-        Future<void> fetchInviteName(String listId) async {
-          try {
-            final res = await sharing.api.getList(listId);
-            if (res is FetchOk) {
-              setLocal(() => inviteName = res.list.displayName);
+                  ? l.alreadyEditorSnack
+                  : l.alreadySubscribedSnack,
+            );
+            if (role == ListRole.subscriber) {
+              unawaited(sharing.engine.refreshSubscriber(existing.meta.listId));
             }
-          } catch (_) {/* keep the generic copy */}
-        }
-
-        Future<void> doSubscribe() async {
-          final parsed = parseShareInput(inputCtl.text, sharing.config);
-          if (parsed == null) {
-            setLocal(() => error = l.subscribeInvalidInput);
-            return;
+            Navigator.of(ctx).pop(existing);
           }
-          final existing = sharing.lists.get(parsed.listId);
-          // Invite link pasted into the subscribe dialog. Rather than
-          // rejecting it (or silently subscribing as a non-editor), switch
-          // the dialog into accept-invite mode so the user understands what
-          // the link is and can opt in.
-          if (parsed.isInvite) {
-            // Already owner/editor → no point accepting; just open it.
-            if (existing != null &&
-                (existing.meta.role == ListRole.owner ||
-                    existing.meta.role == ListRole.editor)) {
+
+          // Best-effort fetch of the list's display name so the invite copy can
+          // name it. Fire-and-forget; failure just leaves the generic phrasing.
+          Future<void> fetchInviteName(String listId) async {
+            try {
+              final res = await sharing.api.getList(listId);
+              if (res is FetchOk) {
+                setLocal(() => inviteName = res.list.displayName);
+              }
+            } catch (_) {
+              /* keep the generic copy */
+            }
+          }
+
+          Future<void> doSubscribe() async {
+            final parsed = parseShareInput(inputCtl.text, sharing.config);
+            if (parsed == null) {
+              setLocal(() => error = l.subscribeInvalidInput);
+              return;
+            }
+            final existing = sharing.lists.get(parsed.listId);
+            // Invite link pasted into the subscribe dialog. Rather than
+            // rejecting it (or silently subscribing as a non-editor), switch
+            // the dialog into accept-invite mode so the user understands what
+            // the link is and can opt in.
+            if (parsed.isInvite) {
+              // Already owner/editor → no point accepting; just open it.
+              if (existing != null &&
+                  (existing.meta.role == ListRole.owner ||
+                      existing.meta.role == ListRole.editor)) {
+                openExisting(existing);
+                return;
+              }
+              setLocal(() {
+                invite = parsed;
+                inviteName = existing?.meta.displayName;
+                error = null;
+              });
+              if (inviteName == null) unawaited(fetchInviteName(parsed.listId));
+              return;
+            }
+            // Plain subscribe path. Already have it → just open it.
+            if (existing != null) {
               openExisting(existing);
               return;
             }
             setLocal(() {
-              invite = parsed;
-              inviteName = existing?.meta.displayName;
+              submitting = true;
               error = null;
             });
-            if (inviteName == null) unawaited(fetchInviteName(parsed.listId));
-            return;
-          }
-          // Plain subscribe path. Already have it → just open it.
-          if (existing != null) {
-            openExisting(existing);
-            return;
-          }
-          setLocal(() {
-            submitting = true;
-            error = null;
-          });
-          try {
-            final list = await retryWithFeedback(
+            try {
+              final list = await retryWithFeedback(
                 () => sharing.engine.subscribe(parsed.listId),
-                onRetry: snackRetryFeedback(ctx));
-            if (ctx.mounted) Navigator.of(ctx).pop(list);
-          } on SyncException catch (e) {
-            setLocal(() {
-              submitting = false;
-              error = localisedSyncError(ctx, e,
+                onRetry: snackRetryFeedback(ctx),
+              );
+              if (ctx.mounted) Navigator.of(ctx).pop(list);
+            } on SyncException catch (e) {
+              setLocal(() {
+                submitting = false;
+                error = localisedSyncError(
+                  ctx,
+                  e,
                   notFoundMessage: l.subscribeNotFound,
-                  unknownMessage: e.message);
-            });
+                  unknownMessage: e.message,
+                );
+              });
+            }
           }
-        }
 
-        Future<void> doAcceptInvite() async {
-          final payload = invite!;
-          // Accepting registers the user as an editor, which the server ties
-          // to an account — ensure we're signed in first.
-          final session = await ensureSession(ctx,
-              contextMessage: l.signInDialogContextInvite);
-          if (session == null || !ctx.mounted) return;
-          setLocal(() {
-            submitting = true;
-            error = null;
-          });
-          try {
-            final list = await retryWithFeedback(
-                () => sharing.engine.acceptInvite(
-                    listId: payload.listId, token: payload.inviteToken!),
-                onRetry: snackRetryFeedback(ctx));
-            if (ctx.mounted) Navigator.of(ctx).pop(list);
-          } on SyncException catch (e) {
+          Future<void> doAcceptInvite() async {
+            final payload = invite!;
+            // Accepting registers the user as an editor, which the server ties
+            // to an account — ensure we're signed in first.
+            final session = await ensureSession(
+              ctx,
+              contextMessage: l.signInDialogContextInvite,
+            );
+            if (session == null || !ctx.mounted) return;
             setLocal(() {
-              submitting = false;
-              // 403/404/410 on an invite means expired or already used.
-              error = (e.kind == SyncErrorKind.forbidden ||
-                      e.kind == SyncErrorKind.notFound ||
-                      e.kind == SyncErrorKind.gone)
-                  ? l.acceptInviteLandingExpired
-                  : l.acceptInviteLandingFailed(e.message);
+              submitting = true;
+              error = null;
             });
+            try {
+              final list = await retryWithFeedback(
+                () => sharing.engine.acceptInvite(
+                  listId: payload.listId,
+                  token: payload.inviteToken!,
+                ),
+                onRetry: snackRetryFeedback(ctx),
+              );
+              if (ctx.mounted) Navigator.of(ctx).pop(list);
+            } on SyncException catch (e) {
+              setLocal(() {
+                submitting = false;
+                // 403/404/410 on an invite means expired or already used.
+                error =
+                    (e.kind == SyncErrorKind.forbidden ||
+                        e.kind == SyncErrorKind.notFound ||
+                        e.kind == SyncErrorKind.gone)
+                    ? l.acceptInviteLandingExpired
+                    : l.acceptInviteLandingFailed(e.message);
+              });
+            }
           }
-        }
 
-        final isInvite = invite != null;
-        return AlertDialog(
-          title: Text(
-              isInvite ? l.acceptInviteLandingTitle : l.subscribeDialogTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: isInvite
-                ? [
-                    Text(
-                      inviteName == null
-                          ? l.subscribeInviteDetectedUnknown
-                          : l.subscribeInviteDetected(inviteName!),
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    if (error != null) ...[
-                      const SizedBox(height: 12),
-                      Text(error!,
-                          style: TextStyle(
-                              color: Theme.of(ctx).colorScheme.error,
-                              fontSize: 13)),
-                    ],
-                  ]
-                : [
-                    Text(l.subscribeDialogBody,
-                        style: const TextStyle(fontSize: 13)),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: inputCtl,
-                      decoration: InputDecoration(
-                        labelText: l.subscribeDialogUrlLabel,
-                        errorText: error,
-                        // Use a real example URL for this app so the user sees
-                        // exactly what a valid share link looks like —
-                        // including the format of the trailing list ID.
-                        hintText: sharing.config.shareUrlFor(exampleListId),
+          final isInvite = invite != null;
+          return AlertDialog(
+            title: Text(
+              isInvite ? l.acceptInviteLandingTitle : l.subscribeDialogTitle,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: isInvite
+                  ? [
+                      Text(
+                        inviteName == null
+                            ? l.subscribeInviteDetectedUnknown
+                            : l.subscribeInviteDetected(inviteName!),
+                        style: const TextStyle(fontSize: 13),
                       ),
-                      autofocus: true,
-                      enabled: !submitting,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.go,
-                      onSubmitted: (_) => doSubscribe(),
-                      onChanged: (_) {
-                        if (error != null) setLocal(() => error = null);
-                      },
-                    ),
-                  ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: submitting ? null : () => Navigator.of(ctx).pop(null),
-              child: Text(l.alertCancel),
+                      if (error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          error!,
+                          style: TextStyle(
+                            color: Theme.of(ctx).colorScheme.error,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ]
+                  : [
+                      Text(
+                        l.subscribeDialogBody,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: inputCtl,
+                        decoration: InputDecoration(
+                          labelText: l.subscribeDialogUrlLabel,
+                          errorText: error,
+                          // Use a real example URL for this app so the user sees
+                          // exactly what a valid share link looks like —
+                          // including the format of the trailing list ID.
+                          hintText: sharing.config.shareUrlFor(exampleListId),
+                        ),
+                        autofocus: true,
+                        enabled: !submitting,
+                        autocorrect: false,
+                        textInputAction: TextInputAction.go,
+                        onSubmitted: (_) => doSubscribe(),
+                        onChanged: (_) {
+                          if (error != null) setLocal(() => error = null);
+                        },
+                      ),
+                    ],
             ),
-            FilledButton(
-              onPressed:
-                  submitting ? null : (isInvite ? doAcceptInvite : doSubscribe),
-              child: submitting
-                  ? buttonSpinner(ctx,
-                      color: Theme.of(ctx).colorScheme.onPrimary)
-                  : Text(isInvite
-                      ? l.subscribeInviteAcceptButton
-                      : l.subscribeDialogSubscribeButton),
-            ),
-          ],
-        );
-      }),
+            actions: [
+              TextButton(
+                onPressed: submitting
+                    ? null
+                    : () => Navigator.of(ctx).pop(null),
+                child: Text(l.alertCancel),
+              ),
+              FilledButton(
+                onPressed: submitting
+                    ? null
+                    : (isInvite ? doAcceptInvite : doSubscribe),
+                child: submitting
+                    ? buttonSpinner(
+                        ctx,
+                        color: Theme.of(ctx).colorScheme.onPrimary,
+                      )
+                    : Text(
+                        isInvite
+                            ? l.subscribeInviteAcceptButton
+                            : l.subscribeDialogSubscribeButton,
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     ),
   );
 }

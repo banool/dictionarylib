@@ -97,14 +97,24 @@ class EntryListPageState extends State<EntryListPage> {
           // the fully-saved ones from the corpus.
           final fullySaved = <Entry>{
             for (final e in unique)
-              if (widget.entryList.containsAllVideosOf(e)) e
+              if (widget.entryList.containsAllVideosOf(e)) e,
           };
           final available = entriesGlobal.difference(fullySaved);
           entriesSearched = searchList(
-              context, currentSearchTerm, EntryType.values, available, {});
+            context,
+            currentSearchTerm,
+            EntryType.values,
+            available,
+            {},
+          );
         } else {
           entriesSearched = searchList(
-              context, currentSearchTerm, EntryType.values, unique, unique);
+            context,
+            currentSearchTerm,
+            EntryType.values,
+            unique,
+            unique,
+          );
         }
       } else {
         entriesSearched = unique.toList();
@@ -112,9 +122,12 @@ class EntryListPageState extends State<EntryListPage> {
           // Sort by the displayed phrase, case-insensitively, so it reads
           // alphabetically rather than ASCII order (all capitals first).
           final locale = Localizations.localeOf(context);
-          entriesSearched.sort((a, b) => compareDisplayNames(
+          entriesSearched.sort(
+            (a, b) => compareDisplayNames(
               a.getPhrase(locale) ?? a.getKey(),
-              b.getPhrase(locale) ?? b.getKey()));
+              b.getPhrase(locale) ?? b.getKey(),
+            ),
+          );
         }
       }
     });
@@ -141,20 +154,26 @@ class EntryListPageState extends State<EntryListPage> {
   /// BuildContext.)
   Future<void> addEntry(Entry entry) async {
     final messenger = ScaffoldMessenger.of(context);
-    final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
+    final failMessage =
+        DictLibLocalizations.of(context)?.saveVideoFailed ??
         "Couldn't update your lists. Please try again.";
     final isShared = widget.entryList is SyncedEntryList;
     try {
       await widget.entryList.addAllVideosOfEntry(entry);
-      Analytics.track('save',
-          props: {'granularity': 'entry', 'is_shared': isShared});
+      Analytics.track(
+        'save',
+        props: {'granularity': 'entry', 'is_shared': isShared},
+      );
     } catch (e) {
       printAndLog("Failed to add entry to list ${widget.entryList.key}: $e");
-      Analytics.track('save_failed', props: {
-        'granularity': 'entry',
-        'is_shared': isShared,
-        'error_type': Analytics.errorType(e),
-      });
+      Analytics.track(
+        'save_failed',
+        props: {
+          'granularity': 'entry',
+          'is_shared': isShared,
+          'error_type': Analytics.errorType(e),
+        },
+      );
       if (mounted) showSnackVia(messenger, failMessage);
     } finally {
       if (mounted) {
@@ -177,21 +196,27 @@ class EntryListPageState extends State<EntryListPage> {
       final l = DictLibLocalizations.of(context)!;
       final confirmed = await confirmAlert(
         context,
-        Text(l.listRemoveAllVideosBody(
-            videos.length, entry.getPhrase(LOCALE_ENGLISH) ?? entry.getKey())),
+        Text(
+          l.listRemoveAllVideosBody(
+            videos.length,
+            entry.getPhrase(LOCALE_ENGLISH) ?? entry.getKey(),
+          ),
+        ),
         title: l.listRemoveAllVideosTitle,
       );
       if (!confirmed) return;
     }
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    final failMessage = DictLibLocalizations.of(context)?.saveVideoFailed ??
+    final failMessage =
+        DictLibLocalizations.of(context)?.saveVideoFailed ??
         "Couldn't update your lists. Please try again.";
     try {
       await widget.entryList.removeAllVideosOfEntry(entry);
     } catch (e) {
       printAndLog(
-          "Failed to remove entry from list ${widget.entryList.key}: $e");
+        "Failed to remove entry from list ${widget.entryList.key}: $e",
+      );
       if (mounted) showSnackVia(messenger, failMessage);
     } finally {
       if (mounted) {
@@ -232,19 +257,20 @@ class EntryListPageState extends State<EntryListPage> {
     } on SyncException catch (e) {
       if (mounted) {
         showSnack(
-            context,
-            DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
-                localisedSyncErrorSimple(context, e, e.message)),
-            replaceCurrent: true);
+          context,
+          DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
+            localisedSyncErrorSimple(context, e, e.message),
+          ),
+          replaceCurrent: true,
+        );
       }
     }
     if (mounted) search();
   }
 
   Future<void> _openMembersPage(SyncedEntryList list) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => ListMembersPage(list: list),
-    ));
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => ListMembersPage(list: list)));
     if (mounted) setState(() {});
   }
 
@@ -259,41 +285,45 @@ class EntryListPageState extends State<EntryListPage> {
   }
 
   Future<void> _onSharePressed() => _runGuarded(() async {
-        if (!sharing.isEnabled) return;
-        SyncedEntryList? owned = listsService.ownedShareFor(widget.entryList);
-        final freshlyShared = owned == null;
-        if (owned == null) {
-          owned = await showShareDialog(
-              context: context, sourceList: widget.entryList);
-          if (owned == null || !mounted) return;
-        }
-        final wantsUnshare = await showShareLinkDialog(
-          context: context,
-          shareUrl: sharing.config.shareUrlFor(owned.listId),
-          displayName: owned.meta.displayName,
-          showUnshareButton: true,
-        );
-        if (!mounted) return;
-        if (wantsUnshare) {
-          // Call the guard-free unshare body directly — we're already inside
-          // `_runGuarded`, so re-entering it (the old `_onUnsharePressed`
-          // call) would have bailed; that's why this used to reset
-          // `_actionInflight` by hand first. Sharing one body avoids the
-          // fragile manual toggle.
-          await _doUnshare();
-          return;
-        }
-        if (freshlyShared) {
-          await Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (_) => EntryListPage(
-              entryList: owned!,
-              navigateToEntryPage: widget.navigateToEntryPage,
-            ),
-          ));
-        } else {
-          setState(() {});
-        }
-      });
+    if (!sharing.isEnabled) return;
+    SyncedEntryList? owned = listsService.ownedShareFor(widget.entryList);
+    final freshlyShared = owned == null;
+    if (owned == null) {
+      owned = await showShareDialog(
+        context: context,
+        sourceList: widget.entryList,
+      );
+      if (owned == null || !mounted) return;
+    }
+    final wantsUnshare = await showShareLinkDialog(
+      context: context,
+      shareUrl: sharing.config.shareUrlFor(owned.listId),
+      displayName: owned.meta.displayName,
+      showUnshareButton: true,
+    );
+    if (!mounted) return;
+    if (wantsUnshare) {
+      // Call the guard-free unshare body directly — we're already inside
+      // `_runGuarded`, so re-entering it (the old `_onUnsharePressed`
+      // call) would have bailed; that's why this used to reset
+      // `_actionInflight` by hand first. Sharing one body avoids the
+      // fragile manual toggle.
+      await _doUnshare();
+      return;
+    }
+    if (freshlyShared) {
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => EntryListPage(
+            entryList: owned!,
+            navigateToEntryPage: widget.navigateToEntryPage,
+          ),
+        ),
+      );
+    } else {
+      setState(() {});
+    }
+  });
 
   /// The unshare confirm + action, with no `_actionInflight` management of
   /// its own. The only caller is the share dialog's "stop sharing" branch,
@@ -309,8 +339,10 @@ class EntryListPageState extends State<EntryListPage> {
       context,
       Text(l.unshareConfirmBody),
       title: l.unshareConfirmTitle,
-      onConfirm: () => retryWithFeedback(() => listsService.unshareList(owned),
-          onRetry: snackRetryFeedback(context)),
+      onConfirm: () => retryWithFeedback(
+        () => listsService.unshareList(owned),
+        onRetry: snackRetryFeedback(context),
+      ),
       errorMessage: (e) => e is SyncException
           ? l.unshareFailed(localisedSyncErrorSimple(context, e, e.message))
           : e.toString(),
@@ -319,78 +351,83 @@ class EntryListPageState extends State<EntryListPage> {
   }
 
   Future<void> _onSyncNowPressed() => _runGuarded(() async {
-        final list = widget.entryList;
-        if (list is! SyncedEntryList) return;
-        final l = DictLibLocalizations.of(context)!;
-        final ok = await runWithProgress(
-          context: context,
-          message: l.subscribedSyncInProgress,
-          task: () => retryWithFeedback(
-              () => listsService.refreshSubscriber(list),
-              onRetry: snackRetryFeedback(context)),
-          errorMessage: (e) => e is SyncException
-              ? l.subscribedSyncFailedSnack(
-                  localisedSyncErrorSimple(context, e, e.message))
-              : '$e',
-        );
-        if (!ok || !mounted) return;
-        setState(() => search());
-        showSnack(context, l.subscribedSyncDoneSnack);
-      });
+    final list = widget.entryList;
+    if (list is! SyncedEntryList) return;
+    final l = DictLibLocalizations.of(context)!;
+    final ok = await runWithProgress(
+      context: context,
+      message: l.subscribedSyncInProgress,
+      task: () => retryWithFeedback(
+        () => listsService.refreshSubscriber(list),
+        onRetry: snackRetryFeedback(context),
+      ),
+      errorMessage: (e) => e is SyncException
+          ? l.subscribedSyncFailedSnack(
+              localisedSyncErrorSimple(context, e, e.message),
+            )
+          : '$e',
+    );
+    if (!ok || !mounted) return;
+    setState(() => search());
+    showSnack(context, l.subscribedSyncDoneSnack);
+  });
 
   Future<void> _onCopyLinkPressed() async {
     final list = widget.entryList;
     if (list is! SyncedEntryList) return;
     final l = DictLibLocalizations.of(context)!;
     await Clipboard.setData(
-        ClipboardData(text: sharing.config.shareUrlFor(list.listId)));
+      ClipboardData(text: sharing.config.shareUrlFor(list.listId)),
+    );
     if (mounted) showSnack(context, l.shareLinkCopiedSnack);
   }
 
   Future<void> _onUnsubscribePressed() => _runGuarded(() async {
-        final list = widget.entryList;
-        if (list is! SyncedEntryList) return;
-        final l = DictLibLocalizations.of(context)!;
-        final confirmed = await confirmAlert(
-          context,
-          Text(l.unsubscribeConfirmBody),
-          title: l.unsubscribeConfirmTitle,
-        );
-        if (!confirmed || !mounted) return;
-        await listsService.unsubscribeList(list);
-        if (mounted) Navigator.of(context).pop();
-      });
+    final list = widget.entryList;
+    if (list is! SyncedEntryList) return;
+    final l = DictLibLocalizations.of(context)!;
+    final confirmed = await confirmAlert(
+      context,
+      Text(l.unsubscribeConfirmBody),
+      title: l.unsubscribeConfirmTitle,
+    );
+    if (!confirmed || !mounted) return;
+    await listsService.unsubscribeList(list);
+    if (mounted) Navigator.of(context).pop();
+  });
 
   Future<void> _onCopyToMyListsPressed() => _runGuarded(() async {
-        final l = DictLibLocalizations.of(context)!;
-        final confirmed = await confirmAlert(
-          context,
-          Text(l.duplicateConfirmBody),
-          title: l.duplicateConfirmTitle,
-          confirmText: l.duplicateConfirmAction,
-        );
-        if (!confirmed || !mounted) return;
+    final l = DictLibLocalizations.of(context)!;
+    final confirmed = await confirmAlert(
+      context,
+      Text(l.duplicateConfirmBody),
+      title: l.duplicateConfirmTitle,
+      confirmText: l.duplicateConfirmAction,
+    );
+    if (!confirmed || !mounted) return;
 
-        final list = widget.entryList;
-        final videos = list.savedVideos.toList();
+    final list = widget.entryList;
+    final videos = list.savedVideos.toList();
 
-        final localKey = listsService.allocateLocalKey(
-          preferredName: list.getName(context),
-          fallbackBase: l.duplicateFallbackName,
-        );
+    final localKey = listsService.allocateLocalKey(
+      preferredName: list.getName(context),
+      fallbackBase: l.duplicateFallbackName,
+    );
 
-        await userEntryListManager.createEntryList(localKey);
-        final copy = userEntryListManager.getEntryLists()[localKey]!;
-        for (final v in videos) {
-          await copy.addVideo(v);
-        }
-        if (mounted) {
-          final messenger = ScaffoldMessenger.of(context);
-          showSnackVia(messenger,
-              l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)));
-          Navigator.of(context).pop();
-        }
-      });
+    await userEntryListManager.createEntryList(localKey);
+    final copy = userEntryListManager.getEntryLists()[localKey]!;
+    for (final v in videos) {
+      await copy.addVideo(v);
+    }
+    if (mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      showSnackVia(
+        messenger,
+        l.copyToMyListsSnack(EntryList.getNameFromKey(localKey)),
+      );
+      Navigator.of(context).pop();
+    }
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -403,19 +440,21 @@ class EntryListPageState extends State<EntryListPage> {
   Widget _buildScaffold(BuildContext context) {
     List<Widget> actions = [];
     if (widget.entryList.canBeEdited()) {
-      actions.add(buildActionButton(
-        context,
-        inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
-        () async {
-          setState(() {
-            inEditMode = !inEditMode;
-            if (!inEditMode) {
-              clearSearch();
-            }
-            search();
-          });
-        },
-      ));
+      actions.add(
+        buildActionButton(
+          context,
+          inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
+          () async {
+            setState(() {
+              inEditMode = !inEditMode;
+              if (!inEditMode) {
+                clearSearch();
+              }
+              search();
+            });
+          },
+        ),
+      );
     }
 
     // Shared lists carry extra app-bar icons (share / members / sync menu).
@@ -430,87 +469,97 @@ class EntryListPageState extends State<EntryListPage> {
       isSharedList = list is SyncedEntryList || ownedShare != null;
 
       if (isSubscribed) {
-        actions.add(PopupMenuButton<_ListMenuAction>(
-          onSelected: (v) async {
-            switch (v) {
-              case _ListMenuAction.syncNow:
-                await _onSyncNowPressed();
-                break;
-              case _ListMenuAction.copyLink:
-                await _onCopyLinkPressed();
-                break;
-              case _ListMenuAction.copy:
-                await _onCopyToMyListsPressed();
-                break;
-              case _ListMenuAction.unsubscribe:
-                await _onUnsubscribePressed();
-                break;
-            }
-          },
-          itemBuilder: (ctx) {
-            final l = DictLibLocalizations.of(ctx)!;
-            final menuIconColor = Theme.of(ctx).colorScheme.onSurface;
-            Widget item(IconData icon, String label) => Row(children: [
+        actions.add(
+          PopupMenuButton<_ListMenuAction>(
+            onSelected: (v) async {
+              switch (v) {
+                case _ListMenuAction.syncNow:
+                  await _onSyncNowPressed();
+                  break;
+                case _ListMenuAction.copyLink:
+                  await _onCopyLinkPressed();
+                  break;
+                case _ListMenuAction.copy:
+                  await _onCopyToMyListsPressed();
+                  break;
+                case _ListMenuAction.unsubscribe:
+                  await _onUnsubscribePressed();
+                  break;
+              }
+            },
+            itemBuilder: (ctx) {
+              final l = DictLibLocalizations.of(ctx)!;
+              final menuIconColor = Theme.of(ctx).colorScheme.onSurface;
+              Widget item(IconData icon, String label) => Row(
+                children: [
                   Icon(icon, size: 20, color: menuIconColor),
                   const SizedBox(width: 12),
                   Text(label),
-                ]);
-            return [
-              PopupMenuItem(
+                ],
+              );
+              return [
+                PopupMenuItem(
                   value: _ListMenuAction.syncNow,
-                  child: item(Icons.sync, l.subscribedSyncNowMenuItem)),
-              PopupMenuItem(
+                  child: item(Icons.sync, l.subscribedSyncNowMenuItem),
+                ),
+                PopupMenuItem(
                   value: _ListMenuAction.copyLink,
-                  child: item(Icons.link, l.subscribedCopyLinkMenuItem)),
-              PopupMenuItem(
+                  child: item(Icons.link, l.subscribedCopyLinkMenuItem),
+                ),
+                PopupMenuItem(
                   value: _ListMenuAction.copy,
-                  child: item(Icons.copy_all, l.subscribedCopyMenuItem)),
-              PopupMenuItem(
+                  child: item(Icons.copy_all, l.subscribedCopyMenuItem),
+                ),
+                PopupMenuItem(
                   value: _ListMenuAction.unsubscribe,
-                  child: item(Icons.cloud_off, l.unsubscribeConfirmTitle)),
-            ];
-          },
-        ));
+                  child: item(Icons.cloud_off, l.unsubscribeConfirmTitle),
+                ),
+              ];
+            },
+          ),
+        );
       } else if (list is SyncedEntryList && list.meta.role == ListRole.editor) {
-        actions.add(buildActionButton(
-          context,
-          _PendingSyncIconBadge(
-            dirty: list.meta.pendingOps.isNotEmpty,
-            child: const Icon(Icons.group),
-          ),
-          () async => _openMembersPage(list),
-        ));
-      } else if (ownedShare != null || list.canBeEdited()) {
-        actions.add(buildActionButton(
-          context,
-          _PendingSyncIconBadge(
-            dirty: (ownedShare?.meta.pendingOps.isNotEmpty) ?? false,
-            child: const Icon(Icons.share),
-          ),
-          () async => _onSharePressed(),
-        ));
-        if (ownedShare != null) {
-          actions.add(buildActionButton(
+        actions.add(
+          buildActionButton(
             context,
-            const Icon(Icons.group),
-            () async => _openMembersPage(ownedShare),
-          ));
+            _PendingSyncIconBadge(
+              dirty: list.meta.pendingOps.isNotEmpty,
+              child: const Icon(Icons.group),
+            ),
+            () async => _openMembersPage(list),
+          ),
+        );
+      } else if (ownedShare != null || list.canBeEdited()) {
+        actions.add(
+          buildActionButton(
+            context,
+            _PendingSyncIconBadge(
+              dirty: (ownedShare?.meta.pendingOps.isNotEmpty) ?? false,
+              child: const Icon(Icons.share),
+            ),
+            () async => _onSharePressed(),
+          ),
+        );
+        if (ownedShare != null) {
+          actions.add(
+            buildActionButton(
+              context,
+              const Icon(Icons.group),
+              () async => _openMembersPage(ownedShare),
+            ),
+          );
         }
       }
     }
 
     if (!isSharedList) {
       actions.add(
-        buildActionButton(
-          context,
-          const Icon(Icons.help),
-          () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => getEntryListHelpPageEn()),
-            );
-          },
-        ),
+        buildActionButton(context, const Icon(Icons.help), () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => getEntryListHelpPageEn()),
+          );
+        }),
       );
     }
 
@@ -523,9 +572,11 @@ class EntryListPageState extends State<EntryListPage> {
     FloatingActionButton? floatingActionButton = FloatingActionButton.extended(
       onPressed: toggleSort,
       icon: const Icon(Icons.swap_vert),
-      label: Text(viewSortedList
-          ? DictLibLocalizations.of(context)!.listSortAlpha
-          : DictLibLocalizations.of(context)!.listSortAdded),
+      label: Text(
+        viewSortedList
+            ? DictLibLocalizations.of(context)!.listSortAlpha
+            : DictLibLocalizations.of(context)!.listSortAdded,
+      ),
     );
 
     String hintText;
@@ -536,10 +587,11 @@ class EntryListPageState extends State<EntryListPage> {
         floatingActionButton = null;
       } else {
         floatingActionButton = FloatingActionButton(
-            onPressed: () {
-              textFieldFocus.requestFocus();
-            },
-            child: const Icon(Icons.add));
+          onPressed: () {
+            textFieldFocus.requestFocus();
+          },
+          child: const Icon(Icons.add),
+        );
       }
     } else {
       hintText =
@@ -550,7 +602,8 @@ class EntryListPageState extends State<EntryListPage> {
     }
 
     final entryList = widget.entryList;
-    final bannerLists = (entryList is SyncedEntryList &&
+    final bannerLists =
+        (entryList is SyncedEntryList &&
             (entryList.meta.role == ListRole.owner ||
                 entryList.meta.role == ListRole.editor) &&
             !entryList.meta.orphaned &&
@@ -560,8 +613,10 @@ class EntryListPageState extends State<EntryListPage> {
 
     // Lists are renamed from the lists overview page only, so the app-bar
     // title is always a static label here.
-    Widget titleWidget = Text(widget.entryList.getName(context),
-        overflow: TextOverflow.ellipsis);
+    Widget titleWidget = Text(
+      widget.entryList.getName(context),
+      overflow: TextOverflow.ellipsis,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -584,62 +639,66 @@ class EntryListPageState extends State<EntryListPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Form(
-                    child: Column(children: <Widget>[
-                  TextField(
-                    controller: _searchFieldController,
-                    focusNode: textFieldFocus,
-                    decoration: InputDecoration(
-                      hintText: hintText,
-                      prefixIcon: const Icon(Icons.search),
-                      // Match the main search page: only offer the clear button
-                      // once there's something to clear.
-                      suffixIcon: currentSearchTerm.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: clearSearch,
-                              icon: const Icon(Icons.close),
-                            ),
-                    ),
-                    onChanged: (String value) {
-                      updateCurrentSearchTerm(value);
-                      search();
-                    },
-                    autofocus: false,
-                    textInputAction: TextInputAction.search,
-                    keyboardType: TextInputType.visiblePassword,
-                    autocorrect: false,
+                  child: Column(
+                    children: <Widget>[
+                      TextField(
+                        controller: _searchFieldController,
+                        focusNode: textFieldFocus,
+                        decoration: InputDecoration(
+                          hintText: hintText,
+                          prefixIcon: const Icon(Icons.search),
+                          // Match the main search page: only offer the clear button
+                          // once there's something to clear.
+                          suffixIcon: currentSearchTerm.isEmpty
+                              ? null
+                              : IconButton(
+                                  onPressed: clearSearch,
+                                  icon: const Icon(Icons.close),
+                                ),
+                        ),
+                        onChanged: (String value) {
+                          updateCurrentSearchTerm(value);
+                          search();
+                        },
+                        autofocus: false,
+                        textInputAction: TextInputAction.search,
+                        keyboardType: TextInputType.visiblePassword,
+                        autocorrect: false,
+                      ),
+                    ],
                   ),
-                ])),
+                ),
               ),
               Expanded(
-                  child: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: () {
-                  final synced = _syncedForRefresh;
-                  final list = listWidget(
-                    context,
-                    entriesSearched,
-                    refreshEntries,
-                    widget.navigateToEntryPage,
-                    entryList: widget.entryList,
-                    deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
-                        ? removeEntry
-                        : null,
-                    addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
-                        ? addEntry
-                        : null,
-                    // Pull-to-refresh only makes sense for shared lists; a
-                    // short list still needs to be draggable for the gesture.
-                    alwaysScrollable: synced != null,
-                  );
-                  // Shared lists (any role) get swipe-down-to-sync.
-                  if (synced == null) return list;
-                  return RefreshIndicator(
-                    onRefresh: () => _pullToRefresh(synced),
-                    child: list,
-                  );
-                }(),
-              )),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: () {
+                    final synced = _syncedForRefresh;
+                    final list = listWidget(
+                      context,
+                      entriesSearched,
+                      refreshEntries,
+                      widget.navigateToEntryPage,
+                      entryList: widget.entryList,
+                      deleteEntryFn: inEditMode && currentSearchTerm.isEmpty
+                          ? removeEntry
+                          : null,
+                      addEntryFn: inEditMode && currentSearchTerm.isNotEmpty
+                          ? addEntry
+                          : null,
+                      // Pull-to-refresh only makes sense for shared lists; a
+                      // short list still needs to be draggable for the gesture.
+                      alwaysScrollable: synced != null,
+                    );
+                    // Shared lists (any role) get swipe-down-to-sync.
+                    if (synced == null) return list;
+                    return RefreshIndicator(
+                      onRefresh: () => _pullToRefresh(synced),
+                      child: list,
+                    );
+                  }(),
+                ),
+              ),
             ],
           ),
         ),
@@ -653,6 +712,7 @@ Widget listWidget(
   List<Entry?> entriesSearched,
   Function refreshEntriesFn,
   NavigateToEntryPageFn navigateToEntryPage, {
+
   /// The list we're showing rows from. Used to look up "how many videos
   /// of this entry are saved" for the subtitle, and the first saved
   /// video for the focus-on-tap target. Null when the caller is in
@@ -689,19 +749,31 @@ Widget listWidget(
         // context of this list.
         if (allVideosOf(entry).length <= 1) {
           trailing = IconButton(
-            padding:
-                const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
+            padding: const EdgeInsets.only(
+              left: 8,
+              right: 16,
+              top: 8,
+              bottom: 8,
+            ),
             icon: Icon(Icons.add_circle, color: cs.tertiary),
             onPressed: () async => await addEntryFn(entry),
           );
         } else {
           trailing = IconButton(
-            padding:
-                const EdgeInsets.only(left: 8, right: 16, top: 8, bottom: 8),
+            padding: const EdgeInsets.only(
+              left: 8,
+              right: 16,
+              top: 8,
+              bottom: 8,
+            ),
             icon: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
             onPressed: () async {
-              await navigateToEntryPage(context, entry, true,
-                  saveToList: entryList);
+              await navigateToEntryPage(
+                context,
+                entry,
+                true,
+                saveToList: entryList,
+              );
               await refreshEntriesFn();
             },
           );
@@ -711,11 +783,16 @@ Widget listWidget(
       trailing ??= Icon(Icons.chevron_right, color: cs.onSurfaceVariant);
       return ListTile(
         key: ValueKey(entry.getKey()),
-        title: listItem(context, entry, refreshEntriesFn, navigateToEntryPage,
-            entryList: entryList,
-            // In edit-mode "add" search, tapping the row should also land the
-            // user in the save-to-this-list context.
-            saveToList: addEntryFn != null ? entryList : null),
+        title: listItem(
+          context,
+          entry,
+          refreshEntriesFn,
+          navigateToEntryPage,
+          entryList: entryList,
+          // In edit-mode "add" search, tapping the row should also land the
+          // user in the save-to-this-list context.
+          saveToList: addEntryFn != null ? entryList : null,
+        ),
         trailing: trailing,
       );
     },
@@ -729,9 +806,14 @@ Widget listWidget(
 /// entry page, jumped to the user's first saved video for the entry
 /// (so a list of three favourite "hello" videos opens directly on the
 /// one they care about, not the corpus-default first one).
-Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
-    NavigateToEntryPageFn navigateToEntryPage,
-    {EntryList? entryList, EntryList? saveToList}) {
+Widget listItem(
+  BuildContext context,
+  Entry entry,
+  Function refreshEntriesFn,
+  NavigateToEntryPageFn navigateToEntryPage, {
+  EntryList? entryList,
+  EntryList? saveToList,
+}) {
   Locale currentLocale = Localizations.localeOf(context);
   var text = entry.getPhrase(currentLocale) ?? entry.getKey();
 
@@ -741,12 +823,16 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
   Widget? subtitle;
   if (saved.isNotEmpty) {
     final l = DictLibLocalizations.of(context);
-    final label = l?.listSavedVideoCount(saved.length) ??
+    final label =
+        l?.listSavedVideoCount(saved.length) ??
         (saved.length == 1 ? '1 video saved' : '${saved.length} videos saved');
-    subtitle = Text(label,
-        style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant));
+    subtitle = Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
   }
 
   return TextButton(
@@ -758,18 +844,26 @@ Widget listItem(BuildContext context, Entry entry, Function refreshEntriesFn,
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(text,
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface)),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
         if (subtitle != null)
           Padding(padding: const EdgeInsets.only(top: 2), child: subtitle),
       ],
     ),
     onPressed: () async {
-      await navigateToEntryPage(context, entry, true,
-          focusVideo: focus, saveToList: saveToList);
+      await navigateToEntryPage(
+        context,
+        entry,
+        true,
+        focusVideo: focus,
+        saveToList: saveToList,
+      );
       await refreshEntriesFn();
     },
   );

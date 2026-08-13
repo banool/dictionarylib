@@ -83,8 +83,11 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
 
   void _noteRetry(int attempt, int maxAttempts) {
     if (!mounted) return;
-    setState(() => _retryNotice = DictLibLocalizations.of(context)!
-        .retryAttemptSnack(attempt, maxAttempts));
+    setState(
+      () =>
+          _retryNotice = DictLibLocalizations.of(context)!
+              .retryAttemptSnack(attempt, maxAttempts),
+    );
   }
 
   void _clearRetryNotice() {
@@ -97,8 +100,10 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     // Unreachable from real UI — the landing page only mounts when
     // sharing is configured. Assert so we don't carry an English
     // message all the way to the user.
-    assert(sharing.isEnabled,
-        'SharedListLandingPage mounted without sharing setup');
+    assert(
+      sharing.isEnabled,
+      'SharedListLandingPage mounted without sharing setup',
+    );
     return retryWithFeedback(
       () async {
         final result = await sharing.engine.subscribe(widget.listId);
@@ -133,7 +138,9 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
       if (result is FetchOk && mounted) {
         setState(() => _displayName = result.list.displayName);
       }
-    } catch (_) {/* fall through to the unknown-list copy */}
+    } catch (_) {
+      /* fall through to the unknown-list copy */
+    }
   }
 
   Future<void> _acceptInvite() async {
@@ -144,8 +151,10 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     // unmount: the user may have backed out of this page (or a rebuild tore
     // it down) while the sign-in dialog was up — it returns null in that case
     // so we bail before touching state.
-    final session = await ensureSession(context,
-        contextMessage: l.signInDialogContextInvite);
+    final session = await ensureSession(
+      context,
+      contextMessage: l.signInDialogContextInvite,
+    );
     if (session == null) return;
 
     setState(() {
@@ -158,8 +167,10 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     // surfacing an English message through the error builder. Unlike the
     // subscribe flavour, a 404 here means a bad or consumed invite —
     // terminal, so only the usual transient kinds retry.
-    assert(sharing.isEnabled,
-        'SharedListLandingPage mounted without sharing setup');
+    assert(
+      sharing.isEnabled,
+      'SharedListLandingPage mounted without sharing setup',
+    );
     return retryWithFeedback(
       () => sharing.engine.acceptInvite(
         listId: widget.listId,
@@ -175,9 +186,10 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     final isInvite = widget.inviteToken != null;
     return Scaffold(
       appBar: AppBar(
-          title: Text(isInvite
-              ? l.acceptInviteLandingTitle
-              : l.sharedListLandingLoading)),
+        title: Text(
+          isInvite ? l.acceptInviteLandingTitle : l.sharedListLandingLoading,
+        ),
+      ),
       body: _future == null
           ? _buildInvitePrompt(l)
           : FutureBuilder<SyncedEntryList>(
@@ -186,22 +198,30 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
                 if (snap.connectionState != ConnectionState.done) {
                   final cs = Theme.of(context).colorScheme;
                   return Center(
-                      child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         const CircularProgressIndicator(),
                         const SizedBox(height: 16),
-                        Text(isInvite
-                            ? l.acceptInviteLandingAccepting
-                            : l.sharedListLandingLoading),
+                        Text(
+                          isInvite
+                              ? l.acceptInviteLandingAccepting
+                              : l.sharedListLandingLoading,
+                        ),
                         if (_retryNotice != null) ...[
                           const SizedBox(height: 8),
-                          Text(_retryNotice!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontSize: 13, color: cs.onSurfaceVariant)),
+                          Text(
+                            _retryNotice!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
                         ],
-                      ]));
+                      ],
+                    ),
+                  );
                 }
                 if (snap.hasError) return _buildError(l, snap.error, isInvite);
                 final list = snap.data!;
@@ -231,7 +251,8 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     // as "open the list" rather than asking them to accept an invite
     // they don't need.
     final existing = sharing.lists.get(widget.listId);
-    final alreadyMember = existing != null &&
+    final alreadyMember =
+        existing != null &&
         (existing.meta.role == ListRole.owner ||
             existing.meta.role == ListRole.editor);
 
@@ -298,15 +319,21 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
             ),
             const SizedBox(height: 18),
             if (heading != null) ...[
-              Text(heading,
-                  textAlign: TextAlign.center,
-                  style: tt.titleLarge?.copyWith(fontSize: 22)),
+              Text(
+                heading,
+                textAlign: TextAlign.center,
+                style: tt.titleLarge?.copyWith(fontSize: 22),
+              ),
               const SizedBox(height: 8),
             ],
-            Text(message,
-                textAlign: TextAlign.center,
-                style: tt.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant, height: 1.5)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: tt.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
             const SizedBox(height: 22),
             FilledButton(onPressed: onPressed, child: Text(buttonLabel)),
           ],
@@ -356,9 +383,12 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
       } else if (isInvite) {
         message = l.acceptInviteLandingFailed(err.message);
       } else {
-        message = localisedSyncError(context, err,
-            notFoundMessage: l.sharedListLandingNotFound,
-            unknownMessage: err.message);
+        message = localisedSyncError(
+          context,
+          err,
+          notFoundMessage: l.sharedListLandingNotFound,
+          unknownMessage: err.message,
+        );
       }
     } else {
       message = l.sharedListLandingDefaultError;

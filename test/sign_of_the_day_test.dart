@@ -37,8 +37,10 @@ void main() {
 
   test('nothing saved → no sign of the day', () async {
     final list = await listWith([]);
-    expect(computeSignOfDay([list], const {}, locale, DateTime(2026, 7, 9)),
-        isNull);
+    expect(
+      computeSignOfDay([list], const {}, locale, DateTime(2026, 7, 9)),
+      isNull,
+    );
   });
 
   test('same day → stable pick; hidden set is honoured', () async {
@@ -48,18 +50,26 @@ void main() {
     final first = computeSignOfDay([list], const {}, locale, now);
     expect(first, isNotNull);
     // Deterministic within a day: recomputing gives the same sign.
-    expect(computeSignOfDay([list], const {}, locale, now)!.getKey(),
-        first!.getKey());
+    expect(
+      computeSignOfDay([list], const {}, locale, now)!.getKey(),
+      first!.getKey(),
+    );
   });
 
   test('rotates day to day', () async {
     final list = await listWith(['apple', 'banana', 'cherry']);
-    final day1 =
-        computeSignOfDay([list], const {}, locale, DateTime(2026, 7, 9))!
-            .getKey();
-    final day2 =
-        computeSignOfDay([list], const {}, locale, DateTime(2026, 7, 10))!
-            .getKey();
+    final day1 = computeSignOfDay(
+      [list],
+      const {},
+      locale,
+      DateTime(2026, 7, 9),
+    )!.getKey();
+    final day2 = computeSignOfDay(
+      [list],
+      const {},
+      locale,
+      DateTime(2026, 7, 10),
+    )!.getKey();
     // Three candidates advancing one index per day → consecutive days differ.
     expect(day1, isNot(day2));
   });

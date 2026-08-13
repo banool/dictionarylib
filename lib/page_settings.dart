@@ -78,15 +78,20 @@ class SettingsPageState extends State<SettingsPage> {
     Widget navRow(String title, {String? value, VoidCallback? onTap}) {
       Widget? trailing;
       if (value != null) {
-        trailing = Row(mainAxisSize: MainAxisSize.min, children: [
-          Flexible(
-            child: Text(value,
+        trailing = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                value,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14)),
-          ),
-          const SizedBox(width: 4),
-          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-        ]);
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+          ],
+        );
       }
       return HearthRow(title: title, onTap: onTap, trailing: trailing);
     }
@@ -107,8 +112,10 @@ class SettingsPageState extends State<SettingsPage> {
       final clean = rows.whereType<Widget>().toList();
       if (clean.isEmpty) return const [];
       return [
-        HearthSectionLabel(title,
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 8)),
+        HearthSectionLabel(
+          title,
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: HearthRowGroup(rows: clean),
@@ -122,256 +129,352 @@ class SettingsPageState extends State<SettingsPage> {
     final children = <Widget>[
       ...widget.additionalTopWidgets,
       ...section(l.settingsAppearance, [
-        navRow(l.settingsColourMode, value: _getThemeModeString(context),
-            onTap: () async {
-          final current = ThemeMode.values[
-              sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
-          final chosen = await showHearthPicker<ThemeMode>(
-            context: context,
-            title: l.settingsColourMode,
-            selected: current,
-            options: [
-              HearthPickerOption(ThemeMode.system, l.settingsColourModeSystem),
-              HearthPickerOption(ThemeMode.light, l.settingsColourModeLight),
-              HearthPickerOption(ThemeMode.dark, l.settingsColourModeDark),
-            ],
-          );
-          if (chosen != null) await _setThemeMode(chosen);
-          if (mounted) setState(() {});
-        }),
-        navRow(l.settingsAppTheme,
-            value: themeVariantNotifier.value.displayName, onTap: () async {
-          final chosen = await showHearthPicker<AppThemeVariant>(
-            context: context,
-            title: l.settingsAppTheme,
-            selected: themeVariantNotifier.value,
-            options: [
-              for (final variant in AppThemeVariant.values)
-                HearthPickerOption(variant, variant.displayName),
-            ],
-          );
-          if (chosen != null) await _setThemeVariant(chosen);
-          if (mounted) setState(() {});
-        }),
+        navRow(
+          l.settingsColourMode,
+          value: _getThemeModeString(context),
+          onTap: () async {
+            final current =
+                ThemeMode.values[sharedPreferences.getInt(KEY_THEME_MODE) ??
+                    DEFAULT_THEME_MODE];
+            final chosen = await showHearthPicker<ThemeMode>(
+              context: context,
+              title: l.settingsColourMode,
+              selected: current,
+              options: [
+                HearthPickerOption(
+                  ThemeMode.system,
+                  l.settingsColourModeSystem,
+                ),
+                HearthPickerOption(ThemeMode.light, l.settingsColourModeLight),
+                HearthPickerOption(ThemeMode.dark, l.settingsColourModeDark),
+              ],
+            );
+            if (chosen != null) await _setThemeMode(chosen);
+            if (mounted) setState(() {});
+          },
+        ),
+        navRow(
+          l.settingsAppTheme,
+          value: themeVariantNotifier.value.displayName,
+          onTap: () async {
+            final chosen = await showHearthPicker<AppThemeVariant>(
+              context: context,
+              title: l.settingsAppTheme,
+              selected: themeVariantNotifier.value,
+              options: [
+                for (final variant in AppThemeVariant.values)
+                  HearthPickerOption(variant, variant.displayName),
+              ],
+            );
+            if (chosen != null) await _setThemeVariant(chosen);
+            if (mounted) setState(() {});
+          },
+        ),
       ]),
       // Hidden on web: there's no sign-in / account on the web build.
       if (shareState.isEnabled && !kIsWeb)
         ...section(l.settingsSharing, [
           if (session == null)
-            navRow(l.settingsSignIn, onTap: () async {
-              final result = await showSignInDialog(context);
-              if (result != null) {
-                // Kick a sync fire-and-forget so any edits queued while
-                // signed out drain immediately — same nudge the resume
-                // banner and expiry-snack sign-in paths give.
-                unawaited(sharing.engine.syncAll());
-                if (context.mounted) await offerImportEditableLists(context);
-              }
-              if (mounted) setState(() {});
-            })
+            navRow(
+              l.settingsSignIn,
+              onTap: () async {
+                final result = await showSignInDialog(context);
+                if (result != null) {
+                  // Kick a sync fire-and-forget so any edits queued while
+                  // signed out drain immediately — same nudge the resume
+                  // banner and expiry-snack sign-in paths give.
+                  unawaited(sharing.engine.syncAll());
+                  if (context.mounted) await offerImportEditableLists(context);
+                }
+                if (mounted) setState(() {});
+              },
+            )
           else ...[
             // One row instead of a separate "Signed in with X" label row —
             // the provider rides along in the sign-out button's own label.
-            navRow(l.settingsSignOut(session.provider.label(l)),
-                onTap: () async {
-              final pendingLists = shareState.lists.editableLists
-                  .where((x) => x.meta.pendingOps.isNotEmpty)
-                  .toList();
-              final body = pendingLists.isNotEmpty
-                  ? l.settingsSignOutConfirmBodyWithPending(pendingLists.length)
-                  : l.settingsSignOutConfirmBody;
-              // Pass [onConfirm] so the dialog keeps itself open with the
-              // built-in spinner while sign-out runs (it does a best-effort
-              // flush of queued edits first, so it isn't instant).
-              final confirmed = await confirmAlert(context, Text(body),
+            navRow(
+              l.settingsSignOut(session.provider.label(l)),
+              onTap: () async {
+                final pendingLists = shareState.lists.editableLists
+                    .where((x) => x.meta.pendingOps.isNotEmpty)
+                    .toList();
+                final body = pendingLists.isNotEmpty
+                    ? l.settingsSignOutConfirmBodyWithPending(
+                        pendingLists.length,
+                      )
+                    : l.settingsSignOutConfirmBody;
+                // Pass [onConfirm] so the dialog keeps itself open with the
+                // built-in spinner while sign-out runs (it does a best-effort
+                // flush of queued edits first, so it isn't instant).
+                final confirmed = await confirmAlert(
+                  context,
+                  Text(body),
                   title: l.settingsSignOutConfirmTitle,
-                  onConfirm: () => shareState.signOut());
-              if (confirmed && mounted) setState(() {});
-            }),
-            navRow(l.settingsDeleteAccount, onTap: () async {
-              final confirmed = await confirmAlert(
-                  context, Text(l.settingsDeleteAccountConfirmBody),
+                  onConfirm: () => shareState.signOut(),
+                );
+                if (confirmed && mounted) setState(() {});
+              },
+            ),
+            navRow(
+              l.settingsDeleteAccount,
+              onTap: () async {
+                final confirmed = await confirmAlert(
+                  context,
+                  Text(l.settingsDeleteAccountConfirmBody),
                   title: l.settingsDeleteAccountConfirmTitle,
-                  confirmText: l.settingsDeleteAccountConfirmButton);
-              if (!confirmed || !context.mounted) return;
-              await runWithProgress(
-                context: context,
-                message: l.settingsDeleteAccountRunning,
-                task: () => shareState.deleteAccount(),
-                errorMessage: (e) => e is SyncException
-                    ? l.settingsDeleteAccountFailed(e.message)
-                    : '$e',
-              );
-              if (mounted) setState(() {});
-            }),
+                  confirmText: l.settingsDeleteAccountConfirmButton,
+                );
+                if (!confirmed || !context.mounted) return;
+                await runWithProgress(
+                  context: context,
+                  message: l.settingsDeleteAccountRunning,
+                  task: () => shareState.deleteAccount(),
+                  errorMessage: (e) => e is SyncException
+                      ? l.settingsDeleteAccountFailed(e.message)
+                      : '$e',
+                );
+                if (mounted) setState(() {});
+              },
+            ),
           ],
         ]),
       ...section(l.settingsCache, [
-        switchRow(l.settingsCacheVideos,
-            sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true, (newValue) {
-          sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue);
-          setState(() {});
-        }),
-        navRow(l.settingsDropCache, onTap: () async {
-          await myCacheManager.emptyCache();
-          if (!context.mounted) return;
-          showSnack(context, l.settingsCacheDropped);
-        }),
+        switchRow(
+          l.settingsCacheVideos,
+          sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true,
+          (newValue) {
+            sharedPreferences.setBool(KEY_SHOULD_CACHE, newValue);
+            setState(() {});
+          },
+        ),
+        navRow(
+          l.settingsDropCache,
+          onTap: () async {
+            await myCacheManager.emptyCache();
+            if (!context.mounted) return;
+            showSnack(context, l.settingsCacheDropped);
+          },
+        ),
       ]),
       ...section(l.settingsData, [
         checkingForNewData
             ? const HearthRow(
                 title: '',
                 trailing: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
-            : navRow(l.settingsCheckNewData, onTap: () async {
-                setState(() => checkingForNewData = true);
-                NewData? newData =
-                    await entryLoader.downloadAndApplyNewData(true);
-                if (!mounted) return;
-                setState(() => checkingForNewData = false);
-                final message =
-                    (newData != null && newData.newDataIsActuallyNew())
-                        ? l.settingsDataUpdated
-                        : l.settingsDataUpToDate;
-                if (!context.mounted) return;
-                showSnack(context, message, backgroundColor: cs.primary);
-              }),
+            : navRow(
+                l.settingsCheckNewData,
+                onTap: () async {
+                  setState(() => checkingForNewData = true);
+                  NewData? newData = await entryLoader.downloadAndApplyNewData(
+                    true,
+                  );
+                  if (!mounted) return;
+                  setState(() => checkingForNewData = false);
+                  final message =
+                      (newData != null && newData.newDataIsActuallyNew())
+                      ? l.settingsDataUpdated
+                      : l.settingsDataUpToDate;
+                  if (!context.mounted) return;
+                  showSnack(context, message, backgroundColor: cs.primary);
+                },
+              ),
         if (communityEntryListManager.getEntryLists().isNotEmpty)
-          switchRow(l.settingsHideCommunityLists,
-              sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false,
-              (newValue) {
-            sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue);
-            setState(() {});
-          }),
+          switchRow(
+            l.settingsHideCommunityLists,
+            sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false,
+            (newValue) {
+              sharedPreferences.setBool(KEY_HIDE_COMMUNITY_LISTS, newValue);
+              setState(() {});
+            },
+          ),
       ]),
       if (enableFlashcardsKnob && !kIsWeb)
         ...section(l.settingsRevision, [
-          switchRow(l.settingsHideRevision,
-              sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false,
-              (newValue) {
-            sharedPreferences.setBool(KEY_HIDE_FLASHCARDS_FEATURE, newValue);
-            setState(() {});
-          }),
-          navRow(l.settingsDeleteRevisionProgress, onTap: () async {
-            bool confirmed = await confirmAlert(
-                context, Text(l.settingsDeleteRevisionProgressExplanation));
-            if (confirmed) {
-              await writeReviews([], [], force: true);
-              await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
-              await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
-              if (!context.mounted) return;
-              showSnack(context, l.settingsProgressDeleted);
-            }
-          }),
+          switchRow(
+            l.settingsHideRevision,
+            sharedPreferences.getBool(KEY_HIDE_FLASHCARDS_FEATURE) ?? false,
+            (newValue) {
+              sharedPreferences.setBool(KEY_HIDE_FLASHCARDS_FEATURE, newValue);
+              setState(() {});
+            },
+          ),
+          navRow(
+            l.settingsDeleteRevisionProgress,
+            onTap: () async {
+              bool confirmed = await confirmAlert(
+                context,
+                Text(l.settingsDeleteRevisionProgressExplanation),
+              );
+              if (confirmed) {
+                await writeReviews([], [], force: true);
+                await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
+                await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
+                if (!context.mounted) return;
+                showSnack(context, l.settingsProgressDeleted);
+              }
+            },
+          ),
         ]),
       ...section(l.settingsLegal, [
-        navRow(l.settingsSeeLegal, onTap: () async {
-          await Navigator.push(
+        navRow(
+          l.settingsSeeLegal,
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => LegalInformationPage(
-                    buildLegalInformationChildren:
-                        widget.buildLegalInformationChildren),
-              ));
-        }),
+                  buildLegalInformationChildren:
+                      widget.buildLegalInformationChildren,
+                ),
+              ),
+            );
+          },
+        ),
         // The privacy policy and terms of service live on the website so
         // there's a single source of truth; just link out to them.
-        navRow(l.settingsSeePrivacyPolicy, onTap: () async {
-          await launchUrl(Uri.parse(widget.privacyPolicyUrl),
-              mode: LaunchMode.externalApplication);
-        }),
-        navRow(l.settingsSeeTermsOfService, onTap: () async {
-          await launchUrl(Uri.parse(widget.termsOfServiceUrl),
-              mode: LaunchMode.externalApplication);
-        }),
+        navRow(
+          l.settingsSeePrivacyPolicy,
+          onTap: () async {
+            await launchUrl(
+              Uri.parse(widget.privacyPolicyUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+        ),
+        navRow(
+          l.settingsSeeTermsOfService,
+          onTap: () async {
+            await launchUrl(
+              Uri.parse(widget.termsOfServiceUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+        ),
       ]),
       ...section(l.settingsHelp, [
-        navRow(l.settingsReportDictionaryDataIssue, onTap: () async {
-          await launchUrl(Uri.parse(widget.reportDataProblemUrl),
-              mode: LaunchMode.externalApplication);
-        }),
-        navRow(l.settingsReportAppIssueGithub, onTap: () async {
-          await launchUrl(Uri.parse(widget.reportAppProblemUrl),
-              mode: LaunchMode.externalApplication);
-        }),
-        navRow(l.settingsReportAppIssueEmail, onTap: () async {
-          const supportEmail = 'daniel@dport.me';
-          final mailto = Mailto(
+        navRow(
+          l.settingsReportDictionaryDataIssue,
+          onTap: () async {
+            await launchUrl(
+              Uri.parse(widget.reportDataProblemUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+        ),
+        navRow(
+          l.settingsReportAppIssueGithub,
+          onTap: () async {
+            await launchUrl(
+              Uri.parse(widget.reportAppProblemUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+        ),
+        navRow(
+          l.settingsReportAppIssueEmail,
+          onTap: () async {
+            const supportEmail = 'daniel@dport.me';
+            final mailto = Mailto(
               to: [supportEmail],
               subject: l.reportIssueEmailSubject(widget.appName),
               body:
-                  'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n');
-          final uri = Uri.parse("$mailto");
-          // Capture the messenger before the async gap so the fallback can
-          // snack safely without touching a possibly-unmounted context.
-          final messenger = ScaffoldMessenger.of(context);
-          // Deliberately NOT gating on canLaunchUrl: for a mailto: URI it
-          // returns false on iOS unless the scheme is whitelisted in
-          // LSApplicationQueriesSchemes, and on Android 11+ unless a matching
-          // <queries> intent is declared — even when a mail app is installed.
-          // That false-negative is what made this button look broken. Try to
-          // launch, and if it genuinely can't be handled fall back to showing
-          // the address so the user is never left tapping a dead button.
-          bool launched = false;
-          try {
-            launched =
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } catch (e) {
-            printAndLog('Could not launch $uri: $e');
-          }
-          if (!launched && context.mounted) {
-            await showDialog<void>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text(l.reportIssueEmailFailedTitle),
-                content: Text(l.reportIssueEmailFailedBody(supportEmail)),
-                actions: [
-                  TextButton(
-                    onPressed: () async {
-                      await Clipboard.setData(
-                          const ClipboardData(text: supportEmail));
-                      if (ctx.mounted) Navigator.of(ctx).pop();
-                      showSnackVia(messenger, l.reportIssueEmailCopied);
-                    },
-                    child: Text(l.reportIssueEmailCopy),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    child: Text(MaterialLocalizations.of(ctx).closeButtonLabel),
-                  ),
-                ],
-              ),
+                  'Please describe the issue in detail.\n\n--> Replace with description of issue <--\n\n${getBugInfo()}\nBackground logs:\n${backgroundLogs.items.join("\n")}\n',
             );
-          }
-        }),
+            final uri = Uri.parse("$mailto");
+            // Capture the messenger before the async gap so the fallback can
+            // snack safely without touching a possibly-unmounted context.
+            final messenger = ScaffoldMessenger.of(context);
+            // Deliberately NOT gating on canLaunchUrl: for a mailto: URI it
+            // returns false on iOS unless the scheme is whitelisted in
+            // LSApplicationQueriesSchemes, and on Android 11+ unless a matching
+            // <queries> intent is declared — even when a mail app is installed.
+            // That false-negative is what made this button look broken. Try to
+            // launch, and if it genuinely can't be handled fall back to showing
+            // the address so the user is never left tapping a dead button.
+            bool launched = false;
+            try {
+              launched = await launchUrl(
+                uri,
+                mode: LaunchMode.externalApplication,
+              );
+            } catch (e) {
+              printAndLog('Could not launch $uri: $e');
+            }
+            if (!launched && context.mounted) {
+              await showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(l.reportIssueEmailFailedTitle),
+                  content: Text(l.reportIssueEmailFailedBody(supportEmail)),
+                  actions: [
+                    TextButton(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                          const ClipboardData(text: supportEmail),
+                        );
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        showSnackVia(messenger, l.reportIssueEmailCopied);
+                      },
+                      child: Text(l.reportIssueEmailCopy),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(
+                        MaterialLocalizations.of(ctx).closeButtonLabel,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
+        ),
         if (appStoreTileString != null)
-          navRow(appStoreTileString, onTap: () async {
-            await StoreRedirect.redirect(
-                iOSAppId: widget.iOSAppId, androidAppId: widget.androidAppId);
-          }),
-        navRow(l.settingsShowBuildInformation, onTap: () async {
-          await Navigator.push(
+          navRow(
+            appStoreTileString,
+            onTap: () async {
+              await StoreRedirect.redirect(
+                iOSAppId: widget.iOSAppId,
+                androidAppId: widget.androidAppId,
+              );
+            },
+          ),
+        navRow(
+          l.settingsShowBuildInformation,
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const BuildInformationPage()));
-        }),
-        navRow(l.settingsBackgroundLogs, onTap: () async {
-          await Navigator.push(context,
-              MaterialPageRoute(builder: (context) => BackgroundLogsPage()));
-        }),
+                builder: (context) => const BuildInformationPage(),
+              ),
+            );
+          },
+        ),
+        navRow(
+          l.settingsBackgroundLogs,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => BackgroundLogsPage()),
+            );
+          },
+        ),
       ]),
       ...section(l.settingsNetwork, [
-        switchRow(l.settingsUseSystemHttpProxy,
-            sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false,
-            (newValue) {
-          sharedPreferences.setBool(KEY_USE_SYSTEM_HTTP_PROXY, newValue);
-          setState(() {});
-          showSnack(context, l.settingsRestartApp);
-        }),
+        switchRow(
+          l.settingsUseSystemHttpProxy,
+          sharedPreferences.getBool(KEY_USE_SYSTEM_HTTP_PROXY) ?? false,
+          (newValue) {
+            sharedPreferences.setBool(KEY_USE_SYSTEM_HTTP_PROXY, newValue);
+            setState(() {});
+            showSnack(context, l.settingsRestartApp);
+          },
+        ),
       ]),
       const SizedBox(height: 12),
     ];
@@ -382,20 +485,19 @@ class SettingsPageState extends State<SettingsPage> {
     );
 
     List<Widget> actions = [
-      buildActionButton(
-        context,
-        const Icon(Icons.help),
-        () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => getSettingsHelpPageEn()),
-          );
-        },
-      )
+      buildActionButton(context, const Icon(Icons.help), () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => getSettingsHelpPageEn()),
+        );
+      }),
     ];
 
     return TopLevelScaffold(
-        body: body, title: l.settingsTitle, actions: actions);
+      body: body,
+      title: l.settingsTitle,
+      actions: actions,
+    );
   }
 }
 
@@ -421,29 +523,33 @@ String getBugInfo() {
 }
 
 class LegalInformationPage extends StatelessWidget {
-  const LegalInformationPage(
-      {super.key, required this.buildLegalInformationChildren});
+  const LegalInformationPage({
+    super.key,
+    required this.buildLegalInformationChildren,
+  });
 
   final List<Widget> Function() buildLegalInformationChildren;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title:
-              Text(DictLibLocalizations.of(context)!.legalInformationPageTitle),
+      appBar: AppBar(
+        title: Text(
+          DictLibLocalizations.of(context)!.legalInformationPageTitle,
         ),
-        // Comfortable long-form reading layout, matching the privacy page.
-        body: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-              children: buildLegalInformationChildren(),
-            ),
+      ),
+      // Comfortable long-form reading layout, matching the privacy page.
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+            children: buildLegalInformationChildren(),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
 
@@ -463,8 +569,9 @@ List<Widget> getPackageDeviceInfo() {
     children.add(getText("Device: ${androidDeviceInfo!.device}"));
     children.add(getText("Model: ${androidDeviceInfo!.model}"));
     children.add(getText("System name: ${androidDeviceInfo!.version.release}"));
-    children
-        .add(getText("System version: ${androidDeviceInfo!.version.sdkInt}"));
+    children.add(
+      getText("System version: ${androidDeviceInfo!.version.sdkInt}"),
+    );
   }
   return children;
 }
@@ -475,19 +582,27 @@ class BuildInformationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title:
-              Text(DictLibLocalizations.of(context)!.buildInformationPageTitle),
+      appBar: AppBar(
+        title: Text(
+          DictLibLocalizations.of(context)!.buildInformationPageTitle,
         ),
-        body: Padding(
-            padding:
-                const EdgeInsets.only(bottom: 10, left: 20, right: 32, top: 20),
-            child: Center(
-                child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: getPackageDeviceInfo(),
-            ))));
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(
+          bottom: 10,
+          left: 20,
+          right: 32,
+          top: 20,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: getPackageDeviceInfo(),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -498,37 +613,46 @@ class BackgroundLogsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = DictLibLocalizations.of(context)!;
     return Scaffold(
-        appBar: AppBar(
-          title: Text(l.backgroundLogsPageTitle),
+      appBar: AppBar(title: Text(l.backgroundLogsPageTitle)),
+      body: Padding(
+        padding: const EdgeInsets.only(
+          bottom: 10,
+          left: 20,
+          right: 32,
+          top: 20,
         ),
-        body: Padding(
-            padding:
-                const EdgeInsets.only(bottom: 10, left: 20, right: 32, top: 20),
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  TextButton(
-                    child: Text(l.backgroundLogsCopyButton,
-                        textAlign: TextAlign.center),
-                    onPressed: () async {
-                      await Clipboard.setData(
-                          ClipboardData(text: backgroundLogs.items.join("\n")));
-                      showSnack(context, l.backgroundLogsCopiedSnack);
-                    },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            TextButton(
+              child: Text(
+                l.backgroundLogsCopyButton,
+                textAlign: TextAlign.center,
+              ),
+              onPressed: () async {
+                await Clipboard.setData(
+                  ClipboardData(text: backgroundLogs.items.join("\n")),
+                );
+                showSnack(context, l.backgroundLogsCopiedSnack);
+              },
+            ),
+            Container(padding: const EdgeInsets.only(top: 10)),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Text(
+                  backgroundLogs.items.join("\n"),
+                  style: const TextStyle(
+                    height: 1.8, //You can set your custom height here
                   ),
-                  Container(
-                    padding: const EdgeInsets.only(top: 10),
-                  ),
-                  Expanded(
-                      child: SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: Text(backgroundLogs.items.join("\n"),
-                              style: const TextStyle(
-                                  height:
-                                      1.8 //You can set your custom height here
-                                  )))),
-                ])));
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -552,8 +676,10 @@ Future<void> _setThemeMode(ThemeMode themeMode) async {
   await sharedPreferences.setInt(KEY_THEME_MODE, themeMode.index);
   // We set this to affect the theme at runtime.
   themeNotifier.value = themeMode;
-  Analytics.track('theme_changed',
-      props: {'setting': 'mode', 'value': themeMode.name});
+  Analytics.track(
+    'theme_changed',
+    props: {'setting': 'mode', 'value': themeMode.name},
+  );
 }
 
 Future<void> _setThemeVariant(AppThemeVariant variant) async {
@@ -561,8 +687,10 @@ Future<void> _setThemeVariant(AppThemeVariant variant) async {
   await sharedPreferences.setString(KEY_THEME_VARIANT, variant.name);
   // Drives the live theme switch via the app's MaterialApp.
   themeVariantNotifier.value = variant;
-  Analytics.track('theme_changed',
-      props: {'setting': 'variant', 'value': variant.name});
+  Analytics.track(
+    'theme_changed',
+    props: {'setting': 'variant', 'value': variant.name},
+  );
 }
 
 /// Prompt the user about pulling down any lists tied to their current
@@ -585,14 +713,17 @@ Future<void> offerImportEditableLists(BuildContext context) async {
   if (session == null) return;
   final names = <String>[];
   try {
-    final userLists =
-        await sharing.api.userLists(sessionToken: session.sessionToken);
+    final userLists = await sharing.api.userLists(
+      sessionToken: session.sessionToken,
+    );
     final ids = [...userLists.ownedListIds, ...userLists.editorListIds];
     if (ids.isEmpty) return;
     for (final id in ids) {
       try {
-        final snapshot = await sharing.api
-            .getState(listId: id, sessionToken: session.sessionToken);
+        final snapshot = await sharing.api.getState(
+          listId: id,
+          sessionToken: session.sessionToken,
+        );
         if (snapshot.displayName.trim().isNotEmpty) {
           names.add(snapshot.displayName);
         }
@@ -603,7 +734,8 @@ Future<void> offerImportEditableLists(BuildContext context) async {
     }
   } catch (e) {
     printAndLog(
-        'offerImportEditableLists: pre-check failed, skipping prompt: $e');
+      'offerImportEditableLists: pre-check failed, skipping prompt: $e',
+    );
     return;
   }
   if (names.isEmpty || !context.mounted) return;
@@ -627,8 +759,11 @@ Future<void> offerImportEditableLists(BuildContext context) async {
               children: [
                 const Text('•  '),
                 Expanded(
-                    child: Text(name,
-                        style: const TextStyle(fontWeight: FontWeight.w600))),
+                  child: Text(
+                    name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
               ],
             ),
           ),
@@ -644,19 +779,22 @@ Future<void> offerImportEditableLists(BuildContext context) async {
     context: context,
     message: l.importEditableListsRunning,
     task: () => retryWithFeedback(
-        () async =>
-            result = await listsService.importEditableLists(context: context),
-        onRetry: snackRetryFeedback(context)),
+      () async =>
+          result = await listsService.importEditableLists(context: context),
+      onRetry: snackRetryFeedback(context),
+    ),
     errorMessage: (e) => e is SyncException
         ? l.importEditableListsFailed(
-            localisedSyncErrorSimple(context, e, e.message))
+            localisedSyncErrorSimple(context, e, e.message),
+          )
         : '$e',
   );
   if (!ok || result == null) return;
   final r = result!;
   showSnackVia(
-      messenger,
-      r.total == 0
-          ? l.importEditableListsResultNone
-          : l.importEditableListsResultDone(r.imported, r.total));
+    messenger,
+    r.total == 0
+        ? l.importEditableListsResultNone
+        : l.importEditableListsResultDone(r.imported, r.total),
+  );
 }

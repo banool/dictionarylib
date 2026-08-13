@@ -27,8 +27,10 @@ const String KEY_LISTS_OVERVIEW_TAB_INDEX = 'lists_overview_tab_index';
 class EntryListsOverviewPage extends StatefulWidget {
   final BuildEntryListWidgetCallback buildEntryListWidgetCallback;
 
-  const EntryListsOverviewPage(
-      {super.key, required this.buildEntryListWidgetCallback});
+  const EntryListsOverviewPage({
+    super.key,
+    required this.buildEntryListWidgetCallback,
+  });
 
   @override
   EntryListsOverviewPageState createState() => EntryListsOverviewPageState();
@@ -51,9 +53,11 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     _rebuildTabs();
     if (sharing.isEnabled) {
       // Fire-and-forget refresh of all synced lists on open.
-      unawaited(sharing.engine.syncAll().then((_) {
-        if (mounted) setState(() {});
-      }));
+      unawaited(
+        sharing.engine.syncAll().then((_) {
+          if (mounted) setState(() {});
+        }),
+      );
       WidgetsBinding.instance.addObserver(this);
       // React to engine + auth changes (e.g. a /sync flush completes,
       // or a sign-out drops the session) so the unsynced banner reflects
@@ -71,17 +75,18 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   }
 
   void _rebuildTabs({int? initialIndex}) {
-    final tabs = <_TabDescriptor>[
-      _TabDescriptor.myLists,
-    ];
+    final tabs = <_TabDescriptor>[_TabDescriptor.myLists];
     // Order: My Lists, Subscribed, Community.
     if (sharing.isEnabled) tabs.add(_TabDescriptor.sharedWithMe);
     if (_showCommunityLists()) tabs.add(_TabDescriptor.community);
     _tabs = tabs;
 
     final restored = initialIndex ?? _restoreTabIndex(tabs.length);
-    tabController =
-        TabController(initialIndex: restored, length: tabs.length, vsync: this);
+    tabController = TabController(
+      initialIndex: restored,
+      length: tabs.length,
+      vsync: this,
+    );
     tabController.addListener(_onTabChange);
   }
 
@@ -89,7 +94,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     if (!tabController.indexIsChanging) {
       // The animation has settled on a new tab. Persist + drop edit mode.
       sharedPreferences.setInt(
-          KEY_LISTS_OVERVIEW_TAB_INDEX, _tabs[tabController.index].persistedId);
+        KEY_LISTS_OVERVIEW_TAB_INDEX,
+        _tabs[tabController.index].persistedId,
+      );
       if (inEditMode) {
         setState(() => inEditMode = false);
       } else {
@@ -110,9 +117,11 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!sharing.isEnabled) return;
     if (state == AppLifecycleState.resumed) {
-      unawaited(sharing.engine.syncAll().then((_) {
-        if (mounted) setState(() {});
-      }));
+      unawaited(
+        sharing.engine.syncAll().then((_) {
+          if (mounted) setState(() {});
+        }),
+      );
     }
     // The pushAllDirty-on-paused hook used to live here too, but it's
     // now installed centrally in Sharing.setup so the flush happens
@@ -124,8 +133,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   bool _showCommunityLists() {
     var prefHideCommunityLists =
         sharedPreferences.getBool(KEY_HIDE_COMMUNITY_LISTS) ?? false;
-    var communityLimitsPopulated =
-        communityEntryListManager.getEntryLists().isNotEmpty;
+    var communityLimitsPopulated = communityEntryListManager
+        .getEntryLists()
+        .isNotEmpty;
     return communityLimitsPopulated && !prefHideCommunityLists;
   }
 
@@ -148,22 +158,21 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     if (!sharing.isEnabled) return;
     Analytics.track('pull_to_refresh', props: {'scope': 'overview'});
     try {
-      await retryWithFeedback(
-        () async {
-          // User-initiated pull-to-refresh: bypass the worker edge cache so
-          // a just-made change shows up immediately (see SyncApi.getList).
-          final failures = await sharing.engine.syncAll(forceFresh: true);
-          if (failures.isNotEmpty) throw failures.first;
-        },
-        onRetry: snackRetryFeedback(context),
-      );
+      await retryWithFeedback(() async {
+        // User-initiated pull-to-refresh: bypass the worker edge cache so
+        // a just-made change shows up immediately (see SyncApi.getList).
+        final failures = await sharing.engine.syncAll(forceFresh: true);
+        if (failures.isNotEmpty) throw failures.first;
+      }, onRetry: snackRetryFeedback(context));
     } on SyncException catch (e) {
       if (mounted) {
         showSnack(
-            context,
-            DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
-                localisedSyncErrorSimple(context, e, e.message)),
-            replaceCurrent: true);
+          context,
+          DictLibLocalizations.of(context)!.subscribedSyncFailedSnack(
+            localisedSyncErrorSimple(context, e, e.message),
+          ),
+          replaceCurrent: true,
+        );
       }
     }
     if (mounted) setState(() {});
@@ -176,15 +185,16 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     FloatingActionButton? floatingActionButton;
     if (inEditMode) {
       floatingActionButton = FloatingActionButton(
-          onPressed: () async {
-            bool confirmed = await applyCreateListDialog(context);
-            if (confirmed) {
-              setState(() {
-                inEditMode = false;
-              });
-            }
-          },
-          child: const Icon(Icons.add));
+        onPressed: () async {
+          bool confirmed = await applyCreateListDialog(context);
+          if (confirmed) {
+            setState(() {
+              inEditMode = false;
+            });
+          }
+        },
+        child: const Icon(Icons.add),
+      );
     }
 
     final activeTab = _activeTab;
@@ -194,38 +204,41 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     // Only show the edit action for user lists — and not on web, where lists
     // can't be created or edited (no account).
     if (activeTab == _TabDescriptor.myLists && !kIsWeb) {
-      actions.add(buildActionButton(
-        context,
-        inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
-        () async {
-          setState(() {
-            inEditMode = !inEditMode;
-          });
-        },
-      ));
+      actions.add(
+        buildActionButton(
+          context,
+          inEditMode ? const Icon(Icons.edit) : const Icon(Icons.edit_outlined),
+          () async {
+            setState(() {
+              inEditMode = !inEditMode;
+            });
+          },
+        ),
+      );
     }
 
     // Subscribe-to-shared-list action — visible on the "Shared with me" tab
     // when sharing is wired up.
     if (activeTab == _TabDescriptor.sharedWithMe && sharing.isEnabled) {
-      actions.add(buildActionButton(
-        context,
-        const Icon(Icons.cloud_download_outlined),
-        () => _subscribeViaLink(),
-      ));
+      actions.add(
+        buildActionButton(
+          context,
+          const Icon(Icons.cloud_download_outlined),
+          () => _subscribeViaLink(),
+        ),
+      );
     }
 
-    actions.add(buildActionButton(
-      context,
-      const Icon(Icons.help),
-      () async {
+    actions.add(
+      buildActionButton(context, const Icon(Icons.help), () async {
         await Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => getEntryListOverviewHelpPageEn()),
+            builder: (context) => getEntryListOverviewHelpPageEn(),
+          ),
         );
-      },
-    ));
+      }),
+    );
 
     final tabsUi = <Tab>[];
     final children = <Widget>[];
@@ -247,8 +260,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     // sees it from any tab, not just "My lists". The banner widget
     // collapses to SizedBox.shrink when there's nothing to nudge about.
     if (sharing.isEnabled) {
-      final editable =
-          sharing.lists.editableLists.where((l) => !l.meta.orphaned).toList();
+      final editable = sharing.lists.editableLists
+          .where((l) => !l.meta.orphaned)
+          .toList();
       body = Column(
         children: [
           SignInResumeBanner(lists: editable),
@@ -258,75 +272,86 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     }
 
     return TopLevelScaffold(
-        underAppBar: showTabs
-            ? PreferredSize(
-                // 2 + 38 (tab) + 8 (container padding) + 10 = 58; matches the
-                // content so the pill control doesn't overflow its slot.
-                preferredSize: const Size.fromHeight(58),
-                // A pill segmented control rather than an underline TabBar.
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(13),
+      underAppBar: showTabs
+          ? PreferredSize(
+              // 2 + 38 (tab) + 8 (container padding) + 10 = 58; matches the
+              // content so the pill control doesn't overflow its slot.
+              preferredSize: const Size.fromHeight(58),
+              // A pill segmented control rather than an underline TabBar.
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: TabBar(
+                    controller: tabController,
+                    tabs: tabsUi,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    indicatorPadding: EdgeInsets.zero,
+                    labelPadding: EdgeInsets.zero,
+                    splashFactory: NoSplash.splashFactory,
+                    overlayColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
                     ),
-                    padding: const EdgeInsets.all(4),
-                    child: TabBar(
-                      controller: tabController,
-                      tabs: tabsUi,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      indicatorPadding: EdgeInsets.zero,
-                      labelPadding: EdgeInsets.zero,
-                      splashFactory: NoSplash.splashFactory,
-                      overlayColor:
-                          const WidgetStatePropertyAll(Colors.transparent),
-                      indicator: BoxDecoration(
-                        color: cs.surface,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cs.shadow,
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                            spreadRadius: -4,
-                          ),
-                        ],
-                      ),
-                      labelColor: cs.onSurface,
-                      unselectedLabelColor: cs.onSurfaceVariant,
-                      labelStyle: const TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 13.5),
-                      unselectedLabelStyle: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 13.5),
+                    indicator: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.shadow,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                          spreadRadius: -4,
+                        ),
+                      ],
+                    ),
+                    labelColor: cs.onSurface,
+                    unselectedLabelColor: cs.onSurfaceVariant,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
                     ),
                   ),
                 ),
-              )
-            : null,
-        body: body,
-        title: DictLibLocalizations.of(context)!.listsTitle,
-        actions: actions,
-        floatingActionButton: floatingActionButton);
+              ),
+            )
+          : null,
+      body: body,
+      title: DictLibLocalizations.of(context)!.listsTitle,
+      actions: actions,
+      floatingActionButton: floatingActionButton,
+    );
   }
 
   Widget _buildTabBody(_TabDescriptor tab) {
     return switch (tab) {
       _TabDescriptor.myLists => () {
-          var body = _getUserLists(context, setState,
-              widget.buildEntryListWidgetCallback, inEditMode);
-          // Pull-to-refresh, but not in edit mode (ReorderableListView
-          // doesn't play nicely with it).
-          if (sharing.isEnabled && !inEditMode) {
-            body = RefreshIndicator(onRefresh: _refreshSynced, child: body);
-          }
-          if (kIsWeb) {
-            // No local lists, favourites, or reorder hint on web — you can't
-            // create or save them there. Just explain; the Community and
-            // Shared-with-me tabs carry the read-only content.
-            final l = DictLibLocalizations.of(context)!;
-            return ListView(children: [
+        var body = _getUserLists(
+          context,
+          setState,
+          widget.buildEntryListWidgetCallback,
+          inEditMode,
+        );
+        // Pull-to-refresh, but not in edit mode (ReorderableListView
+        // doesn't play nicely with it).
+        if (sharing.isEnabled && !inEditMode) {
+          body = RefreshIndicator(onRefresh: _refreshSynced, child: body);
+        }
+        if (kIsWeb) {
+          // No local lists, favourites, or reorder hint on web — you can't
+          // create or save them there. Just explain; the Community and
+          // Shared-with-me tabs carry the read-only content.
+          final l = DictLibLocalizations.of(context)!;
+          return ListView(
+            children: [
               WebLimitationsCard(
                 heading: l.webLimitationsListsHeading,
                 body: l.webLimitationsListsBody,
@@ -335,14 +360,19 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
                 // marketing site where the install buttons live.
                 footerUrl: 'https://auslandictionary.org/',
               ),
-            ]);
-          }
-          return body;
-        }(),
-      _TabDescriptor.community =>
-        getCommunityLists(context, widget.buildEntryListWidgetCallback),
+            ],
+          );
+        }
+        return body;
+      }(),
+      _TabDescriptor.community => getCommunityLists(
+        context,
+        widget.buildEntryListWidgetCallback,
+      ),
       _TabDescriptor.sharedWithMe => RefreshIndicator(
-          onRefresh: _refreshSynced, child: _buildSharedWithMeTab(context)),
+        onRefresh: _refreshSynced,
+        child: _buildSharedWithMeTab(context),
+      ),
     };
   }
 
@@ -353,9 +383,11 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     if (subscribed != null && context.mounted) {
       setState(() {});
       await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => widget.buildEntryListWidgetCallback(subscribed)));
+        context,
+        MaterialPageRoute(
+          builder: (_) => widget.buildEntryListWidgetCallback(subscribed),
+        ),
+      );
       if (mounted) setState(() {});
     }
   }
@@ -414,9 +446,11 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
             subtitle: _formatSharedStatus(context, el),
             onTap: () async {
               await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => widget.buildEntryListWidgetCallback(el)));
+                context,
+                MaterialPageRoute(
+                  builder: (_) => widget.buildEntryListWidgetCallback(el),
+                ),
+              );
               if (mounted) setState(() {});
             },
           ),
@@ -449,10 +483,11 @@ enum _TabDescriptor {
 }
 
 Widget _getUserLists(
-    BuildContext context,
-    void Function(void Function() fn) setState,
-    BuildEntryListWidgetCallback buildEntryListWidgetCallback,
-    bool inEditMode) {
+  BuildContext context,
+  void Function(void Function() fn) setState,
+  BuildEntryListWidgetCallback buildEntryListWidgetCallback,
+  bool inEditMode,
+) {
   if (inEditMode) {
     return _buildEditModeList(context, setState);
   }
@@ -466,38 +501,48 @@ Widget _getUserLists(
     // enqueue a sync op). The wrapper shares its entries with the local
     // list, so the view stays identical to opening `el` directly.
     final target = owned ?? el;
-    tiles.add(HearthListRow(
-      key: ValueKey(el.key),
-      leading: owned != null
-          ? Icon(iconForSharedList(owned.meta))
-          : el.getLeadingIcon(),
-      // Owner-shared lists show the share's (renamable) display name.
-      title: (owned ?? el).getName(context),
-      // Shared lists show their sync status; plain lists show a word count.
-      subtitle: owned != null
-          ? _formatOwnedStatus(context, owned)
-          : _wordCount(context, el),
-      onTap: () async {
-        await Navigator.push(
+    tiles.add(
+      HearthListRow(
+        key: ValueKey(el.key),
+        leading: owned != null
+            ? Icon(iconForSharedList(owned.meta))
+            : el.getLeadingIcon(),
+        // Owner-shared lists show the share's (renamable) display name.
+        title: (owned ?? el).getName(context),
+        // Shared lists show their sync status; plain lists show a word count.
+        subtitle: owned != null
+            ? _formatOwnedStatus(context, owned)
+            : _wordCount(context, el),
+        onTap: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => buildEntryListWidgetCallback(target)));
-      },
-    ));
+              builder: (context) => buildEntryListWidgetCallback(target),
+            ),
+          );
+        },
+      ),
+    );
   }
   // A gentle hint pointing at the edit (pencil) affordance, mirroring the
   // design's sparse-state guidance.
-  tiles.add(Padding(
-    padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-    child: Text(
-      DictLibLocalizations.of(context)!.listsEditHint,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-          fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+  tiles.add(
+    Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Text(
+        DictLibLocalizations.of(context)!.listsEditHint,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
     ),
-  ));
+  );
   return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8), children: tiles);
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    children: tiles,
+  );
 }
 
 /// A short "N words" subtitle for a list (counts distinct entries).
@@ -509,7 +554,9 @@ String _wordCount(BuildContext context, EntryList el) {
 /// Edit-mode list — reorders the local user lists. Favourites stays pinned
 /// at the top.
 Widget _buildEditModeList(
-    BuildContext context, void Function(void Function() fn) setState) {
+  BuildContext context,
+  void Function(void Function() fn) setState,
+) {
   final tiles = <Widget>[];
   var i = 0;
   for (final e in userEntryListManager.getEntryLists().entries) {
@@ -524,30 +571,37 @@ Widget _buildEditModeList(
     final canDelete = el.canBeDeleted() && ownedShare == null;
     final trailing = canDelete
         ? IconButton(
-            icon: Icon(Icons.remove_circle,
-                color: Theme.of(context).colorScheme.error),
+            icon: Icon(
+              Icons.remove_circle,
+              color: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () async {
               final confirmed = await confirmAlert(
-                  context,
-                  Text(
-                      DictLibLocalizations.of(context)!.listConfirmListDelete));
+                context,
+                Text(DictLibLocalizations.of(context)!.listConfirmListDelete),
+              );
               if (confirmed) {
                 await userEntryListManager.deleteEntryList(e.key);
                 setState(() {});
               }
-            })
+            },
+          )
         : (ownedShare != null
-            ? IconButton(
-                icon: Icon(iconForSharedList(ownedShare.meta),
-                    color: Theme.of(context).hintColor),
-                tooltip:
-                    DictLibLocalizations.of(context)!.unshareToDeleteTooltip,
-                onPressed: () {
-                  showSnack(context,
-                      DictLibLocalizations.of(context)!.unshareToDeleteTooltip);
-                },
-              )
-            : null);
+              ? IconButton(
+                  icon: Icon(
+                    iconForSharedList(ownedShare.meta),
+                    color: Theme.of(context).hintColor,
+                  ),
+                  tooltip: DictLibLocalizations.of(context)!
+                      .unshareToDeleteTooltip,
+                  onPressed: () {
+                    showSnack(
+                      context,
+                      DictLibLocalizations.of(context)!.unshareToDeleteTooltip,
+                    );
+                  },
+                )
+              : null);
     // Tapping a list opens the rename dialog. Plain owned lists rename
     // locally; owner-shared lists rename on the server too (only the
     // creator — which is the user here, since owner-shares appear in My
@@ -573,7 +627,10 @@ Widget _buildEditModeList(
       tile = IgnorePointer(key: ValueKey(el.key), child: tile);
     }
     tile = ReorderableDragStartListener(
-        key: ValueKey(el.key), index: i, child: tile);
+      key: ValueKey(el.key),
+      index: i,
+      child: tile,
+    );
     tiles.add(tile);
     i++;
   }
@@ -589,8 +646,9 @@ Widget _buildEditModeList(
         DictLibLocalizations.of(context)!.listsReorderHint,
         textAlign: TextAlign.center,
         style: TextStyle(
-            fontSize: 13,
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     ),
     children: tiles,
@@ -663,25 +721,31 @@ String? _formatLastSynced(BuildContext context, int? lastSyncedSecs) {
   return l.syncedDaysAgo(age ~/ 86400);
 }
 
-Widget getCommunityLists(BuildContext context,
-    BuildEntryListWidgetCallback buildEntryListWidgetCallback) {
+Widget getCommunityLists(
+  BuildContext context,
+  BuildEntryListWidgetCallback buildEntryListWidgetCallback,
+) {
   List<Widget> tiles = [];
   for (MapEntry<String, EntryList> e
       in communityEntryListManager.getEntryLists().entries) {
     EntryList el = e.value;
     String name = el.getName(context);
-    tiles.add(HearthListRow(
-      key: ValueKey(name),
-      leading: el.getLeadingIcon(inEditMode: false),
-      title: name,
-      subtitle: _wordCount(context, el),
-      onTap: () async {
-        await Navigator.push(
+    tiles.add(
+      HearthListRow(
+        key: ValueKey(name),
+        leading: el.getLeadingIcon(inEditMode: false),
+        title: name,
+        subtitle: _wordCount(context, el),
+        onTap: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => buildEntryListWidgetCallback(el)));
-      },
-    ));
+              builder: (context) => buildEntryListWidgetCallback(el),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   return ListView(
@@ -702,8 +766,9 @@ Future<bool> _showRenameDialog(
 }) async {
   final controller = TextEditingController(text: currentName);
   // Put the caret at the end so editing starts from the existing name.
-  controller.selection =
-      TextSelection.collapsed(offset: controller.text.length);
+  controller.selection = TextSelection.collapsed(
+    offset: controller.text.length,
+  );
   final l = DictLibLocalizations.of(context)!;
   final body = DisposeOnUnmount(
     notifiers: [controller],
@@ -726,23 +791,30 @@ Future<bool> _showRenameDialog(
       await onRename(controller.text);
     } on EntryListNameException catch (e) {
       if (context.mounted) {
-        showSnack(context, '${l.listFailedToRename}: ${e.localise(context)}.',
-            backgroundColor: Theme.of(context).colorScheme.error);
+        showSnack(
+          context,
+          '${l.listFailedToRename}: ${e.localise(context)}.',
+          backgroundColor: Theme.of(context).colorScheme.error,
+        );
       }
       confirmed = false;
     } on SyncException catch (e) {
       if (context.mounted) {
         showSnack(
-            context,
-            '${l.listFailedToRename}: '
-            '${localisedSyncErrorSimple(context, e, l.listFailedToRename)}',
-            backgroundColor: Theme.of(context).colorScheme.error);
+          context,
+          '${l.listFailedToRename}: '
+          '${localisedSyncErrorSimple(context, e, l.listFailedToRename)}',
+          backgroundColor: Theme.of(context).colorScheme.error,
+        );
       }
       confirmed = false;
     } catch (e) {
       if (context.mounted) {
-        showSnack(context, '${l.listFailedToRename}: $e.',
-            backgroundColor: Theme.of(context).colorScheme.error);
+        showSnack(
+          context,
+          '${l.listFailedToRename}: $e.',
+          backgroundColor: Theme.of(context).colorScheme.error,
+        );
       }
       confirmed = false;
     }
@@ -768,15 +840,18 @@ Future<bool> applyRenameListDialog(BuildContext context, EntryList list) {
 /// server (which syncs the new name to editors + subscribers) and
 /// refreshes the local owner wrapper.
 Future<bool> applyRenameSharedListDialog(
-    BuildContext context, SyncedEntryList owned) {
+  BuildContext context,
+  SyncedEntryList owned,
+) {
   return _showRenameDialog(
     context,
     currentName: owned.getName(context),
     // Renaming hits the server; retry transient failures with feedback
     // before the dialog's error handling surfaces the final failure.
     onRename: (newName) => retryWithFeedback(
-        () => listsService.renameSharedList(owned, newName),
-        onRetry: snackRetryFeedback(context)),
+      () => listsService.renameSharedList(owned, newName),
+      onRetry: snackRetryFeedback(context),
+    ),
   );
 }
 
@@ -802,20 +877,28 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
   var confirmed = await confirmAlert(context, body, title: l.listNewList);
   if (confirmed) {
     try {
-      final key =
-          EntryList.getKeyFromName(controller.text, rejectUnderscores: true);
+      final key = EntryList.getKeyFromName(
+        controller.text,
+        rejectUnderscores: true,
+      );
       await userEntryListManager.createEntryList(key);
       Analytics.track('list_created', props: {'shared': false});
     } on EntryListNameException catch (e) {
       if (context.mounted) {
-        showSnack(context, '${l.listFailedToMake}: ${e.localise(context)}.',
-            backgroundColor: Theme.of(context).colorScheme.error);
+        showSnack(
+          context,
+          '${l.listFailedToMake}: ${e.localise(context)}.',
+          backgroundColor: Theme.of(context).colorScheme.error,
+        );
       }
       confirmed = false;
     } catch (e) {
       if (context.mounted) {
-        showSnack(context, '${l.listFailedToMake}: $e.',
-            backgroundColor: Theme.of(context).colorScheme.error);
+        showSnack(
+          context,
+          '${l.listFailedToMake}: $e.',
+          backgroundColor: Theme.of(context).colorScheme.error,
+        );
       }
       confirmed = false;
     }

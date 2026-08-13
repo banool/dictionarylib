@@ -203,21 +203,25 @@ class HearthColors extends ThemeExtension<HearthColors> {
   HearthColors copyWith({
     Color? historicalContainer,
     Color? onHistoricalContainer,
-  }) =>
-      HearthColors(
-        historicalContainer: historicalContainer ?? this.historicalContainer,
-        onHistoricalContainer:
-            onHistoricalContainer ?? this.onHistoricalContainer,
-      );
+  }) => HearthColors(
+    historicalContainer: historicalContainer ?? this.historicalContainer,
+    onHistoricalContainer: onHistoricalContainer ?? this.onHistoricalContainer,
+  );
 
   @override
   HearthColors lerp(ThemeExtension<HearthColors>? other, double t) {
     if (other is! HearthColors) return this;
     return HearthColors(
-      historicalContainer:
-          Color.lerp(historicalContainer, other.historicalContainer, t)!,
-      onHistoricalContainer:
-          Color.lerp(onHistoricalContainer, other.onHistoricalContainer, t)!,
+      historicalContainer: Color.lerp(
+        historicalContainer,
+        other.historicalContainer,
+        t,
+      )!,
+      onHistoricalContainer: Color.lerp(
+        onHistoricalContainer,
+        other.onHistoricalContainer,
+        t,
+      )!,
     );
   }
 }
@@ -265,8 +269,10 @@ Widget largeScreenTextScaleBuilder(BuildContext context, Widget? child) {
   final accessibilityFactor = mq.textScaler.scale(1.0);
   return MediaQuery(
     data: mq.copyWith(
-        textScaler:
-            TextScaler.linear(accessibilityFactor * kLargeScreenTextScale)),
+      textScaler: TextScaler.linear(
+        accessibilityFactor * kLargeScreenTextScale,
+      ),
+    ),
     child: child,
   );
 }
@@ -274,8 +280,11 @@ Widget largeScreenTextScaleBuilder(BuildContext context, Widget? child) {
 /// Centre [child] at a readable measure on large screens; a no-op on
 /// phones. Wrap page bodies (not whole scaffolds) so app bars and nav
 /// bars keep their natural full-width treatment.
-Widget constrainContentWidth(BuildContext context, Widget child,
-    {double maxWidth = kLargeScreenContentMaxWidth}) {
+Widget constrainContentWidth(
+  BuildContext context,
+  Widget child, {
+  double maxWidth = kLargeScreenContentMaxWidth,
+}) {
   if (!isLargeScreen(context)) return child;
   return Center(
     child: ConstrainedBox(
@@ -337,33 +346,44 @@ TextTheme _hearthTextTheme(Brightness b) {
   final displayFamily = GoogleFonts.bricolageGrotesque().fontFamily;
   return body.copyWith(
     displayLarge: body.displayLarge?.copyWith(
-        fontFamily: displayFamily,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.5),
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.5,
+    ),
     displayMedium: body.displayMedium?.copyWith(
-        fontFamily: displayFamily,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.5),
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.5,
+    ),
     displaySmall: body.displaySmall?.copyWith(
-        fontFamily: displayFamily,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.3),
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.3,
+    ),
     headlineLarge: body.headlineLarge?.copyWith(
-        fontFamily: displayFamily,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.3),
-    headlineMedium: body.headlineMedium
-        ?.copyWith(fontFamily: displayFamily, fontWeight: FontWeight.w700),
-    headlineSmall: body.headlineSmall
-        ?.copyWith(fontFamily: displayFamily, fontWeight: FontWeight.w700),
-    titleLarge: body.titleLarge
-        ?.copyWith(fontFamily: displayFamily, fontWeight: FontWeight.w700),
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.3,
+    ),
+    headlineMedium: body.headlineMedium?.copyWith(
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+    ),
+    headlineSmall: body.headlineSmall?.copyWith(
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+    ),
+    titleLarge: body.titleLarge?.copyWith(
+      fontFamily: displayFamily,
+      fontWeight: FontWeight.w700,
+    ),
   );
 }
 
 ThemeData _buildHearthTheme(Brightness brightness) {
-  final t =
-      brightness == Brightness.dark ? _HearthTokens.dark : _HearthTokens.light;
+  final t = brightness == Brightness.dark
+      ? _HearthTokens.dark
+      : _HearthTokens.light;
   final cs = _hearthScheme(brightness, t);
   final textTheme = _hearthTextTheme(brightness);
   final bodyFamily = GoogleFonts.hankenGrotesk().fontFamily;
@@ -375,23 +395,32 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       );
 
   ButtonStyle filledLikeStyle(Color bg, Color fg) => ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.disabled)
-                ? t.onSurface.withValues(alpha: 0.12)
-                : bg),
-        foregroundColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.disabled)
-                ? t.onSurface.withValues(alpha: 0.38)
-                : fg),
-        elevation: const WidgetStatePropertyAll(0.0),
-        minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
-        padding:
-            const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18)),
-        textStyle: WidgetStatePropertyAll(TextStyle(
-            fontFamily: bodyFamily, fontWeight: FontWeight.w700, fontSize: 15)),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kRadiusButton))),
-      );
+    backgroundColor: WidgetStateProperty.resolveWith(
+      (states) => states.contains(WidgetState.disabled)
+          ? t.onSurface.withValues(alpha: 0.12)
+          : bg,
+    ),
+    foregroundColor: WidgetStateProperty.resolveWith(
+      (states) => states.contains(WidgetState.disabled)
+          ? t.onSurface.withValues(alpha: 0.38)
+          : fg,
+    ),
+    elevation: const WidgetStatePropertyAll(0.0),
+    minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
+    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18)),
+    textStyle: WidgetStatePropertyAll(
+      TextStyle(
+        fontFamily: bodyFamily,
+        fontWeight: FontWeight.w700,
+        fontSize: 15,
+      ),
+    ),
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusButton),
+      ),
+    ),
+  );
 
   return ThemeData(
     useMaterial3: true,
@@ -430,25 +459,35 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       type: BottomNavigationBarType.fixed,
       elevation: 0,
       showUnselectedLabels: true,
-      selectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
-      unselectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+      selectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w800,
+        fontSize: 11,
+      ),
+      unselectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 11,
+      ),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: t.appbar,
       indicatorColor: t.primaryCont,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
           color: states.contains(WidgetState.selected)
               ? t.onPrimaryCont
-              : t.muted)),
-      labelTextStyle: WidgetStatePropertyAll(TextStyle(
+              : t.muted,
+        ),
+      ),
+      labelTextStyle: WidgetStatePropertyAll(
+        TextStyle(
           fontFamily: bodyFamily,
           fontWeight: FontWeight.w700,
           fontSize: 12,
-          color: t.onSurface)),
+          color: t.onSurface,
+        ),
+      ),
     ),
     cardTheme: CardThemeData(
       color: t.surface,
@@ -463,17 +502,23 @@ ThemeData _buildHearthTheme(Brightness brightness) {
     dividerTheme: DividerThemeData(color: t.faintOutline, thickness: 1),
     iconTheme: IconThemeData(color: t.muted),
     primaryIconTheme: IconThemeData(color: t.onSurface),
-    filledButtonTheme:
-        FilledButtonThemeData(style: filledLikeStyle(t.primary, t.onPrimary)),
-    elevatedButtonTheme:
-        ElevatedButtonThemeData(style: filledLikeStyle(t.primary, t.onPrimary)),
+    filledButtonTheme: FilledButtonThemeData(
+      style: filledLikeStyle(t.primary, t.onPrimary),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: filledLikeStyle(t.primary, t.onPrimary),
+    ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: t.primary,
         textStyle: TextStyle(
-            fontFamily: bodyFamily, fontWeight: FontWeight.w700, fontSize: 15),
+          fontFamily: bodyFamily,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kRadiusButton)),
+          borderRadius: BorderRadius.circular(kRadiusButton),
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -482,9 +527,13 @@ ThemeData _buildHearthTheme(Brightness brightness) {
         minimumSize: const Size(0, 48),
         side: BorderSide(color: t.outline, width: 1.5),
         textStyle: TextStyle(
-            fontFamily: bodyFamily, fontWeight: FontWeight.w700, fontSize: 15),
+          fontFamily: bodyFamily,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kRadiusButton)),
+          borderRadius: BorderRadius.circular(kRadiusButton),
+        ),
       ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -492,7 +541,8 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       foregroundColor: t.onPrimary,
       elevation: 2,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kRadiusButton)),
+        borderRadius: BorderRadius.circular(kRadiusButton),
+      ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -507,34 +557,40 @@ ThemeData _buildHearthTheme(Brightness brightness) {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: const WidgetStatePropertyAll(Colors.white),
-      trackColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected) ? t.primary : t.outline),
+      trackColor: WidgetStateProperty.resolveWith(
+        (states) =>
+            states.contains(WidgetState.selected) ? t.primary : t.outline,
+      ),
       trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected)
-              ? t.primary
-              : Colors.transparent),
+      fillColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? t.primary
+            : Colors.transparent,
+      ),
       checkColor: WidgetStatePropertyAll(t.onPrimary),
       side: BorderSide(color: t.outline, width: 2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
     ),
     radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.resolveWith((states) =>
-          states.contains(WidgetState.selected) ? t.primary : t.faint),
+      fillColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? t.primary : t.faint,
+      ),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: t.surfaceAlt,
       selectedColor: t.primaryCont,
       secondarySelectedColor: t.primaryCont,
       labelStyle: TextStyle(
-          color: t.onSurface,
-          fontWeight: FontWeight.w600,
-          fontFamily: bodyFamily),
+        color: t.onSurface,
+        fontWeight: FontWeight.w600,
+        fontFamily: bodyFamily,
+      ),
       side: BorderSide(color: t.outline),
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kRadiusChip)),
+        borderRadius: BorderRadius.circular(kRadiusChip),
+      ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: t.surface,
@@ -547,7 +603,8 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       backgroundColor: t.surface,
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: t.onSurface,
@@ -555,7 +612,8 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       actionTextColor: t.primary,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kRadiusChip)),
+        borderRadius: BorderRadius.circular(kRadiusChip),
+      ),
     ),
     tabBarTheme: TabBarThemeData(
       labelColor: t.primary,
@@ -563,8 +621,10 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       indicatorColor: t.primary,
       dividerColor: Colors.transparent,
       labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-      unselectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      unselectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
+      ),
     ),
     listTileTheme: ListTileThemeData(
       iconColor: t.muted,
@@ -576,10 +636,12 @@ ThemeData _buildHearthTheme(Brightness brightness) {
       selectionColor: t.primaryCont,
       selectionHandleColor: t.primary,
     ),
-    pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-    }),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 }
 
@@ -618,15 +680,14 @@ ThemeData _buildClassicTheme(Brightness brightness, Color seed) {
     cardTheme: CardThemeData(
       color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     typography: Typography.material2021(colorScheme: colorScheme),
     textButtonTheme: TextButtonThemeData(
       style: ButtonStyle(
-        foregroundColor:
-            WidgetStatePropertyAll(isDark ? Colors.white : Colors.black),
+        foregroundColor: WidgetStatePropertyAll(
+          isDark ? Colors.white : Colors.black,
+        ),
       ),
     ),
     iconButtonTheme: IconButtonThemeData(
@@ -639,24 +700,15 @@ ThemeData _buildClassicTheme(Brightness brightness, Color seed) {
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      focusedBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: seed),
-      ),
-      enabledBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: seed),
-      ),
+      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: seed)),
+      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: seed)),
       hintStyle: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
     ),
     tabBarTheme: const TabBarThemeData(
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white,
-      labelStyle: TextStyle(
-        fontSize: 16.0,
-        fontWeight: FontWeight.bold,
-      ),
-      unselectedLabelStyle: TextStyle(
-        fontSize: 16.0,
-      ),
+      labelStyle: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+      unselectedLabelStyle: TextStyle(fontSize: 16.0),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: seed,
@@ -668,9 +720,11 @@ ThemeData _buildClassicTheme(Brightness brightness, Color seed) {
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
     ),
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-    }),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 }

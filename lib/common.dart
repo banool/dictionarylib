@@ -91,8 +91,11 @@ const int DEFAULT_THEME_MODE = 0; // System.
 class DisposeOnUnmount extends StatefulWidget {
   final List<ChangeNotifier> notifiers;
   final Widget child;
-  const DisposeOnUnmount(
-      {super.key, required this.notifiers, required this.child});
+  const DisposeOnUnmount({
+    super.key,
+    required this.notifiers,
+    required this.child,
+  });
 
   @override
   State<DisposeOnUnmount> createState() => _DisposeOnUnmountState();
@@ -123,8 +126,9 @@ const int SEARCH_FOR_NUM_ITEMS = 25;
 /// failure, so this single value bounds the worst-case splash delay they add.
 const Duration kMetadataFetchTimeout = Duration(seconds: 3);
 
-final GlobalKey<NavigatorState> rootNavigatorKey =
-    GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'root',
+);
 
 bool getShouldUseHorizontalLayout(BuildContext context) {
   var screenSize = MediaQuery.of(context).size;
@@ -176,7 +180,8 @@ Future<bool> readKnob(String urlBase, String key, bool fallback) async {
       out = false;
     } else {
       throw Exception(
-          "Failed to check knob at $url, using fallback value: $fallback, due to ${result.body}");
+        "Failed to check knob at $url, using fallback value: $fallback, due to ${result.body}",
+      );
     }
     await sharedPreferences.setBool(sharedPrefsKey, out);
     printAndLog("Value of knob $key is $out, stored at $sharedPrefsKey");
@@ -228,10 +233,19 @@ String _normaliseForSearch(String phrase) {
 }
 
 // Search a list of entries and return top matching items.
-List<Entry> searchList(BuildContext context, String searchTerm,
-        List<EntryType> entryTypes, Set<Entry> entries, Set<Entry> fallback) =>
-    searchListWithMeta(context, searchTerm, entryTypes, entries, fallback)
-        .entries;
+List<Entry> searchList(
+  BuildContext context,
+  String searchTerm,
+  List<EntryType> entryTypes,
+  Set<Entry> entries,
+  Set<Entry> fallback,
+) => searchListWithMeta(
+  context,
+  searchTerm,
+  entryTypes,
+  entries,
+  fallback,
+).entries;
 
 /// [searchList], plus the distance of the single best match.
 ///
@@ -242,11 +256,12 @@ List<Entry> searchList(BuildContext context, String searchTerm,
 /// nothing close to what the user typed. It is null when nothing matched.
 /// Callers that only want the entries should use [searchList].
 ({List<Entry> entries, double? bestDistance}) searchListWithMeta(
-    BuildContext context,
-    String searchTerm,
-    List<EntryType> entryTypes,
-    Set<Entry> entries,
-    Set<Entry> fallback) {
+  BuildContext context,
+  String searchTerm,
+  List<EntryType> entryTypes,
+  Set<Entry> entries,
+  Set<Entry> fallback,
+) {
   final SplayTreeMap<double, List<Entry>> st =
       SplayTreeMap<double, List<Entry>>();
   if (searchTerm == "") {
@@ -325,49 +340,53 @@ Future<bool> confirmAlert(
     // re-initialises it to false and the spinner never shows.
     builder: (ctx) {
       bool running = false;
-      return StatefulBuilder(builder: (ctx, setLocal) {
-        Future<void> handleConfirm() async {
-          if (onConfirm == null) {
-            confirmed = true;
-            Navigator.of(ctx).pop();
-            return;
+      return StatefulBuilder(
+        builder: (ctx, setLocal) {
+          Future<void> handleConfirm() async {
+            if (onConfirm == null) {
+              confirmed = true;
+              Navigator.of(ctx).pop();
+              return;
+            }
+            setLocal(() => running = true);
+            try {
+              await onConfirm();
+              confirmed = true;
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            } catch (e) {
+              if (ctx.mounted) setLocal(() => running = false);
+              messenger.showSnackBar(
+                _tapToDismissSnackBar(
+                  messenger,
+                  Text(errorMessage?.call(e) ?? e.toString()),
+                  backgroundColor: errorColor,
+                ),
+              );
+            }
           }
-          setLocal(() => running = true);
-          try {
-            await onConfirm();
-            confirmed = true;
-            if (ctx.mounted) Navigator.of(ctx).pop();
-          } catch (e) {
-            if (ctx.mounted) setLocal(() => running = false);
-            messenger.showSnackBar(_tapToDismissSnackBar(
-              messenger,
-              Text(errorMessage?.call(e) ?? e.toString()),
-              backgroundColor: errorColor,
-            ));
-          }
-        }
 
-        return AlertDialog(
-          title: Text(title!),
-          content: content,
-          actions: [
-            TextButton(
-              onPressed: running ? null : () => Navigator.of(ctx).pop(),
-              child: Text(cancelText!),
-            ),
-            TextButton(
-              onPressed: running ? null : handleConfirm,
-              child: running
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(confirmText!),
-            ),
-          ],
-        );
-      });
+          return AlertDialog(
+            title: Text(title!),
+            content: content,
+            actions: [
+              TextButton(
+                onPressed: running ? null : () => Navigator.of(ctx).pop(),
+                child: Text(cancelText!),
+              ),
+              TextButton(
+                onPressed: running ? null : handleConfirm,
+                child: running
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(confirmText!),
+              ),
+            ],
+          );
+        },
+      );
     },
   );
   return confirmed;
@@ -394,11 +413,14 @@ Future<bool> runWithProgress({
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 12),
-            Text(message),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 12),
+              Text(message),
+            ],
+          ),
         ),
       ),
     ),
@@ -408,12 +430,16 @@ Future<bool> runWithProgress({
     await task();
     ok = true;
   } catch (e) {
-    messenger.showSnackBar(_tapToDismissSnackBar(
-      messenger,
-      Text(errorMessage?.call(e) ?? e.toString(),
-          style: TextStyle(color: cs.onError)),
-      backgroundColor: cs.error,
-    ));
+    messenger.showSnackBar(
+      _tapToDismissSnackBar(
+        messenger,
+        Text(
+          errorMessage?.call(e) ?? e.toString(),
+          style: TextStyle(color: cs.onError),
+        ),
+        backgroundColor: cs.error,
+      ),
+    );
   } finally {
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
   }
@@ -466,25 +492,34 @@ void showSnack(
   // the default queueing would hold each message for its full duration and
   // delay the one that matters; replacing keeps the latest state on screen.
   if (replaceCurrent) messenger.removeCurrentSnackBar();
-  messenger.showSnackBar(_tapToDismissSnackBar(
-    messenger,
-    Text(message,
-        style: textColor != null ? TextStyle(color: textColor) : null),
-    backgroundColor: backgroundColor,
-    duration: duration,
-  ));
+  messenger.showSnackBar(
+    _tapToDismissSnackBar(
+      messenger,
+      Text(
+        message,
+        style: textColor != null ? TextStyle(color: textColor) : null,
+      ),
+      backgroundColor: backgroundColor,
+      duration: duration,
+    ),
+  );
 }
 
 /// Like [showSnack] but for callers that captured a [ScaffoldMessengerState]
 /// before an `await` (so they can't safely touch a possibly-unmounted
 /// `BuildContext`). Same tap-anywhere-to-dismiss behaviour.
-void showSnackVia(ScaffoldMessengerState messenger, String message,
-    {Color? backgroundColor}) {
-  messenger.showSnackBar(_tapToDismissSnackBar(
-    messenger,
-    Text(message),
-    backgroundColor: backgroundColor,
-  ));
+void showSnackVia(
+  ScaffoldMessengerState messenger,
+  String message, {
+  Color? backgroundColor,
+}) {
+  messenger.showSnackBar(
+    _tapToDismissSnackBar(
+      messenger,
+      Text(message),
+      backgroundColor: backgroundColor,
+    ),
+  );
 }
 
 /// Anchor rect for share_plus's `sharePositionOrigin`. iOS uses this to
@@ -498,13 +533,17 @@ Rect? sharePositionOrigin(BuildContext context) {
 }
 
 Widget buildActionButton(
-    BuildContext context, Widget icon, void Function() onPressed,
-    {bool enabled = true}) {
+  BuildContext context,
+  Widget icon,
+  void Function() onPressed, {
+  bool enabled = true,
+}) {
   return IconButton(
-      onPressed: enabled ? onPressed : null,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 45, height: 45),
-      icon: icon);
+    onPressed: enabled ? onPressed : null,
+    padding: EdgeInsets.zero,
+    constraints: const BoxConstraints.tightFor(width: 45, height: 45),
+    icon: icon,
+  );
 }
 
 List<Widget> buildActionButtons(List<Widget> actions) {
@@ -574,8 +613,10 @@ class MaxLengthQueue<T> {
 
 String convertUnixTimeToHttpDate(int unixTime) {
   // Convert the Unix time to a DateTime object
-  DateTime dateTime =
-      DateTime.fromMillisecondsSinceEpoch(unixTime * 1000, isUtc: true);
+  DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
+    unixTime * 1000,
+    isUtc: true,
+  );
 
   // Use the HttpDate class to format the DateTime object to an HTTP date
   String httpDate = HttpDate.format(dateTime);
@@ -620,6 +661,7 @@ typedef NavigateToEntryPageFn = Future<void> Function(
   BuildContext context,
   Entry entry,
   bool showSaveButtons, {
+
   /// If supplied, the entry page jumps to the sub-entry containing
   /// [focusVideo] on first build. Used by the list view so tapping
   /// "hello" with three saved videos lands the user on the first one
@@ -634,12 +676,13 @@ typedef NavigateToEntryPageFn = Future<void> Function(
   EntryList? saveToList,
 });
 
-Widget? getInnerRelatedEntriesWidget(
-    {required BuildContext context,
-    required SubEntry subEntry,
-    required bool shouldUseHorizontalDisplay,
-    required Entry? Function(String) getRelatedEntry,
-    required NavigateToEntryPageFn navigateToEntryPage}) {
+Widget? getInnerRelatedEntriesWidget({
+  required BuildContext context,
+  required SubEntry subEntry,
+  required bool shouldUseHorizontalDisplay,
+  required Entry? Function(String) getRelatedEntry,
+  required NavigateToEntryPageFn navigateToEntryPage,
+}) {
   ColorScheme colorScheme = Theme.of(context).colorScheme;
   int numRelatedWords = subEntry.getRelatedWords().length;
   if (numRelatedWords == 0) {
@@ -666,24 +709,34 @@ Widget? getInnerRelatedEntriesWidget(
     } else {
       suffix = "";
     }
-    textSpans.add(TextSpan(
-      text: relatedWord,
-      style: TextStyle(
+    textSpans.add(
+      TextSpan(
+        text: relatedWord,
+        style: TextStyle(
           color: isRelated ? colorScheme.primary : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
-          decoration: isRelated ? TextDecoration.underline : null),
-      recognizer: TapGestureRecognizer()..onTap = navFunction,
-    ));
-    textSpans.add(TextSpan(
-        text: suffix, style: TextStyle(color: colorScheme.onSurfaceVariant)));
+          decoration: isRelated ? TextDecoration.underline : null,
+        ),
+        recognizer: TapGestureRecognizer()..onTap = navFunction,
+      ),
+    );
+    textSpans.add(
+      TextSpan(
+        text: suffix,
+        style: TextStyle(color: colorScheme.onSurfaceVariant),
+      ),
+    );
     idx += 1;
   }
 
   // A quiet, de-emphasised "See also" footer line (Related is rarely used).
   var initial = TextSpan(
-      text: "${DictLibLocalizations.of(context)!.seeAlso} ",
-      style: TextStyle(
-          color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700));
+    text: "${DictLibLocalizations.of(context)!.seeAlso} ",
+    style: TextStyle(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    ),
+  );
   textSpans = [initial] + textSpans;
   var richText = RichText(
     text: TextSpan(style: const TextStyle(fontSize: 13.5), children: textSpans),
@@ -692,8 +745,9 @@ Widget? getInnerRelatedEntriesWidget(
 
   if (shouldUseHorizontalDisplay) {
     return Padding(
-        padding: const EdgeInsets.only(left: 10.0, right: 20.0, top: 5.0),
-        child: richText);
+      padding: const EdgeInsets.only(left: 10.0, right: 20.0, top: 5.0),
+      child: richText,
+    );
   } else {
     return richText;
   }

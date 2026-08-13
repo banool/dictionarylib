@@ -53,23 +53,34 @@ double getDoubleFromPlaybackSpeed(PlaybackSpeed playbackSpeed) {
   }
 }
 
-Widget getPlaybackSpeedDropdownWidget(void Function(PlaybackSpeed?) onChanged,
-    {bool enabled = true, Color? disabledColor, PlaybackSpeed? current}) {
-  return Builder(builder: (context) {
-    return IconButton(
-      icon:
-          Icon(Icons.slow_motion_video, color: enabled ? null : disabledColor),
-      tooltip: DictLibLocalizations.of(context)!.playbackSpeedTitle,
-      onPressed: enabled
-          ? () => _showPlaybackSpeedSheet(context, onChanged, current)
-          : null,
-    );
-  });
+Widget getPlaybackSpeedDropdownWidget(
+  void Function(PlaybackSpeed?) onChanged, {
+  bool enabled = true,
+  Color? disabledColor,
+  PlaybackSpeed? current,
+}) {
+  return Builder(
+    builder: (context) {
+      return IconButton(
+        icon: Icon(
+          Icons.slow_motion_video,
+          color: enabled ? null : disabledColor,
+        ),
+        tooltip: DictLibLocalizations.of(context)!.playbackSpeedTitle,
+        onPressed: enabled
+            ? () => _showPlaybackSpeedSheet(context, onChanged, current)
+            : null,
+      );
+    },
+  );
 }
 
 /// A bottom sheet listing the playback speeds, with the current one ticked.
-Future<void> _showPlaybackSpeedSheet(BuildContext context,
-    void Function(PlaybackSpeed?) onChanged, PlaybackSpeed? current) async {
+Future<void> _showPlaybackSpeedSheet(
+  BuildContext context,
+  void Function(PlaybackSpeed?) onChanged,
+  PlaybackSpeed? current,
+) async {
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -84,8 +95,10 @@ Future<void> _showPlaybackSpeedSheet(BuildContext context,
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
-                child: Text(DictLibLocalizations.of(ctx)!.playbackSpeedTitle,
-                    style: Theme.of(ctx).textTheme.titleLarge),
+                child: Text(
+                  DictLibLocalizations.of(ctx)!.playbackSpeedTitle,
+                  style: Theme.of(ctx).textTheme.titleLarge,
+                ),
               ),
               for (final s in PlaybackSpeed.values)
                 ListTile(
@@ -94,9 +107,11 @@ Future<void> _showPlaybackSpeedSheet(BuildContext context,
                         ? "${getPlaybackSpeedString(s)}  ·  ${DictLibLocalizations.of(ctx)!.playbackSpeedNormal}"
                         : getPlaybackSpeedString(s),
                     style: TextStyle(
-                        fontWeight:
-                            s == current ? FontWeight.w800 : FontWeight.w500,
-                        color: s == current ? cs.primary : cs.onSurface),
+                      fontWeight: s == current
+                          ? FontWeight.w800
+                          : FontWeight.w500,
+                      color: s == current ? cs.primary : cs.onSurface,
+                    ),
                   ),
                   trailing: s == current
                       ? Icon(Icons.check, color: cs.primary)
@@ -104,8 +119,10 @@ Future<void> _showPlaybackSpeedSheet(BuildContext context,
                   onTap: () {
                     Navigator.of(ctx).pop();
                     if (s != current) {
-                      Analytics.track('playback_speed_changed',
-                          props: {'speed': s.name});
+                      Analytics.track(
+                        'playback_speed_changed',
+                        props: {'speed': s.name},
+                      );
                     }
                     onChanged(s);
                   },
@@ -119,9 +136,11 @@ Future<void> _showPlaybackSpeedSheet(BuildContext context,
 }
 
 class InheritedPlaybackSpeed extends InheritedWidget {
-  const InheritedPlaybackSpeed(
-      {super.key, required this.child, required this.playbackSpeed})
-      : super(child: child);
+  const InheritedPlaybackSpeed({
+    super.key,
+    required this.child,
+    required this.playbackSpeed,
+  }) : super(child: child);
 
   final PlaybackSpeed playbackSpeed;
   @override
@@ -142,13 +161,15 @@ class InheritedPlaybackSpeed extends InheritedWidget {
 /// black frames, so the screenshot harness passes this to get real frames
 /// into its captures. Never set it for real builds — hardware decode is
 /// faster and kinder to the battery.
-const bool _kSoftwareVideoDecode =
-    bool.fromEnvironment('SOFTWARE_VIDEO_DECODE');
+const bool _kSoftwareVideoDecode = bool.fromEnvironment(
+  'SOFTWARE_VIDEO_DECODE',
+);
 
 /// Shared by every [VideoController] this file creates.
 const VideoControllerConfiguration _kVideoControllerConfiguration =
     VideoControllerConfiguration(
-        enableHardwareAcceleration: !_kSoftwareVideoDecode);
+      enableHardwareAcceleration: !_kSoftwareVideoDecode,
+    );
 
 /// Base URL of pre-extracted first-frame posters, set only by the
 /// screenshot harness for Android emulators: mpv cannot create its GL
@@ -157,8 +178,9 @@ const VideoControllerConfiguration _kVideoControllerConfiguration =
 /// pane shows the video's poster — a real frame of the real video,
 /// served by the harness over the emulator's host loopback — instead.
 /// Empty in every real build.
-const String _kScreenshotPostersUrl =
-    String.fromEnvironment('SCREENSHOT_POSTERS_URL');
+const String _kScreenshotPostersUrl = String.fromEnvironment(
+  'SCREENSHOT_POSTERS_URL',
+);
 
 /// Poster URL for [mediaLink]: the video URL's last two path segments
 /// joined with '_', plus '.png' — must match take_screenshots.py's
@@ -346,8 +368,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     // Create Player and VideoController following media-kit README:
     // https://github.com/media-kit/media-kit
     final player = Player();
-    final controller =
-        VideoController(player, configuration: _kVideoControllerConfiguration);
+    final controller = VideoController(
+      player,
+      configuration: _kVideoControllerConfiguration,
+    );
     players[idx] = _PlayerData(player: player, controller: controller);
 
     // Open the media asynchronously after the widget is in the tree.
@@ -454,10 +478,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     playerData._errorSubscription = playerData.player.stream.error.listen((e) {
       if (playerData.hasPlayedOnce || playerData.error != null) return;
       printAndLog("Video failed to load (stream.error): $e");
-      Analytics.track('video_load_failed', props: {
-        'error_type': Analytics.errorType(e),
-        'source_kind': sourceKind ?? 'unknown',
-      });
+      Analytics.track(
+        'video_load_failed',
+        props: {
+          'error_type': Analytics.errorType(e),
+          'source_kind': sourceKind ?? 'unknown',
+        },
+      );
       if (mounted) {
         setState(() {
           playerData.error = "$e";
@@ -473,14 +500,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     final candidates = mediaFallbackUrlsFor(mediaLink);
     final bool shouldCache =
         (sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true) &&
-            !mediaLink.endsWith(".bak");
+        !mediaLink.endsWith(".bak");
 
     String? mediaSource;
     Object? lastError;
     for (int i = 0; i < candidates.length; i++) {
       try {
         printAndLog(
-            "Resolving video ${candidates[i]} (candidate ${i + 1}/${candidates.length})");
+          "Resolving video ${candidates[i]} (candidate ${i + 1}/${candidates.length})",
+        );
         mediaSource = await _resolveOneSource(candidates[i], shouldCache);
         // A non-primary host succeeding means the primary failed to
         // resolve/cache: a "degraded but recovered" signal for CDN health.
@@ -499,20 +527,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     // cache manager couldn't fetch it — matching the original fall-through.
     if (mediaSource == null) {
       printAndLog(
-          "All ${candidates.length} candidate(s) failed to resolve; handing the preferred URL to the player directly: $lastError");
+        "All ${candidates.length} candidate(s) failed to resolve; handing the preferred URL to the player directly: $lastError",
+      );
       // The download exceptions here are the informative ones (SocketException,
       // HTTP status) — the player's own stream.error that typically follows is
       // just an opaque "Failed to open", so record the cause while we have it.
-      Analytics.track('video_resolve_failed', props: {
-        'error_type': Analytics.errorType(lastError),
-        'candidates': candidates.length,
-      });
+      Analytics.track(
+        'video_resolve_failed',
+        props: {
+          'error_type': Analytics.errorType(lastError),
+          'candidates': candidates.length,
+        },
+      );
       mediaSource = candidates.first;
     }
     sourceKind =
         mediaSource.startsWith('/') || mediaSource.startsWith('file://')
-            ? 'file'
-            : 'url';
+        ? 'file'
+        : 'url';
 
     try {
       // Disable audio completely to prevent interrupting other audio (like music).
@@ -535,7 +567,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       Media media;
       if (mediaSource.startsWith('/') || mediaSource.startsWith('file://')) {
         media = Media(
-            'file://$mediaSource'.replaceAll('file://file://', 'file://'));
+          'file://$mediaSource'.replaceAll('file://file://', 'file://'),
+        );
       } else {
         media = Media(mediaSource);
       }
@@ -554,23 +587,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
       // Listen to the playing stream to track when video first starts playing.
       // This is used to avoid showing loading spinner on loop.
-      playerData._playingSubscription =
-          playerData.player.stream.playing.listen((isPlaying) {
-        if (isPlaying) {
-          // media_kit can reset the rate to 1.0 when playback (re)starts, so
-          // re-apply the desired speed every time it begins playing. This is
-          // what makes the speed stick on initial load without the old timed
-          // retries.
-          playerData.player.setRate(_playbackRate);
-        }
-        if (isPlaying && !playerData.hasPlayedOnce) {
-          playerData.hasPlayedOnce = true;
-          // Trigger rebuild so the controls get the updated hasPlayedOnce value.
-          if (mounted) {
-            setState(() {});
+      playerData._playingSubscription = playerData.player.stream.playing.listen(
+        (isPlaying) {
+          if (isPlaying) {
+            // media_kit can reset the rate to 1.0 when playback (re)starts, so
+            // re-apply the desired speed every time it begins playing. This is
+            // what makes the speed stick on initial load without the old timed
+            // retries.
+            playerData.player.setRate(_playbackRate);
           }
-        }
-      });
+          if (isPlaying && !playerData.hasPlayedOnce) {
+            playerData.hasPlayedOnce = true;
+            // Trigger rebuild so the controls get the updated hasPlayedOnce value.
+            if (mounted) {
+              setState(() {});
+            }
+          }
+        },
+      );
 
       if (mounted) {
         setState(() {
@@ -582,10 +616,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       // Synchronous open/setup failure. Guard so we don't double-count with the
       // stream.error listener above (which handles the async failures).
       if (playerData.error == null) {
-        Analytics.track('video_load_failed', props: {
-          'error_type': Analytics.errorType(e),
-          'source_kind': sourceKind,
-        });
+        Analytics.track(
+          'video_load_failed',
+          props: {
+            'error_type': Analytics.errorType(e),
+            'source_kind': sourceKind,
+          },
+        );
       }
       if (mounted) {
         setState(() {
@@ -615,13 +652,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         ],
       );
     } else {
-      out = Column(children: [
-        Text(
-          "${DictLibLocalizations.of(context)!.unexpectedErrorLoadingVideo} $mediaLink: $error",
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12),
-        )
-      ]);
+      out = Column(
+        children: [
+          Text(
+            "${DictLibLocalizations.of(context)!.unexpectedErrorLoadingVideo} $mediaLink: $error",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      );
     }
     return Padding(
       padding: const EdgeInsets.only(top: 20),
@@ -733,34 +772,38 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       Widget item;
       if (mediaLink.endsWith(".jpg")) {
         item = Padding(
-            padding: const EdgeInsets.all(10),
-            child: CachedNetworkImage(
-                imageUrl: mediaLink,
-                cacheManager: myCacheManager,
-                // Disable fade animation so spinner just disappears
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
-                progressIndicatorBuilder: (context, url, downloadProgress) =>
-                    Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: SizedBox(
-                          height: 100.0,
-                          width: 100.0,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: downloadProgress.progress,
-                            ),
-                          ),
-                        )),
-                errorWidget: (context, url, error) =>
-                    createErrorWidget(error, mediaLink)));
+          padding: const EdgeInsets.all(10),
+          child: CachedNetworkImage(
+            imageUrl: mediaLink,
+            cacheManager: myCacheManager,
+            // Disable fade animation so spinner just disappears
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            progressIndicatorBuilder: (context, url, downloadProgress) =>
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: SizedBox(
+                    height: 100.0,
+                    width: 100.0,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: downloadProgress.progress,
+                      ),
+                    ),
+                  ),
+                ),
+            errorWidget: (context, url, error) =>
+                createErrorWidget(error, mediaLink),
+          ),
+        );
       } else {
         // Build video widget - the playerData should exist since we create it synchronously
         final playerData = players[idx];
         if (playerData == null) {
           item = const Padding(
-              padding: EdgeInsets.only(top: 20),
-              child: Center(child: CircularProgressIndicator()));
+            padding: EdgeInsets.only(top: 20),
+            child: Center(child: CircularProgressIndicator()),
+          );
         } else if (playerData.error != null) {
           item = createErrorWidget(playerData.error!, mediaLink);
         } else {
@@ -817,7 +860,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                       controller: playerData.controller,
                       // Loading indicator on initial load only, not on loop.
                       controls: (state) => getLoadingVideoControls(
-                          state, playerData.hasPlayedOnce),
+                        state,
+                        playerData.hasPlayedOnce,
+                      ),
                       // Letterbox while the real dimensions are still
                       // loading (we size the box from fallbackAspectRatio
                       // until then) rather than stretching a wrong-ratio
@@ -883,7 +928,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     BoxConstraints boxConstraints;
     if (shouldUseHorizontalDisplay) {
       boxConstraints = BoxConstraints(
-          maxWidth: screenWidth * 0.55, maxHeight: screenHeight * 0.67);
+        maxWidth: screenWidth * 0.55,
+        maxHeight: screenHeight * 0.67,
+      );
     } else {
       boxConstraints = BoxConstraints(maxHeight: screenHeight * 0.46);
     }
@@ -891,11 +938,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     // Ensure that the video doesn't take up the whole screen.
     // This only applies a maximum bound.
     var sliderContainer = Container(
-        alignment: Alignment.center,
-        child: ConstrainedBox(
-          constraints: boxConstraints,
-          child: slider,
-        ));
+      alignment: Alignment.center,
+      child: ConstrainedBox(constraints: boxConstraints, child: slider),
+    );
 
     return sliderContainer;
   }
@@ -917,8 +962,9 @@ Future<void> showExpandedVideo(BuildContext context, String mediaLink) {
     transitionDuration: const Duration(milliseconds: 180),
     pageBuilder: (ctx, _, __) => _ExpandedVideoOverlay(mediaLink: mediaLink),
     transitionBuilder: (ctx, anim, _, child) => FadeTransition(
-        opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
-        child: child),
+      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+      child: child,
+    ),
   );
 }
 
@@ -960,8 +1006,10 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
   void initState() {
     super.initState();
     _player = Player();
-    _controller =
-        VideoController(_player, configuration: _kVideoControllerConfiguration);
+    _controller = VideoController(
+      _player,
+      configuration: _kVideoControllerConfiguration,
+    );
     _open();
   }
 
@@ -981,14 +1029,16 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
       String source = candidates.first;
       final shouldCache =
           (sharedPreferences.getBool(KEY_SHOULD_CACHE) ?? true) &&
-              !widget.mediaLink.endsWith(".bak");
+          !widget.mediaLink.endsWith(".bak");
       if (shouldCache && !kIsWeb) {
         for (final url in candidates) {
           try {
             final file = await myCacheManager.getSingleFile(url);
             source = file.path;
             break;
-          } catch (_) {/* try the next host, else stream the preferred URL */}
+          } catch (_) {
+            /* try the next host, else stream the preferred URL */
+          }
         }
       }
       final media = (source.startsWith('/') || source.startsWith('file://'))
@@ -998,8 +1048,10 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
 
       // Learn the natural aspect ratio so the video fills the width instead of
       // being letterboxed.
-      await _player.stream.width.first
-          .timeout(const Duration(seconds: 10), onTimeout: () => null);
+      await _player.stream.width.first.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => null,
+      );
       final width = _player.state.width;
       final height = _player.state.height;
       if (width != null && height != null && height > 0 && mounted) {
@@ -1083,8 +1135,11 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
             child: Align(
               alignment: Alignment.topRight,
               child: IconButton(
-                icon: const Icon(Icons.screen_rotation,
-                    color: Colors.white, size: 26),
+                icon: const Icon(
+                  Icons.screen_rotation,
+                  color: Colors.white,
+                  size: 26,
+                ),
                 tooltip: DictLibLocalizations.of(context)!.videoRotate,
                 onPressed: _toggleRotation,
               ),
@@ -1113,9 +1168,7 @@ Widget getLoadingVideoControls(VideoState state, bool hasPlayedOnce) {
 
       if (showLoading) {
         return const Center(
-          child: CircularProgressIndicator(
-            color: Colors.white,
-          ),
+          child: CircularProgressIndicator(color: Colors.white),
         );
       }
       return const SizedBox.shrink();

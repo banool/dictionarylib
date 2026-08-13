@@ -49,33 +49,42 @@ void main() {
   /// sign-in") previously stacked two dialogs and stranded one
   /// caller's future indefinitely. The new guard makes the second
   /// caller join the first caller's future instead.
-  testWidgets('showSignInDialog re-entry returns the same future',
-      (tester) async {
+  testWidgets('showSignInDialog re-entry returns the same future', (
+    tester,
+  ) async {
     Future<AuthSession?>? firstFuture;
     Future<AuthSession?>? secondFuture;
 
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: DictLibLocalizations.localizationsDelegates,
-      supportedLocales: DictLibLocalizations.supportedLocales,
-      home: _CaptureContext(onReady: (ctx) {
-        // Two callers race to open the dialog. The guard should
-        // collapse them onto a single inflight future.
-        firstFuture = showSignInDialog(ctx);
-        secondFuture = showSignInDialog(ctx);
-      }),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        supportedLocales: DictLibLocalizations.supportedLocales,
+        home: _CaptureContext(
+          onReady: (ctx) {
+            // Two callers race to open the dialog. The guard should
+            // collapse them onto a single inflight future.
+            firstFuture = showSignInDialog(ctx);
+            secondFuture = showSignInDialog(ctx);
+          },
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(firstFuture, isNotNull);
     expect(secondFuture, isNotNull);
-    expect(identical(firstFuture, secondFuture), isTrue,
-        reason: 'reentry guard must return the same Future instance');
+    expect(
+      identical(firstFuture, secondFuture),
+      isTrue,
+      reason: 'reentry guard must return the same Future instance',
+    );
 
     // Dialog is on screen; dismiss it via the Cancel button so the
     // shared future resolves to null and pumpAndSettle has something
     // to settle on.
     final l = DictLibLocalizations.of(
-        tester.element(find.byType(_CaptureContext).first))!;
+      tester.element(find.byType(_CaptureContext).first),
+    )!;
     await tester.tap(find.text(l.alertCancel));
     await tester.pumpAndSettle();
 
@@ -86,20 +95,25 @@ void main() {
   /// The "last time you signed in with X" hint must not name a provider
   /// whose button is no longer offered (killswitched or platform-hidden) —
   /// a user should not be teased with a provider they can't tap.
-  testWidgets('last-used hint is suppressed for unavailable providers',
-      (tester) async {
+  testWidgets('last-used hint is suppressed for unavailable providers', (
+    tester,
+  ) async {
     Future<void> openDialogWithLastProvider(String providerName) async {
       await sharedPreferences.setString(KEY_LAST_AUTH_PROVIDER, providerName);
       // Key the harness per case — otherwise the second pumpWidget updates
       // the existing element in place and initState/onReady never refires.
-      await tester.pumpWidget(MaterialApp(
-        key: ValueKey(providerName),
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
-        supportedLocales: DictLibLocalizations.supportedLocales,
-        home: _CaptureContext(onReady: (ctx) {
-          showSignInDialog(ctx);
-        }),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey(providerName),
+          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          supportedLocales: DictLibLocalizations.supportedLocales,
+          home: _CaptureContext(
+            onReady: (ctx) {
+              showSignInDialog(ctx);
+            },
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -107,20 +121,31 @@ void main() {
     // button is hidden and the hint must not appear either.
     await openDialogWithLastProvider('microsoft');
     var l = DictLibLocalizations.of(
-        tester.element(find.byType(_CaptureContext).first))!;
-    expect(find.text(l.signInLastUsedHint(l.providerMicrosoft)), findsNothing,
-        reason: 'no hint for a provider with no button');
+      tester.element(find.byType(_CaptureContext).first),
+    )!;
+    expect(
+      find.text(l.signInLastUsedHint(l.providerMicrosoft)),
+      findsNothing,
+      reason: 'no hint for a provider with no button',
+    );
     await tester.tap(find.text(l.alertCancel));
     await tester.pumpAndSettle();
 
     // Google is available, so the same record shows the hint.
     await openDialogWithLastProvider('google');
     l = DictLibLocalizations.of(
-        tester.element(find.byType(_CaptureContext).first))!;
-    expect(find.text(l.signInWithGoogle), findsOneWidget,
-        reason: 'sanity: the second dialog should be open');
-    expect(find.text(l.signInLastUsedHint(l.providerGoogle)), findsOneWidget,
-        reason: 'available providers keep the hint');
+      tester.element(find.byType(_CaptureContext).first),
+    )!;
+    expect(
+      find.text(l.signInWithGoogle),
+      findsOneWidget,
+      reason: 'sanity: the second dialog should be open',
+    );
+    expect(
+      find.text(l.signInLastUsedHint(l.providerGoogle)),
+      findsOneWidget,
+      reason: 'available providers keep the hint',
+    );
     await tester.tap(find.text(l.alertCancel));
     await tester.pumpAndSettle();
   });

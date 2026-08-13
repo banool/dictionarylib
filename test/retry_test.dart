@@ -41,13 +41,10 @@ void main() {
   test('the final failure is rethrown once attempts are exhausted', () async {
     var calls = 0;
     await expectLater(
-      retryWithFeedback(
-        () async {
-          calls++;
-          throw netError();
-        },
-        firstDelay: Duration.zero,
-      ),
+      retryWithFeedback(() async {
+        calls++;
+        throw netError();
+      }, firstDelay: Duration.zero),
       throwsA(isA<SyncException>()),
     );
     expect(calls, 3);
@@ -56,29 +53,36 @@ void main() {
   test('non-transient errors are rethrown without retrying', () async {
     var calls = 0;
     await expectLater(
-      retryWithFeedback(
-        () async {
-          calls++;
-          throw SyncException(SyncErrorKind.forbidden, 'not yours');
-        },
-        firstDelay: Duration.zero,
-      ),
+      retryWithFeedback(() async {
+        calls++;
+        throw SyncException(SyncErrorKind.forbidden, 'not yours');
+      }, firstDelay: Duration.zero),
       throwsA(isA<SyncException>()),
     );
     expect(calls, 1);
   });
 
   test('isTransientSyncError classifies kinds correctly', () {
-    expect(isTransientSyncError(SyncException(SyncErrorKind.network, 'x')),
-        isTrue);
     expect(
-        isTransientSyncError(SyncException(SyncErrorKind.server, 'x')), isTrue);
-    expect(isTransientSyncError(SyncException(SyncErrorKind.rateLimited, 'x')),
-        isTrue);
-    expect(isTransientSyncError(SyncException(SyncErrorKind.unauthorized, 'x')),
-        isFalse);
-    expect(isTransientSyncError(SyncException(SyncErrorKind.notFound, 'x')),
-        isFalse);
+      isTransientSyncError(SyncException(SyncErrorKind.network, 'x')),
+      isTrue,
+    );
+    expect(
+      isTransientSyncError(SyncException(SyncErrorKind.server, 'x')),
+      isTrue,
+    );
+    expect(
+      isTransientSyncError(SyncException(SyncErrorKind.rateLimited, 'x')),
+      isTrue,
+    );
+    expect(
+      isTransientSyncError(SyncException(SyncErrorKind.unauthorized, 'x')),
+      isFalse,
+    );
+    expect(
+      isTransientSyncError(SyncException(SyncErrorKind.notFound, 'x')),
+      isFalse,
+    );
     expect(isTransientSyncError(StateError('x')), isFalse);
   });
 }

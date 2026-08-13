@@ -61,8 +61,10 @@ class _SignInResumeBannerState extends State<SignInResumeBanner> {
       actions: [
         TextButton(
           onPressed: () async {
-            final session = await showSignInDialog(context,
-                contextMessage: l.signInDialogContextResume);
+            final session = await showSignInDialog(
+              context,
+              contextMessage: l.signInDialogContextResume,
+            );
             // Kick a sync fire-and-forget on success; the banner
             // listens for the auth state change via `Sharing`'s
             // bumpState (which the auth store forwards through), so

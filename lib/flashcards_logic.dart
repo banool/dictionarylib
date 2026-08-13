@@ -56,7 +56,9 @@ SavedVideo? parseSavedVideoMasterId(String id) {
   final i = id.indexOf(_masterKeySep);
   if (i < 0) return null;
   return SavedVideo(
-      entryKey: id.substring(0, i), mediaPath: id.substring(i + 1));
+    entryKey: id.substring(0, i),
+    mediaPath: id.substring(i + 1),
+  );
 }
 
 class DolphinInformation {
@@ -127,8 +129,9 @@ LinkedHashMap<String, EntryList> getCandidateEntryLists() {
 }
 
 LinkedHashMap<String, EntryList> getEntryListsToRevise(
-    LinkedHashMap<String, EntryList> candidateEntryLists,
-    List<String> listsToUse) {
+  LinkedHashMap<String, EntryList> candidateEntryLists,
+  List<String> listsToUse,
+) {
   LinkedHashMap<String, EntryList> entryLists = LinkedHashMap();
   for (String key in listsToUse) {
     var entryList = candidateEntryLists[key];
@@ -144,7 +147,8 @@ LinkedHashMap<String, EntryList> getEntryListsToRevise(
 /// (e.g. favourites + another list both holding the same one) so
 /// they don't produce duplicate cards.
 List<ResolvedSavedVideo> resolveSavedVideos(
-    LinkedHashMap<String, EntryList> entryLists) {
+  LinkedHashMap<String, EntryList> entryLists,
+) {
   final seen = <SavedVideo>{};
   final out = <ResolvedSavedVideo>[];
   for (final list in entryLists.values) {
@@ -161,21 +165,27 @@ List<ResolvedSavedVideo> resolveSavedVideos(
         }
       }
       if (matched == null) continue;
-      out.add(ResolvedSavedVideo(
-        video: v,
-        entry: entry,
-        subEntry: matched,
-        // Resolve the stored path to a playable URL for the card.
-        videoUrl: mediaUrlForPath(v.mediaPath),
-      ));
+      out.add(
+        ResolvedSavedVideo(
+          video: v,
+          entry: entry,
+          subEntry: matched,
+          // Resolve the stored path to a playable URL for the card.
+          videoUrl: mediaUrlForPath(v.mediaPath),
+        ),
+      );
     }
   }
   return out;
 }
 
 /// Build a DolphinSR Master per resolved saved video.
-List<Master> getMastersFromVideos(Locale revisionLocale,
-    List<ResolvedSavedVideo> videos, bool entryToSign, bool signToEntry) {
+List<Master> getMastersFromVideos(
+  Locale revisionLocale,
+  List<ResolvedSavedVideo> videos,
+  bool entryToSign,
+  bool signToEntry,
+) {
   printAndLog("Making masters from ${videos.length} saved videos");
   final masters = <Master>[];
   final seen = <String>{};
@@ -191,11 +201,13 @@ List<Master> getMastersFromVideos(Locale revisionLocale,
     }
     final masterKey = savedVideoMasterId(r.video);
     if (!seen.add(masterKey)) continue;
-    masters.add(Master(
-      id: masterKey,
-      fields: [phrase, VIDEO_LINKS_MARKER],
-      combinations: combinations,
-    ));
+    masters.add(
+      Master(
+        id: masterKey,
+        fields: [phrase, VIDEO_LINKS_MARKER],
+        combinations: combinations,
+      ),
+    );
   }
   // No shuffle here: the card order (per combination, not just per
   // master) is shuffled by DolphinSR itself via addMasters'
@@ -209,8 +221,11 @@ int getNumCards(DolphinSR dolphin) {
 }
 
 DolphinInformation getDolphinInformationFromVideos(
-    List<ResolvedSavedVideo> videos, List<Master> masters,
-    {List<Review>? reviews, int? orderSeed}) {
+  List<ResolvedSavedVideo> videos,
+  List<Master> masters, {
+  List<Review>? reviews,
+  int? orderSeed,
+}) {
   reviews = reviews ?? [];
   final masterToVideoMap = <String, ResolvedSavedVideo>{};
   for (final r in videos) {
@@ -228,8 +243,9 @@ DolphinInformation getDolphinInformationFromVideos(
   // this runs during the landing page's build, where an uncaught throw
   // renders as a blank ErrorWidget with no way back.
   final seed = orderSeed ?? Random().nextInt(1 << 31);
-  final dolphin =
-      DolphinSR(outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip);
+  final dolphin = DolphinSR(
+    outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip,
+  );
   dolphin.addMasters(masters, shuffleCardOrder: true, random: Random(seed));
 
   // Filter to reviews for known masters / combinations — DolphinSR
@@ -244,8 +260,10 @@ DolphinInformation getDolphinInformationFromVideos(
   dolphin.addReviews(filteredReviews);
   printAndLog("Added ${filteredReviews.length} stored reviews to Dolphin");
   if (dolphin.skippedOutOfOrderReviews > 0) {
-    printAndLog("Skipped ${dolphin.skippedOutOfOrderReviews} out-of-order "
-        "stored reviews (kept on disk, not applied this session)");
+    printAndLog(
+      "Skipped ${dolphin.skippedOutOfOrderReviews} out-of-order "
+      "stored reviews (kept on disk, not applied this session)",
+    );
   }
   return DolphinInformation(
     dolphin: dolphin,
@@ -261,7 +279,9 @@ DolphinInformation getDolphinInformationFromVideos(
 /// review references an unknown master or combination, so any review
 /// list handed to it must be filtered first.
 List<Review> filterReviewsToMasters(
-    List<Review> reviews, List<Master> masters) {
+  List<Review> reviews,
+  List<Master> masters,
+) {
   final masterLookup = {for (final m in masters) m.id!: m};
   final filtered = <Review>[];
   for (final r in reviews) {
@@ -291,11 +311,17 @@ List<Review> filterReviewsToMasters(
 /// carries the same masters / seed / persisted reviews so it too can be
 /// rebuilt.
 DolphinInformation rebuildDolphin(
-    DolphinInformation di, Iterable<Review> sessionAnswers) {
-  final dolphin =
-      DolphinSR(outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip);
-  dolphin.addMasters(di.masters,
-      shuffleCardOrder: true, random: Random(di.orderSeed));
+  DolphinInformation di,
+  Iterable<Review> sessionAnswers,
+) {
+  final dolphin = DolphinSR(
+    outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip,
+  );
+  dolphin.addMasters(
+    di.masters,
+    shuffleCardOrder: true,
+    random: Random(di.orderSeed),
+  );
 
   // Apply persisted history plus the session's latest-per-card answers,
   // filtered to this build's masters and sorted ascending by ts. The
@@ -364,7 +390,9 @@ Future<void> migrateLegacyReviewsIfNeeded() async {
       sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? const <String>[];
   if (encoded.isEmpty) {
     await sharedPreferences.setInt(
-        KEY_REVIEWS_SCHEMA_VERSION, reviewsSchemaVersion);
+      KEY_REVIEWS_SCHEMA_VERSION,
+      reviewsSchemaVersion,
+    );
     return;
   }
   final out = <String>[];
@@ -410,10 +438,13 @@ Future<void> migrateLegacyReviewsIfNeeded() async {
   }
   await sharedPreferences.setStringList(KEY_STORED_REVIEWS, out);
   await sharedPreferences.setInt(
-      KEY_REVIEWS_SCHEMA_VERSION, reviewsSchemaVersion);
+    KEY_REVIEWS_SCHEMA_VERSION,
+    reviewsSchemaVersion,
+  );
   printAndLog(
-      'Reviews migration → v$reviewsSchemaVersion: $converted converted, '
-      '$unchanged unchanged, $dropped dropped (of ${encoded.length} total)');
+    'Reviews migration → v$reviewsSchemaVersion: $converted converted, '
+    '$unchanged unchanged, $dropped dropped (of ${encoded.length} total)',
+  );
 }
 
 /// Try to rewrite a v1 master id to the current `<entryKey>\x1F<mediaPath>`
@@ -452,8 +483,10 @@ String? _tryMigrateLegacyMaster(String legacyMaster) {
 /// When [strict], only a video-confirmed match counts; the entry-exists
 /// first-video fallback is skipped (it's deferred to a later, lower-priority
 /// pass — see [_tryMigrateLegacyMaster]).
-String? _resolveHyphenPrefixMaster(String legacyMaster,
-    {required bool strict}) {
+String? _resolveHyphenPrefixMaster(
+  String legacyMaster, {
+  required bool strict,
+}) {
   var idx = legacyMaster.lastIndexOf('-');
   while (idx >= 0) {
     final candidate = legacyMaster.substring(0, idx);
@@ -464,7 +497,8 @@ String? _resolveHyphenPrefixMaster(String legacyMaster,
         for (final path in sub.getMedia()) {
           if (path.endsWith(tail) || path.contains(tail)) {
             return savedVideoMasterId(
-                SavedVideo(entryKey: candidate, mediaPath: path));
+              SavedVideo(entryKey: candidate, mediaPath: path),
+            );
           }
         }
       }
@@ -476,7 +510,8 @@ String? _resolveHyphenPrefixMaster(String legacyMaster,
           final media = sub.getMedia();
           if (media.isNotEmpty) {
             return savedVideoMasterId(
-                SavedVideo(entryKey: candidate, mediaPath: media.first));
+              SavedVideo(entryKey: candidate, mediaPath: media.first),
+            );
           }
         }
       }
@@ -499,8 +534,10 @@ String? _resolveHyphenPrefixMaster(String legacyMaster,
 /// When [strict], only a video-confirmed (filename) match counts; the
 /// entry-exists first-video fallback is skipped (deferred to the final pass —
 /// see [_tryMigrateLegacyMaster]).
-String? _resolveSuffixEntryKeyMaster(String legacyMaster,
-    {required bool strict}) {
+String? _resolveSuffixEntryKeyMaster(
+  String legacyMaster, {
+  required bool strict,
+}) {
   // Entries whose key is a proper suffix of the master, longest first.
   final candidates = <Entry>[
     for (final entry in keyedByEnglishEntriesGlobal.values)
@@ -531,7 +568,8 @@ String? _resolveSuffixEntryKeyMaster(String legacyMaster,
         final media = sub.getMedia();
         if (media.isNotEmpty) {
           fallback = savedVideoMasterId(
-              SavedVideo(entryKey: key, mediaPath: media.first));
+            SavedVideo(entryKey: key, mediaPath: media.first),
+          );
           break;
         }
       }
@@ -557,21 +595,21 @@ List<Review> readReviews() {
   return out;
 }
 
-Future<void> writeReviews(List<Review> existing, List<Review> additional,
-    {bool force = false}) async {
+Future<void> writeReviews(
+  List<Review> existing,
+  List<Review> additional, {
+  bool force = false,
+}) async {
   if (!force && additional.isEmpty) {
     printAndLog("No reviews to write and force = $force");
     return;
   }
   List<Review> toWrite = existing + additional;
-  List<String> encoded = toWrite
-      .map(
-        (e) => encodeReview(e),
-      )
-      .toList();
+  List<String> encoded = toWrite.map((e) => encodeReview(e)).toList();
   await sharedPreferences.setStringList(KEY_STORED_REVIEWS, encoded);
   printAndLog(
-      "Wrote ${additional.length} new reviews (making ${toWrite.length} in total) to storage");
+    "Wrote ${additional.length} new reviews (making ${toWrite.length} in total) to storage",
+  );
 }
 
 int getNumDueCards(DolphinSR dolphin, RevisionStrategy revisionStrategy) {
@@ -591,10 +629,13 @@ Future<void> bumpRandomReviewCounter(int bumpAmount) async {
   int updated = current + bumpAmount;
   await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, updated);
   printAndLog(
-      "Incremented random review counter by $bumpAmount ($current to $updated)");
+    "Incremented random review counter by $bumpAmount ($current to $updated)",
+  );
   int? firstUnixtime = sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
   if (firstUnixtime == null) {
     await sharedPreferences.setInt(
-        KEY_FIRST_RANDOM_REVIEW, DateTime.now().millisecondsSinceEpoch ~/ 1000);
+      KEY_FIRST_RANDOM_REVIEW,
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    );
   }
 }

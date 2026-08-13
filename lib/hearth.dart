@@ -82,8 +82,9 @@ class HearthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final content =
-        padding == null ? child : Padding(padding: padding!, child: child);
+    final content = padding == null
+        ? child
+        : Padding(padding: padding!, child: child);
     return Material(
       color: cs.surface,
       borderRadius: BorderRadius.circular(kRadiusCard),
@@ -94,7 +95,9 @@ class HearthCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(kRadiusCard),
             border: Border.all(
-                color: borderColor ?? cs.outlineVariant, width: borderWidth),
+              color: borderColor ?? cs.outlineVariant,
+              width: borderWidth,
+            ),
           ),
           child: content,
         ),
@@ -186,15 +189,14 @@ class HearthEmptyState extends StatelessWidget {
               child: Text(
                 body!,
                 textAlign: TextAlign.center,
-                style: tt.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant, height: 1.5),
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  height: 1.5,
+                ),
               ),
             ),
           ],
-          if (action != null) ...[
-            const SizedBox(height: 18),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(height: 18), action!],
         ],
       ),
     );
@@ -416,11 +418,16 @@ class HearthStatTile extends StatelessWidget {
           Text(
             value,
             style: tt.headlineSmall?.copyWith(
-                fontSize: 26, color: valueColor ?? cs.onSurface, height: 1),
+              fontSize: 26,
+              color: valueColor ?? cs.onSurface,
+              height: 1,
+            ),
           ),
           const SizedBox(height: 4),
-          Text(label,
-              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          Text(
+            label,
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
         ],
       ),
     );
@@ -478,23 +485,28 @@ class HearthRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(title,
-                        style: tt.titleMedium?.copyWith(
-                            fontSize: 15.5, fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: tt.titleMedium?.copyWith(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (subtitle != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(subtitle!,
-                            style: tt.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant, height: 1.35)),
+                        child: Text(
+                          subtitle!,
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
                       ),
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 10),
-                trailing!,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 10), trailing!],
             ],
           ),
         ),
@@ -533,8 +545,12 @@ class HearthRowGroup extends StatefulWidget {
   /// sources card), so they don't swallow the whole page.
   final double? maxHeight;
 
-  const HearthRowGroup(
-      {required this.rows, this.padding, this.maxHeight, super.key});
+  const HearthRowGroup({
+    required this.rows,
+    this.padding,
+    this.maxHeight,
+    super.key,
+  });
 
   @override
   State<HearthRowGroup> createState() => _HearthRowGroupState();
@@ -682,15 +698,22 @@ class HearthListRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(title,
-                      style: tt.titleMedium?.copyWith(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(
+                    title,
+                    style: tt.titleMedium?.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   if (subtitle != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(subtitle!,
-                          style: tt.bodySmall
-                              ?.copyWith(color: cs.onSurfaceVariant)),
+                      child: Text(
+                        subtitle!,
+                        style: tt.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -743,8 +766,10 @@ class HearthSegmented extends StatelessWidget {
                   borderRadius: BorderRadius.circular(kRadiusChip),
                   child: Container(
                     constraints: const BoxConstraints(minHeight: 48),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 11,
+                    ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(kRadiusChip),
@@ -842,8 +867,11 @@ class HearthSignIllustration extends StatelessWidget {
               ),
             ),
             Center(
-              child: Icon(glyph,
-                  size: height * 0.46, color: cs.onPrimaryContainer),
+              child: Icon(
+                glyph,
+                size: height * 0.46,
+                color: cs.onPrimaryContainer,
+              ),
             ),
           ],
         ),

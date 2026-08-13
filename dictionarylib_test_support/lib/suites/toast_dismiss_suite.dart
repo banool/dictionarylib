@@ -19,18 +19,21 @@ void runToastDismissSuite() {
   // A bare screen whose button shows a coloured message toast, mirroring the
   // data-check toast (which passes a backgroundColor).
   Widget harness() => MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => Center(
-              child: ElevatedButton(
-                onPressed: () => showSnack(context, 'toast message',
-                    backgroundColor: Colors.blue),
-                child: const Text('show'),
-              ),
+    home: Scaffold(
+      body: Builder(
+        builder: (context) => Center(
+          child: ElevatedButton(
+            onPressed: () => showSnack(
+              context,
+              'toast message',
+              backgroundColor: Colors.blue,
             ),
+            child: const Text('show'),
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   Future<void> showToast(WidgetTester tester) async {
     await tester.tap(find.text('show'));
@@ -39,8 +42,9 @@ void runToastDismissSuite() {
     expect(find.text('toast message'), findsOneWidget);
   }
 
-  testWidgets('tapping the toast padding above the text dismisses it',
-      (tester) async {
+  testWidgets('tapping the toast padding above the text dismisses it', (
+    tester,
+  ) async {
     await tester.pumpWidget(harness());
     await showToast(tester);
 
@@ -49,19 +53,29 @@ void runToastDismissSuite() {
     // 5px above the text: inside the coloured toast but outside the text — the
     // strip the old code left un-tappable.
     final tapY = text.top - 5;
-    expect(tapY, greaterThan(snack.top),
-        reason: 'tap point must be inside the toast');
-    expect(tapY, lessThan(text.top),
-        reason: 'tap point must be above the text');
+    expect(
+      tapY,
+      greaterThan(snack.top),
+      reason: 'tap point must be inside the toast',
+    );
+    expect(
+      tapY,
+      lessThan(text.top),
+      reason: 'tap point must be above the text',
+    );
 
     await tester.tapAt(Offset(text.center.dx, tapY));
     await tester.pumpAndSettle();
-    expect(find.text('toast message'), findsNothing,
-        reason: 'a tap in the toast padding should dismiss it');
+    expect(
+      find.text('toast message'),
+      findsNothing,
+      reason: 'a tap in the toast padding should dismiss it',
+    );
   });
 
-  testWidgets('tapping the toast padding below the text dismisses it',
-      (tester) async {
+  testWidgets('tapping the toast padding below the text dismisses it', (
+    tester,
+  ) async {
     await tester.pumpWidget(harness());
     await showToast(tester);
 
@@ -69,15 +83,24 @@ void runToastDismissSuite() {
     final text = tester.getRect(find.text('toast message'));
     // 5px below the text: inside the coloured toast but outside the text.
     final tapY = text.bottom + 5;
-    expect(tapY, lessThan(snack.bottom),
-        reason: 'tap point must be inside the toast');
-    expect(tapY, greaterThan(text.bottom),
-        reason: 'tap point must be below the text');
+    expect(
+      tapY,
+      lessThan(snack.bottom),
+      reason: 'tap point must be inside the toast',
+    );
+    expect(
+      tapY,
+      greaterThan(text.bottom),
+      reason: 'tap point must be below the text',
+    );
 
     await tester.tapAt(Offset(text.center.dx, tapY));
     await tester.pumpAndSettle();
-    expect(find.text('toast message'), findsNothing,
-        reason: 'a tap in the toast padding should dismiss it');
+    expect(
+      find.text('toast message'),
+      findsNothing,
+      reason: 'a tap in the toast padding should dismiss it',
+    );
   });
 
   testWidgets('tapping the toast text dismisses it', (tester) async {

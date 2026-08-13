@@ -36,19 +36,21 @@ Future<SyncedEntryList> _installLists() async {
     source: source,
   );
   await sharing.lists.insert(owned);
-  await sharing.lists.insert(SyncedEntryList.subscriber(
-    meta: SyncedListMeta(
-      listId: 'subbedsignout',
-      displayName: 'Followed',
-      role: ListRole.subscriber,
-      lastKnownSeq: 1,
-      etag: null,
-      lastSyncedAt: 1700000000,
-      serverUpdatedAt: 1700000000,
-      orphaned: false,
+  await sharing.lists.insert(
+    SyncedEntryList.subscriber(
+      meta: SyncedListMeta(
+        listId: 'subbedsignout',
+        displayName: 'Followed',
+        role: ListRole.subscriber,
+        lastKnownSeq: 1,
+        etag: null,
+        lastSyncedAt: 1700000000,
+        serverUpdatedAt: 1700000000,
+        orphaned: false,
+      ),
+      savedVideos: LinkedHashSet.of({_v('banana')}),
     ),
-    savedVideos: LinkedHashSet.of({_v('banana')}),
-  ));
+  );
   return owned;
 }
 
@@ -62,47 +64,61 @@ void main() {
   });
 
   group('Sharing.signOut', () {
-    test('best-effort pushes queued edits under the still-valid session',
-        () async {
-      final requests = installFakeSharing((req) async {
-        if (req.method == 'POST' && req.url.path.endsWith('/sync')) {
-          return stubSyncApplyAll(req);
-        }
-        return http.Response('', 404);
-      });
-      final owned = await _installLists();
-      await sharing.engine.enqueueAddVideo(owned.listId, _v('cherry'));
+    test(
+      'best-effort pushes queued edits under the still-valid session',
+      () async {
+        final requests = installFakeSharing((req) async {
+          if (req.method == 'POST' && req.url.path.endsWith('/sync')) {
+            return stubSyncApplyAll(req);
+          }
+          return http.Response('', 404);
+        });
+        final owned = await _installLists();
+        await sharing.engine.enqueueAddVideo(owned.listId, _v('cherry'));
 
-      await sharing.signOut();
+        await sharing.signOut();
 
-      final syncPosts =
-          requests.where((r) => r.url.path.endsWith('/sync')).toList();
-      expect(syncPosts, isNotEmpty,
-          reason: 'sign-out must attempt to land queued edits first');
-      final body = jsonDecode(syncPosts.first.body) as Map<String, dynamic>;
-      expect((body['ops'] as List).length, 1);
+        final syncPosts = requests
+            .where((r) => r.url.path.endsWith('/sync'))
+            .toList();
+        expect(
+          syncPosts,
+          isNotEmpty,
+          reason: 'sign-out must attempt to land queued edits first',
+        );
+        final body = jsonDecode(syncPosts.first.body) as Map<String, dynamic>;
+        expect((body['ops'] as List).length, 1);
 
-      // Session gone, owner/editor mirrors gone, local data + subs kept.
-      expect(sharing.auth.store.current, isNull);
-      expect(sharing.lists.hasList('ownedsignout'), isFalse);
-      expect(userEntryListManager.getEntryLists().containsKey('cats_words'),
-          isTrue);
-      expect(sharing.lists.hasList('subbedsignout'), isTrue);
-    });
+        // Session gone, owner/editor mirrors gone, local data + subs kept.
+        expect(sharing.auth.store.current, isNull);
+        expect(sharing.lists.hasList('ownedsignout'), isFalse);
+        expect(
+          userEntryListManager.getEntryLists().containsKey('cats_words'),
+          isTrue,
+        );
+        expect(sharing.lists.hasList('subbedsignout'), isTrue);
+      },
+    );
 
-    test('still signs out cleanly when the flush cannot reach the server',
-        () async {
-      installFakeSharing((req) async => throw http.ClientException('offline'));
-      final owned = await _installLists();
-      await sharing.engine.enqueueAddVideo(owned.listId, _v('cherry'));
+    test(
+      'still signs out cleanly when the flush cannot reach the server',
+      () async {
+        installFakeSharing(
+          (req) async => throw http.ClientException('offline'),
+        );
+        final owned = await _installLists();
+        await sharing.engine.enqueueAddVideo(owned.listId, _v('cherry'));
 
-      await sharing.signOut();
+        await sharing.signOut();
 
-      expect(sharing.auth.store.current, isNull);
-      expect(sharing.lists.hasList('ownedsignout'), isFalse);
-      expect(sharing.lists.hasList('subbedsignout'), isTrue);
-      expect(userEntryListManager.getEntryLists().containsKey('cats_words'),
-          isTrue);
-    });
+        expect(sharing.auth.store.current, isNull);
+        expect(sharing.lists.hasList('ownedsignout'), isFalse);
+        expect(sharing.lists.hasList('subbedsignout'), isTrue);
+        expect(
+          userEntryListManager.getEntryLists().containsKey('cats_words'),
+          isTrue,
+        );
+      },
+    );
   });
 }

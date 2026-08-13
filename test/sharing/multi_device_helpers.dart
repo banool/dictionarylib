@@ -34,12 +34,14 @@ import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:http/http.dart' as http;
 
 const String kIntegrationBaseUrl = String.fromEnvironment(
-    'INTEGRATION_BASE_URL',
-    defaultValue: 'http://localhost:8787');
+  'INTEGRATION_BASE_URL',
+  defaultValue: 'http://localhost:8787',
+);
 
 const String kIntegrationTestAuthToken = String.fromEnvironment(
-    'TEST_AUTH_TOKEN',
-    defaultValue: 'dev-integration-test-token-please-override');
+  'TEST_AUTH_TOKEN',
+  defaultValue: 'dev-integration-test-token-please-override',
+);
 
 /// Must match the dev env's APP_ID in the backend repo's workers/wrangler.toml.
 const String kIntegrationAppId = 'auslan';
@@ -64,8 +66,9 @@ const SharingConfig kIntegrationSharingConfig = SharingConfig(
 Future<bool> integrationServerReachable() async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
   try {
-    final req =
-        await client.getUrl(Uri.parse('$kIntegrationBaseUrl/v1/health'));
+    final req = await client.getUrl(
+      Uri.parse('$kIntegrationBaseUrl/v1/health'),
+    );
     final resp = await req.close().timeout(const Duration(seconds: 3));
     await resp.drain<void>();
     return resp.statusCode == 200;
@@ -97,8 +100,10 @@ String randomTestUserId([String prefix = 'test:int-dart']) =>
 String integrationVideoFor(String key) => 'https://example.test/$key.mp4';
 
 /// Sign in via the worker's test provider and return the minted session.
-Future<AuthSession> signInTestUser(
-    {String? userId, String displayName = 'Dart Integration User'}) async {
+Future<AuthSession> signInTestUser({
+  String? userId,
+  String displayName = 'Dart Integration User',
+}) async {
   final resp = await http.post(
     Uri.parse('$kIntegrationBaseUrl/v1/auth/sign-in'),
     headers: {
@@ -114,7 +119,8 @@ Future<AuthSession> signInTestUser(
   );
   if (resp.statusCode != 200) {
     throw StateError(
-        'test sign-in failed: HTTP ${resp.statusCode} ${resp.body}');
+      'test sign-in failed: HTTP ${resp.statusCode} ${resp.body}',
+    );
   }
   final json = jsonDecode(resp.body) as Map<String, dynamic>;
   return AuthSession(
@@ -130,14 +136,18 @@ Future<AuthSession> signInTestUser(
 /// tearDownAll; failures are swallowed (the worker self-heals via random ids).
 Future<void> wipeTestData() async {
   try {
-    await http.post(
-      Uri.parse('$kIntegrationBaseUrl/v1/test/wipe'),
-      headers: {
-        'x-app-id': kIntegrationAppId,
-        'x-test-auth-token': kIntegrationTestAuthToken,
-      },
-    ).timeout(const Duration(seconds: 10));
-  } catch (_) {/* best effort */}
+    await http
+        .post(
+          Uri.parse('$kIntegrationBaseUrl/v1/test/wipe'),
+          headers: {
+            'x-app-id': kIntegrationAppId,
+            'x-test-auth-token': kIntegrationTestAuthToken,
+          },
+        )
+        .timeout(const Duration(seconds: 10));
+  } catch (_) {
+    /* best effort */
+  }
 }
 
 /// The full real-client stack for "device A". All collaborators are the
@@ -158,7 +168,10 @@ class RealDeviceStack {
     final authApi = AuthApi(kIntegrationSharingConfig);
     final store = AuthStore.withSession(session);
     final auth = AuthService(
-        config: kIntegrationSharingConfig, api: authApi, store: store);
+      config: kIntegrationSharingConfig,
+      api: authApi,
+      store: store,
+    );
     final manager = SyncedEntryListManager.fromStartup();
     final engine = SyncEngine(api: api, manager: manager, auth: auth);
     final sharingInstance = Sharing.forTesting(
@@ -233,17 +246,23 @@ class HttpDevice {
 
   HttpDevice(this.session);
 
-  static Future<HttpDevice> signIn(
-      {String? userId, String? displayName}) async {
-    return HttpDevice(await signInTestUser(
-        userId: userId, displayName: displayName ?? 'Device B'));
+  static Future<HttpDevice> signIn({
+    String? userId,
+    String? displayName,
+  }) async {
+    return HttpDevice(
+      await signInTestUser(
+        userId: userId,
+        displayName: displayName ?? 'Device B',
+      ),
+    );
   }
 
   Map<String, String> _headers({bool json = false}) => {
-        'x-app-id': kIntegrationAppId,
-        'authorization': 'Bearer ${session.sessionToken}',
-        if (json) 'content-type': 'application/json',
-      };
+    'x-app-id': kIntegrationAppId,
+    'authorization': 'Bearer ${session.sessionToken}',
+    if (json) 'content-type': 'application/json',
+  };
 
   Uri _u(String path) => Uri.parse('$kIntegrationBaseUrl$path');
 
@@ -271,8 +290,10 @@ class HttpDevice {
 
   /// POST /v1/lists/:id/invites — owner-only invite mint.
   Future<String> createInvite(String listId) async {
-    final resp =
-        await http.post(_u('/v1/lists/$listId/invites'), headers: _headers());
+    final resp = await http.post(
+      _u('/v1/lists/$listId/invites'),
+      headers: _headers(),
+    );
     _expect(resp, 200, 'createInvite');
     return (jsonDecode(resp.body) as Map<String, dynamic>)['token'] as String;
   }
@@ -320,11 +341,14 @@ class HttpDevice {
 
   /// GET /v1/lists/:id/state — authenticated snapshot (members included).
   Future<ServerListState> state(String listId) async {
-    final resp =
-        await http.get(_u('/v1/lists/$listId/state'), headers: _headers());
+    final resp = await http.get(
+      _u('/v1/lists/$listId/state'),
+      headers: _headers(),
+    );
     _expect(resp, 200, 'state');
     return ServerListState.fromJson(
-        jsonDecode(resp.body) as Map<String, dynamic>);
+      jsonDecode(resp.body) as Map<String, dynamic>,
+    );
   }
 
   /// Entry keys currently in the list per the server, in position order.
@@ -359,7 +383,8 @@ class HttpDevice {
   void _expect(http.Response resp, int status, String what) {
     if (resp.statusCode != status) {
       throw StateError(
-          '$what: expected HTTP $status, got ${resp.statusCode}: ${resp.body}');
+        '$what: expected HTTP $status, got ${resp.statusCode}: ${resp.body}',
+      );
     }
   }
 

@@ -74,7 +74,8 @@ abstract class EntryLoader {
       return entries;
     } catch (e) {
       printAndLog(
-          "Failed to deserialize data from local storage, we'll try to download from the remote again: $e");
+        "Failed to deserialize data from local storage, we'll try to download from the remote again: $e",
+      );
       return {};
     }
   }
@@ -98,7 +99,8 @@ abstract class EntryLoader {
     userEntryListManager = UserEntryListManager.fromStartup();
 
     printAndLog(
-        "Updated entriesGlobal and all its downstream variables (super class)");
+      "Updated entriesGlobal and all its downstream variables (super class)",
+    );
   }
 
   Future<void> _writeEntries(String newData) async {
@@ -110,12 +112,15 @@ abstract class EntryLoader {
       // in memory for this session, we just won't have it cached next load.
       try {
         await sharedPreferences.setString(
-            webDictionaryCacheKey, _compressForWeb(newData));
+          webDictionaryCacheKey,
+          _compressForWeb(newData),
+        );
         printAndLog("Wrote new data to local storage (gzipped)");
       } catch (e) {
         printAndLog(
-            "Failed to persist dictionary to web local storage; continuing "
-            "with in-memory data for this session: $e");
+          "Failed to persist dictionary to web local storage; continuing "
+          "with in-memory data for this session: $e",
+        );
       }
       return;
     }
@@ -145,16 +150,19 @@ abstract class EntryLoader {
       printAndLog("Forcing download of new dictionary data");
       return true;
     }
-    int? lastCheckTimeSecs =
-        sharedPreferences.getInt(KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS);
+    int? lastCheckTimeSecs = sharedPreferences.getInt(
+      KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS,
+    );
     if (lastCheckTimeSecs == null) {
       printAndLog(
-          "Downloading new dictionary data because it seems we've never checked before");
+        "Downloading new dictionary data because it seems we've never checked before",
+      );
       return true;
     }
     if (nowSecs > (lastCheckTimeSecs + DATA_CHECK_INTERVAL)) {
       printAndLog(
-          "Checking for new dictionary data because it has been long enough since the last check. Now: $nowSecs, last check: $lastCheckTimeSecs, check interval: $DATA_CHECK_INTERVAL");
+        "Checking for new dictionary data because it has been long enough since the last check. Now: $nowSecs, last check: $lastCheckTimeSecs, check interval: $DATA_CHECK_INTERVAL",
+      );
       return true;
     }
     return false;
@@ -172,7 +180,8 @@ abstract class EntryLoader {
     if (!_shouldCheckForNewData(nowSecs, forceDownload)) {
       // No need to check again so soon.
       printAndLog(
-          "Not checking for new dictionary data, it hasn't been long enough and forceDownload was false");
+        "Not checking for new dictionary data, it hasn't been long enough and forceDownload was false",
+      );
       return null;
     }
 
@@ -185,9 +194,12 @@ abstract class EntryLoader {
   Future<void> recordLastCheckTime() async {
     int nowSecs = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await sharedPreferences.setInt(
-        KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS, nowSecs);
+      KEY_LAST_DICTIONARY_DATA_CHECK_TIME_SECS,
+      nowSecs,
+    );
     printAndLog(
-        "Recording that we just checked for data by setting KEY_LAST_DICTIONARY_DATA_CHECK_TIME to $nowSecs");
+      "Recording that we just checked for data by setting KEY_LAST_DICTIONARY_DATA_CHECK_TIME to $nowSecs",
+    );
   }
 
   // This is the top level function to call to download new data. Overall it will
@@ -202,10 +214,12 @@ abstract class EntryLoader {
     if (newData == null) {
       if (forceDownload) {
         throw StateError(
-            "forceDownload was true but no new data was downloaded, this should be impossible");
+          "forceDownload was true but no new data was downloaded, this should be impossible",
+        );
       }
       printAndLog(
-          "No new data was downloaded, not updating any downstream variables");
+        "No new data was downloaded, not updating any downstream variables",
+      );
       await recordLastCheckTime();
       return null;
     }
@@ -213,7 +227,8 @@ abstract class EntryLoader {
     // Deserialize the data before anything else.
     Set<Entry> entries = loadEntriesInner(newData.data);
     printAndLog(
-        "Successfully deserialized new data from the internet, ${entries.length} entries");
+      "Successfully deserialized new data from the internet, ${entries.length} entries",
+    );
 
     // Write the new data to disk.
     await _writeEntries(newData.data);
@@ -225,9 +240,12 @@ abstract class EntryLoader {
     // at the end because if we crash before this point we will download the
     // data again next time.
     await sharedPreferences.setInt(
-        KEY_DICTIONARY_DATA_CURRENT_VERSION, newData.newVersion);
+      KEY_DICTIONARY_DATA_CURRENT_VERSION,
+      newData.newVersion,
+    );
     printAndLog(
-        "Set KEY_DICTIONARY_DATA_CURRENT_VERSION to ${newData.newVersion}.");
+      "Set KEY_DICTIONARY_DATA_CURRENT_VERSION to ${newData.newVersion}.",
+    );
 
     // Record that we just checked for new data.
     await recordLastCheckTime();

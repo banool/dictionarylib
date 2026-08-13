@@ -46,7 +46,9 @@ void main() {
 
     test('ignores non-share paths', () {
       expect(
-          _listId('https://share.auslandictionary.org/search?q=foo'), isNull);
+        _listId('https://share.auslandictionary.org/search?q=foo'),
+        isNull,
+      );
     });
 
     test('ignores /l/ with no key', () {
@@ -136,26 +138,36 @@ void main() {
 
     test('handles query string', () {
       expect(
-          _parsedListId('https://example.com/l/$_key?utm_source=slack'), _key);
+        _parsedListId('https://example.com/l/$_key?utm_source=slack'),
+        _key,
+      );
     });
 
     test('lowercases extracted key', () {
       expect(
-          _parsedListId('https://example.com/l/ABC234XYZ567'), 'abc234xyz567');
+        _parsedListId('https://example.com/l/ABC234XYZ567'),
+        'abc234xyz567',
+      );
     });
   });
 
   group('parseShareInput — rejects unrelated URLs', () {
     test('rejects URLs without /l/ segment', () {
       expect(
-          parseShareInput('https://example.com/profile/jdoe', _config), isNull);
+        parseShareInput('https://example.com/profile/jdoe', _config),
+        isNull,
+      );
     });
 
     test('rejects /l/ with invalid key', () {
       expect(
-          parseShareInput('https://example.com/l/UPPER_CASE', _config), isNull);
+        parseShareInput('https://example.com/l/UPPER_CASE', _config),
+        isNull,
+      );
       expect(
-          parseShareInput('https://example.com/l/with-dash', _config), isNull);
+        parseShareInput('https://example.com/l/with-dash', _config),
+        isNull,
+      );
     });
 
     test('rejects garbage', () {
@@ -166,7 +178,9 @@ void main() {
   group('extractSharePayload — invite token', () {
     test('returns the listId with no token on a vanilla share link', () {
       final p = extractSharePayload(
-          Uri.parse('https://share.auslandictionary.org/l/$_key'), _config);
+        Uri.parse('https://share.auslandictionary.org/l/$_key'),
+        _config,
+      );
       expect(p, isNotNull);
       expect(p!.listId, _key);
       expect(p.inviteToken, isNull);
@@ -175,8 +189,9 @@ void main() {
 
     test('captures ?invite=<token> on a Universal Link', () {
       final p = extractSharePayload(
-          Uri.parse('https://share.auslandictionary.org/l/$_key?invite=abc123'),
-          _config);
+        Uri.parse('https://share.auslandictionary.org/l/$_key?invite=abc123'),
+        _config,
+      );
       expect(p, isNotNull);
       expect(p!.listId, _key);
       expect(p.inviteToken, 'abc123');
@@ -185,7 +200,9 @@ void main() {
 
     test('captures ?invite=<token> on a custom-scheme link', () {
       final p = extractSharePayload(
-          Uri.parse('auslan://share/$_key?invite=xyz789'), _config);
+        Uri.parse('auslan://share/$_key?invite=xyz789'),
+        _config,
+      );
       expect(p, isNotNull);
       expect(p!.listId, _key);
       expect(p.inviteToken, 'xyz789');
@@ -193,8 +210,9 @@ void main() {
 
     test('treats empty invite= as absent', () {
       final p = extractSharePayload(
-          Uri.parse('https://share.auslandictionary.org/l/$_key?invite='),
-          _config);
+        Uri.parse('https://share.auslandictionary.org/l/$_key?invite='),
+        _config,
+      );
       expect(p, isNotNull);
       expect(p!.inviteToken, isNull);
       expect(p.isInvite, isFalse);
@@ -202,9 +220,12 @@ void main() {
 
     test('ignores wrong-host URLs entirely (no listId, no invite)', () {
       expect(
-          extractSharePayload(
-              Uri.parse('https://other.example/l/$_key?invite=tok'), _config),
-          isNull);
+        extractSharePayload(
+          Uri.parse('https://other.example/l/$_key?invite=tok'),
+          _config,
+        ),
+        isNull,
+      );
     });
 
     test('parseShareInput surfaces the invite token on a strict URL', () {
@@ -212,7 +233,9 @@ void main() {
       // lets the dialog reject invite URLs with a clear error rather
       // than silently subscribing the user without editor status.
       final p = parseShareInput(
-          'https://share.auslandictionary.org/l/$_key?invite=tok', _config);
+        'https://share.auslandictionary.org/l/$_key?invite=tok',
+        _config,
+      );
       expect(p, isNotNull);
       expect(p!.listId, _key);
       expect(p.inviteToken, 'tok');
@@ -221,7 +244,9 @@ void main() {
 
     test('parseShareInput surfaces the invite token on a loose URL', () {
       final p = parseShareInput(
-          'https://example.com/l/$_key?invite=tok&utm=x', _config);
+        'https://example.com/l/$_key?invite=tok&utm=x',
+        _config,
+      );
       expect(p, isNotNull);
       expect(p!.listId, _key);
       expect(p.inviteToken, 'tok');
@@ -231,25 +256,34 @@ void main() {
   group('SharePayload.toRouteLocation', () {
     test('plain share link maps to /share/<id>', () {
       final p = extractSharePayload(
-          Uri.parse('https://share.auslandictionary.org/l/$_key'), _config);
+        Uri.parse('https://share.auslandictionary.org/l/$_key'),
+        _config,
+      );
       expect(p!.toRouteLocation(), '/share/$_key');
     });
 
     test(
-        'custom-scheme invite link maps to /share/<id>?invite=<tok>, never the '
-        'raw auslan:// URI GoRouter has no route for', () {
-      // Regression for "GoException: no routes for location:
-      // auslan://share/<id>?invite=<tok>". The inbound deep link must be
-      // rewritten to the GoRouter `/share/:listId` location; routing the raw
-      // custom-scheme URI threw because no route matches it.
-      final p = extractSharePayload(
-          Uri.parse('auslan://share/$_key?invite=tok123'), _config);
-      final loc = p!.toRouteLocation();
-      expect(loc, '/share/$_key?invite=tok123');
-      expect(loc.startsWith('/share/'), isTrue);
-      expect(loc.contains('://'), isFalse,
-          reason: 'the router location must not carry the deep-link scheme');
-    });
+      'custom-scheme invite link maps to /share/<id>?invite=<tok>, never the '
+      'raw auslan:// URI GoRouter has no route for',
+      () {
+        // Regression for "GoException: no routes for location:
+        // auslan://share/<id>?invite=<tok>". The inbound deep link must be
+        // rewritten to the GoRouter `/share/:listId` location; routing the raw
+        // custom-scheme URI threw because no route matches it.
+        final p = extractSharePayload(
+          Uri.parse('auslan://share/$_key?invite=tok123'),
+          _config,
+        );
+        final loc = p!.toRouteLocation();
+        expect(loc, '/share/$_key?invite=tok123');
+        expect(loc.startsWith('/share/'), isTrue);
+        expect(
+          loc.contains('://'),
+          isFalse,
+          reason: 'the router location must not carry the deep-link scheme',
+        );
+      },
+    );
 
     test('invite token is query-encoded', () {
       const p = SharePayload(listId: 'abc', inviteToken: 'a&b');
@@ -304,9 +338,13 @@ void main() {
       expect(first!.listId, _key);
 
       final second = handler.takePendingInitial();
-      expect(second, isNull,
-          reason: 'pending buffer must clear after a synchronous read so '
-              'a subsequent caller does not see a stale payload');
+      expect(
+        second,
+        isNull,
+        reason:
+            'pending buffer must clear after a synchronous read so '
+            'a subsequent caller does not see a stale payload',
+      );
 
       handler.dispose();
       await liveLinks.close();
@@ -328,9 +366,13 @@ void main() {
       liveLinks.add(url);
       await Future<void>.delayed(Duration.zero);
 
-      expect(received, hasLength(1),
-          reason: 'OS duplicate deliveries must be deduped so the subscriber '
-              'only routes once');
+      expect(
+        received,
+        hasLength(1),
+        reason:
+            'OS duplicate deliveries must be deduped so the subscriber '
+            'only routes once',
+      );
 
       await sub.cancel();
       handler.dispose();

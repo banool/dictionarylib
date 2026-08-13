@@ -153,8 +153,10 @@ Future<void> setupDictionaryApp(
   final entriesReady = () async {
     await extraKnobsReady;
     final loader = await config.setupMediaAndEntryLoader();
-    await loadEntriesIntoGlobal(loader,
-        entriesGlobalReplacement: entriesGlobalReplacement);
+    await loadEntriesIntoGlobal(
+      loader,
+      entriesGlobalReplacement: entriesGlobalReplacement,
+    );
   }();
 
   // Barrier: everything that must be settled before the first frame. A yanked
@@ -190,7 +192,8 @@ Future<void> setupDictionaryApp(
   // long that replay takes on slow devices. Logged so user reports show when a
   // history has grown big enough to need compaction.
   printAndLog(
-      "Stored review history: ${sharedPreferences.getStringList(KEY_STORED_REVIEWS)?.length ?? 0} reviews");
+    "Stored review history: ${sharedPreferences.getStringList(KEY_STORED_REVIEWS)?.length ?? 0} reviews",
+  );
 
   // Opt in to the shared-lists feature. Runs after the entry load because the
   // synced-list manager resolves owner-share metadata against
@@ -240,13 +243,16 @@ Future<void> runDictionaryApp(
         : await resolveStartingLocale();
     runApp(buildApp(locale));
   } on YankedVersionError catch (e) {
-    runApp(ForceUpgradePage(
-        error: e, iOSAppId: iOSAppId, androidAppId: androidAppId));
+    runApp(
+      ForceUpgradePage(
+        error: e,
+        iOSAppId: iOSAppId,
+        androidAppId: androidAppId,
+      ),
+    );
   } catch (error, stackTrace) {
-    runApp(ErrorFallback(
-      appName: appName,
-      error: error,
-      stackTrace: stackTrace,
-    ));
+    runApp(
+      ErrorFallback(appName: appName, error: error, stackTrace: stackTrace),
+    );
   }
 }

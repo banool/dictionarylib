@@ -103,7 +103,8 @@ class Analytics {
       final host = parts.length == 3 ? _regionHosts[parts[1]] : null;
       if (host == null) {
         printAndLog(
-            'Analytics: Aptabase key looks invalid; analytics disabled');
+          'Analytics: Aptabase key looks invalid; analytics disabled',
+        );
         return;
       }
       _appKey = appKey;
@@ -124,7 +125,8 @@ class Analytics {
       // even for very short sessions.
       unawaited(_flush());
       printAndLog(
-          'Analytics initialised (anonymous, no persistent identifier)');
+        'Analytics initialised (anonymous, no persistent identifier)',
+      );
     } catch (e) {
       printAndLog('Analytics: init failed, disabled: $e');
       _timer?.cancel();
@@ -289,14 +291,14 @@ class Analytics {
   }
 
   static Map<String, dynamic> _systemProps() => {
-        'isDebug': kDebugMode,
-        'osName': _osName,
-        'osVersion': _osVersion,
-        'locale': _locale,
-        'appVersion': packageInfo?.version ?? '',
-        'appBuildNumber': packageInfo?.buildNumber ?? '',
-        'sdkVersion': _sdkVersion,
-      };
+    'isDebug': kDebugMode,
+    'osName': _osName,
+    'osVersion': _osVersion,
+    'locale': _locale,
+    'appVersion': packageInfo?.version ?? '',
+    'appBuildNumber': packageInfo?.buildNumber ?? '',
+    'sdkVersion': _sdkVersion,
+  };
 
   /// True under any Flutter test binding (unit, widget, or integration). We
   /// never start analytics in tests: it would leak a periodic Timer (which

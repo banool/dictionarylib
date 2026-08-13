@@ -53,9 +53,9 @@ class AuthService {
     required SharingConfig config,
     required AuthApi api,
     required AuthStore store,
-  })  : _config = config,
-        _api = api,
-        _store = store;
+  }) : _config = config,
+       _api = api,
+       _store = store;
 
   AuthStore get store => _store;
 
@@ -115,14 +115,18 @@ class AuthService {
         );
       case AuthProvider.google:
         return _api.signInWithGoogle(
-            idToken: await signInWithGoogle(_config.auth));
+          idToken: await signInWithGoogle(_config.auth),
+        );
       case AuthProvider.microsoft:
         return _api.signInWithMicrosoft(
-            idToken: await signInWithMicrosoft(_config.auth));
+          idToken: await signInWithMicrosoft(_config.auth),
+        );
       case AuthProvider.test:
-        throw StateError('signIn(AuthProvider.test) — use '
-            'signInWithTestToken() directly; the test provider isn\'t '
-            'a user-pickable sign-in option.');
+        throw StateError(
+          'signIn(AuthProvider.test) — use '
+          'signInWithTestToken() directly; the test provider isn\'t '
+          'a user-pickable sign-in option.',
+        );
     }
   }
 
@@ -189,7 +193,10 @@ class AuthService {
     String? displayName,
   }) async {
     final session = await _api.signInWithTestToken(
-        testAuthToken: testAuthToken, userId: userId, displayName: displayName);
+      testAuthToken: testAuthToken,
+      userId: userId,
+      displayName: displayName,
+    );
     await _store.save(session);
     return session;
   }
