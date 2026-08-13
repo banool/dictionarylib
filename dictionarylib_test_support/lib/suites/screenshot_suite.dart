@@ -152,10 +152,7 @@ class ScreenshotNameInfo {
 }
 
 void runScreenshotSuite(DictAppTestConfig cfg, ScreenshotSuiteConfig shots) {
-  // ignore: unnecessary_cast
-  final binding =
-      IntegrationTestWidgetsFlutterBinding.ensureInitialized()
-          as IntegrationTestWidgetsFlutterBinding;
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
