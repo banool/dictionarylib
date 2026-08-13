@@ -1,12 +1,12 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.3.114
+version: 0.3.115
 
 publish_to: 'none'
 
 environment:
-  sdk: '>=3.2.3 <4.0.0'
-  flutter: ">=1.17.0"
+  sdk: '>=3.13.0 <4.0.0'
+  flutter: ">=3.47.0"
 
 dependencies:
   # Used to gzip the dictionary dump for web local-storage (entry_loader.dart).
@@ -38,7 +38,10 @@ dependencies:
   http_proxy:
     git:
       url: https://github.com/banool/http_proxy
-      ref: master
+      # Pinned to a SHA, not `master` — a moving ref is the one dependency
+      # whose resolution can change between `pub get` runs, silently, in the
+      # networking layer.
+      ref: 38469da840a9cb3a1cd3465976ec1e4a8f6d5dae
   intl:
   json_annotation: ^4.8.1
   json_serializable: ^6.7.0
