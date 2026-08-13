@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.3.117
+version: 0.3.118
 
 publish_to: 'none'
 
@@ -41,7 +41,7 @@ dependencies:
       # Pinned to a SHA, not `master` — a moving ref is the one dependency
       # whose resolution can change between `pub get` runs, silently, in the
       # networking layer.
-      ref: 38469da840a9cb3a1cd3465976ec1e4a8f6d5dae
+      ref: 540fd5acbc1936263b172dc676d0df64bec8f71a
   intl:
   json_annotation: ^4.8.1
   json_serializable: ^6.7.0
