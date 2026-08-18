@@ -1344,4 +1344,89 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get sourceFieldSource => 'ஆதாரம்';
+
+  @override
+  String get startupDownloadingTitle => 'அகராதித் தரவு பதிவிறக்கப்படுகிறது…';
+
+  @override
+  String get startupDownloadingExplanation =>
+      'முதல் முறை திறக்கும்போது முழு அகராதியும் பதிவிறக்கப்படும்; அதன் பிறகு செயலி இணையம் இல்லாமலும் செயல்படும்.';
+
+  @override
+  String startupTryingSource(String host) {
+    return '$host உடன் இணைக்கிறது…';
+  }
+
+  @override
+  String startupAttemptCount(int attempt, int total) {
+    return '$total-இல் முயற்சி $attempt';
+  }
+
+  @override
+  String startupProgressWithTotal(String received, String total) {
+    return '$received MB / $total MB';
+  }
+
+  @override
+  String startupProgressNoTotal(String received) {
+    return '$received MB பதிவிறக்கப்பட்டது';
+  }
+
+  @override
+  String get startupApplyingData => 'அகராதி தயாராகிறது…';
+
+  @override
+  String get startupFailedTitle => 'அகராதியைப் பதிவிறக்க முடியவில்லை';
+
+  @override
+  String get startupFailedBody =>
+      'செயலி முதல் முறை இயங்கும்போது அதன் அகராதியைப் பதிவிறக்க வேண்டும்; அந்தப் பதிவிறக்கம் தோல்வியடைந்தது.';
+
+  @override
+  String get startupFailedLikelyCauses =>
+      'இது பொதுவாக ஒரு நெட்வொர்க் சிக்கல். சரிபார்க்க வேண்டியவை:';
+
+  @override
+  String get startupFailedCauseInternet =>
+      'உங்கள் சாதனம் இணையத்துடன் இணைக்கப்பட்டுள்ளதா என்பதை உறுதிசெய்யவும்.';
+
+  @override
+  String get startupFailedCauseCaptivePortal =>
+      'பொது Wi-Fi-இல், முதலில் உலாவியைத் திறந்து நெட்வொர்க்கின் விதிமுறைகளை ஏற்க வேண்டியிருக்கலாம்.';
+
+  @override
+  String get startupFailedCauseNetworkBlocks =>
+      'பள்ளி மற்றும் பணியிட நெட்வொர்க்குகள் சில நேரங்களில் இந்தப் பதிவிறக்கத்தைத் தடுக்கின்றன — வேறு நெட்வொர்க் அல்லது மொபைல் ஹாட்ஸ்பாட்டை முயற்சிக்கவும்.';
+
+  @override
+  String get errorFallbackGenericTitle =>
+      'செயலியைத் தொடங்குவதில் ஏதோ தவறு ஏற்பட்டது';
+
+  @override
+  String errorFallbackGenericBody(String email) {
+    return 'முதலில், App Store அல்லது Play Store-இல் புதுப்பிப்பு உள்ளதா எனப் பார்க்கவும் — இது ஏற்கனவே சரிசெய்யப்பட்டிருக்கலாம். சமீபத்திய பதிப்பைப் பயன்படுத்தினால், கீழே உள்ள விவரங்களுடன் (நகல் பொத்தானைப் பயன்படுத்தி) $email-க்கு மின்னஞ்சல் அனுப்பவும். மன்னிக்கவும், தெரிவித்ததற்கு நன்றி!';
+  }
+
+  @override
+  String get errorFallbackRetryButton => 'மீண்டும் முயற்சிக்கவும்';
+
+  @override
+  String get errorFallbackFaqLink => 'எங்கள் இணையதளத்தில் மேலும் உதவி';
+
+  @override
+  String get errorFallbackProxyHint =>
+      'உங்கள் நெட்வொர்க்கிற்கு ப்ராக்ஸி தேவைப்பட்டால், இதை இயக்கி, பின் மீண்டும் முயற்சிக்கவும்:';
+
+  @override
+  String get errorFallbackAdvisoriesTitle => 'அறிவிப்புகள்';
+
+  @override
+  String get errorFallbackDetailsTitle => 'தொழில்நுட்ப விவரங்கள்';
+
+  @override
+  String get errorFallbackCopyDetailsButton => 'விவரங்களை நகலெடு';
+
+  @override
+  String get errorFallbackDetailsCopiedSnack =>
+      'விவரங்கள் கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டன';
 }

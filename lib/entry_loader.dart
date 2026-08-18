@@ -5,10 +5,26 @@ import 'package:archive/archive.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'common.dart';
+import 'data_fetch.dart';
+
+/// Thrown when a cold start (no cached dictionary) could not obtain data —
+/// every source failed, or what they returned couldn't be used.
+/// runDictionaryApp / ErrorFallback use this to show the "couldn't download
+/// the dictionary" copy (plain-language causes, FAQ link) instead of the
+/// generic-crash copy. Carries the original failure for the details section.
+class DictionaryDataUnavailableError extends Error {
+  final Object cause;
+  final StackTrace causeStackTrace;
+
+  DictionaryDataUnavailableError(this.cause, this.causeStackTrace);
+
+  @override
+  String toString() => "Failed to download dictionary data: $cause";
+}
 
 /// Web local-storage codec for the dictionary dump: the raw JSON is ~16mb
 /// (over the local-storage cap), so we gzip it (~1.7mb) and base64 it for
@@ -20,6 +36,21 @@ String _decompressFromWeb(String stored) =>
     utf8.decode(GZipDecoder().decodeBytes(base64Decode(stored)));
 
 abstract class EntryLoader {
+  /// Live status of an in-flight dictionary download, for the cold-start
+  /// loading screen. Null when no download is in flight. Owned by the loader:
+  /// each retry builds a fresh loader and hence a fresh notifier, and
+  /// StartupLoadingApp is handed the loader instance driving that attempt.
+  /// Never disposed — loader lifetime is app lifetime, like themeNotifier.
+  final ValueNotifier<DictionaryDownloadStatus?> downloadStatusNotifier =
+      ValueNotifier(null);
+
+  /// Publish a download status update (null to clear). Called by subclasses'
+  /// [downloadNewData] as they progress, and by [downloadAndApplyNewData]
+  /// around the deserialize/apply step.
+  void reportDownloadStatus(DictionaryDownloadStatus? status) {
+    downloadStatusNotifier.value = status;
+  }
+
   /// Filename (native) under the app documents dir for the cached
   /// dictionary dump. Overridable so a data-format change can ship under
   /// a fresh name: the new build then ignores the old cache and
@@ -143,7 +174,17 @@ abstract class EntryLoader {
   /// as a string. Likely this string is JSON. This will return None if there
   /// is no new data. If forceDownload is true it should attempt to download
   /// new data even if it seems like the current data is the latest data.
-  Future<NewData?> downloadNewData(int currentVersion, bool forceDownload);
+  ///
+  /// [requestTimeout] bounds each individual request (headers + body-stall,
+  /// see fetchWithProgress) — the cold-start Retry path passes the longer
+  /// [kDataFetchTimeoutRetry]. Implementations should also report progress via
+  /// [reportDownloadStatus] so the cold-start loading screen has something to
+  /// show.
+  Future<NewData?> downloadNewData(
+    int currentVersion,
+    bool forceDownload, {
+    Duration requestTimeout = kDataFetchTimeout,
+  });
 
   bool _shouldCheckForNewData(int nowSecs, bool forceDownload) {
     if (forceDownload) {
@@ -174,7 +215,10 @@ abstract class EntryLoader {
   // forceDownload was true, the response should always be non null because we
   // download the data again even if it looks like the remote data matches
   // the local data.
-  Future<NewData?> _downloadNewDataIfAppropriate(bool forceDownload) async {
+  Future<NewData?> _downloadNewDataIfAppropriate(
+    bool forceDownload,
+    Duration requestTimeout,
+  ) async {
     // Determine whether it is time to check for new dictionary data.
     int nowSecs = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     if (!_shouldCheckForNewData(nowSecs, forceDownload)) {
@@ -188,7 +232,11 @@ abstract class EntryLoader {
     int currentVersion =
         sharedPreferences.getInt(KEY_DICTIONARY_DATA_CURRENT_VERSION) ?? 0;
 
-    return await downloadNewData(currentVersion, forceDownload);
+    return await downloadNewData(
+      currentVersion,
+      forceDownload,
+      requestTimeout: requestTimeout,
+    );
   }
 
   Future<void> recordLastCheckTime() async {
@@ -208,51 +256,69 @@ abstract class EntryLoader {
   // new data. It will return the new data if it was downloaded, or null if it
   // was not. It updates the local kv data with the new version number and
   // records the time of the check.
-  Future<NewData?> downloadAndApplyNewData(bool forceDownload) async {
-    // Check for new data.
-    NewData? newData = await _downloadNewDataIfAppropriate(forceDownload);
-    if (newData == null) {
-      if (forceDownload) {
-        throw StateError(
-          "forceDownload was true but no new data was downloaded, this should be impossible",
-        );
-      }
-      printAndLog(
-        "No new data was downloaded, not updating any downstream variables",
+  Future<NewData?> downloadAndApplyNewData(
+    bool forceDownload, {
+    Duration requestTimeout = kDataFetchTimeout,
+  }) async {
+    try {
+      // Check for new data.
+      NewData? newData = await _downloadNewDataIfAppropriate(
+        forceDownload,
+        requestTimeout,
       );
+      if (newData == null) {
+        if (forceDownload) {
+          throw StateError(
+            "forceDownload was true but no new data was downloaded, this should be impossible",
+          );
+        }
+        printAndLog(
+          "No new data was downloaded, not updating any downstream variables",
+        );
+        await recordLastCheckTime();
+        return null;
+      }
+
+      // Deserialize the data before anything else. This parses the ~15mb dump
+      // on the UI isolate, so the loading screen's animation freezes for a few
+      // seconds here — the "applying" status below sets honest copy before
+      // that happens. Parsing in an isolate is a possible future improvement.
+      reportDownloadStatus(
+        const DictionaryDownloadStatus(stage: DictionaryDownloadStage.applying),
+      );
+      Set<Entry> entries = loadEntriesInner(newData.data);
+      printAndLog(
+        "Successfully deserialized new data from the internet, ${entries.length} entries",
+      );
+
+      // Write the new data to disk.
+      await _writeEntries(newData.data);
+
+      // Update the app state with the new entries.
+      setEntriesGlobal(entries);
+
+      // Record the new version of data that we just downloaded. We do this right
+      // at the end because if we crash before this point we will download the
+      // data again next time.
+      await sharedPreferences.setInt(
+        KEY_DICTIONARY_DATA_CURRENT_VERSION,
+        newData.newVersion,
+      );
+      printAndLog(
+        "Set KEY_DICTIONARY_DATA_CURRENT_VERSION to ${newData.newVersion}.",
+      );
+
+      // Record that we just checked for new data.
       await recordLastCheckTime();
-      return null;
+
+      printAndLog("downloadAndApplyNewData is done");
+
+      return newData;
+    } finally {
+      // Clear the status on success and failure alike so the notifier never
+      // claims a download is in flight when none is.
+      reportDownloadStatus(null);
     }
-
-    // Deserialize the data before anything else.
-    Set<Entry> entries = loadEntriesInner(newData.data);
-    printAndLog(
-      "Successfully deserialized new data from the internet, ${entries.length} entries",
-    );
-
-    // Write the new data to disk.
-    await _writeEntries(newData.data);
-
-    // Update the app state with the new entries.
-    setEntriesGlobal(entries);
-
-    // Record the new version of data that we just downloaded. We do this right
-    // at the end because if we crash before this point we will download the
-    // data again next time.
-    await sharedPreferences.setInt(
-      KEY_DICTIONARY_DATA_CURRENT_VERSION,
-      newData.newVersion,
-    );
-    printAndLog(
-      "Set KEY_DICTIONARY_DATA_CURRENT_VERSION to ${newData.newVersion}.",
-    );
-
-    // Record that we just checked for new data.
-    await recordLastCheckTime();
-
-    printAndLog("downloadAndApplyNewData is done");
-
-    return newData;
   }
 }
 

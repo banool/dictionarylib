@@ -126,6 +126,21 @@ const int SEARCH_FOR_NUM_ITEMS = 25;
 /// failure, so this single value bounds the worst-case splash delay they add.
 const Duration kMetadataFetchTimeout = Duration(seconds: 3);
 
+/// Timeouts for the essential dictionary-data fetches. Unlike the metadata
+/// fetches these cannot fail open — a cold start has nothing to show without
+/// the data — so they get a generous bound instead of a tiny one. Applied per
+/// request as both the time-to-response-headers limit and the between-chunks
+/// stall limit while streaming the body (see fetchWithProgress), NOT as a
+/// whole-request limit: a slow-but-alive download of the ~15mb dump must be
+/// allowed to take as long as it takes. On a network that blackholes the data
+/// hosts this is what turns a ~75s per-request TCP hang into a bounded wait.
+const Duration kDataFetchTimeout = Duration(seconds: 30);
+
+/// The user-initiated Retry path uses a longer per-request bound: if the first
+/// pass timed out, a slow network (rather than a blocked one) may be the cause,
+/// and a retry the user is watching can afford to wait longer.
+const Duration kDataFetchTimeoutRetry = Duration(seconds: 60);
+
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );

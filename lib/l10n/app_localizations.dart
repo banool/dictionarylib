@@ -2286,6 +2286,138 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Source'**
   String get sourceFieldSource;
+
+  /// No description provided for @startupDownloadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading dictionary data…'**
+  String get startupDownloadingTitle;
+
+  /// No description provided for @startupDownloadingExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The first launch downloads the full dictionary so the app can work offline afterwards.'**
+  String get startupDownloadingExplanation;
+
+  /// No description provided for @startupTryingSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to {host}…'**
+  String startupTryingSource(String host);
+
+  /// No description provided for @startupAttemptCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt {attempt} of {total}'**
+  String startupAttemptCount(int attempt, int total);
+
+  /// No description provided for @startupProgressWithTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{received} MB of {total} MB'**
+  String startupProgressWithTotal(String received, String total);
+
+  /// No description provided for @startupProgressNoTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{received} MB downloaded'**
+  String startupProgressNoTotal(String received);
+
+  /// No description provided for @startupApplyingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the dictionary…'**
+  String get startupApplyingData;
+
+  /// No description provided for @startupFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t download the dictionary'**
+  String get startupFailedTitle;
+
+  /// No description provided for @startupFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The app needs to download its dictionary the first time it runs, and that download didn\'t work.'**
+  String get startupFailedBody;
+
+  /// No description provided for @startupFailedLikelyCauses.
+  ///
+  /// In en, this message translates to:
+  /// **'This is usually a network problem. Things to check:'**
+  String get startupFailedLikelyCauses;
+
+  /// No description provided for @startupFailedCauseInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure your device is connected to the internet.'**
+  String get startupFailedCauseInternet;
+
+  /// No description provided for @startupFailedCauseCaptivePortal.
+  ///
+  /// In en, this message translates to:
+  /// **'On public Wi-Fi you may need to open a browser and accept the network\'s terms first.'**
+  String get startupFailedCauseCaptivePortal;
+
+  /// No description provided for @startupFailedCauseNetworkBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'School and workplace networks sometimes block the download — try a different network or a mobile hotspot.'**
+  String get startupFailedCauseNetworkBlocks;
+
+  /// No description provided for @errorFallbackGenericTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong starting the app'**
+  String get errorFallbackGenericTitle;
+
+  /// No description provided for @errorFallbackGenericBody.
+  ///
+  /// In en, this message translates to:
+  /// **'First, check the App Store or Play Store for an update — this may already be fixed. If you\'re on the latest version, please email {email} with the details below (use the copy button). Apologies, and thanks for reporting it!'**
+  String errorFallbackGenericBody(String email);
+
+  /// No description provided for @errorFallbackRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get errorFallbackRetryButton;
+
+  /// No description provided for @errorFallbackFaqLink.
+  ///
+  /// In en, this message translates to:
+  /// **'More help on our website'**
+  String get errorFallbackFaqLink;
+
+  /// No description provided for @errorFallbackProxyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'If your network requires a proxy, turn this on, then try again:'**
+  String get errorFallbackProxyHint;
+
+  /// No description provided for @errorFallbackAdvisoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advisories'**
+  String get errorFallbackAdvisoriesTitle;
+
+  /// No description provided for @errorFallbackDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical details'**
+  String get errorFallbackDetailsTitle;
+
+  /// No description provided for @errorFallbackCopyDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy details'**
+  String get errorFallbackCopyDetailsButton;
+
+  /// No description provided for @errorFallbackDetailsCopiedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Details copied to clipboard'**
+  String get errorFallbackDetailsCopiedSnack;
 }
 
 class _DictLibLocalizationsDelegate

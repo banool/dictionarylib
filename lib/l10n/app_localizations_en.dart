@@ -1313,4 +1313,88 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get sourceFieldSource => 'Source';
+
+  @override
+  String get startupDownloadingTitle => 'Downloading dictionary data…';
+
+  @override
+  String get startupDownloadingExplanation =>
+      'The first launch downloads the full dictionary so the app can work offline afterwards.';
+
+  @override
+  String startupTryingSource(String host) {
+    return 'Connecting to $host…';
+  }
+
+  @override
+  String startupAttemptCount(int attempt, int total) {
+    return 'Attempt $attempt of $total';
+  }
+
+  @override
+  String startupProgressWithTotal(String received, String total) {
+    return '$received MB of $total MB';
+  }
+
+  @override
+  String startupProgressNoTotal(String received) {
+    return '$received MB downloaded';
+  }
+
+  @override
+  String get startupApplyingData => 'Preparing the dictionary…';
+
+  @override
+  String get startupFailedTitle => 'We couldn\'t download the dictionary';
+
+  @override
+  String get startupFailedBody =>
+      'The app needs to download its dictionary the first time it runs, and that download didn\'t work.';
+
+  @override
+  String get startupFailedLikelyCauses =>
+      'This is usually a network problem. Things to check:';
+
+  @override
+  String get startupFailedCauseInternet =>
+      'Make sure your device is connected to the internet.';
+
+  @override
+  String get startupFailedCauseCaptivePortal =>
+      'On public Wi-Fi you may need to open a browser and accept the network\'s terms first.';
+
+  @override
+  String get startupFailedCauseNetworkBlocks =>
+      'School and workplace networks sometimes block the download — try a different network or a mobile hotspot.';
+
+  @override
+  String get errorFallbackGenericTitle =>
+      'Something went wrong starting the app';
+
+  @override
+  String errorFallbackGenericBody(String email) {
+    return 'First, check the App Store or Play Store for an update — this may already be fixed. If you\'re on the latest version, please email $email with the details below (use the copy button). Apologies, and thanks for reporting it!';
+  }
+
+  @override
+  String get errorFallbackRetryButton => 'Try again';
+
+  @override
+  String get errorFallbackFaqLink => 'More help on our website';
+
+  @override
+  String get errorFallbackProxyHint =>
+      'If your network requires a proxy, turn this on, then try again:';
+
+  @override
+  String get errorFallbackAdvisoriesTitle => 'Advisories';
+
+  @override
+  String get errorFallbackDetailsTitle => 'Technical details';
+
+  @override
+  String get errorFallbackCopyDetailsButton => 'Copy details';
+
+  @override
+  String get errorFallbackDetailsCopiedSnack => 'Details copied to clipboard';
 }

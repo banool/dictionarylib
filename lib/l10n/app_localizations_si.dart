@@ -1325,4 +1325,88 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get sourceFieldSource => 'මූලාශ්‍රය';
+
+  @override
+  String get startupDownloadingTitle => 'ශබ්දකෝෂ දත්ත බාගත වෙමින්…';
+
+  @override
+  String get startupDownloadingExplanation =>
+      'පළමු වරට යෙදුම විවෘත කිරීමේදී සම්පූර්ණ ශබ්දකෝෂය බාගත වේ, ඉන් පසුව යෙදුම අන්තර්ජාලය නොමැතිව ක්‍රියා කරයි.';
+
+  @override
+  String startupTryingSource(String host) {
+    return '$host වෙත සම්බන්ධ වෙමින්…';
+  }
+
+  @override
+  String startupAttemptCount(int attempt, int total) {
+    return '$totalන් $attempt වැනි උත්සාහය';
+  }
+
+  @override
+  String startupProgressWithTotal(String received, String total) {
+    return '$received MB / $total MB';
+  }
+
+  @override
+  String startupProgressNoTotal(String received) {
+    return '$received MB බාගත විය';
+  }
+
+  @override
+  String get startupApplyingData => 'ශබ්දකෝෂය සූදානම් කරමින්…';
+
+  @override
+  String get startupFailedTitle => 'ශබ්දකෝෂය බාගත කළ නොහැකි විය';
+
+  @override
+  String get startupFailedBody =>
+      'යෙදුම පළමු වරට ක්‍රියාත්මක වන විට එහි ශබ්දකෝෂය බාගත කළ යුතු අතර, එම බාගත කිරීම අසාර්ථක විය.';
+
+  @override
+  String get startupFailedLikelyCauses =>
+      'මෙය බොහෝ විට ජාල ගැටලුවකි. පරීක්ෂා කළ යුතු දේ:';
+
+  @override
+  String get startupFailedCauseInternet =>
+      'ඔබගේ උපාංගය අන්තර්ජාලයට සම්බන්ධ බව තහවුරු කර ගන්න.';
+
+  @override
+  String get startupFailedCauseCaptivePortal =>
+      'පොදු Wi-Fi මත, පළමුව බ්‍රවුසරයක් විවෘත කර ජාලයේ කොන්දේසි පිළිගැනීමට සිදු විය හැක.';
+
+  @override
+  String get startupFailedCauseNetworkBlocks =>
+      'පාසල් සහ රැකියා ස්ථාන ජාල සමහර විට මෙම බාගත කිරීම අවහිර කරයි — වෙනත් ජාලයක් හෝ ජංගම හොට්ස්පොට් එකක් උත්සාහ කරන්න.';
+
+  @override
+  String get errorFallbackGenericTitle => 'යෙදුම ආරම්භ කිරීමේදී දෝෂයක් ඇති විය';
+
+  @override
+  String errorFallbackGenericBody(String email) {
+    return 'පළමුව, App Store හෝ Play Store හි යාවත්කාලීනයක් තිබේදැයි බලන්න — මෙය දැනටමත් නිරාකරණය කර ඇති විය හැක. ඔබ නවතම අනුවාදය භාවිතා කරන්නේ නම්, පහත විස්තර සමඟ (පිටපත් බොත්තම භාවිතා කර) $email වෙත විද්‍යුත් තැපෑලක් එවන්න. සිදු වූ අපහසුතාවයට කණගාටුයි, වාර්තා කිරීම ගැන ස්තූතියි!';
+  }
+
+  @override
+  String get errorFallbackRetryButton => 'නැවත උත්සාහ කරන්න';
+
+  @override
+  String get errorFallbackFaqLink => 'අපගේ වෙබ් අඩවියෙන් තවත් උදව්';
+
+  @override
+  String get errorFallbackProxyHint =>
+      'ඔබගේ ජාලයට ප්‍රොක්සියක් අවශ්‍ය නම්, මෙය සක්‍රිය කර නැවත උත්සාහ කරන්න:';
+
+  @override
+  String get errorFallbackAdvisoriesTitle => 'නිවේදන';
+
+  @override
+  String get errorFallbackDetailsTitle => 'තාක්ෂණික විස්තර';
+
+  @override
+  String get errorFallbackCopyDetailsButton => 'විස්තර පිටපත් කරන්න';
+
+  @override
+  String get errorFallbackDetailsCopiedSnack =>
+      'විස්තර පසුරු පුවරුවට පිටපත් විය';
 }

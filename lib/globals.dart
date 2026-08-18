@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io' show HttpClient, HttpOverrides, SecurityContext, Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -198,6 +199,12 @@ Future<void> setupHttpPrerequisites() async {
     HttpProxy httpProxy = await HttpProxy.createHttpProxy();
     HttpOverrides.global = httpProxy;
     printAndLog("Set HTTP proxy overrides to $httpProxy");
+  } else if (!kIsWeb) {
+    // The setting can change without a process restart (the startup error
+    // screen's proxy toggle + Retry re-runs this), so toggling OFF must
+    // actively clear a previously installed proxy. Almost always a no-op:
+    // HttpOverrides.global is write-only, so we can't check first.
+    HttpOverrides.global = null;
   }
 
   myCacheManager = MyCacheManager();
@@ -210,7 +217,14 @@ Future<void> setupHttpPrerequisites() async {
 /// `sharing.deepLinks.payloads` and route each [SharePayload] to its
 /// `/share/:listId` route (carrying the invite token when present).
 Future<void> setupSharing(SharingConfig config) async {
-  assert(!sharing.isEnabled, 'setupSharing called more than once');
+  // Idempotent rather than asserting: the startup Retry loop re-runs the whole
+  // setup, and while a *data* failure always happens before this point, a
+  // failure in a later step must not make the retry trip over sharing having
+  // already been wired up.
+  if (sharing.isEnabled) {
+    printAndLog("setupSharing called again, keeping the existing instance");
+    return;
+  }
   sharing = await Sharing.setup(config);
 }
 
@@ -219,9 +233,16 @@ Future<void> setupSharing(SharingConfig config) async {
 /// blocking download (the app cannot run without entry data). Requires
 /// [mediaBaseUrls] already set so the list/review migrations can resolve /
 /// strip saved-video paths. Stores the loader in the [entryLoader] global.
+///
+/// [onBlockingDownloadStarted] fires just before the blocking cold-start
+/// download begins (never on a warm start) — runDictionaryApp uses it to put
+/// up the loading screen. [dataRequestTimeout] bounds each data request; the
+/// Retry path passes the longer [kDataFetchTimeoutRetry].
 Future<void> loadEntriesIntoGlobal(
   EntryLoader loader, {
   Set<Entry>? entriesGlobalReplacement,
+  void Function(EntryLoader loader)? onBlockingDownloadStarted,
+  Duration dataRequestTimeout = kDataFetchTimeout,
 }) async {
   if (entriesGlobalReplacement != null && entriesGlobalReplacement.isEmpty) {
     throw ArgumentError("If given, entriesGlobalReplacement must not be empty");
@@ -254,19 +275,42 @@ Future<void> loadEntriesIntoGlobal(
     printAndLog(
       "No entry data found in local storage, fetching data from the internet and waiting for it before proceeeding...",
     );
-    NewData? newData = await loader.downloadAndApplyNewData(true);
-    if (newData == null) {
-      // This implies that there is some incompatibility between the data upstream
-      // and how the app interprets it.
-      throw Exception(
-        "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...",
+    onBlockingDownloadStarted?.call(loader);
+    try {
+      NewData? newData = await loader.downloadAndApplyNewData(
+        true,
+        requestTimeout: dataRequestTimeout,
       );
+      if (newData == null) {
+        // This implies that there is some incompatibility between the data upstream
+        // and how the app interprets it.
+        throw Exception(
+          "No entry data was found in local storage but there was apparently no new data available from the internet. The app cannot operate without entries data, throwing...",
+        );
+      }
+    } catch (e, stackTrace) {
+      // Wrap so runDictionaryApp / ErrorFallback can tell "the cold-start
+      // download failed" (network-flavoured copy, FAQ link) apart from any
+      // other startup crash. Covers timeouts, all-sources-failed, and
+      // downloaded-but-undeserializable alike.
+      throw DictionaryDataUnavailableError(e, stackTrace);
     }
   } else {
     printAndLog(
       "Entry data was found in local storage, fetching new data from the internet in the background...",
     );
-    loader.downloadAndApplyNewData(false);
+    // Fire and forget, but with the rejection handled: with bounded request
+    // timeouts a failed background refresh is routine (offline, blocked
+    // network) and must never surface as an unhandled zone error.
+    unawaited(() async {
+      try {
+        await loader.downloadAndApplyNewData(false);
+      } catch (e) {
+        printAndLog(
+          "Background dictionary data refresh failed (will check again at the next startup after the check interval): $e",
+        );
+      }
+    }());
   }
 
   // A final sanity check to ensure that we have entries data.
