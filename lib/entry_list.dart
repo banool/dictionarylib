@@ -456,6 +456,8 @@ class EntryList {
   /// orphaned by a data refresh) — same behaviour as v1's
   /// "missing entry" path.
   LinkedHashMap<Entry, List<SavedVideo>> get groupedByEntry {
+    // ignore: prefer_collection_literals — the getter's declared type is
+    // LinkedHashMap; a map literal is statically typed Map and won't return.
     final out = LinkedHashMap<Entry, List<SavedVideo>>();
     for (final v in savedVideos) {
       final entry = keyedByEnglishEntriesGlobal[v.entryKey];
@@ -584,6 +586,7 @@ class UserEntryListManager implements EntryListManager {
     if (existing == null) return;
     // Rebuild the map preserving insertion order, swapping the key in place
     // so the renamed list stays exactly where it was in the overview.
+    // ignore: prefer_collection_literals — assigned to a LinkedHashMap field.
     final rebuilt = LinkedHashMap<String, EntryList>();
     for (final e in _entryLists.entries) {
       if (e.key == oldKey) {

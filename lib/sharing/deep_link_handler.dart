@@ -96,26 +96,23 @@ class DeepLinkHandler {
   StreamSubscription<Uri>? _sub;
   bool _started = false;
 
-  DeepLinkHandler({required this.config, AppLinks? appLinks})
-    : _appLinks = appLinks,
-      _initialLinkGetter = null,
+  DeepLinkHandler({required this.config, this._appLinks})
+    : _initialLinkGetter = null,
       _linkStream = null {
     _controller = StreamController<SharePayload>.broadcast(onListen: _onListen);
   }
 
   /// Test-only constructor that bypasses the [AppLinks] platform plugin
   /// (which is hard to mock cleanly because [AppLinks] is a singleton
-  /// with a private constructor). Pass an [initialLinkGetter] that
+  /// with a private constructor). Pass an [_initialLinkGetter] that
   /// returns whatever the OS would have delivered on cold-start, and a
-  /// [linkStream] that emits live deep-links.
+  /// [_linkStream] that emits live deep-links.
   @visibleForTesting
   DeepLinkHandler.forTesting({
     required this.config,
-    required Future<Uri?> Function() initialLinkGetter,
-    required Stream<Uri> linkStream,
-  }) : _appLinks = null,
-       _initialLinkGetter = initialLinkGetter,
-       _linkStream = linkStream {
+    required Future<Uri?> Function() this._initialLinkGetter,
+    required Stream<Uri> this._linkStream,
+  }) : _appLinks = null {
     _controller = StreamController<SharePayload>.broadcast(onListen: _onListen);
   }
 

@@ -199,6 +199,11 @@ Future<void> setupDictionaryApp(
   // global properties) are already loaded, and it never blocks the first frame
   // (init only sets up an in-memory buffer + timer; the first network send is
   // fire-and-forget).
+  // Apply the persisted theme prefs first so the app_opened event's global
+  // `theme` prop reports the user's actual variant rather than the
+  // compile-time default. The root app re-applies them in initState (harmless
+  // — idempotent — and that's where the debug-define overrides layer on top).
+  applyPersistedThemePrefs();
   await Analytics.init(config.aptabaseAppKey);
 
   // Derived from enableFlashcardsKnob (hardcoded; see globals) plus the user's

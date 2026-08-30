@@ -118,7 +118,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   /// saved when it wasn't.
   bool reviewWriteFailed = false;
 
-  PlaybackSpeed playbackSpeed = PlaybackSpeed.One;
+  PlaybackSpeed playbackSpeed = getDefaultPlaybackSpeed();
 
   Timer? nextCardTimer;
 
@@ -260,7 +260,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
 
   void nextCard() {
     setState(() {
-      playbackSpeed = PlaybackSpeed.One;
+      playbackSpeed = getDefaultPlaybackSpeed();
       if (_pos < _shownCards.length - 1) {
         // We'd stepped back earlier — move forward through the cards already
         // shown rather than drawing a new one, so back-then-forward returns to
@@ -300,7 +300,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     nextCardTimer?.cancel();
     nextCardTimer = null;
     setState(() {
-      playbackSpeed = PlaybackSpeed.One;
+      playbackSpeed = getDefaultPlaybackSpeed();
       _pos--;
       currentCard = _shownCards[_pos];
       _syncRevealStateToCurrentCard();

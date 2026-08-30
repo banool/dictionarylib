@@ -197,7 +197,7 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
             children: [
               ValueListenableBuilder<String?>(
                 valueListenable: _inflightContextMessage,
-                builder: (_, msg, __) => Text(
+                builder: (_, msg, _) => Text(
                   msg ?? l.signInDialogBody,
                   style: const TextStyle(fontSize: 13),
                 ),

@@ -53,6 +53,30 @@ double getDoubleFromPlaybackSpeed(PlaybackSpeed playbackSpeed) {
   }
 }
 
+/// Parse a stored speed name back into a [PlaybackSpeed], falling back to
+/// [PlaybackSpeed.One] for unknown / null values. Speeds are persisted by
+/// name, not index, so the enum can be reordered safely (the KEY_THEME_VARIANT
+/// convention).
+PlaybackSpeed playbackSpeedFromName(String? name) {
+  for (final s in PlaybackSpeed.values) {
+    if (s.name == name) return s;
+  }
+  return PlaybackSpeed.One;
+}
+
+/// The user's persisted default playback speed (Settings > Video), falling
+/// back to 1x. Defensive about uninitialized prefs (tests, the error-fallback
+/// path) like the other startup pref reads.
+PlaybackSpeed getDefaultPlaybackSpeed() {
+  try {
+    return playbackSpeedFromName(
+      sharedPreferences.getString(KEY_DEFAULT_PLAYBACK_SPEED),
+    );
+  } catch (e) {
+    return PlaybackSpeed.One;
+  }
+}
+
 Widget getPlaybackSpeedDropdownWidget(
   void Function(PlaybackSpeed?) onChanged, {
   bool enabled = true,
@@ -297,7 +321,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   /// inherited [InheritedPlaybackSpeed] in [didChangeDependencies]. Stored so
   /// the playing-stream listener can re-apply it (outside build, with no
   /// BuildContext) after media_kit resets the rate when playback starts.
-  double _playbackRate = 1.0;
+  /// Seeded from the persisted default so nothing flashes at 1x before the
+  /// inherited value arrives.
+  double _playbackRate = getDoubleFromPlaybackSpeed(getDefaultPlaybackSpeed());
 
   /// How many videos on either side of [currentPage] keep a live player. The
   /// neighbours are pre-created so an adjacent swipe is instant; everything
@@ -336,8 +362,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   /// Create players (synchronously) for [page] and its neighbours within
   /// [_neighbourRadius] that don't exist yet, opening each via a post-frame
-  /// callback. Already-created players are left untouched so swiping back is
-  /// instant.
+  /// callback — and evict players outside that window so the carousel's mpv
+  /// instance count stays bounded. Neighbours are pre-created, so the slide
+  /// being swiped to always already has its player.
   void _ensurePlayersAround(int page) {
     if (widget.mediaLinks.isEmpty) return;
     final last = widget.mediaLinks.length - 1;
@@ -345,6 +372,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     final upper = (page + _neighbourRadius).clamp(0, last);
     for (int idx = lower; idx <= upper; idx++) {
       _ensurePlayer(idx);
+    }
+    // Evict players that have drifted outside the window, so a long carousel
+    // holds at most (2 * radius + 1) mpv instances rather than accumulating
+    // one per video ever visited. Disposal and map removal happen in the same
+    // synchronous pass so the pause/play loops can never see a disposed
+    // player; in-flight _openMedia calls for an evicted index bail via their
+    // identity guard. An evicted slide re-creates lazily as the carousel
+    // approaches it again (build() shows its spinner tile meanwhile).
+    final evicted = players.keys
+        .where((idx) => idx < lower || idx > upper)
+        .toList();
+    for (final idx in evicted) {
+      players.remove(idx)!.dispose();
     }
   }
 
@@ -372,12 +412,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       player,
       configuration: _kVideoControllerConfiguration,
     );
-    players[idx] = _PlayerData(player: player, controller: controller);
+    final playerData = _PlayerData(player: player, controller: controller);
+    players[idx] = playerData;
 
     // Open the media asynchronously after the widget is in the tree.
-    // Use addPostFrameCallback to ensure Video widget is mounted first.
+    // Use addPostFrameCallback to ensure Video widget is mounted first. The
+    // specific _PlayerData is passed along (rather than re-looked-up) so a
+    // stale callback for an evicted-and-recreated index detects it lost the
+    // slot and bails instead of double-opening the new player.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _openMedia(mediaLink, idx);
+      _openMedia(mediaLink, idx, playerData);
     });
   }
 
@@ -456,17 +500,83 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     return url;
   }
 
-  Future<void> _openMedia(String mediaLink, int idx) async {
-    if (!mounted) return;
-
-    final playerData = players[idx];
-    if (playerData == null) return;
+  Future<void> _openMedia(
+    String mediaLink,
+    int idx,
+    _PlayerData playerData,
+  ) async {
+    // True while this call's player is still the live one for [idx]. After any
+    // await the player may have been evicted (see [_ensurePlayersAround]) or
+    // the whole screen disposed — in either case everything here must stop
+    // silently: acting on a disposed player throws, and tracking that teardown
+    // as a load failure was exactly the phantom-failure bug that dominated the
+    // video_load_failed/other/file numbers.
+    bool stale() => !mounted || !identical(players[idx], playerData);
+    if (stale()) return;
 
     // Whether the source handed to the player ended up being a cached local
     // file or a network URL — assigned once resolution below finishes. A
-    // failure on a local file means the bytes were fetched fine (decode/codec
-    // problem); a failure on a URL points at connectivity or the CDN.
+    // failure on a URL points at connectivity or the CDN; a failure on a local
+    // file means the bytes were fetched fine but the *file* is bad (truncated
+    // download, cache corruption), which is recoverable — see the retry below.
     String? sourceKind;
+
+    // The URL the winning cache candidate was downloaded from, kept so a bad
+    // cached file can be evicted and re-streamed. Null when the source isn't a
+    // cache-manager file (caching disabled, .bak temp copies, direct URL).
+    String? resolvedUrl;
+
+    // Retry state for the evict-and-stream recovery: one retry per open, with
+    // error events suppressed while the retry's open() is in flight (a single
+    // failed mpv load emits several error log lines, which would otherwise be
+    // misread as the retry itself failing).
+    var retried = false;
+    var retryInFlight = false;
+
+    // Evict the bad cached copy and stream the same URL directly. The bytes
+    // downloaded fine, so a fresh stream usually plays; the next visit
+    // re-downloads a clean cache copy. Without this a corrupt cached file is
+    // sticky for the whole cache stalePeriod. hasPlayedOnce is still false, so
+    // the spinner keeps showing during the retry instead of the error widget.
+    Future<void> retryFromUrl() async {
+      try {
+        final url = resolvedUrl!;
+        printAndLog(
+          "Cached copy failed to play; evicting it and retrying from the URL",
+        );
+        await myCacheManager.removeFile(url);
+        if (stale()) return;
+        sourceKind = 'url';
+        await playerData.player.open(Media(url), play: false);
+        retryInFlight = false;
+        if (stale()) return;
+        // open(play: false) leaves the player paused, and the once-per-player
+        // initial play/pause in build() has already run — so start the visible
+        // page explicitly or the retried video would sit paused forever.
+        if (widget.isActive && idx == currentPage) {
+          await playerData.player.play();
+        }
+      } catch (e) {
+        retryInFlight = false;
+        if (stale()) return;
+        printAndLog("Retry from URL failed: $e");
+        final errorType = Analytics.errorType(e);
+        Analytics.track(
+          'video_load_failed',
+          props: {
+            'error_type': errorType,
+            'source_kind': 'url',
+            'after_file_retry': 'true',
+            if (errorType == 'other') 'error_detail': Analytics.errorDetail(e),
+          },
+        );
+        if (mounted) {
+          setState(() {
+            playerData.error = "$e";
+          });
+        }
+      }
+    }
 
     // media_kit reports load/playback failures (bad host, DNS failure, decode
     // error) asynchronously on stream.error — open() does NOT throw and the
@@ -477,17 +587,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     // also makes the error widget appear (matching the web player).
     playerData._errorSubscription = playerData.player.stream.error.listen((e) {
       if (playerData.hasPlayedOnce || playerData.error != null) return;
+      // Error lines emitted by the load the retry is replacing — not news.
+      if (retryInFlight) return;
+      if (stale()) return;
       printAndLog("Video failed to load (stream.error): $e");
-      Analytics.track(
-        'video_load_failed',
-        props: {
-          'error_type': Analytics.errorType(e),
-          'source_kind': sourceKind ?? 'unknown',
-        },
-      );
+      final errorType = Analytics.errorType(e);
+      final props = <String, Object?>{
+        'error_type': errorType,
+        'source_kind': sourceKind ?? 'unknown',
+        if (errorType == 'other') 'error_detail': Analytics.errorDetail(e),
+        if (retried) 'after_file_retry': 'true',
+      };
+      // A bad cached file is recoverable: track the failure as usual — the
+      // rate stays comparable with history — then retry once from the network.
+      if (!retried && sourceKind == 'file' && resolvedUrl != null) {
+        retried = true;
+        retryInFlight = true;
+        Analytics.track('video_load_failed', props: {...props, 'retry': 'url'});
+        unawaited(retryFromUrl());
+        return;
+      }
+      Analytics.track('video_load_failed', props: props);
       if (mounted) {
         setState(() {
-          playerData.error = "$e";
+          playerData.error = e;
         });
       }
     });
@@ -510,6 +633,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           "Resolving video ${candidates[i]} (candidate ${i + 1}/${candidates.length})",
         );
         mediaSource = await _resolveOneSource(candidates[i], shouldCache);
+        // Only cache-manager downloads are retryable-by-eviction; .bak temp
+        // copies and direct URLs are not (shouldCache is false for both).
+        if (shouldCache) resolvedUrl = candidates[i];
         // A non-primary host succeeding means the primary failed to
         // resolve/cache: a "degraded but recovered" signal for CDN health.
         // Rare (only fires when a fallback host is actually used).
@@ -546,6 +672,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         ? 'file'
         : 'url';
 
+    if (stale()) return;
     try {
       // Disable audio completely to prevent interrupting other audio (like music).
       // On native, disabling the audio track entirely prevents audio focus
@@ -573,12 +700,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         media = Media(mediaSource);
       }
       await playerData.player.open(media, play: false);
+      if (stale()) return;
 
       // Wait for the video to be ready and get aspect ratio.
       await playerData.player.stream.width.first.timeout(
         const Duration(seconds: 10),
         onTimeout: () => null,
       );
+      if (stale()) return;
       final width = playerData.player.state.width;
       final height = playerData.player.state.height;
       if (width != null && height != null && height > 0) {
@@ -598,6 +727,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           }
           if (isPlaying && !playerData.hasPlayedOnce) {
             playerData.hasPlayedOnce = true;
+            if (retried) {
+              // The evict-and-stream retry recovered playback: the cached copy
+              // was bad but the same URL streamed fine. Denominator: the
+              // video_load_failed events carrying retry='url'.
+              Analytics.track('video_load_recovered');
+            }
             // Trigger rebuild so the controls get the updated hasPlayedOnce value.
             if (mounted) {
               setState(() {});
@@ -612,23 +747,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         });
       }
     } catch (e) {
+      // Teardown mid-open (evicted player, disposed screen) is not a load
+      // failure — bail silently rather than polluting the failure metrics.
+      if (stale()) return;
       printAndLog("Error loading video: $e");
       // Synchronous open/setup failure. Guard so we don't double-count with the
       // stream.error listener above (which handles the async failures).
       if (playerData.error == null) {
+        final errorType = Analytics.errorType(e);
         Analytics.track(
           'video_load_failed',
           props: {
-            'error_type': Analytics.errorType(e),
+            'error_type': errorType,
             'source_kind': sourceKind,
+            if (errorType == 'other') 'error_detail': Analytics.errorDetail(e),
           },
         );
       }
-      if (mounted) {
-        setState(() {
-          playerData.error = "$e";
-        });
-      }
+      setState(() {
+        playerData.error = "$e";
+      });
     }
   }
 
@@ -724,7 +862,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     await pd?.player.pause();
     if (!mounted) return;
     setState(() => _expandedIndex = idx);
-    await showExpandedVideo(context, widget.mediaLinks[idx]);
+    await showExpandedVideo(
+      context,
+      widget.mediaLinks[idx],
+      playbackRate: _playbackRate,
+    );
     if (!mounted) return;
     setState(() => _expandedIndex = null);
     if (wasPlaying) await pd?.player.play();
@@ -951,7 +1093,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 /// by an opaque black page), and close + rotate-to-landscape controls are
 /// offered. Tapping the dimmed area — or the close button — dismisses it. The
 /// video plays muted + looped. Opened by tapping a sign video.
-Future<void> showExpandedVideo(BuildContext context, String mediaLink) {
+Future<void> showExpandedVideo(
+  BuildContext context,
+  String mediaLink, {
+  double playbackRate = 1.0,
+}) {
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
@@ -960,7 +1106,8 @@ Future<void> showExpandedVideo(BuildContext context, String mediaLink) {
     // behind it.
     barrierColor: Colors.black.withValues(alpha: 0.82),
     transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (ctx, _, __) => _ExpandedVideoOverlay(mediaLink: mediaLink),
+    pageBuilder: (ctx, _, _) =>
+        _ExpandedVideoOverlay(mediaLink: mediaLink, playbackRate: playbackRate),
     transitionBuilder: (ctx, anim, _, child) => FadeTransition(
       opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
       child: child,
@@ -970,7 +1117,15 @@ Future<void> showExpandedVideo(BuildContext context, String mediaLink) {
 
 class _ExpandedVideoOverlay extends StatefulWidget {
   final String mediaLink;
-  const _ExpandedVideoOverlay({required this.mediaLink});
+
+  /// The playback rate active on the launching carousel, honoured here so
+  /// tapping a slowed-down video doesn't snap it back to 1x.
+  final double playbackRate;
+
+  const _ExpandedVideoOverlay({
+    required this.mediaLink,
+    required this.playbackRate,
+  });
 
   @override
   State<_ExpandedVideoOverlay> createState() => _ExpandedVideoOverlayState();
@@ -979,6 +1134,7 @@ class _ExpandedVideoOverlay extends StatefulWidget {
 class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
   late final Player _player;
   late final VideoController _controller;
+  StreamSubscription? _playingSub;
 
   // Whether the user tapped rotate to view the video turned a quarter turn.
   //
@@ -1021,6 +1177,13 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
         await _player.setAudioTrack(AudioTrack.no());
       }
       await _player.setPlaylistMode(PlaylistMode.loop);
+
+      // Honour the playback speed active on the launching carousel. media_kit
+      // can reset the rate when playback (re)starts, so re-apply on every play
+      // transition — the same trick as the inline player.
+      _playingSub = _player.stream.playing.listen((isPlaying) {
+        if (isPlaying) _player.setRate(widget.playbackRate);
+      });
 
       // Try each configured host in turn (e.g. primary then R2 mirror); the
       // first whose download succeeds is played from its cached file, and if
@@ -1071,6 +1234,7 @@ class _ExpandedVideoOverlayState extends State<_ExpandedVideoOverlay> {
 
   @override
   void dispose() {
+    _playingSub?.cancel();
     _player.dispose();
     super.dispose();
   }

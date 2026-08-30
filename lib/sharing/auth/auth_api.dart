@@ -28,9 +28,8 @@ class AuthApi {
   AuthApi(
     this._config, {
     http.Client? client,
-    Duration timeout = const Duration(seconds: 15),
-  }) : _client = client ?? http.Client(),
-       _timeout = timeout;
+    this._timeout = const Duration(seconds: 15),
+  }) : _client = client ?? http.Client();
 
   void close() => _client.close();
 

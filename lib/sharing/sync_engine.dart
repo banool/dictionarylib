@@ -186,13 +186,7 @@ class SyncEngine {
   /// failure class the wrong-app 403 guard exists for.
   static const int _notFoundOrphanThreshold = 3;
 
-  SyncEngine({
-    required SyncApi api,
-    required SyncedEntryListManager manager,
-    required AuthService auth,
-  }) : _api = api,
-       _manager = manager,
-       _auth = auth;
+  SyncEngine({required this._api, required this._manager, required this._auth});
 
   void dispose() {
     for (final s in _state.values) {

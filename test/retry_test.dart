@@ -14,7 +14,7 @@ void main() {
         return 42;
       },
       firstDelay: Duration.zero,
-      onRetry: (_, __) => feedback++,
+      onRetry: (_, _) => feedback++,
     );
     expect(result, 42);
     expect(calls, 1);

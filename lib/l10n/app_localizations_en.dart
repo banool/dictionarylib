@@ -117,6 +117,12 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get settingsColourModeSystem => 'System';
 
   @override
+  String get settingsVideo => 'Video';
+
+  @override
+  String get settingsDefaultPlaybackSpeed => 'Default playback speed';
+
+  @override
   String get settingsCache => 'Cache';
 
   @override

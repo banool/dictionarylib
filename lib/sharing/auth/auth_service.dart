@@ -50,12 +50,10 @@ class AuthService {
   final AuthStore _store;
 
   AuthService({
-    required SharingConfig config,
-    required AuthApi api,
-    required AuthStore store,
-  }) : _config = config,
-       _api = api,
-       _store = store;
+    required this._config,
+    required this._api,
+    required this._store,
+  });
 
   AuthStore get store => _store;
 

@@ -10,7 +10,10 @@ import 'hearth.dart' show HearthVideoFrame;
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 import 'video_player_screen.dart'
-    show InheritedPlaybackSpeed, getDoubleFromPlaybackSpeed;
+    show
+        InheritedPlaybackSpeed,
+        getDefaultPlaybackSpeed,
+        getDoubleFromPlaybackSpeed;
 import 'web_drag_scroll_behavior.dart';
 
 /// Web-only video carousel, built on package:video_player (an HTML5 `<video>`
@@ -57,7 +60,10 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
   final CarouselSliderController _carouselController =
       CarouselSliderController();
   int _currentPage = 0;
-  double _playbackSpeed = 1.0;
+
+  /// Seeded from the persisted default so nothing flashes at 1x before the
+  /// inherited value arrives (didChangeDependencies overrides it).
+  double _playbackSpeed = getDoubleFromPlaybackSpeed(getDefaultPlaybackSpeed());
 
   /// Keep a live controller for the current page and its immediate neighbours
   /// so an adjacent swipe is instant, without initialising every recording (and
@@ -406,7 +412,8 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
     await showDialog<void>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.82),
-      builder: (ctx) => _WebExpandedVideo(mediaLink: link),
+      builder: (ctx) =>
+          _WebExpandedVideo(mediaLink: link, playbackSpeed: _playbackSpeed),
     );
     if (!mounted) return;
     if (wasPlaying && widget.isActive) inline?.play();
@@ -417,9 +424,16 @@ class _WebVideoCarouselState extends State<WebVideoCarousel> {
 /// over a heavy dim. Tap anywhere (or the close button) to dismiss. Mirrors the
 /// native [showExpandedVideo] overlay with a video_player controller.
 class _WebExpandedVideo extends StatefulWidget {
-  const _WebExpandedVideo({required this.mediaLink});
+  const _WebExpandedVideo({
+    required this.mediaLink,
+    required this.playbackSpeed,
+  });
 
   final String mediaLink;
+
+  /// The playback speed active on the launching carousel, honoured here so
+  /// tapping a slowed-down video doesn't snap it back to 1x.
+  final double playbackSpeed;
 
   @override
   State<_WebExpandedVideo> createState() => _WebExpandedVideoState();
@@ -451,6 +465,7 @@ class _WebExpandedVideoState extends State<_WebExpandedVideo> {
         if (!mounted) return;
         controller.setLooping(true);
         controller.setVolume(0);
+        controller.setPlaybackSpeed(widget.playbackSpeed);
         controller.play();
         setState(() {});
         return;

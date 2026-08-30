@@ -235,6 +235,25 @@ class Analytics {
     return 'other';
   }
 
+  /// A sanitised slice of an error message, used to split [errorType]'s
+  /// `other` class without ever shipping a path, URL, or payload: lowercased,
+  /// cut at the first `/`, `:`, or `http` (so file paths, URLs, and exception
+  /// payloads cannot survive), stripped to `[a-z ]`, whitespace-collapsed,
+  /// first four words, max 40 chars. mpv's fixed error strings survive
+  /// ("cannot open file", "errors when loading file"); anything identifying
+  /// cannot. Null when nothing legible remains.
+  static String? errorDetail(Object? e) {
+    var s = (e?.toString() ?? '').toLowerCase();
+    for (final stop in ['/', ':', 'http']) {
+      final i = s.indexOf(stop);
+      if (i != -1) s = s.substring(0, i);
+    }
+    s = s.replaceAll(RegExp(r'[^a-z ]'), ' ');
+    final words = s.split(' ').where((w) => w.isNotEmpty).take(4).join(' ');
+    if (words.isEmpty) return null;
+    return words.length > 40 ? words.substring(0, 40) : words;
+  }
+
   /// Best-effort flush of buffered events. Exposed for tests / explicit flush;
   /// safe to call when empty or disabled.
   static Future<void> flush() => _flush();

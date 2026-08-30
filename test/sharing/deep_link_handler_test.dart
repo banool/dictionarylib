@@ -84,27 +84,26 @@ void main() {
   });
 
   /// Convenience for tests that only assert on the listId.
-  String? _parsedListId(String input) =>
-      parseShareInput(input, _config)?.listId;
+  String? parsedListId(String input) => parseShareInput(input, _config)?.listId;
 
   group('parseShareInput — bare keys', () {
     test('accepts a random-style key', () {
-      expect(_parsedListId(_key), _key);
+      expect(parsedListId(_key), _key);
     });
 
     test('lowercases bare key input', () {
-      expect(_parsedListId('ABC234XYZ567'), 'abc234xyz567');
+      expect(parsedListId('ABC234XYZ567'), 'abc234xyz567');
     });
 
     test('trims whitespace', () {
-      expect(_parsedListId('  $_key  '), _key);
+      expect(parsedListId('  $_key  '), _key);
     });
 
     test('rejects invalid bare keys', () {
-      expect(_parsedListId('hello world'), isNull); // space
-      expect(_parsedListId('hello_world'), isNull); // underscore
-      expect(_parsedListId('with-dash'), isNull); // dash
-      expect(_parsedListId('a' * 65), isNull); // too long
+      expect(parsedListId('hello world'), isNull); // space
+      expect(parsedListId('hello_world'), isNull); // underscore
+      expect(parsedListId('with-dash'), isNull); // dash
+      expect(parsedListId('a' * 65), isNull); // too long
     });
 
     test('rejects empty input', () {
@@ -119,33 +118,33 @@ void main() {
 
   group('parseShareInput — strict URL shapes', () {
     test('https://<configHost>/l/<key>', () {
-      expect(_parsedListId('https://share.auslandictionary.org/l/$_key'), _key);
+      expect(parsedListId('https://share.auslandictionary.org/l/$_key'), _key);
     });
 
     test('custom scheme share form', () {
-      expect(_parsedListId('auslan://share/$_key'), _key);
+      expect(parsedListId('auslan://share/$_key'), _key);
     });
   });
 
   group('parseShareInput — loose / cross-env URLs', () {
     test('accepts share URL from a different host', () {
-      expect(_parsedListId('https://example.com/l/$_key'), _key);
+      expect(parsedListId('https://example.com/l/$_key'), _key);
     });
 
     test('handles trailing slash', () {
-      expect(_parsedListId('https://example.com/l/$_key/'), _key);
+      expect(parsedListId('https://example.com/l/$_key/'), _key);
     });
 
     test('handles query string', () {
       expect(
-        _parsedListId('https://example.com/l/$_key?utm_source=slack'),
+        parsedListId('https://example.com/l/$_key?utm_source=slack'),
         _key,
       );
     });
 
     test('lowercases extracted key', () {
       expect(
-        _parsedListId('https://example.com/l/ABC234XYZ567'),
+        parsedListId('https://example.com/l/ABC234XYZ567'),
         'abc234xyz567',
       );
     });

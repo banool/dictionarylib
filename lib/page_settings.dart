@@ -23,6 +23,7 @@ import 'sharing/auth/auth_store.dart';
 import 'sharing/auth/sign_in_dialog.dart';
 import 'sharing/sync_api.dart';
 import 'top_level_scaffold.dart';
+import 'video_player_screen.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -167,6 +168,30 @@ class SettingsPageState extends State<SettingsPage> {
               ],
             );
             if (chosen != null) await _setThemeVariant(chosen);
+            if (mounted) setState(() {});
+          },
+        ),
+      ]),
+      ...section(l.settingsVideo, [
+        navRow(
+          l.settingsDefaultPlaybackSpeed,
+          value: getPlaybackSpeedString(getDefaultPlaybackSpeed()),
+          onTap: () async {
+            final chosen = await showHearthPicker<PlaybackSpeed>(
+              context: context,
+              title: l.settingsDefaultPlaybackSpeed,
+              selected: getDefaultPlaybackSpeed(),
+              options: [
+                for (final s in PlaybackSpeed.values)
+                  HearthPickerOption(
+                    s,
+                    s == PlaybackSpeed.One
+                        ? "${getPlaybackSpeedString(s)}  ·  ${l.playbackSpeedNormal}"
+                        : getPlaybackSpeedString(s),
+                  ),
+              ],
+            );
+            if (chosen != null) await _setDefaultPlaybackSpeed(chosen);
             if (mounted) setState(() {});
           },
         ),
@@ -690,6 +715,18 @@ Future<void> _setThemeVariant(AppThemeVariant variant) async {
   Analytics.track(
     'theme_changed',
     props: {'setting': 'variant', 'value': variant.name},
+  );
+}
+
+Future<void> _setDefaultPlaybackSpeed(PlaybackSpeed speed) async {
+  // Persisted by name (not index) so PlaybackSpeed can be reordered safely.
+  // Read lazily by getDefaultPlaybackSpeed at each page/carousel construction,
+  // so no notifier is needed. Deliberately a different event from
+  // playback_speed_changed, which keeps meaning "per-session override".
+  await sharedPreferences.setString(KEY_DEFAULT_PLAYBACK_SPEED, speed.name);
+  Analytics.track(
+    'default_playback_speed_changed',
+    props: {'speed': speed.name},
   );
 }
 

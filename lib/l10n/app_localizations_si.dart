@@ -116,6 +116,12 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsColourModeSystem => 'පද්ධතිය';
 
   @override
+  String get settingsVideo => 'Video';
+
+  @override
+  String get settingsDefaultPlaybackSpeed => 'Default playback speed';
+
+  @override
   String get settingsCache => 'තාවකාලික මතකයන්';
 
   @override

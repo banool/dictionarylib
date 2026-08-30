@@ -48,6 +48,25 @@ Locale? startupScreenLocaleOverride() {
   }
 }
 
+/// Apply the persisted colour mode + theme variant to the global notifiers.
+/// Called from app bootstrap before analytics init — so the very first event
+/// (`app_opened`) carries the user's real theme variant instead of the
+/// compile-time default — and again from the root app's initState (idempotent;
+/// the debug-define overrides there still win by running after it). Defensive
+/// like the other startup pref reads: prefs can be uninitialized on the
+/// ErrorFallback path.
+void applyPersistedThemePrefs() {
+  try {
+    themeNotifier.value = ThemeMode
+        .values[sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
+    themeVariantNotifier.value = appThemeVariantFromName(
+      sharedPreferences.getString(KEY_THEME_VARIANT),
+    );
+  } catch (e) {
+    // Leave the compile-time defaults in place.
+  }
+}
+
 /// The interim app shown on a native cold start while the dictionary data
 /// downloads (see runDictionaryApp — never shown on web or on warm starts).
 /// A minimal MaterialApp with no router; the real app replaces it via a second

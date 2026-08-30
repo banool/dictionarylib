@@ -36,13 +36,12 @@ class FakeEntry extends Entry {
     this._key, {
     List<String>? videos,
     List<FakeSubEntryFixture>? subEntries,
-    List<String> categories = const [],
+    this._categories = const [],
   }) : assert(
          videos == null || subEntries == null,
          'pass `videos:` (single-sub-entry shorthand) OR `subEntries:` '
          '(explicit list), not both',
        ),
-       _categories = categories,
        _subEntries = subEntries != null
            ? subEntries.map((f) => f._build()).toList()
            : (videos == null || videos.isEmpty)

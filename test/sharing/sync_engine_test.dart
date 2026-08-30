@@ -77,7 +77,7 @@ Future<http.Response> _stubSyncRejectAll(
             'opId': op['opId'],
             'status': 'rejected',
             'reason': reason,
-            if (reasonCode != null) 'reasonCode': reasonCode,
+            'reasonCode': ?reasonCode,
           },
       ],
       'missedOps': <Map<String, dynamic>>[],

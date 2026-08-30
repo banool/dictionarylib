@@ -18,11 +18,7 @@ http.Response _errorResponse(
 }) {
   return http.Response(
     jsonEncode({
-      'error': {
-        'code': code,
-        'message': message,
-        if (details != null) 'details': details,
-      },
+      'error': {'code': code, 'message': message, 'details': ?details},
     }),
     status,
   );

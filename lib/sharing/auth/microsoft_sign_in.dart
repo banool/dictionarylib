@@ -35,11 +35,7 @@ List<String> _androidRedirectUriCandidates(SharingAuthConfig auth) {
   final debug = auth.microsoftAndroidDebugRedirectUri;
   final release = auth.microsoftAndroidRedirectUri;
   final upload = auth.microsoftAndroidUploadRedirectUri;
-  return [
-    if (kDebugMode && debug != null) debug,
-    if (release != null) release,
-    if (upload != null) upload,
-  ];
+  return [if (kDebugMode && debug != null) debug, ?release, ?upload];
 }
 
 /// True when Microsoft sign-in has the platform config it needs on this

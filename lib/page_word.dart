@@ -141,7 +141,7 @@ class _EntryPageState extends State<EntryPage> {
   /// [AutomaticKeepAliveClientMixin].
   int? _focusedVideoInitialIndex;
 
-  PlaybackSpeed playbackSpeed = PlaybackSpeed.One;
+  PlaybackSpeed playbackSpeed = getDefaultPlaybackSpeed();
 
   /// On the word page we let people override the displayed language (set via
   /// the app-bar language dropdown SLSL builds; never set for Auslan, which is
@@ -373,7 +373,7 @@ Widget _buildWordFooter(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (keywordsWidget != null) keywordsWidget,
+        ?keywordsWidget,
         if (hasRegion)
           Padding(
             padding: EdgeInsets.only(top: keywordsWidget != null ? 8 : 0),
@@ -1087,8 +1087,8 @@ class SubEntryPageState extends State<SubEntryPage>
                           child: videoWithPill,
                         ),
                       ),
-                      if (bookmarkRow != null) bookmarkRow,
-                      if (videoIndicatorSlot != null) videoIndicatorSlot,
+                      ?bookmarkRow,
+                      ?videoIndicatorSlot,
                     ],
                   );
                 },

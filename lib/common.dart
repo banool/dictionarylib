@@ -69,6 +69,11 @@ const String KEY_LAST_AUTH_PROVIDER = "last_auth_provider";
 // AppThemeVariant in theme.dart.
 const String KEY_THEME_VARIANT = "theme_variant";
 
+// The user's default playback speed for sign videos (see PlaybackSpeed in
+// video_player_screen.dart), stored by enum name — not index — so the enum
+// can be reordered safely. Absent = 1x.
+const String KEY_DEFAULT_PLAYBACK_SPEED = "default_playback_speed";
+
 // Follow the OS light/dark setting until the user pins one explicitly.
 // Index into ThemeMode.values (0 = system, 1 = light, 2 = dark). Keep in
 // sync with the startup read in the app's root widget.

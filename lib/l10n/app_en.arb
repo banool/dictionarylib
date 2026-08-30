@@ -44,6 +44,8 @@
     "settingsColourModeLight": "Light",
     "settingsColourModeDark": "Dark",
     "settingsColourModeSystem": "System",
+    "settingsVideo": "Video",
+    "settingsDefaultPlaybackSpeed": "Default playback speed",
     "settingsCache": "Cache",
     "settingsCacheVideos": "Cache videos",
     "settingsDropCache": "Drop cache",

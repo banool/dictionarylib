@@ -313,6 +313,18 @@ abstract class DictLibLocalizations {
   /// **'System'**
   String get settingsColourModeSystem;
 
+  /// No description provided for @settingsVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get settingsVideo;
+
+  /// No description provided for @settingsDefaultPlaybackSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Default playback speed'**
+  String get settingsDefaultPlaybackSpeed;
+
   /// No description provided for @settingsCache.
   ///
   /// In en, this message translates to:

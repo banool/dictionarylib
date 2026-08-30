@@ -21,6 +21,7 @@ import 'sharing/deep_link_handler.dart';
 import 'sharing/engine_notification_listener.dart';
 import 'sharing/shared_list_landing_page.dart';
 import 'sharing/sync_engine.dart' show SyncNotification;
+import 'startup_loading.dart' show applyPersistedThemePrefs;
 import 'theme.dart';
 import 'top_level_scaffold.dart'
     show LISTS_ROUTE, REVISION_ROUTE, SEARCH_ROUTE, SETTINGS_ROUTE;
@@ -232,15 +233,11 @@ class _DictRootAppState extends State<DictRootApp> {
   void initState() {
     super.initState();
     locale = widget.startingLocale;
-    // Default to following the OS light/dark setting; the user can pin
-    // light or dark explicitly in settings. The native splash also
-    // follows the OS appearance, so a fresh install gets a consistent
-    // splash → first frame in both modes.
-    themeNotifier.value = ThemeMode
-        .values[sharedPreferences.getInt(KEY_THEME_MODE) ?? DEFAULT_THEME_MODE];
-    themeVariantNotifier.value = appThemeVariantFromName(
-      sharedPreferences.getString(KEY_THEME_VARIANT),
-    );
+    // Apply the persisted colour mode + theme variant. Also done during
+    // bootstrap (before analytics init — see applyPersistedThemePrefs), so
+    // this is an idempotent re-apply that keeps this widget self-sufficient
+    // in tests and hot-restart paths; the debug overrides below still win.
+    applyPersistedThemePrefs();
     // Debug-only theme overrides (see _kDebug* consts above). No-ops in release
     // and when the corresponding --dart-define isn't set.
     if (kDebugMode && _kDebugThemeMode.isNotEmpty) {

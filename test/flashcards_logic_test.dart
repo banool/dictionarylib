@@ -322,8 +322,8 @@ void main() {
 
       final stored = sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
       expect(stored, hasLength(2));
-      expect(stored[0], startsWith('apple${_sep}'));
-      expect(stored[1], startsWith('cherry${_sep}'));
+      expect(stored[0], startsWith('apple$_sep'));
+      expect(stored[1], startsWith('cherry$_sep'));
     });
 
     test(
@@ -345,7 +345,7 @@ void main() {
         final stored =
             sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
         expect(stored, hasLength(1));
-        expect(stored.single, startsWith('apple${_sep}'));
+        expect(stored.single, startsWith('apple$_sep'));
       },
     );
   });
