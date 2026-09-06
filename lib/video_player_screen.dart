@@ -544,7 +544,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         printAndLog(
           "Cached copy failed to play; evicting it and retrying from the URL",
         );
-        await myCacheManager.removeFile(url);
+        // Best-effort eviction. A cache-DB failure here (sqflite
+        // DatabaseException: locked / disk full / corrupt) was observed in
+        // production aborting the whole retry — and a broken cache layer is
+        // precisely when the network attempt matters most, so never let the
+        // eviction stand between the user and the stream.
+        try {
+          await myCacheManager.removeFile(url);
+        } catch (e) {
+          printAndLog("Cache eviction failed; streaming anyway: $e");
+        }
         if (stale()) return;
         sourceKind = 'url';
         await playerData.player.open(Media(url), play: false);
@@ -560,14 +569,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         retryInFlight = false;
         if (stale()) return;
         printAndLog("Retry from URL failed: $e");
-        final errorType = Analytics.errorType(e);
         Analytics.track(
           'video_load_failed',
           props: {
-            'error_type': errorType,
+            'error_type': Analytics.errorType(e),
             'source_kind': 'url',
             'after_file_retry': 'true',
-            if (errorType == 'other') 'error_detail': Analytics.errorDetail(e),
+            'error_detail': Analytics.errorDetail(e),
+            'error_tail': Analytics.errorTail(e),
           },
         );
         if (mounted) {
@@ -591,11 +600,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       if (retryInFlight) return;
       if (stale()) return;
       printAndLog("Video failed to load (stream.error): $e");
-      final errorType = Analytics.errorType(e);
       final props = <String, Object?>{
-        'error_type': errorType,
+        'error_type': Analytics.errorType(e),
         'source_kind': sourceKind ?? 'unknown',
-        if (errorType == 'other') 'error_detail': Analytics.errorDetail(e),
+        // Sanitised slices of the message for every class, not just `other`:
+        // the decode class turned out to hide transient decoder fallbacks that
+        // were indistinguishable from real failures without them.
+        'error_detail': Analytics.errorDetail(e),
+        'error_tail': Analytics.errorTail(e),
         if (retried) 'after_file_retry': 'true',
       };
       // A bad cached file is recoverable: track the failure as usual — the
@@ -716,30 +728,44 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
       // Listen to the playing stream to track when video first starts playing.
       // This is used to avoid showing loading spinner on loop.
-      playerData._playingSubscription = playerData.player.stream.playing.listen(
-        (isPlaying) {
-          if (isPlaying) {
-            // media_kit can reset the rate to 1.0 when playback (re)starts, so
-            // re-apply the desired speed every time it begins playing. This is
-            // what makes the speed stick on initial load without the old timed
-            // retries.
-            playerData.player.setRate(_playbackRate);
+      playerData
+          ._playingSubscription = playerData.player.stream.playing.listen((
+        isPlaying,
+      ) {
+        if (isPlaying) {
+          // media_kit can reset the rate to 1.0 when playback (re)starts, so
+          // re-apply the desired speed every time it begins playing. This is
+          // what makes the speed stick on initial load without the old timed
+          // retries.
+          playerData.player.setRate(_playbackRate);
+        }
+        if (isPlaying && !playerData.hasPlayedOnce) {
+          playerData.hasPlayedOnce = true;
+          // Playback is the ground truth. If the error widget is up, the
+          // error line that put it there was transient — a decoder falling
+          // back to software, or a straggler line from the load a retry
+          // replaced — so put the video back rather than leave a playing
+          // video hidden behind a stale error (seen in production on 2.1.3).
+          final hadErrorWidget = playerData.error != null;
+          if (hadErrorWidget) playerData.error = null;
+          if (hadErrorWidget || retried) {
+            // `via` says what recovered it: the evict-and-stream retry, or
+            // playback simply arriving after an error was shown. Denominator
+            // for stream_retry: video_load_failed events carrying retry='url'.
+            Analytics.track(
+              'video_load_recovered',
+              props: {
+                'via': hadErrorWidget ? 'late_playback' : 'stream_retry',
+                if (retried) 'after_retry': 'true',
+              },
+            );
           }
-          if (isPlaying && !playerData.hasPlayedOnce) {
-            playerData.hasPlayedOnce = true;
-            if (retried) {
-              // The evict-and-stream retry recovered playback: the cached copy
-              // was bad but the same URL streamed fine. Denominator: the
-              // video_load_failed events carrying retry='url'.
-              Analytics.track('video_load_recovered');
-            }
-            // Trigger rebuild so the controls get the updated hasPlayedOnce value.
-            if (mounted) {
-              setState(() {});
-            }
+          // Trigger rebuild so the controls get the updated hasPlayedOnce value.
+          if (mounted) {
+            setState(() {});
           }
-        },
-      );
+        }
+      });
 
       if (mounted) {
         setState(() {
@@ -754,13 +780,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       // Synchronous open/setup failure. Guard so we don't double-count with the
       // stream.error listener above (which handles the async failures).
       if (playerData.error == null) {
-        final errorType = Analytics.errorType(e);
         Analytics.track(
           'video_load_failed',
           props: {
-            'error_type': errorType,
+            'error_type': Analytics.errorType(e),
             'source_kind': sourceKind,
-            if (errorType == 'other') 'error_detail': Analytics.errorDetail(e),
+            'error_detail': Analytics.errorDetail(e),
+            'error_tail': Analytics.errorTail(e),
           },
         );
       }

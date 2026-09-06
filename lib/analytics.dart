@@ -254,6 +254,27 @@ class Analytics {
     return words.length > 40 ? words.substring(0, 40) : words;
   }
 
+  /// The sanitised tail of an error message — the text after its last `: `,
+  /// which for mpv/OS errors is the errno text ("no such file or directory",
+  /// "permission denied", "too many open files") that [errorDetail]'s
+  /// head-of-message cut discards. Same discipline: letters only, a handful of
+  /// words, 40 chars, and null outright if the tail carries a path.
+  static String? errorTail(Object? e) {
+    final s = (e?.toString() ?? '').toLowerCase();
+    final i = s.lastIndexOf(': ');
+    if (i == -1) return null;
+    final raw = s.substring(i + 2);
+    if (raw.contains('/')) return null;
+    final words = raw
+        .replaceAll(RegExp(r'[^a-z ]'), ' ')
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .take(6)
+        .join(' ');
+    if (words.isEmpty) return null;
+    return words.length > 40 ? words.substring(0, 40) : words;
+  }
+
   /// Best-effort flush of buffered events. Exposed for tests / explicit flush;
   /// safe to call when empty or disabled.
   static Future<void> flush() => _flush();
