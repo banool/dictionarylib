@@ -972,13 +972,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             padding: EdgeInsets.only(top: 20),
             child: Center(child: CircularProgressIndicator()),
           );
-        } else if (playerData.error != null) {
-          item = createErrorWidget(playerData.error!, mediaLink);
         } else {
-          // Set the initial play/pause state once per player. Playback speed is
-          // applied via didChangeDependencies (live changes) and the
-          // playing-stream listener (the open/play rate reset) — not here — so
-          // there's no per-build work or timed retries. Only auto-play the
+          // Set the initial play/pause state once per player — even while an
+          // error widget is showing. An error line can be transient (a decoder
+          // falling back, a straggler from a superseded load) and only actual
+          // playback can prove it: the playing listener clears the error the
+          // moment the video plays, but that needs play() to have been asked
+          // for in the first place. Playback speed is applied via
+          // didChangeDependencies (live changes) and the playing-stream
+          // listener (the open/play rate reset) — not here. Only auto-play the
           // current page when this screen is active; an off-screen kept-alive
           // page stays paused until it becomes active (see didUpdateWidget).
           if (playerData.isReady && !playerData.initialPlaybackSet) {
@@ -989,65 +991,70 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               playerData.player.pause();
             }
           }
-
-          // Build the Video widget immediately so the texture surface is available.
-          // This is crucial for Android - the Video widget must be in the tree
-          // when player.open() is called.
-          item = LayoutBuilder(
-            builder: (context, constraints) {
-              final videoAspectRatio =
-                  playerData.aspectRatio ?? widget.fallbackAspectRatio;
-              // Reserve room for HearthVideoFrame's padding (5px each side) so
-              // the framed card fits within the carousel slide without
-              // overflowing.
-              const frameTotal = 10.0;
-              // Small breathing room above and below the framed video (room for
-              // the drop shadow). Kept small so the video stays wide — landscape
-              // sign videos are otherwise height-capped here and end up much
-              // narrower than the full content width.
-              const verticalMargin = 8.0;
-              double videoWidth = constraints.maxWidth - frameTotal;
-              double videoHeight = videoWidth / videoAspectRatio;
-              if (constraints.maxHeight.isFinite &&
-                  videoHeight >
-                      constraints.maxHeight - verticalMargin * 2 - frameTotal) {
-                videoHeight =
-                    constraints.maxHeight - verticalMargin * 2 - frameTotal;
-                videoWidth = videoHeight * videoAspectRatio;
-              }
-              // The signing video framed as the hero (shared Hearth widget:
-              // soft surface card, subtle border + warm shadow, rounded video
-              // inside).
-              Widget framed = HearthVideoFrame(
-                child: SizedBox(
-                  width: videoWidth,
-                  height: videoHeight,
-                  child: _videoOrScreenshotPoster(
-                    mediaLink,
-                    Video(
-                      controller: playerData.controller,
-                      // Loading indicator on initial load only, not on loop.
-                      controls: (state) => getLoadingVideoControls(
-                        state,
-                        playerData.hasPlayedOnce,
+          if (playerData.error != null) {
+            item = createErrorWidget(playerData.error!, mediaLink);
+          } else {
+            // Build the Video widget immediately so the texture surface is available.
+            // This is crucial for Android - the Video widget must be in the tree
+            // when player.open() is called.
+            item = LayoutBuilder(
+              builder: (context, constraints) {
+                final videoAspectRatio =
+                    playerData.aspectRatio ?? widget.fallbackAspectRatio;
+                // Reserve room for HearthVideoFrame's padding (5px each side) so
+                // the framed card fits within the carousel slide without
+                // overflowing.
+                const frameTotal = 10.0;
+                // Small breathing room above and below the framed video (room for
+                // the drop shadow). Kept small so the video stays wide — landscape
+                // sign videos are otherwise height-capped here and end up much
+                // narrower than the full content width.
+                const verticalMargin = 8.0;
+                double videoWidth = constraints.maxWidth - frameTotal;
+                double videoHeight = videoWidth / videoAspectRatio;
+                if (constraints.maxHeight.isFinite &&
+                    videoHeight >
+                        constraints.maxHeight -
+                            verticalMargin * 2 -
+                            frameTotal) {
+                  videoHeight =
+                      constraints.maxHeight - verticalMargin * 2 - frameTotal;
+                  videoWidth = videoHeight * videoAspectRatio;
+                }
+                // The signing video framed as the hero (shared Hearth widget:
+                // soft surface card, subtle border + warm shadow, rounded video
+                // inside).
+                Widget framed = HearthVideoFrame(
+                  child: SizedBox(
+                    width: videoWidth,
+                    height: videoHeight,
+                    child: _videoOrScreenshotPoster(
+                      mediaLink,
+                      Video(
+                        controller: playerData.controller,
+                        // Loading indicator on initial load only, not on loop.
+                        controls: (state) => getLoadingVideoControls(
+                          state,
+                          playerData.hasPlayedOnce,
+                        ),
+                        // Letterbox while the real dimensions are still
+                        // loading (we size the box from fallbackAspectRatio
+                        // until then) rather than stretching a wrong-ratio
+                        // video with fill.
+                        fit: BoxFit.contain,
                       ),
-                      // Letterbox while the real dimensions are still
-                      // loading (we size the box from fallbackAspectRatio
-                      // until then) rather than stretching a wrong-ratio
-                      // video with fill.
-                      fit: BoxFit.contain,
                     ),
                   ),
-                ),
-              );
-              framed = _withOverlay(idx, framed);
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: verticalMargin),
-                alignment: Alignment.center,
-                child: framed,
-              );
-            },
-          );
+                );
+                framed = _withOverlay(idx, framed);
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: verticalMargin),
+                  alignment: Alignment.center,
+                  child: framed,
+                );
+              },
+            );
+          }
         }
       }
       // Tap a (non-image) video to open it expanded over a dimmed backdrop.
