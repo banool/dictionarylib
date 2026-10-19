@@ -278,6 +278,10 @@ class _EntryPageState extends State<EntryPage> {
             ];
 
             return Scaffold(
+              // Nothing here takes text input; the keyboard only shows while
+              // it finishes closing after a search, and resizing for it then
+              // squeezed the video away in landscape.
+              resizeToAvoidBottomInset: false,
               appBar: AppBar(
                 title: Text(phrase),
                 actions: buildActionButtons(actions),

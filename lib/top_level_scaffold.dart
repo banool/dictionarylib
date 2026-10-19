@@ -76,27 +76,47 @@ class TopLevelScaffold extends StatelessWidget {
     final hearth = themeVariantNotifier.value == AppThemeVariant.hearth;
     final textTheme = Theme.of(context).textTheme;
     final selectedIndex = calculateSelectedIndex(context);
+    // A phone in landscape with the keyboard up leaves only ~150pt above it:
+    // not enough for the app bar as well as a search field, which ended up
+    // under the keyboard. In that case the app bar steps aside until the
+    // keyboard goes, and the body's SafeArea takes over the status bar.
+    // Portrait phones and tablets never get this short.
+    final cramped =
+        MediaQuery.sizeOf(context).height -
+            MediaQuery.viewInsetsOf(context).bottom <
+        300;
     return _TvTabFocus(
       selectedIndex: selectedIndex,
       builder: (context, navBarFocus) => Scaffold(
-        appBar: AppBar(
-          title: Text(title),
-          titleTextStyle: hearth
-              ? textTheme.headlineMedium?.copyWith(
-                  fontSize: 26,
-                  color: Theme.of(context).colorScheme.onSurface,
-                )
-              : null,
-          titleSpacing: hearth ? 20 : null,
-          toolbarHeight: hearth ? 64 : null,
-          actions: buildActionButtons(actions ?? []),
-          centerTitle: !hearth,
-          bottom: underAppBar,
-          surfaceTintColor: Colors.transparent,
-        ),
+        appBar: cramped
+            ? null
+            : AppBar(
+                title: Text(title),
+                titleTextStyle: hearth
+                    ? textTheme.headlineMedium?.copyWith(
+                        fontSize: 26,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      )
+                    : null,
+                titleSpacing: hearth ? 20 : null,
+                toolbarHeight: hearth ? 64 : null,
+                actions: buildActionButtons(actions ?? []),
+                centerTitle: !hearth,
+                bottom: underAppBar,
+                surfaceTintColor: Colors.transparent,
+              ),
         // On tablets the tab pages centre their content at a readable
         // measure instead of stretching phone rows across the full panel.
-        body: constrainContentWidth(context, body),
+        // The SafeArea is always there (only its top flips) so the body
+        // keeps its place in the tree, and the search field its focus, as
+        // the app bar comes and goes.
+        body: SafeArea(
+          top: cramped,
+          bottom: false,
+          left: false,
+          right: false,
+          child: constrainContentWidth(context, body),
+        ),
         floatingActionButton: floatingActionButton,
         bottomNavigationBar: Focus(
           focusNode: navBarFocus,
