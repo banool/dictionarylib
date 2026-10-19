@@ -2197,6 +2197,12 @@ abstract class DictLibLocalizations {
   /// **'Signing in, and publishing or editing shared lists, aren\'t available in the web version. Install the {appName} app on your phone to create, publish and edit shared lists. You can still browse the dictionary and open shared lists read-only here.'**
   String webSharingUnavailableBody(String appName);
 
+  /// No description provided for @tvSharingUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in, and publishing or editing shared lists, aren\'t available on a TV. Install the {appName} app on your phone to create, publish and edit shared lists. You can still browse the dictionary and revise here.'**
+  String tvSharingUnavailableBody(String appName);
+
   /// No description provided for @videoCarouselPrevious.
   ///
   /// In en, this message translates to:

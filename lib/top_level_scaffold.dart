@@ -1,7 +1,9 @@
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/theme.dart';
+import 'package:dictionarylib/tv_focus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
@@ -73,31 +75,38 @@ class TopLevelScaffold extends StatelessWidget {
     // Classic keeps its centred title so it matches the original design.
     final hearth = themeVariantNotifier.value == AppThemeVariant.hearth;
     final textTheme = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        titleTextStyle: hearth
-            ? textTheme.headlineMedium?.copyWith(
-                fontSize: 26,
-                color: Theme.of(context).colorScheme.onSurface,
-              )
-            : null,
-        titleSpacing: hearth ? 20 : null,
-        toolbarHeight: hearth ? 64 : null,
-        actions: buildActionButtons(actions ?? []),
-        centerTitle: !hearth,
-        bottom: underAppBar,
-        surfaceTintColor: Colors.transparent,
-      ),
-      // On tablets the tab pages centre their content at a readable
-      // measure instead of stretching phone rows across the full panel.
-      body: constrainContentWidth(context, body),
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: BottomNavigationBar(
-        items: items,
-        currentIndex: calculateSelectedIndex(context),
-        onTap: (index) => onItemTapped(index, context),
-        type: BottomNavigationBarType.fixed,
+    final selectedIndex = calculateSelectedIndex(context);
+    return _TvTabFocus(
+      selectedIndex: selectedIndex,
+      builder: (context, navBarFocus) => Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+          titleTextStyle: hearth
+              ? textTheme.headlineMedium?.copyWith(
+                  fontSize: 26,
+                  color: Theme.of(context).colorScheme.onSurface,
+                )
+              : null,
+          titleSpacing: hearth ? 20 : null,
+          toolbarHeight: hearth ? 64 : null,
+          actions: buildActionButtons(actions ?? []),
+          centerTitle: !hearth,
+          bottom: underAppBar,
+          surfaceTintColor: Colors.transparent,
+        ),
+        // On tablets the tab pages centre their content at a readable
+        // measure instead of stretching phone rows across the full panel.
+        body: constrainContentWidth(context, body),
+        floatingActionButton: floatingActionButton,
+        bottomNavigationBar: Focus(
+          focusNode: navBarFocus,
+          child: BottomNavigationBar(
+            items: items,
+            currentIndex: selectedIndex,
+            onTap: (index) => onItemTapped(index, context),
+            type: BottomNavigationBarType.fixed,
+          ),
+        ),
       ),
     );
   }
@@ -130,6 +139,102 @@ class TopLevelScaffold extends StatelessWidget {
 
   void onItemTapped(int index, BuildContext context) {
     var routes = getRoutes();
+    _TvTabFocus.focusAfterSwitch = isAndroidTv;
     GoRouter.of(context).go(routes[index]);
   }
+}
+
+/// Remote-control behaviour for the top-level tabs on Android TV (inert
+/// elsewhere):
+///
+/// - Each tab builds its own bottom bar, so switching tabs would drop focus
+///   along with the old bar; a switch made from the bar puts focus back on the
+///   selected item of the new one.
+/// - Back first takes focus to the bottom bar, and only exits the app from
+///   there. A long list (47 topic lists) would otherwise be dozens of presses
+///   from the bar, and Back would leave the app.
+class _TvTabFocus extends StatefulWidget {
+  const _TvTabFocus({required this.selectedIndex, required this.builder});
+
+  /// Set when a bar item is chosen; consumed by the next tab to be built.
+  static bool focusAfterSwitch = false;
+
+  final int selectedIndex;
+  final Widget Function(BuildContext context, FocusNode navBarFocus) builder;
+
+  @override
+  State<_TvTabFocus> createState() => _TvTabFocusState();
+}
+
+class _TvTabFocusState extends State<_TvTabFocus> {
+  late final FocusNode _navBar = FocusNode(
+    debugLabel: 'bottomNavigationBar',
+    canRequestFocus: false,
+    skipTraversal: true,
+    onKeyEvent: _onNavBarKey,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild when focus enters or leaves the bar: it decides whether Back
+    // may leave the app (see build).
+    _navBar.addListener(_onNavBarFocusChange);
+    if (!_TvTabFocus.focusAfterSwitch) return;
+    _TvTabFocus.focusAfterSwitch = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusSelectedItem();
+    });
+  }
+
+  @override
+  void dispose() {
+    _navBar.removeListener(_onNavBarFocusChange);
+    _navBar.dispose();
+    super.dispose();
+  }
+
+  void _onNavBarFocusChange() {
+    if (isAndroidTv && mounted) setState(() {});
+  }
+
+  bool _focusSelectedItem() {
+    final items = _navBar.traversalDescendants.toList();
+    if (widget.selectedIndex >= items.length) return false;
+    items[widget.selectedIndex].requestFocus();
+    return true;
+  }
+
+  /// Left and right move strictly between the bar's items. Left to Flutter's
+  /// directional search they can land in the list above instead: a list keeps
+  /// its next row built just past the visible area, behind the bar, where it
+  /// reads as being beside the bar's items.
+  KeyEventResult _onNavBarKey(FocusNode node, KeyEvent event) {
+    if (!isAndroidTv || event is! KeyDownEvent) return KeyEventResult.ignored;
+    final int step;
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      step = -1;
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      step = 1;
+    } else {
+      return KeyEventResult.ignored;
+    }
+    final items = _navBar.traversalDescendants.toList();
+    final current = items.indexWhere((item) => item.hasPrimaryFocus);
+    if (current < 0) return KeyEventResult.ignored;
+    final next = current + step;
+    if (next >= 0 && next < items.length) items[next].requestFocus();
+    return KeyEventResult.handled;
+  }
+
+  // Back reaches Flutter as a route pop (Android's back callback), not as a
+  // key event, so it's caught here rather than in a key handler.
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !isAndroidTv || _navBar.hasFocus,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && !_focusSelectedItem()) SystemNavigator.pop();
+    },
+    child: widget.builder(context, _navBar),
+  );
 }

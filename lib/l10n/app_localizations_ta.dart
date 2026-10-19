@@ -1301,6 +1301,11 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
+  String tvSharingUnavailableBody(String appName) {
+    return 'Signing in, and publishing or editing shared lists, aren\'t available on a TV. Install the $appName app on your phone to create, publish and edit shared lists. You can still browse the dictionary and revise here.';
+  }
+
+  @override
   String get videoCarouselPrevious => 'முந்தைய வீடியோ';
 
   @override

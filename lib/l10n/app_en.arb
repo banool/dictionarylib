@@ -615,6 +615,8 @@
     "webSharingUnavailableTitle": "Use the mobile app",
     "webSharingUnavailableBody": "Signing in, and publishing or editing shared lists, aren't available in the web version. Install the {appName} app on your phone to create, publish and edit shared lists. You can still browse the dictionary and open shared lists read-only here.",
     "@webSharingUnavailableBody": { "placeholders": { "appName": { "type": "String" } } },
+    "tvSharingUnavailableBody": "Signing in, and publishing or editing shared lists, aren't available on a TV. Install the {appName} app on your phone to create, publish and edit shared lists. You can still browse the dictionary and revise here.",
+    "@tvSharingUnavailableBody": { "placeholders": { "appName": { "type": "String" } } },
     "videoCarouselPrevious": "Previous video",
     "videoCarouselNext": "Next video",
     "variationPrevious": "Previous variation",

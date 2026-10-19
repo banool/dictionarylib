@@ -17,6 +17,7 @@ import 'entry_types.dart';
 import 'sharing/sharing.dart';
 import 'sharing/sharing_config.dart';
 import 'theme.dart';
+import 'tv_focus.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -174,6 +175,7 @@ Future<void> loadDeviceInfo() async {
   try {
     if (!kIsWeb && Platform.isAndroid) {
       androidDeviceInfo = await deviceInfo.androidInfo;
+      applyTvFocusDefaults(androidDeviceInfo!.systemFeatures);
     } else if (!kIsWeb && Platform.isIOS) {
       iosDeviceInfo = await deviceInfo.iosInfo;
     }

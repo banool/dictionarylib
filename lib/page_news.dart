@@ -6,12 +6,27 @@ import 'advisories.dart';
 import 'globals.dart';
 import 'hearth.dart';
 import 'l10n/app_localizations.dart';
+import 'tv_focus.dart';
 
 /// A dedicated "News" feed rendering the app's advisories newest-first as
 /// Hearth cards, each with a date eyebrow and the advisory's markdown body.
 /// The newest entry gets a "NEW" pill when there are unseen advisories.
-class NewsPage extends StatelessWidget {
+class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
+
+  @override
+  State<NewsPage> createState() => _NewsPageState();
+}
+
+class _NewsPageState extends State<NewsPage> {
+  // Driven by the D-pad on a TV remote; the cards hold nothing focusable.
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,11 +65,17 @@ class NewsPage extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-            itemCount: advisories.length,
-            itemBuilder: (context, i) =>
-                _AdvisoryCard(advisory: advisories[i], isNew: hasNew && i == 0),
+          child: DpadScrollView(
+            controller: _scrollController,
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              itemCount: advisories.length,
+              itemBuilder: (context, i) => _AdvisoryCard(
+                advisory: advisories[i],
+                isNew: hasNew && i == 0,
+              ),
+            ),
           ),
         ),
       );

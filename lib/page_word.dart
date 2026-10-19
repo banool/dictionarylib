@@ -14,6 +14,7 @@ import 'save_video_sheet.dart';
 import 'sharing/synced_entry_list.dart';
 import 'saved_video.dart';
 import 'theme.dart';
+import 'tv_focus.dart';
 import 'video_player_screen.dart';
 import 'web_drag_scroll_behavior.dart';
 
@@ -152,6 +153,11 @@ class _EntryPageState extends State<EntryPage> {
   /// [initState] (not per build) so it isn't leaked/recreated on every rebuild
   /// and an in-progress swipe isn't interrupted.
   late final PageController _pageController;
+
+  /// Which variation arrow was last pressed: 1 for next, -1 for previous, 0
+  /// for neither. The pressed arrow scrolls away with its page, so on Android
+  /// TV the newly shown page moves focus to its own matching arrow.
+  int _arrowNav = 0;
 
   @override
   void initState() {
@@ -308,20 +314,28 @@ class _EntryPageState extends State<EntryPage> {
                     // Only the on-screen sub-entry's video should play;
                     // kept-alive off-screen pages pause via this flag.
                     isActive: index == currentPage,
-                    // Web-only nav arrows beside the variation label (no swipe
-                    // affordance there); null on native so they never render.
-                    onPrevVariation: kIsWeb
-                        ? () => _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          )
+                    // Nav arrows beside the variation label, for web (no swipe
+                    // affordance there) and Android TV (a remote can't
+                    // swipe); null elsewhere so they never render on mobile.
+                    onPrevVariation: kIsWeb || isAndroidTv
+                        ? () {
+                            _arrowNav = -1;
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
                         : null,
-                    onNextVariation: kIsWeb
-                        ? () => _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          )
+                    onNextVariation: kIsWeb || isAndroidTv
+                        ? () {
+                            _arrowNav = 1;
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
                         : null,
+                    arrowFocusOnActivate: _arrowNav,
                   ),
                   onPageChanged: onPageChanged,
                 ),
@@ -790,6 +804,7 @@ class SubEntryPage extends StatefulWidget {
     this.isActive = true,
     this.onPrevVariation,
     this.onNextVariation,
+    this.arrowFocusOnActivate = 0,
   });
 
   final Entry entry;
@@ -813,11 +828,17 @@ class SubEntryPage extends StatefulWidget {
   /// [VideoPlayerScreen] so off-screen kept-alive pages pause their video.
   final bool isActive;
 
-  /// Web-only: move to the previous / next variation. These drive the arrows
-  /// flanking the variation label, since web has no touch-swipe affordance.
-  /// Null on native (you swipe there), so the arrows never render on mobile.
+  /// Move to the previous / next variation. These drive the arrows flanking
+  /// the variation label, on web (no touch-swipe affordance) and Android TV
+  /// (a remote can't swipe). Null on mobile (you swipe there), so the arrows
+  /// never render there.
   final VoidCallback? onPrevVariation;
   final VoidCallback? onNextVariation;
+
+  /// On Android TV, when this page becomes the active one after a variation
+  /// arrow press, which of its own arrows takes focus: 1 next, -1 previous,
+  /// 0 none. See [_EntryPageState._arrowNav].
+  final int arrowFocusOnActivate;
 
   @override
   SubEntryPageState createState() => SubEntryPageState();
@@ -826,6 +847,8 @@ class SubEntryPage extends StatefulWidget {
 class SubEntryPageState extends State<SubEntryPage>
     with AutomaticKeepAliveClientMixin {
   late int _currentVideo;
+  final FocusNode _prevArrowNode = FocusNode(debugLabel: 'prevVariation');
+  final FocusNode _nextArrowNode = FocusNode(debugLabel: 'nextVariation');
 
   @override
   bool get wantKeepAlive => true;
@@ -834,6 +857,36 @@ class SubEntryPageState extends State<SubEntryPage>
   void initState() {
     super.initState();
     _currentVideo = widget.initialVideoIndex ?? 0;
+    if (widget.isActive) _focusArrowAfterVariationChange();
+  }
+
+  @override
+  void didUpdateWidget(SubEntryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _focusArrowAfterVariationChange();
+    }
+  }
+
+  @override
+  void dispose() {
+    _prevArrowNode.dispose();
+    _nextArrowNode.dispose();
+    super.dispose();
+  }
+
+  /// On Android TV the variation arrow the remote pressed scrolls away with
+  /// the old page, leaving nothing focused; carry focus to the same arrow
+  /// here, or the other one at the last / first variation.
+  void _focusArrowAfterVariationChange() {
+    if (!isAndroidTv || widget.arrowFocusOnActivate == 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final hasNext = widget.subEntryIndex < widget.subEntryCount - 1;
+      final next = widget.arrowFocusOnActivate > 0 ? hasNext : false;
+      (next || widget.subEntryIndex == 0 ? _nextArrowNode : _prevArrowNode)
+          .requestFocus();
+    });
   }
 
   void _onVideoChanged(int index) {
@@ -899,7 +952,8 @@ class SubEntryPageState extends State<SubEntryPage>
       textAlign: TextAlign.center,
       style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant),
     );
-    final Widget labelRow = (kIsWeb && widget.subEntryCount > 1)
+    final Widget labelRow =
+        ((kIsWeb || isAndroidTv) && widget.subEntryCount > 1)
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -908,6 +962,7 @@ class SubEntryPageState extends State<SubEntryPage>
                 context,
                 Icons.chevron_left,
                 widget.subEntryIndex > 0 ? widget.onPrevVariation : null,
+                _prevArrowNode,
               ),
               Flexible(child: label),
               _variationArrow(
@@ -916,6 +971,7 @@ class SubEntryPageState extends State<SubEntryPage>
                 widget.subEntryIndex < widget.subEntryCount - 1
                     ? widget.onNextVariation
                     : null,
+                _nextArrowNode,
               ),
             ],
           )
@@ -939,12 +995,13 @@ class SubEntryPageState extends State<SubEntryPage>
     );
   }
 
-  /// Web-only compact arrow beside the variation label. `onTap` is null at the
+  /// Compact arrow beside the variation label (web and Android TV). `onTap` is null at the
   /// first/last variation, which disables (greys out) the button.
   Widget _variationArrow(
     BuildContext context,
     IconData icon,
     VoidCallback? onTap,
+    FocusNode focusNode,
   ) {
     final cs = Theme.of(context).colorScheme;
     final l = DictLibLocalizations.of(context)!;
@@ -955,6 +1012,7 @@ class SubEntryPageState extends State<SubEntryPage>
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       color: cs.onSurfaceVariant,
+      focusNode: focusNode,
       onPressed: onTap,
       tooltip: icon == Icons.chevron_left
           ? l.variationPrevious
@@ -1100,7 +1158,14 @@ class SubEntryPageState extends State<SubEntryPage>
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 children: [
                   ...definitions.map(
-                    (d) => widget.config.buildDefinition(context, d),
+                    (d) => isAndroidTv
+                        // Focusable on TV so the remote steps through the
+                        // definitions and the panel scrolls with it; nothing
+                        // else in it takes focus until the footer.
+                        ? Focus(
+                            child: widget.config.buildDefinition(context, d),
+                          )
+                        : widget.config.buildDefinition(context, d),
                   ),
                   _buildWordFooter(
                     context,

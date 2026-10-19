@@ -12,6 +12,7 @@ import 'entry_types.dart';
 import 'saved_video.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'tv_focus.dart';
 
 const String KEY_LOCALE_OVERRIDE = "locale_override";
 
@@ -710,6 +711,8 @@ Widget? getInnerRelatedEntriesWidget({
   }
 
   List<TextSpan> textSpans = [];
+  // (word, onTap) pairs for the Android TV rendering below.
+  final List<(String, void Function()?)> words = [];
 
   int idx = 0;
   for (String relatedWord in subEntry.getRelatedWords()) {
@@ -723,6 +726,7 @@ Widget? getInnerRelatedEntriesWidget({
     } else {
       navFunction = null;
     }
+    words.add((relatedWord, navFunction));
     String suffix;
     if (idx < numRelatedWords - 1) {
       suffix = ", ";
@@ -758,10 +762,41 @@ Widget? getInnerRelatedEntriesWidget({
     ),
   );
   textSpans = [initial] + textSpans;
-  var richText = RichText(
+  Widget richText = RichText(
     text: TextSpan(style: const TextStyle(fontSize: 13.5), children: textSpans),
     textAlign: TextAlign.start,
   );
+  if (isAndroidTv) {
+    // A remote can't tap a span inside a paragraph, so on TV each related
+    // word is its own focusable button.
+    richText = Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 2,
+      runSpacing: 2,
+      children: [
+        Text(initial.text!, style: initial.style!.copyWith(fontSize: 13.5)),
+        for (final (word, onTap) in words)
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Text(
+                word,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: onTap != null
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                  decoration: onTap != null ? TextDecoration.underline : null,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   if (shouldUseHorizontalDisplay) {
     return Padding(

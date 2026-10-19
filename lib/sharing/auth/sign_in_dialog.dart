@@ -11,6 +11,7 @@ import '../sharing_config.dart';
 import '../sync_api.dart';
 import 'auth_store.dart';
 import 'sign_in_exception.dart';
+import '../../tv_focus.dart';
 
 /// Single-instance guard state. While a sign-in dialog is showing,
 /// a second caller of [showSignInDialog] joins the same future rather
@@ -38,10 +39,11 @@ Future<AuthSession?> showSignInDialog(
   BuildContext context, {
   String? contextMessage,
 }) {
-  // Web has no sign-in (every provider is unavailable — see auth_service), so
-  // the provider dialog would be empty. Any flow that reaches for a session on
-  // web gets a clear pointer to the mobile app instead of a dead dialog.
-  if (kIsWeb) return _showWebSharingUnavailableDialog(context);
+  // Web and Android TV have no sign-in (every provider is unavailable — see
+  // auth_service), so the provider dialog would be empty. Any flow that
+  // reaches for a session there gets a clear pointer to the mobile app
+  // instead of a dead dialog.
+  if (kIsWeb || isAndroidTv) return _showWebSharingUnavailableDialog(context);
   final existing = _inflightSignIn;
   if (existing != null) {
     if (contextMessage != null) _inflightContextMessage.value = contextMessage;
@@ -103,7 +105,11 @@ Future<AuthSession?> _showWebSharingUnavailableDialog(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(l.webSharingUnavailableTitle),
-      content: Text(l.webSharingUnavailableBody(appName)),
+      content: Text(
+        isAndroidTv
+            ? l.tvSharingUnavailableBody(appName)
+            : l.webSharingUnavailableBody(appName),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),

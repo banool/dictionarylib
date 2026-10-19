@@ -9,6 +9,7 @@ import 'auth_api.dart';
 import 'auth_store.dart';
 import 'google_sign_in.dart';
 import 'microsoft_sign_in.dart';
+import '../../tv_focus.dart';
 
 /// Master on/off switch for each social login provider, applied
 /// CLIENT-SIDE. Flip an entry to `false` to retire that provider on the
@@ -70,7 +71,9 @@ class AuthService {
     // `test` is not in the kill-switch map; the platform checks below hide
     // it anyway.
     if (_socialProviderEnabled[provider] == false) return false;
-    if (kIsWeb) return false;
+    // Android TV: the Apple and Microsoft flows need a browser, which TVs
+    // generally don't have, and Google's is untested there.
+    if (kIsWeb || isAndroidTv) return false;
     switch (provider) {
       case AuthProvider.apple:
         return appleSignInAvailable();

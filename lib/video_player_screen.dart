@@ -7,9 +7,11 @@ import 'package:dictionarylib/analytics.dart';
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
+import 'package:dictionarylib/tv_focus.dart';
 import 'package:dictionarylib/video_player_web.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
@@ -1079,7 +1081,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       // This is a fallback value for if the video hasn't loaded yet.
       aspectRatio = widget.fallbackAspectRatio;
     }
-    var slider = CarouselSlider(
+    Widget slider = CarouselSlider(
       carouselController: carouselController,
       items: items,
       options: CarouselOptions(
@@ -1095,6 +1097,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         enlargeCenterPage: true,
       ),
     );
+    if (isAndroidTv) slider = _tvVideoKeys(slider);
 
     var size = MediaQuery.of(context).size;
     var screenWidth = size.width;
@@ -1118,6 +1121,44 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     );
 
     return sliderContainer;
+  }
+
+  /// On Android TV the video takes focus like any other control: left and
+  /// right step between this variation's recordings (passing through at
+  /// either end, so focus can still move on), and the remote's OK opens it
+  /// expanded, as a tap does.
+  Widget _tvVideoKeys(Widget child) {
+    final count = widget.mediaLinks.length;
+    bool canExpand() =>
+        widget.expandOnTap &&
+        currentPage < count &&
+        !widget.mediaLinks[currentPage].endsWith(".jpg");
+    final focusable = count > 1 || widget.expandOnTap;
+    return Focus(
+      canRequestFocus: focusable,
+      // The sign is what the page is about, so it's where the remote starts.
+      autofocus: focusable && widget.isActive,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.arrowRight && currentPage < count - 1) {
+          carouselController?.nextPage();
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowLeft && currentPage > 0) {
+          carouselController?.previousPage();
+          return KeyEventResult.handled;
+        }
+        if ((key == LogicalKeyboardKey.select ||
+                key == LogicalKeyboardKey.enter) &&
+            canExpand()) {
+          _expand(currentPage);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: child,
+    );
   }
 }
 

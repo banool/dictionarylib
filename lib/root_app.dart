@@ -23,6 +23,7 @@ import 'sharing/shared_list_landing_page.dart';
 import 'sharing/sync_engine.dart' show SyncNotification;
 import 'startup_loading.dart' show applyPersistedThemePrefs;
 import 'theme.dart';
+import 'tv_focus.dart';
 import 'top_level_scaffold.dart'
     show LISTS_ROUTE, REVISION_ROUTE, SEARCH_ROUTE, SETTINGS_ROUTE;
 
@@ -472,8 +473,11 @@ class _DictRootAppState extends State<DictRootApp> {
                 debugShowCheckedModeBanner: false,
                 // Scale text up on tablet-sized displays so the phone
                 // layouts don't read as tiny on a 13" panel; phones are
-                // untouched. See kLargeScreenTextScale.
-                builder: largeScreenTextScaleBuilder,
+                // untouched. See kLargeScreenTextScale. The focus ring makes
+                // D-pad / keyboard focus visible (Android TV); see tv_focus.
+                builder: (context, child) => FocusRingOverlay(
+                  child: largeScreenTextScaleBuilder(context, child),
+                ),
                 themeMode: themeMode,
                 theme: buildAppTheme(
                   variant: themeVariant,

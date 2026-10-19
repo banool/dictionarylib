@@ -24,6 +24,7 @@ import 'sharing/auth/sign_in_dialog.dart';
 import 'sharing/sync_api.dart';
 import 'top_level_scaffold.dart';
 import 'video_player_screen.dart';
+import 'tv_focus.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -196,8 +197,8 @@ class SettingsPageState extends State<SettingsPage> {
           },
         ),
       ]),
-      // Hidden on web: there's no sign-in / account on the web build.
-      if (shareState.isEnabled && !kIsWeb)
+      // Hidden on web and Android TV: there's no sign-in / account there.
+      if (shareState.isEnabled && !kIsWeb && !isAndroidTv)
         ...section(l.settingsSharing, [
           if (session == null)
             navRow(

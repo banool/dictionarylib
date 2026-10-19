@@ -10,6 +10,9 @@ import 'package:dictionarylib/theme.dart' show constrainContentWidth;
 import 'package:dictionarylib/video_player_screen.dart';
 import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/material.dart';
+
+import 'tv_focus.dart';
+
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 /// The centred region widget shown beneath a flashcard (flanked by the shared
@@ -99,6 +102,18 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   DRCard? currentCard;
   bool currentCardRevealed = false;
 
+  /// On Android TV the remote's focus goes where OK should act: the reveal
+  /// button on each new card (a word-to-sign card has nothing else focusable,
+  /// and on a sign-to-word card revealing is the next step once the video has
+  /// played), then the positive answer ("Got it!" / "Next") once revealed,
+  /// since the reveal button it was on disappears.
+  final FocusNode _tvRevealFocus = FocusNode(debugLabel: 'flashcardReveal');
+  final FocusNode _tvAnswerFocus = FocusNode(debugLabel: 'flashcardAnswer');
+
+  /// The (card, revealed) state focus was last moved for, so it moves once
+  /// per change rather than on every rebuild.
+  Object? _tvFocusedFor;
+
   /// The cards shown so far this session, in order, and our position within
   /// them. Tracking the sequence ourselves (rather than only ever asking
   /// Dolphin for the next card) lets a back gesture revisit the previous card
@@ -145,6 +160,8 @@ class FlashcardsPageState extends State<FlashcardsPage> {
 
   @override
   void dispose() {
+    _tvRevealFocus.dispose();
+    _tvAnswerFocus.dispose();
     nextCardTimer?.cancel();
     super.dispose();
   }
@@ -406,6 +423,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     if (rating == Rating.Easy && isNext) {
       return FilledButton.icon(
         onPressed: onPressed,
+        focusNode: _tvAnswerFocus,
         style: FilledButton.styleFrom(minimumSize: const Size(0, 54)),
         icon: const Icon(Icons.arrow_forward, size: 20),
         label: Text(l.ratingNext),
@@ -440,6 +458,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     return active
         ? FilledButton.icon(
             onPressed: onPressed,
+            focusNode: _tvAnswerFocus,
             style: FilledButton.styleFrom(
               backgroundColor: cs.tertiary,
               foregroundColor: cs.onTertiary,
@@ -450,6 +469,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
           )
         : OutlinedButton.icon(
             onPressed: onPressed,
+            focusNode: _tvAnswerFocus,
             style: OutlinedButton.styleFrom(
               foregroundColor: cs.tertiary,
               side: BorderSide(color: cs.tertiary, width: 1.5),
@@ -470,6 +490,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
         width: double.infinity,
         child: FilledButton.icon(
           key: const ValueKey("revealButton"),
+          focusNode: _tvRevealFocus,
           onPressed: () => completeCard(currentCard!, rating: Rating.Good),
           style: FilledButton.styleFrom(minimumSize: const Size(0, 54)),
           icon: const Icon(Icons.visibility_outlined, size: 20),
@@ -531,6 +552,14 @@ class FlashcardsPageState extends State<FlashcardsPage> {
       textAlign: TextAlign.center,
       style: const TextStyle(fontSize: 20),
     );
+
+    if (isAndroidTv && _tvFocusedFor != (card, revealed)) {
+      _tvFocusedFor = (card, revealed);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        (revealed ? _tvAnswerFocus : _tvRevealFocus).requestFocus();
+      });
+    }
 
     Widget? ratingButtonsRow;
     if (revealed) {
@@ -611,12 +640,18 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     // region itself stays hidden until the card is revealed.
     Widget navArrow(bool forward) {
       final enabled = forward ? _pos < _shownCards.length - 1 : _pos > 0;
-      // A single opaque GestureDetector (rather than an IconButton) so the tap
-      // is ALWAYS consumed here — nav when enabled, a no-op when disabled —
-      // and never falls through to the card's reveal/proceed gesture. The
-      // padding gives a comfortable hit area around the small chevron.
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      // An InkWell with a tap handler even when disabled (rather than an
+      // IconButton) so the tap is ALWAYS consumed here — nav when enabled, a
+      // no-op when disabled — and never falls through to the card's
+      // reveal/proceed gesture. Focusable only when enabled, so a TV remote
+      // can step between cards. The padding gives a comfortable hit area
+      // around the small chevron.
+      return InkWell(
+        customBorder: const CircleBorder(),
+        // No ripple, so touch looks exactly as it did with a GestureDetector.
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
+        canRequestFocus: enabled,
         onTap: enabled ? (forward ? nextCard : previousCard) : () {},
         child: Tooltip(
           message: forward ? l.revisionNextCard : l.revisionPreviousCard,
