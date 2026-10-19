@@ -149,6 +149,12 @@ const String _invalidBodyReasonStaleCursor = 'stale_cursor';
 /// lockstep. Consumers use [SyncException.isListLimitReached].
 const String _forbidReasonListLimit = 'list_limit';
 
+/// Discriminator on the 403 a sign-in gets when no name can be found for
+/// the person (none from the provider, the client or an earlier sign-in).
+/// Mirrors `FORBID_REASON_NAME_REQUIRED` in `workers/src/validation.ts` in
+/// the private backend repo. Consumers use [SyncException.isNameRequired].
+const String _forbidReasonNameRequired = 'name_required';
+
 /// Machine-readable `reasonCode` the server sets on a rejected
 /// `addEntry` op outcome when the list is already at
 /// [maxEntriesPerList]. Mirrors `OP_REJECT_REASON_LIST_FULL` in
@@ -181,6 +187,12 @@ class SyncException implements Exception {
   bool get isListLimitReached =>
       kind == SyncErrorKind.forbidden &&
       details?['reason'] == _forbidReasonListLimit;
+
+  /// True if the server refused a sign-in because no name came with it.
+  /// Only `POST /v1/auth/sign-in` raises it.
+  bool get isNameRequired =>
+      kind == SyncErrorKind.forbidden &&
+      details?['reason'] == _forbidReasonNameRequired;
 
   /// The server-advertised list ceiling that came back with an
   /// [isListLimitReached] error, falling back to the compiled-in

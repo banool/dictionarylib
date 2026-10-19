@@ -164,7 +164,9 @@ class _ListMembersPageState extends State<ListMembersPage> {
       builder: (ctx) => AlertDialog(
         title: Text(
           l.membersPageRemoveEditorConfirmTitle(
-            editor.displayName.isEmpty ? editor.userId : editor.displayName,
+            editor.displayName.isEmpty
+                ? l.membersPageUnnamed
+                : editor.displayName,
           ),
         ),
         content: Text(l.membersPageRemoveEditorConfirmBody),
@@ -380,14 +382,23 @@ class _ListMembersPageState extends State<ListMembersPage> {
     );
   }
 
+  bool _isViewer(String userId) =>
+      userId == _viewerUserId && _viewerUserId.isNotEmpty;
+
+  /// What to call a member. Never a bare account id: someone a provider
+  /// signed in without a name (Apple shares it only on a person's first
+  /// authorisation, and one Apple ID spans both dictionary apps) is "You"
+  /// to themselves and "Unnamed member" to everyone else.
+  String _memberName(DictLibLocalizations l, String userId, String cached) {
+    if (_isViewer(userId)) {
+      return cached.isEmpty ? l.membersPageYou : l.membersPageNameYou(cached);
+    }
+    return cached.isEmpty ? l.membersPageUnnamed : cached;
+  }
+
   Widget _buildMemberTile(MemberRef member) {
     final l = DictLibLocalizations.of(context)!;
-    final base = member.displayName.isEmpty
-        ? member.userId
-        : member.displayName;
-    final name = member.userId == _viewerUserId && _viewerUserId.isNotEmpty
-        ? l.membersPageNameYou(base)
-        : base;
+    final name = _memberName(l, member.userId, member.displayName);
     return HearthListRow(
       leading: _initialAvatar(name),
       title: name,
@@ -426,11 +437,8 @@ class _ListMembersPageState extends State<ListMembersPage> {
   }
 
   Widget _buildEditorTile(DictLibLocalizations l, EditorRef editor) {
-    final base = editor.displayName.isEmpty
-        ? editor.userId
-        : editor.displayName;
-    final isViewer = editor.userId == _viewerUserId && _viewerUserId.isNotEmpty;
-    final name = isViewer ? l.membersPageNameYou(base) : base;
+    final name = _memberName(l, editor.userId, editor.displayName);
+    final isViewer = _isViewer(editor.userId);
     final addedByName = _resolveAddedByName(editor);
     return HearthListRow(
       leading: _initialAvatar(name),
@@ -474,7 +482,8 @@ class _ListMembersPageState extends State<ListMembersPage> {
     for (final e in members.editors) {
       if (e.userId == editor.addedBy) return e.displayName;
     }
-    return editor.addedBy;
+    // Unknown (e.g. since removed): no line rather than a bare account id.
+    return '';
   }
 
   String _initial(String name) {

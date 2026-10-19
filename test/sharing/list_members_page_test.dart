@@ -6,6 +6,7 @@ import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/saved_video.dart';
+import 'package:dictionarylib/sharing/auth/auth_store.dart';
 import 'package:dictionarylib/sharing/list_members_page.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
@@ -223,6 +224,79 @@ void main() {
 
   /// The invite-editor dialog should offer a QR code (like the regular
   /// subscribe-link dialog it now shares an implementation with).
+  /// A list whose owner (Alice) and editor (Bob) have no names, as when a
+  /// provider signed them in without one (Apple shares a name only once).
+  Future<SyncedEntryList> installNamelessList() async {
+    await userEntryListManager.createEntryList('nameless_words');
+    final source = userEntryListManager.getEntryLists()['nameless_words']!;
+    final list = SyncedEntryList.owner(
+      meta: SyncedListMeta(
+        listId: 'namelesslist',
+        displayName: 'Nameless',
+        role: ListRole.owner,
+        lastKnownSeq: 1,
+        etag: null,
+        lastSyncedAt: 1700000000,
+        serverUpdatedAt: 1700000000,
+        orphaned: false,
+        sourceLocalKey: 'nameless_words',
+        cachedMembers: MembersBlock(
+          owner: const MemberRef(userId: 'apple:alice', displayName: ''),
+          editors: [
+            EditorRef(
+              userId: 'apple:bob',
+              displayName: '',
+              addedAt: 1700000000,
+              addedBy: 'apple:alice',
+            ),
+          ],
+        ),
+      ),
+      source: source,
+    );
+    await sharing.lists.insert(list);
+    return list;
+  }
+
+  testWidgets('members without a name never show their account id', (
+    tester,
+  ) async {
+    installFakeSharing(
+      (req) async => http.Response('{}', 404),
+      session: const AuthSession(
+        sessionToken: 'fake-session-jwt',
+        provider: AuthProvider.apple,
+        userId: 'apple:carol',
+        signedInAtMillis: 1700000000000,
+      ),
+    );
+    final list = await installNamelessList();
+    await tester.pumpWidget(wrap(list));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unnamed member'), findsNWidgets(2));
+    expect(find.textContaining('apple:'), findsNothing);
+  });
+
+  testWidgets('an unnamed viewer is "You"', (tester) async {
+    installFakeSharing(
+      (req) async => http.Response('{}', 404),
+      session: const AuthSession(
+        sessionToken: 'fake-session-jwt',
+        provider: AuthProvider.apple,
+        userId: 'apple:alice',
+        signedInAtMillis: 1700000000000,
+      ),
+    );
+    final list = await installNamelessList();
+    await tester.pumpWidget(wrap(list));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You'), findsOneWidget);
+    expect(find.text('Unnamed member'), findsOneWidget);
+    expect(find.textContaining('apple:'), findsNothing);
+  });
+
   testWidgets('the invite-editor dialog offers a QR-code option', (
     tester,
   ) async {

@@ -161,6 +161,24 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
               error = _localiseProviderError(l, e.kind);
             });
           } on SyncException catch (e) {
+            if (e.isNameRequired) {
+              // The provider signed them in without a name, and we don't
+              // create nameless accounts (everyone on a shared list sees
+              // the names). Point them at another provider; for Apple, also
+              // at how to make it share the name again.
+              Analytics.track(
+                'sign_in_failed',
+                props: {'provider': provider.name, 'reason': 'name_required'},
+              );
+              final message = l.signInNameRequired(provider.label(l));
+              setLocal(() {
+                inflight = null;
+                error = provider == AuthProvider.apple
+                    ? '$message ${l.signInNameRequiredApple}'
+                    : message;
+              });
+              return;
+            }
             // Server rejected the provider credential.
             printAndLog(
               'sign-in (${provider.name}): server rejected '

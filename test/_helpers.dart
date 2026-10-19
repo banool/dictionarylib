@@ -157,8 +157,9 @@ const kTestSession = AuthSession(
 /// session at [kTestSession] so writes-that-require-auth don't need a
 /// separate setup step.
 List<http.Request> installFakeSharing(
-  Future<http.Response> Function(http.Request) handle,
-) {
+  Future<http.Response> Function(http.Request) handle, {
+  AuthSession session = kTestSession,
+}) {
   final out = <http.Request>[];
   final client = MockClient((req) async {
     out.add(req);
@@ -166,7 +167,7 @@ List<http.Request> installFakeSharing(
   });
   final api = SyncApi(kTestSharingConfig, client: client);
   final authApi = AuthApi(kTestSharingConfig, client: client);
-  final authStore = AuthStore.withSession(kTestSession);
+  final authStore = AuthStore.withSession(session);
   final auth = AuthService(
     config: kTestSharingConfig,
     api: authApi,

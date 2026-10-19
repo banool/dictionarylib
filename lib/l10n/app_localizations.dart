@@ -1393,6 +1393,24 @@ abstract class DictLibLocalizations {
   /// **'You'**
   String get membersPageYou;
 
+  /// No description provided for @membersPageUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed member'**
+  String get membersPageUnnamed;
+
+  /// No description provided for @signInNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} didn\'t share your name with us, and the people you share lists with need to see it. Please sign in another way.'**
+  String signInNameRequired(String provider);
+
+  /// No description provided for @signInNameRequiredApple.
+  ///
+  /// In en, this message translates to:
+  /// **'To share your name through Apple instead, stop using Sign in with Apple for this app in your Apple Account settings, then sign in again.'**
+  String get signInNameRequiredApple;
+
   /// No description provided for @membersPageCreator.
   ///
   /// In en, this message translates to:

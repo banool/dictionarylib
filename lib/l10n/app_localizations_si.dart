@@ -753,6 +753,18 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get membersPageYou => 'ඔබ';
 
   @override
+  String get membersPageUnnamed => 'Unnamed member';
+
+  @override
+  String signInNameRequired(String provider) {
+    return '$provider didn\'t share your name with us, and the people you share lists with need to see it. Please sign in another way.';
+  }
+
+  @override
+  String get signInNameRequiredApple =>
+      'To share your name through Apple instead, stop using Sign in with Apple for this app in your Apple Account settings, then sign in again.';
+
+  @override
   String get membersPageCreator => 'නිර්මාතෘ';
 
   @override

@@ -25,6 +25,34 @@ http.Response _errorResponse(
 }
 
 void main() {
+  group('SyncException.isNameRequired', () {
+    test('true for the 403 a nameless sign-in gets', () {
+      final e = SyncException.fromResponse(
+        _errorResponse(
+          403,
+          'FORBIDDEN',
+          'no name was shared for this account; sign in another way',
+          details: {'reason': 'name_required'},
+        ),
+      );
+      expect(e.isNameRequired, isTrue);
+      expect(e.isListLimitReached, isFalse);
+    });
+
+    test('false for other 403s', () {
+      for (final details in [
+        {'reason': 'list_limit', 'limit': 100},
+        {'reason': 'wrong_app'},
+        null,
+      ]) {
+        final e = SyncException.fromResponse(
+          _errorResponse(403, 'FORBIDDEN', 'nope', details: details),
+        );
+        expect(e.isNameRequired, isFalse);
+      }
+    });
+  });
+
   group('SyncException.isListLimitReached', () {
     test('true for a 403 carrying the list_limit reason', () {
       final e = SyncException.fromResponse(
