@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../common.dart';
@@ -17,7 +18,15 @@ import 'sign_in_exception.dart';
 /// graceful error.
 bool appleSignInAvailable() {
   if (kIsWeb) return false;
-  return Platform.isIOS || Platform.isMacOS || Platform.isAndroid;
+  // defaultTargetPlatform, not dart:io's Platform: the same answer on a
+  // device, but tests can set it, so a test that taps the Apple button
+  // doesn't pass on a Mac and fail on CI's Linux runner.
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.iOS ||
+    TargetPlatform.macOS ||
+    TargetPlatform.android => true,
+    _ => false,
+  };
 }
 
 /// Server-side cap on display name length. Mirrors
