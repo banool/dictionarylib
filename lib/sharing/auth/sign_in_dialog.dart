@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -164,18 +165,27 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
             if (e.isNameRequired) {
               // The provider signed them in without a name, and we don't
               // create nameless accounts (everyone on a shared list sees
-              // the names). Point them at another provider; for Apple, also
-              // at how to make it share the name again.
+              // the names). Point them at another provider. For Apple, give
+              // the exact steps that make it share the name again: removing
+              // the app under Sign in with Apple, which is in Settings on an
+              // iPhone or iPad and on Apple's website for everyone else
+              // (Android signs in with Apple through the web).
               Analytics.track(
                 'sign_in_failed',
                 props: {'provider': provider.name, 'reason': 'name_required'},
               );
-              final message = l.signInNameRequired(provider.label(l));
+              final appName = sharing.config.appName;
+              final String message;
+              if (provider != AuthProvider.apple) {
+                message = l.signInNameRequired(provider.label(l));
+              } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+                message = l.signInNameRequiredAppleIos(appName);
+              } else {
+                message = l.signInNameRequiredAppleOther(appName);
+              }
               setLocal(() {
                 inflight = null;
-                error = provider == AuthProvider.apple
-                    ? '$message ${l.signInNameRequiredApple}'
-                    : message;
+                error = message;
               });
               return;
             }
@@ -214,6 +224,9 @@ Future<AuthSession?> _showSignInDialogImpl(BuildContext context) async {
         }
 
         return AlertDialog(
+          // An error under the buttons can run to several paragraphs (the
+          // Apple no-name steps), which a phone in landscape can't fit.
+          scrollable: true,
           title: Text(l.signInDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,

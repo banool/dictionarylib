@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
+import 'package:dictionarylib/sharing/auth/apple_sign_in.dart';
 import 'package:dictionarylib/sharing/auth/auth_store.dart';
 import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -90,6 +94,83 @@ void main() {
 
     expect(await firstFuture, isNull);
     expect(await secondFuture, isNull);
+  });
+
+  /// A new account Apple sends no name for is refused by the server. The
+  /// dialog has to say exactly how to make Apple share the name again, and
+  /// those steps live in a different place on an iPhone than on Android.
+  testWidgets('a nameless Apple sign-in shows the steps to fix it', (
+    tester,
+  ) async {
+    installFakeSharing(
+      (req) async => http.Response(
+        jsonEncode({
+          'error': {
+            'code': 'FORBIDDEN',
+            'message': 'no name was shared for this account',
+            'details': {'reason': 'name_required'},
+          },
+        }),
+        403,
+      ),
+      appleSignIn: (_) async => const AppleSignInResult(idToken: 'a.b.c'),
+    );
+
+    Future<void> signInWithAppleOn(TargetPlatform platform) async {
+      debugDefaultTargetPlatformOverride = platform;
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey(platform),
+          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          supportedLocales: DictLibLocalizations.supportedLocales,
+          home: _CaptureContext(
+            onReady: (ctx) {
+              showSignInDialog(ctx);
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue with Apple'));
+      await tester.pumpAndSettle();
+    }
+
+    try {
+      await signInWithAppleOn(TargetPlatform.iOS);
+      expect(
+        find.textContaining(
+          'Settings → your name → Sign in with Apple → Test App → Delete',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      await signInWithAppleOn(TargetPlatform.android);
+      expect(
+        find.textContaining(
+          'account.apple.com, open Sign-In & Security → Sign in with Apple → '
+          'Test App',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Settings → your name'), findsNothing);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // The message is long: on a phone in landscape it must scroll, not
+      // overflow.
+      await tester.binding.setSurfaceSize(const Size(667, 375));
+      await signInWithAppleOn(TargetPlatform.iOS);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Settings → your name'), findsOneWidget);
+      // Close it: an open dialog is shared with the next caller.
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+      await tester.binding.setSurfaceSize(null);
+    }
   });
 
   /// The "last time you signed in with X" hint must not name a provider

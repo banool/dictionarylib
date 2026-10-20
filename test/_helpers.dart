@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/sharing/auth/apple_sign_in.dart';
 import 'package:dictionarylib/sharing/auth/auth_api.dart';
 import 'package:dictionarylib/sharing/auth/auth_service.dart';
 import 'package:dictionarylib/sharing/auth/auth_store.dart';
@@ -159,6 +160,7 @@ const kTestSession = AuthSession(
 List<http.Request> installFakeSharing(
   Future<http.Response> Function(http.Request) handle, {
   AuthSession session = kTestSession,
+  Future<AppleSignInResult> Function(SharingAuthConfig)? appleSignIn,
 }) {
   final out = <http.Request>[];
   final client = MockClient((req) async {
@@ -172,6 +174,7 @@ List<http.Request> installFakeSharing(
     config: kTestSharingConfig,
     api: authApi,
     store: authStore,
+    appleSignIn: appleSignIn,
   );
   final lists = SyncedEntryListManager.fromStartup();
   sharing = Sharing.forTesting(

@@ -1405,11 +1405,17 @@ abstract class DictLibLocalizations {
   /// **'{provider} didn\'t share your name with us, and the people you share lists with need to see it. Please sign in another way.'**
   String signInNameRequired(String provider);
 
-  /// No description provided for @signInNameRequiredApple.
+  /// No description provided for @signInNameRequiredAppleIos.
   ///
   /// In en, this message translates to:
-  /// **'To share your name through Apple instead, stop using Sign in with Apple for this app in your Apple Account settings, then sign in again.'**
-  String get signInNameRequiredApple;
+  /// **'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, open Settings → your name → Sign in with Apple → {appName} → Delete, then come back and continue with Apple. That only resets Apple\'s sign-in for {appName}; nothing of yours is deleted.\n\nOr sign in another way.'**
+  String signInNameRequiredAppleIos(String appName);
+
+  /// No description provided for @signInNameRequiredAppleOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, sign in at account.apple.com, open Sign-In & Security → Sign in with Apple → {appName} and remove it, then come back and continue with Apple. That only resets Apple\'s sign-in for {appName}; nothing of yours is deleted.\n\nOr sign in another way.'**
+  String signInNameRequiredAppleOther(String appName);
 
   /// No description provided for @membersPageCreator.
   ///

@@ -772,8 +772,14 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
-  String get signInNameRequiredApple =>
-      'To share your name through Apple instead, stop using Sign in with Apple for this app in your Apple Account settings, then sign in again.';
+  String signInNameRequiredAppleIos(String appName) {
+    return 'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, open Settings → your name → Sign in with Apple → $appName → Delete, then come back and continue with Apple. That only resets Apple\'s sign-in for $appName; nothing of yours is deleted.\n\nOr sign in another way.';
+  }
+
+  @override
+  String signInNameRequiredAppleOther(String appName) {
+    return 'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, sign in at account.apple.com, open Sign-In & Security → Sign in with Apple → $appName and remove it, then come back and continue with Apple. That only resets Apple\'s sign-in for $appName; nothing of yours is deleted.\n\nOr sign in another way.';
+  }
 
   @override
   String get membersPageCreator => 'உருவாக்கியவர்';
