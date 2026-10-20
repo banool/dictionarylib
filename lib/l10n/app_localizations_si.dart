@@ -116,10 +116,10 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get settingsColourModeSystem => 'පද්ධතිය';
 
   @override
-  String get settingsVideo => 'Video';
+  String get settingsVideo => 'වීඩියෝ';
 
   @override
-  String get settingsDefaultPlaybackSpeed => 'Default playback speed';
+  String get settingsDefaultPlaybackSpeed => 'පෙරනිමි ප්‍රතිවාදන වේගය';
 
   @override
   String get settingsCache => 'තාවකාලික මතකයන්';
@@ -753,21 +753,21 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get membersPageYou => 'ඔබ';
 
   @override
-  String get membersPageUnnamed => 'Unnamed member';
+  String get membersPageUnnamed => 'නමක් නැති සාමාජිකයෙක්';
 
   @override
   String signInNameRequired(String provider) {
-    return '$provider didn\'t share your name with us, and the people you share lists with need to see it. Please sign in another way.';
+    return '$provider ඔබේ නම අප සමඟ බෙදා ගත්තේ නැත, ඔබ ලැයිස්තු බෙදා ගන්නා අයට එය දැකීමට අවශ්‍ය වේ. කරුණාකර වෙනත් ආකාරයකින් පුරනය වන්න.';
   }
 
   @override
   String signInNameRequiredAppleIos(String appName) {
-    return 'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, open Settings → your name → Sign in with Apple → $appName → Delete, then come back and continue with Apple. That only resets Apple\'s sign-in for $appName; nothing of yours is deleted.\n\nOr sign in another way.';
+    return 'Apple ඔබේ නම අප සමඟ බෙදා ගත්තේ නැත, ඔබ ලැයිස්තු බෙදා ගන්නා අයට එය දැකීමට අවශ්‍ය වේ.\n\nමෙය නිවැරදි කිරීමට, Settings → ඔබේ නම → Sign in with Apple → $appName → Delete වෙත යන්න, ඉන්පසු මෙහි ආපසු පැමිණ \"Apple සමඟ දිගටම\" තෝරන්න. එයින් $appName සඳහා Apple පුරනය වීම පමණක් යළි සැකසේ; ඔබගේ කිසිවක් මැකෙන්නේ නැත.\n\nනැතහොත් වෙනත් ආකාරයකින් පුරනය වන්න.';
   }
 
   @override
   String signInNameRequiredAppleOther(String appName) {
-    return 'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, sign in at account.apple.com, open Sign-In & Security → Sign in with Apple → $appName and remove it, then come back and continue with Apple. That only resets Apple\'s sign-in for $appName; nothing of yours is deleted.\n\nOr sign in another way.';
+    return 'Apple ඔබේ නම අප සමඟ බෙදා ගත්තේ නැත, ඔබ ලැයිස්තු බෙදා ගන්නා අයට එය දැකීමට අවශ්‍ය වේ.\n\nමෙය නිවැරදි කිරීමට, account.apple.com වෙත පුරනය වී, Sign-In & Security → Sign in with Apple → $appName විවෘත කර එය ඉවත් කරන්න, ඉන්පසු මෙහි ආපසු පැමිණ \"Apple සමඟ දිගටම\" තෝරන්න. එයින් $appName සඳහා Apple පුරනය වීම පමණක් යළි සැකසේ; ඔබගේ කිසිවක් මැකෙන්නේ නැත.\n\nනැතහොත් වෙනත් ආකාරයකින් පුරනය වන්න.';
   }
 
   @override
@@ -878,12 +878,12 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String listNameErrorTooLong(int maxLength) {
-    return 'List name is too long (at most $maxLength characters)';
+    return 'ලැයිස්තු නම දිග වැඩියි (අක්ෂර $maxLengthක් දක්වා)';
   }
 
   @override
   String get listNameErrorUnderscore =>
-      'List names can\'t contain underscores; use a space instead';
+      'ලැයිස්තු නම්වල යටි ඉරි (_) තිබිය නොහැක; ඒ වෙනුවට හිස් තැනක් භාවිතා කරන්න';
 
   @override
   String listNameErrorReserved(String name) {
@@ -1301,7 +1301,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String tvSharingUnavailableBody(String appName) {
-    return 'Signing in, and publishing or editing shared lists, aren\'t available on a TV. Install the $appName app on your phone to create, publish and edit shared lists. You can still browse the dictionary and revise here.';
+    return 'පුරනය වීම සහ බෙදාගත් ලැයිස්තු ප්‍රකාශනය හෝ සංස්කරණය රූපවාහිනියක නොමැත. බෙදාගත් ලැයිස්තු සෑදීමට, ප්‍රකාශනය කිරීමට සහ සංස්කරණය කිරීමට ඔබේ දුරකථනයේ $appName යෙදුම ස්ථාපනය කරන්න. ඔබට තවමත් මෙහි ශබ්දකෝෂය බ්‍රවුස් කර සංශෝධනය කළ හැක.';
   }
 
   @override

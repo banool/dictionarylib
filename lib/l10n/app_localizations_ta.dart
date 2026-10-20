@@ -119,10 +119,10 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get settingsColourModeSystem => 'கணினி அமைப்பு';
 
   @override
-  String get settingsVideo => 'Video';
+  String get settingsVideo => 'வீடியோ';
 
   @override
-  String get settingsDefaultPlaybackSpeed => 'Default playback speed';
+  String get settingsDefaultPlaybackSpeed => 'இயல்புநிலை பிளேபேக் வேகம்';
 
   @override
   String get settingsCache => 'தற்காலிக நினைவுகள்';
@@ -764,21 +764,21 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get membersPageYou => 'நீங்கள்';
 
   @override
-  String get membersPageUnnamed => 'Unnamed member';
+  String get membersPageUnnamed => 'பெயரிடப்படாத உறுப்பினர்';
 
   @override
   String signInNameRequired(String provider) {
-    return '$provider didn\'t share your name with us, and the people you share lists with need to see it. Please sign in another way.';
+    return '$provider உங்கள் பெயரை எங்களுடன் பகிரவில்லை, நீங்கள் பட்டியல்களைப் பகிரும் நபர்கள் அதைப் பார்க்க வேண்டும். வேறு வழியில் உள்நுழையவும்.';
   }
 
   @override
   String signInNameRequiredAppleIos(String appName) {
-    return 'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, open Settings → your name → Sign in with Apple → $appName → Delete, then come back and continue with Apple. That only resets Apple\'s sign-in for $appName; nothing of yours is deleted.\n\nOr sign in another way.';
+    return 'Apple உங்கள் பெயரை எங்களுடன் பகிரவில்லை, நீங்கள் பட்டியல்களைப் பகிரும் நபர்கள் அதைப் பார்க்க வேண்டும்.\n\nஇதைச் சரிசெய்ய, Settings → உங்கள் பெயர் → Sign in with Apple → $appName → Delete என்பதற்குச் செல்லவும், பின்னர் இங்கே திரும்பி வந்து \"Apple உடன் தொடரவும்\" என்பதைத் தேர்ந்தெடுக்கவும். இது $appName க்கான Apple உள்நுழைவை மட்டுமே மீட்டமைக்கும்; உங்களுடைய எதுவும் நீக்கப்படாது.\n\nஅல்லது வேறு வழியில் உள்நுழையவும்.';
   }
 
   @override
   String signInNameRequiredAppleOther(String appName) {
-    return 'Apple didn\'t share your name with us, and the people you share lists with need to see it.\n\nTo fix this, sign in at account.apple.com, open Sign-In & Security → Sign in with Apple → $appName and remove it, then come back and continue with Apple. That only resets Apple\'s sign-in for $appName; nothing of yours is deleted.\n\nOr sign in another way.';
+    return 'Apple உங்கள் பெயரை எங்களுடன் பகிரவில்லை, நீங்கள் பட்டியல்களைப் பகிரும் நபர்கள் அதைப் பார்க்க வேண்டும்.\n\nஇதைச் சரிசெய்ய, account.apple.com இல் உள்நுழைந்து, Sign-In & Security → Sign in with Apple → $appName என்பதைத் திறந்து அதை அகற்றவும், பின்னர் இங்கே திரும்பி வந்து \"Apple உடன் தொடரவும்\" என்பதைத் தேர்ந்தெடுக்கவும். இது $appName க்கான Apple உள்நுழைவை மட்டுமே மீட்டமைக்கும்; உங்களுடைய எதுவும் நீக்கப்படாது.\n\nஅல்லது வேறு வழியில் உள்நுழையவும்.';
   }
 
   @override
@@ -890,12 +890,12 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String listNameErrorTooLong(int maxLength) {
-    return 'List name is too long (at most $maxLength characters)';
+    return 'பட்டியல் பெயர் மிக நீளமாக உள்ளது (அதிகபட்சம் $maxLength எழுத்துகள்)';
   }
 
   @override
   String get listNameErrorUnderscore =>
-      'List names can\'t contain underscores; use a space instead';
+      'பட்டியல் பெயர்களில் அடிக்கோடுகள் (_) இருக்கக்கூடாது; அதற்குப் பதிலாக இடைவெளியைப் பயன்படுத்தவும்';
 
   @override
   String listNameErrorReserved(String name) {
@@ -1320,7 +1320,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String tvSharingUnavailableBody(String appName) {
-    return 'Signing in, and publishing or editing shared lists, aren\'t available on a TV. Install the $appName app on your phone to create, publish and edit shared lists. You can still browse the dictionary and revise here.';
+    return 'உள்நுழைவு, மற்றும் பகிரப்பட்ட பட்டியல்களை வெளியிடுதல் அல்லது திருத்துதல் டிவியில் கிடைக்காது. பகிரப்பட்ட பட்டியல்களை உருவாக்க, வெளியிட மற்றும் திருத்த உங்கள் தொலைபேசியில் $appName செயலியை நிறுவவும். நீங்கள் இன்னும் இங்கே அகராதியை உலாவலாம் மற்றும் மீள்திருத்தம் செய்யலாம்.';
   }
 
   @override
