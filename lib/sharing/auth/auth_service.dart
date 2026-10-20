@@ -9,6 +9,7 @@ import 'auth_api.dart';
 import 'auth_store.dart';
 import 'google_sign_in.dart';
 import 'microsoft_sign_in.dart';
+import 'pending_apple_name.dart';
 import '../../tv_focus.dart';
 
 /// Master on/off switch for each social login provider, applied
@@ -49,12 +50,18 @@ class AuthService {
   final SharingConfig _config;
   final AuthApi _api;
   final AuthStore _store;
+  final PendingAppleName _pendingAppleName;
+  final Future<AppleSignInResult> Function(SharingAuthConfig) _appleSignIn;
 
+  /// [appleSignIn] replaces the platform Sign in with Apple step in tests.
   AuthService({
     required this._config,
     required this._api,
     required this._store,
-  });
+    PendingAppleName? pendingAppleName,
+    Future<AppleSignInResult> Function(SharingAuthConfig)? appleSignIn,
+  }) : _pendingAppleName = pendingAppleName ?? PendingAppleName(),
+       _appleSignIn = appleSignIn ?? signInWithApple;
 
   AuthStore get store => _store;
 
@@ -106,14 +113,28 @@ class AuthService {
       case AuthProvider.apple:
         // Apple is the only provider that surfaces the display name
         // through the platform SDK, and ONLY on the first sign-in for
-        // a given Apple ID. Forward just that fresh value — never the
-        // locally-cached fallback — so the server's record can't be
-        // overwritten by a stale client cache on every sign-in.
-        final apple = await signInWithApple(_config.auth);
-        return _api.signInWithApple(
+        // a given Apple ID. Forward that fresh value, and hold on to it
+        // until the server confirms a sign-in: if this request fails, the
+        // retry gets no name from Apple, and the server won't create an
+        // account without one. Once confirmed it's forgotten, so the
+        // server's record can't be overwritten by a stale client copy on
+        // later sign-ins. See [PendingAppleName].
+        final apple = await _appleSignIn(_config.auth);
+        if (apple.freshName.isNotEmpty) {
+          await _pendingAppleName.remember(
+            idToken: apple.idToken,
+            name: apple.freshName,
+          );
+        }
+        final name = apple.freshName.isNotEmpty
+            ? apple.freshName
+            : await _pendingAppleName.recall(apple.idToken);
+        final session = await _api.signInWithApple(
           idToken: apple.idToken,
-          displayName: apple.freshName.isEmpty ? null : apple.freshName,
+          displayName: name.isEmpty ? null : name,
         );
+        await _pendingAppleName.clear();
+        return session;
       case AuthProvider.google:
         return _api.signInWithGoogle(
           idToken: await signInWithGoogle(_config.auth),

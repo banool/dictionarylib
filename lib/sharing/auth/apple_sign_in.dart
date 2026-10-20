@@ -5,6 +5,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../common.dart';
 import '../sharing_config.dart';
+import 'pending_apple_name.dart';
 import 'sign_in_exception.dart';
 
 /// Whether the host platform can run any form of Sign in with Apple.
@@ -36,13 +37,12 @@ class AppleSignInResult {
   /// this is the first-ever sign-in for the Apple user (Apple only
   /// surfaces the name on the very first authorization).
   ///
-  /// This is the only value safe to forward to the server: it's
-  /// authoritative for "the user just told Apple their name". The
+  /// It's authoritative for "the user just told Apple their name". The
   /// server-side `users/<hash>.json` record covers the "user already
-  /// has a name on file" path for subsequent sign-ins, so we don't
-  /// keep a local cache of Apple's once-only name — that would risk
-  /// replaying a stale name and clobbering whatever the user has
-  /// updated server-side.
+  /// has a name on file" path for subsequent sign-ins. The only local
+  /// copy is [PendingAppleName]'s, kept just until the server confirms
+  /// a sign-in; a lasting cache would risk replaying a stale name over
+  /// whatever the server holds.
   final String freshName;
 
   const AppleSignInResult({required this.idToken, this.freshName = ''});
@@ -108,10 +108,11 @@ Future<AppleSignInResult> signInWithApple(SharingAuthConfig auth) async {
     throw ProviderSignInException(SignInErrorKind.noCredential);
   }
 
-  // `freshName` is the name Apple just gave us on THIS attempt. It's
-  // the only value the server should see — replaying any other source
-  // (e.g. a local cache) on every sign-in would let a stale value
-  // overwrite the server's authoritative `users/<hash>.json` record.
+  // `freshName` is the name Apple just gave us on THIS attempt. The
+  // caller keeps it only until the server confirms a sign-in (see
+  // PendingAppleName); replaying a lasting local copy on every sign-in
+  // would let a stale value overwrite the server's authoritative
+  // `users/<hash>.json` record.
   final composed = _composeDisplayName(cred.givenName, cred.familyName);
   final freshName = composed.length > _maxAppleDisplayNameLen
       ? composed.substring(0, _maxAppleDisplayNameLen)
