@@ -506,7 +506,7 @@ Widget _getUserLists(
         key: ValueKey(el.key),
         leading: owned != null
             ? Icon(iconForSharedList(owned.meta))
-            : el.getLeadingIcon(),
+            : _unsharedListIcon(context, el),
         // Owner-shared lists show the share's (renamable) display name.
         title: (owned ?? el).getName(),
         // Shared lists show their sync status; plain lists show a word count.
@@ -543,6 +543,23 @@ Widget _getUserLists(
     padding: const EdgeInsets.symmetric(vertical: 8),
     children: tiles,
   );
+}
+
+/// The icon for one of the user's own lists that isn't shared: a gold star
+/// if it's called "Favourites" (in any language the apps come in), the usual
+/// list icon otherwise.
+///
+/// The star goes by the name and nothing else. It's what the default list
+/// is called to begin with, so that list starts out with it — but it loses
+/// the star when it's renamed, and any other list given the name gets one.
+/// A shared list never has it: a share can't go by that name (these are
+/// exactly the names [isReservedShareName] refuses), and a list shared
+/// under another name shows its share's icon instead.
+Widget _unsharedListIcon(BuildContext context, EntryList el) {
+  if (isReservedShareName(el.getName())) {
+    return Icon(Icons.star, color: Theme.of(context).colorScheme.secondary);
+  }
+  return el.getLeadingIcon();
 }
 
 /// A short "N words" subtitle for a list (counts distinct entries).

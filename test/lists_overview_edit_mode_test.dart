@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_entry_list_overview.dart';
@@ -109,6 +110,21 @@ Future<void> _share(String key, String as) => listsService.shareList(
 
 List<String> _keys() => userEntryListManager.getEntryLists().keys.toList();
 
+/// The leading icon(s) on [name]'s row of the Lists page (not edit mode).
+List<IconData?> _iconsOnRow(String name) {
+  final row = find.ancestor(
+    of: find.text(name),
+    matching: find.byType(HearthListRow),
+  );
+  expect(row, findsOneWidget, reason: 'row for $name');
+  return [
+    for (final e
+        in find.descendant(of: row, matching: find.byType(Icon)).evaluate())
+      if ((e.widget as Icon).icon != Icons.chevron_right)
+        (e.widget as Icon).icon,
+  ];
+}
+
 void main() {
   late List<http.Request> requests;
 
@@ -122,13 +138,14 @@ void main() {
     requests = _installShareServer();
   });
 
-  testWidgets('the default list looks like any other list', (tester) async {
+  testWidgets('a list called Favourites has a star; in edit mode every list '
+      'has a drag handle', (tester) async {
     await userEntryListManager.createEntryList('cats_words');
     await _pumpListsPage(tester);
 
     expect(find.text('Favourites'), findsOneWidget);
-    expect(find.byIcon(Icons.star), findsNothing);
-    expect(find.byIcon(Icons.list_alt), findsNWidgets(2));
+    expect(_iconsOnRow('Favourites'), [Icons.star]);
+    expect(_iconsOnRow('cats'), [Icons.list_alt]);
 
     await _enterEditMode(tester);
     expect(find.byIcon(Icons.star), findsNothing);
@@ -138,6 +155,47 @@ void main() {
       find.text('Drag a list to reorder it, or tap it to rename.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the star goes with the name, not with being the default '
+      'list', (tester) async {
+    await userEntryListManager.createEntryList('cats_words');
+    // The default list gives the name up, and another list takes it.
+    await userEntryListManager.renameEntryList(
+      kDefaultListKey,
+      'Everyday_Signs_words',
+    );
+    await userEntryListManager.renameEntryList(
+      'cats_words',
+      'Favourites_words',
+    );
+    await _pumpListsPage(tester);
+
+    expect(userEntryListManager.defaultListKey, 'Everyday_Signs_words');
+    expect(_iconsOnRow('Everyday Signs'), [Icons.list_alt]);
+    expect(_iconsOnRow('Favourites'), [Icons.star]);
+  });
+
+  testWidgets('the name counts in any case and in every language the apps '
+      'come in', (tester) async {
+    for (final name in [
+      'favourites',
+      'ප්‍රියතම',
+      'பிடித்தவை',
+      'My Favourites',
+    ]) {
+      await userEntryListManager.createEntryList(
+        EntryList.getKeyFromName(name),
+      );
+    }
+    await _pumpListsPage(tester);
+
+    expect(_iconsOnRow('Favourites'), [Icons.star]);
+    expect(_iconsOnRow('favourites'), [Icons.star]);
+    expect(_iconsOnRow('ප්‍රියතම'), [Icons.star]);
+    expect(_iconsOnRow('பிடித்தவை'), [Icons.star]);
+    // Only the name itself, not a name that contains it.
+    expect(_iconsOnRow('My Favourites'), [Icons.list_alt]);
   });
 
   testWidgets('only the default list has no delete button', (tester) async {
@@ -247,13 +305,13 @@ void main() {
       await _share(kDefaultListKey, 'Tiny Tunks');
     });
 
-    testWidgets('it goes by the share name and still has no star', (
-      tester,
-    ) async {
+    testWidgets('it goes by the share name and shows the share\'s icon, not '
+        'a star', (tester) async {
       await _pumpListsPage(tester);
       expect(find.text('Tiny Tunks'), findsOneWidget);
       expect(find.text('Favourites'), findsNothing);
       expect(find.byIcon(Icons.star), findsNothing);
+      expect(_iconsOnRow('Tiny Tunks'), [Icons.cloud_done]);
       await _enterEditMode(tester);
       expect(find.text('Tiny Tunks'), findsOneWidget);
       expect(find.byIcon(Icons.star), findsNothing);
