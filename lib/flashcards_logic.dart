@@ -113,7 +113,9 @@ class ResolvedSavedVideo {
 
 LinkedHashMap<String, EntryList> getCandidateEntryLists() {
   LinkedHashMap<String, EntryList> candidateEntryLists = LinkedHashMap();
-  for (final el in listsService.myLists) {
+  // As shared, so a list the user shared is named here as it is on the
+  // Lists page rather than after the local list underneath it.
+  for (final el in listsService.myListsAsShared) {
     candidateEntryLists[el.key] = el;
   }
   for (final el in sharing.lists.editorLists) {

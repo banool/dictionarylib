@@ -124,8 +124,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   late final bool initialValueSignToEntry;
   late final bool initialValueEntryToSign;
 
-  late LinkedHashMap<String, EntryList> candidateEntryLists;
-
   late LinkedHashMap<String, EntryList> entryListsToRevise;
 
   /// Saved videos in scope this session, after [filterSavedVideos] has
@@ -143,7 +141,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   @override
   void initState() {
     super.initState();
-    candidateEntryLists = getCandidateEntryLists();
     _lifecycleObserver = LifecycleEventHandler(
       resumeCallBack: () async {
         if (!mounted) return;
@@ -179,8 +176,12 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
         sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
         [KEY_FAVOURITES_ENTRIES];
 
+    // Looked up afresh every time rather than once per page: lists are
+    // created, shared and subscribed to while this page stays mounted under
+    // another route, and a chosen list that isn't found here is silently
+    // left out of the session.
     entryListsToRevise = getEntryListsToRevise(
-      candidateEntryLists,
+      getCandidateEntryLists(),
       listsToReview,
     );
 
@@ -345,7 +346,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               }
 
               final List<EntryList> myLists = <EntryList>[
-                ...listsService.myLists,
+                ...listsService.myListsAsShared,
                 if (sharing.isEnabled)
                   ...sharing.lists.editorLists.where((e) => !e.meta.orphaned),
               ];
