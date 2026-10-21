@@ -35,8 +35,6 @@ const String KEY_RECENT_SEARCHES = "recent_searches";
 // still saved in one of their lists.
 const String KEY_HIDDEN_SIGNS_OF_THE_DAY = "hidden_signs_of_the_day";
 
-const String KEY_FAVOURITES_ENTRIES = "favourites_words";
-
 // Max length of a user-defined list name, measured in UTF-16 code units (Dart
 // `String.length`; each non-BMP emoji counts as 2). Matches the shared-list
 // display-name cap (maxDisplayNameLen in sharing/sync_api.dart) and the server's
@@ -668,12 +666,12 @@ const String WORD_ROUTE = "/word";
 /// sensible defaults (full UI, no focused video, no save-to-list target).
 class EntryPageArgs {
   const EntryPageArgs({
-    this.showFavouritesButton = true,
+    this.showSaveButton = true,
     this.focusVideo,
     this.saveToList,
   });
 
-  final bool showFavouritesButton;
+  final bool showSaveButton;
   final SavedVideo? focusVideo;
   final EntryList? saveToList;
 }

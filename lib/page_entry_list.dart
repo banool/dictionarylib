@@ -410,7 +410,7 @@ class EntryListPageState extends State<EntryListPage> {
     final videos = list.savedVideos.toList();
 
     final localKey = listsService.allocateLocalKey(
-      preferredName: list.getName(context),
+      preferredName: list.getName(),
       fallbackBase: l.duplicateFallbackName,
     );
 
@@ -563,7 +563,7 @@ class EntryListPageState extends State<EntryListPage> {
       );
     }
 
-    String listName = widget.entryList.getName(context);
+    String listName = widget.entryList.getName();
 
     // Sort button. It's hidden while a search is active (below), so its
     // onPressed can sort unconditionally. The label names the *current* mode
@@ -614,7 +614,7 @@ class EntryListPageState extends State<EntryListPage> {
     // Lists are renamed from the lists overview page only, so the app-bar
     // title is always a static label here.
     Widget titleWidget = Text(
-      widget.entryList.getName(context),
+      widget.entryList.getName(),
       overflow: TextOverflow.ellipsis,
     );
 

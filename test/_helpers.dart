@@ -87,6 +87,10 @@ class _FakeSubEntry extends SubEntry<String, String> {
   List<String> getRegions() => const [];
 }
 
+/// The storage key of the default list on a fresh English install: the list
+/// starts out called "Favourites" and is stored like any other list.
+const String kDefaultListKey = 'Favourites_words';
+
 /// Install a no-op handler for the flutter_secure_storage MethodChannel
 /// so [AuthStore.clear] / [save] / [load] don't throw
 /// MissingPluginException in tests. Returns null for every call —

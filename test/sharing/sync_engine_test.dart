@@ -95,8 +95,7 @@ Future<http.Response> _stubSyncRejectAll(
 /// Construct a local list seeded with one saved video per entry key in
 /// [keys] (the synthetic `videoFor(key)` URL).
 Future<EntryList> _localListWith(String localKey, List<String> keys) async {
-  if (localKey != 'favourites_words' &&
-      !userEntryListManager.getEntryLists().containsKey(localKey)) {
+  if (!userEntryListManager.getEntryLists().containsKey(localKey)) {
     await userEntryListManager.createEntryList(localKey);
   }
   final list = userEntryListManager.getEntryLists()[localKey]!;

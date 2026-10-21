@@ -431,7 +431,7 @@ class SearchPageState extends State<SearchPage> {
   }
 
   // Deterministic "sign of the day": same sign all day, picked from the words
-  // the user has saved into their own lists (favourites + custom lists).
+  // the user has saved into their own lists.
   // Drawing only from saved words keeps it personal and, crucially, means we
   // never feature a rude sign the user didn't choose to save — the full
   // dictionary contains vulgar entries we don't want to surface. Returns null

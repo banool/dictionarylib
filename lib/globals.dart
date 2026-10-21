@@ -102,6 +102,12 @@ late bool showFlashcards;
 AdvisoriesResponse? advisoriesResponse;
 bool advisoryShownOnce = false;
 
+/// The language the app starts in: what the app's
+/// [DictAppBootstrapConfig.resolveStartingLocale] came back with, or English
+/// for an app that has only the one. Settled before the lists load, because
+/// the default list is named in it the first time it's created.
+Locale startingLocale = LOCALE_ENGLISH;
+
 // Manager for lists of entries defined by the user.
 late UserEntryListManager userEntryListManager;
 

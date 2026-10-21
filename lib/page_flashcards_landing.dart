@@ -172,9 +172,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
   }
 
   void updateFilteredSubentries() {
-    var listsToReview =
-        sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
-        [KEY_FAVOURITES_ENTRIES];
+    var listsToReview = loadListsToReview();
 
     // Looked up afresh every time rather than once per page: lists are
     // created, shared and subscribed to while this page stays mounted under
@@ -277,10 +275,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
           return StatefulBuilder(
             builder: (ctx, setSheet) {
               final cs = Theme.of(ctx).colorScheme;
-              final selected =
-                  (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
-                          [KEY_FAVOURITES_ENTRIES])
-                      .toSet();
+              final selected = loadListsToReview().toSet();
 
               // Persist + repaint the tick only. The heavy part — rebuilding
               // the whole DolphinSR session — happens once when the sheet
@@ -288,10 +283,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               // devices once many big lists are selected (the tick appears to
               // do nothing even though the selection was saved).
               void toggle(String key) {
-                final s =
-                    (sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW) ??
-                            [KEY_FAVOURITES_ENTRIES])
-                        .toSet();
+                final s = loadListsToReview().toSet();
                 if (!s.add(key)) s.remove(key);
                 sharedPreferences.setStringList(
                   KEY_LISTS_TO_REVIEW,
@@ -301,10 +293,8 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               }
 
               Widget listRow(EntryList el) => HearthRow(
-                icon: el.key == KEY_FAVOURITES_ENTRIES
-                    ? Icons.star
-                    : Icons.list_alt,
-                title: el.getName(context),
+                icon: Icons.list_alt,
+                title: el.getName(),
                 trailing: Checkbox(
                   value: selected.contains(el.key),
                   onChanged: (_) => toggle(el.key),
@@ -415,15 +405,15 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       );
     }
 
-    // Selected revision sources (Favourites + any chosen lists).
+    // Selected revision sources.
     final sourceRows = <Widget>[];
     for (final e in entryListsToRevise.entries) {
       final el = e.value;
       final count = el.uniqueEntries.length;
       sourceRows.add(
         HearthRow(
-          icon: el.key == KEY_FAVOURITES_ENTRIES ? Icons.star : Icons.list_alt,
-          title: el.getName(context),
+          icon: Icons.list_alt,
+          title: el.getName(),
           subtitle: l.revisionSignCount(count),
           onTap: openSourcesPicker,
         ),

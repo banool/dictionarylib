@@ -29,27 +29,21 @@ void main() {
       expect(EntryList.getNameFromKey(key), 'My cool list');
     });
 
-    test('returns "Favourites" for the favourites key', () {
-      expect(EntryList.getNameFromKey(KEY_FAVOURITES_ENTRIES), 'Favourites');
+    test('the name comes from the key alone, whichever list it is', () {
+      expect(EntryList.getNameFromKey(kDefaultListKey), 'Favourites');
+      // The key the built-in list used to have is nothing special either.
+      expect(EntryList.getNameFromKey('favourites_words'), 'favourites');
     });
 
     test('rejects empty names', () {
       expect(() => EntryList.getKeyFromName(''), throwsA(anything));
     });
 
-    test('rejects "Favourites" / "favourites" (any case, with whitespace)', () {
-      for (final name in const [
-        'Favourites',
-        'favourites',
-        'FAVOURITES',
-        '  Favourites  ',
-      ]) {
-        expect(
-          () => EntryList.getKeyFromName(name),
-          throwsA(anything),
-          reason: '$name should be rejected as reserved',
-        );
-      }
+    test('"Favourites" is a name like any other (only shares may not use '
+        'it)', () {
+      expect(EntryList.getKeyFromName('Favourites'), 'Favourites_words');
+      expect(EntryList.getKeyFromName('favourites'), 'favourites_words');
+      expect(EntryList.getKeyFromName('  FAVOURITES  '), 'FAVOURITES_words');
     });
 
     test('accepts punctuation/symbols that the old whitelist rejected', () {
@@ -583,10 +577,12 @@ void main() {
       await sharedPreferences.setStringList('favourites_words', ['apple']);
       await sharedPreferences.setStringList('cats_words', ['banana']);
 
+      // The built-in list also moves to its ordinary key on the way (see
+      // default_list_migration_test.dart).
       userEntryListManager = UserEntryListManager.fromStartup();
 
       expect(
-        sharedPreferences.getInt('favourites_words_schemaVersion'),
+        sharedPreferences.getInt('${kDefaultListKey}_schemaVersion'),
         listSchemaVersion,
       );
       expect(
@@ -595,7 +591,7 @@ void main() {
       );
       expect(
         userEntryListManager
-            .getEntryLists()['favourites_words']!
+            .getEntryLists()[kDefaultListKey]!
             .savedVideos
             .single
             .entryKey,
@@ -612,12 +608,13 @@ void main() {
     });
   });
 
-  group('EntryList favourites rules', () {
-    test('favourites cannot be deleted; user lists can', () {
-      final fav = EntryList(KEY_FAVOURITES_ENTRIES, LinkedHashSet(), true);
-      final user = EntryList('cats_words', LinkedHashSet(), true);
-      expect(fav.canBeDeleted(), isFalse);
-      expect(user.canBeDeleted(), isTrue);
+  group('EntryList rules', () {
+    test('the default list cannot be deleted; other lists can', () async {
+      userEntryListManager = UserEntryListManager.fromStartup();
+      await userEntryListManager.createEntryList('cats_words');
+      final lists = userEntryListManager.getEntryLists();
+      expect(lists[kDefaultListKey]!.canBeDeleted(), isFalse);
+      expect(lists['cats_words']!.canBeDeleted(), isTrue);
     });
 
     test('canBeEdited reflects the constructor flag', () {
@@ -629,28 +626,26 @@ void main() {
   });
 
   group('UserEntryListManager', () {
-    test('fromStartup defaults to a single favourites list', () async {
+    test('fromStartup starts a new install with the default list', () async {
       userEntryListManager = UserEntryListManager.fromStartup();
-      expect(userEntryListManager.getEntryLists().keys, [
-        KEY_FAVOURITES_ENTRIES,
-      ]);
+      expect(userEntryListManager.getEntryLists().keys, [kDefaultListKey]);
     });
 
     test('createEntryList adds to the index and is persisted', () async {
       userEntryListManager = UserEntryListManager.fromStartup();
       await userEntryListManager.createEntryList('cats_words');
       expect(userEntryListManager.getEntryLists().keys, [
-        KEY_FAVOURITES_ENTRIES,
+        kDefaultListKey,
         'cats_words',
       ]);
       expect(sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS), [
-        KEY_FAVOURITES_ENTRIES,
+        kDefaultListKey,
         'cats_words',
       ]);
 
       userEntryListManager = UserEntryListManager.fromStartup();
       expect(userEntryListManager.getEntryLists().keys, [
-        KEY_FAVOURITES_ENTRIES,
+        kDefaultListKey,
         'cats_words',
       ]);
     });
@@ -672,33 +667,20 @@ void main() {
       expect(sharedPreferences.getStringList('cats_words'), [v.toStorage()]);
 
       await userEntryListManager.deleteEntryList('cats_words');
-      expect(userEntryListManager.getEntryLists().keys, [
-        KEY_FAVOURITES_ENTRIES,
-      ]);
+      expect(userEntryListManager.getEntryLists().keys, [kDefaultListKey]);
       expect(sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS), [
-        KEY_FAVOURITES_ENTRIES,
+        kDefaultListKey,
       ]);
       expect(sharedPreferences.getStringList('cats_words'), isNull);
     });
 
-    test('reorder refuses to move favourites away from index 0', () async {
-      userEntryListManager = UserEntryListManager.fromStartup();
-      await userEntryListManager.createEntryList('a_words');
-      await userEntryListManager.createEntryList('b_words');
-      userEntryListManager.reorder(0, 2);
-      expect(
-        userEntryListManager.getEntryLists().keys.first,
-        KEY_FAVOURITES_ENTRIES,
-      );
-    });
-
-    test('reorder swaps non-favourites lists', () async {
+    test('reorder swaps lists', () async {
       userEntryListManager = UserEntryListManager.fromStartup();
       await userEntryListManager.createEntryList('a_words');
       await userEntryListManager.createEntryList('b_words');
       userEntryListManager.reorder(2, 1);
       expect(userEntryListManager.getEntryLists().keys.toList(), [
-        KEY_FAVOURITES_ENTRIES,
+        kDefaultListKey,
         'b_words',
         'a_words',
       ]);
@@ -716,11 +698,7 @@ void main() {
         await userEntryListManager.renameEntryList('a_words', 'cats_words');
 
         final lists = userEntryListManager.getEntryLists();
-        expect(lists.keys.toList(), [
-          KEY_FAVOURITES_ENTRIES,
-          'cats_words',
-          'b_words',
-        ]);
+        expect(lists.keys.toList(), [kDefaultListKey, 'cats_words', 'b_words']);
         expect(lists.containsKey('a_words'), isFalse);
         expect(lists['cats_words']!.containsVideo(v), isTrue);
         expect(lists['cats_words']!.key, 'cats_words');
@@ -728,7 +706,7 @@ void main() {
         expect(sharedPreferences.getStringList('a_words'), isNull);
         expect(sharedPreferences.getInt('a_words_schemaVersion'), isNull);
         expect(sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS), [
-          KEY_FAVOURITES_ENTRIES,
+          kDefaultListKey,
           'cats_words',
           'b_words',
         ]);
@@ -744,7 +722,7 @@ void main() {
 
       userEntryListManager = UserEntryListManager.fromStartup();
       final lists = userEntryListManager.getEntryLists();
-      expect(lists.keys.toList(), [KEY_FAVOURITES_ENTRIES, 'cats_words']);
+      expect(lists.keys.toList(), [kDefaultListKey, 'cats_words']);
       expect(lists['cats_words']!.containsVideo(v), isTrue);
     });
 
@@ -759,26 +737,6 @@ void main() {
       expect(
         userEntryListManager.getEntryLists().containsKey('a_words'),
         isTrue,
-      );
-    });
-
-    test('renameEntryList refuses to rename favourites', () async {
-      userEntryListManager = UserEntryListManager.fromStartup();
-      await userEntryListManager.createEntryList('cats_words');
-      expect(
-        () => userEntryListManager.renameEntryList(
-          KEY_FAVOURITES_ENTRIES,
-          'renamed_words',
-        ),
-        throwsA(isA<EntryListNameException>()),
-      );
-      expect(
-        userEntryListManager.getEntryLists().keys.first,
-        KEY_FAVOURITES_ENTRIES,
-      );
-      expect(
-        sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS)?.first,
-        KEY_FAVOURITES_ENTRIES,
       );
     });
 

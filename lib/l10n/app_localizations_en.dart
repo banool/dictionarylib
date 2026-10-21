@@ -93,7 +93,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsDeleteRevisionProgressExplanation =>
-      'This will delete all your review progress from all time for both the spaced repetition and random review strategies. Your lists (including favourites) will not be affected. Are you 100% sure you want to do this?';
+      'This will delete all your review progress from all time for both the spaced repetition and random review strategies. Your lists will not be affected. Are you 100% sure you want to do this?';
 
   @override
   String get settingsProgressDeleted => 'All review progress deleted';
@@ -1018,9 +1018,8 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'Tap the pencil to reorder, rename, or create a new list.';
 
   @override
-  String listsReorderHint(String name) {
-    return 'Drag a list to reorder it, or tap it to rename. $name stays pinned to the top.';
-  }
+  String get listsReorderHint =>
+      'Drag a list to reorder it, or tap it to rename.';
 
   @override
   String listWordCount(int count) {

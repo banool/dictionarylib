@@ -118,7 +118,7 @@ class DictRootAppConfig {
 Future<void> defaultNavigateToEntryPage(
   BuildContext context,
   Entry entry,
-  bool showFavouritesButton, {
+  bool showSaveButton, {
   SavedVideo? focusVideo,
   EntryList? saveToList,
   required WordPageConfig config,
@@ -127,7 +127,7 @@ Future<void> defaultNavigateToEntryPage(
     await context.push(
       "$WORD_ROUTE/${Uri.encodeComponent(entry.getKey())}",
       extra: EntryPageArgs(
-        showFavouritesButton: showFavouritesButton,
+        showSaveButton: showSaveButton,
         focusVideo: focusVideo,
         saveToList: saveToList,
       ),
@@ -144,7 +144,7 @@ Future<void> defaultNavigateToEntryPage(
         builder: (context) => EntryPage(
           entry: entry,
           config: config,
-          showFavouritesButton: showFavouritesButton,
+          showSaveButton: showSaveButton,
           focusVideo: focusVideo,
           saveToList: saveToList,
         ),
@@ -159,14 +159,14 @@ NavigateToEntryPageFn makeNavigateToEntryPage(WordPageConfig config) {
   return (
     BuildContext context,
     Entry entry,
-    bool showFavouritesButton, {
+    bool showSaveButton, {
     SavedVideo? focusVideo,
     EntryList? saveToList,
   }) {
     return defaultNavigateToEntryPage(
       context,
       entry,
-      showFavouritesButton,
+      showSaveButton,
       focusVideo: focusVideo,
       saveToList: saveToList,
       config: config,
@@ -421,7 +421,7 @@ class _DictRootAppState extends State<DictRootApp> {
               child: EntryPage(
                 entry: entry,
                 config: widget.config.wordPageConfig,
-                showFavouritesButton: args?.showFavouritesButton ?? true,
+                showSaveButton: args?.showSaveButton ?? true,
                 focusVideo: args?.focusVideo,
                 saveToList: args?.saveToList,
                 initialVariation: int.tryParse(

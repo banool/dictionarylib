@@ -93,7 +93,7 @@ class EntryPage extends StatefulWidget {
   const EntryPage({
     super.key,
     required this.entry,
-    required this.showFavouritesButton,
+    required this.showSaveButton,
     required this.config,
     this.focusVideo,
     this.saveToList,
@@ -107,11 +107,9 @@ class EntryPage extends StatefulWidget {
   /// rendering, video aspect ratio, app-bar extras).
   final WordPageConfig config;
 
-  /// Whether to render the per-video save UI. Named `showFavouritesButton`
-  /// for source-compat with the pre-per-video-saves callers — the button is no
-  /// longer a favourites star; it's a per-video bookmark that opens the
-  /// all-lists picker.
-  final bool showFavouritesButton;
+  /// Whether to render the per-video save UI: the bookmark button that
+  /// opens the all-lists picker.
+  final bool showSaveButton;
 
   /// If supplied, the page lands on the sub-entry containing this video and
   /// starts the sub-entry's video carousel on that video (the list view's
@@ -221,7 +219,7 @@ class _EntryPageState extends State<EntryPage> {
     GoRouter.of(context).replace(
       loc,
       extra: EntryPageArgs(
-        showFavouritesButton: widget.showFavouritesButton,
+        showSaveButton: widget.showSaveButton,
         focusVideo: widget.focusVideo,
         saveToList: widget.saveToList,
       ),
@@ -313,7 +311,7 @@ class _EntryPageState extends State<EntryPage> {
                         ? _focusedVideoInitialIndex
                         : null,
                     // No saving on web (no account / favourites there).
-                    showSaveButton: widget.showFavouritesButton && !kIsWeb,
+                    showSaveButton: widget.showSaveButton && !kIsWeb,
                     saveToList: widget.saveToList,
                     // Only the on-screen sub-entry's video should play;
                     // kept-alive off-screen pages pause via this flag.
@@ -1263,7 +1261,7 @@ class _BookmarkButtonState extends State<_BookmarkButton> {
         if (mounted) setState(() {});
       }
 
-      final name = target.getName(context);
+      final name = target.getName();
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child: SizedBox(

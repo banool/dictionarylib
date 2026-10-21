@@ -268,7 +268,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @settingsDeleteRevisionProgressExplanation.
   ///
   /// In en, this message translates to:
-  /// **'This will delete all your review progress from all time for both the spaced repetition and random review strategies. Your lists (including favourites) will not be affected. Are you 100% sure you want to do this?'**
+  /// **'This will delete all your review progress from all time for both the spaced repetition and random review strategies. Your lists will not be affected. Are you 100% sure you want to do this?'**
   String get settingsDeleteRevisionProgressExplanation;
 
   /// No description provided for @settingsProgressDeleted.
@@ -1828,8 +1828,8 @@ abstract class DictLibLocalizations {
   /// No description provided for @listsReorderHint.
   ///
   /// In en, this message translates to:
-  /// **'Drag a list to reorder it, or tap it to rename. {name} stays pinned to the top.'**
-  String listsReorderHint(String name);
+  /// **'Drag a list to reorder it, or tap it to rename.'**
+  String get listsReorderHint;
 
   /// No description provided for @listWordCount.
   ///

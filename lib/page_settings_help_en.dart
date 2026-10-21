@@ -46,13 +46,13 @@ Widget getSettingsHelpPageEn() {
             "other people's, and keep all of that in sync across your devices.",
         "You can sign in with Apple, Google or Microsoft — you'll see "
             "whichever of these are available on your device. If you only want to "
-            "search, save Favourites and revise, you don't need to sign in at all.",
+            "search, save signs and revise, you don't need to sign in at all.",
       ],
       "What happens if I delete my account?": [
         "We remove every list you own and your editor access to other people's lists "
             "from our servers, along with the display name you chose when sharing. "
-            "Anything that doesn't need an account — your local lists, your Favourites "
-            "and any lists you've only subscribed to — stays right where it is.",
+            "Anything that doesn't need an account — your local lists and any lists "
+            "you've only subscribed to — stays right where it is.",
         "This can't be undone, so we'll ask you to confirm first. If you just want to "
             "step away without removing anything, signing out is the gentler option.",
       ],

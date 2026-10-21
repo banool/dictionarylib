@@ -1,7 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
@@ -308,33 +307,6 @@ void main() {
     });
   });
 
-  group('favouritesList', () {
-    test('returns the local list when favourites is not shared', () async {
-      installFakeSharing((_) async => http.Response('', 404));
-      final fav = listsService.favouritesList;
-      expect(fav, isNot(isA<SyncedEntryList>()));
-      expect(fav.key, 'favourites_words');
-    });
-
-    test('returns the wrapper when favourites is owner-shared', () async {
-      installFakeSharing((req) async {
-        if (req.method == 'POST' && req.url.path == '/v1/lists') {
-          return stubCreateResponse(req);
-        }
-        return http.Response('', 404);
-      });
-      final source = userEntryListManager.getEntryLists()['favourites_words']!;
-      await listsService.shareList(
-        sourceList: source,
-        displayName: 'My Favourites',
-        sessionToken: 'fake-session-jwt',
-      );
-      final fav = listsService.favouritesList;
-      expect(fav, isA<SyncedEntryList>());
-      expect((fav as SyncedEntryList).meta.role, ListRole.owner);
-    });
-  });
-
   group('unshareList', () {
     test('deletes server-side and removes the local owner wrapper', () async {
       final requests = installFakeSharing((req) async {
@@ -381,8 +353,7 @@ void main() {
     test('is the share name, from the local list as well as the wrapper, '
         'when Favourites is shared under another name', () async {
       await userEntryListManager.createEntryList('cats_words');
-      final favourites = userEntryListManager
-          .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+      final favourites = userEntryListManager.getEntryLists()[kDefaultListKey]!;
       final owned = await listsService.shareList(
         sourceList: favourites,
         displayName: 'Tiny Tunks',
@@ -414,8 +385,7 @@ void main() {
     });
 
     test('goes back to the local name once it is no longer shared', () async {
-      final favourites = userEntryListManager
-          .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+      final favourites = userEntryListManager.getEntryLists()[kDefaultListKey]!;
       final owned = await listsService.shareList(
         sourceList: favourites,
         displayName: 'Tiny Tunks',

@@ -139,7 +139,6 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
       if (mounted) setState(() {});
     }
 
-    final isFav = widget.list.key == KEY_FAVOURITES_ENTRIES;
     Widget row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: InkWell(
@@ -149,7 +148,7 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
           padding: const EdgeInsets.all(8),
           child: Row(
             children: [
-              // Icon in a rounded tile; the favourites star is gold.
+              // Icon in a rounded tile.
               Container(
                 width: 42,
                 height: 42,
@@ -161,13 +160,13 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
                 child: Icon(
                   _iconDataFor(widget.list),
                   size: 21,
-                  color: isFav ? cs.secondary : cs.primary,
+                  color: cs.primary,
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  widget.list.getName(context),
+                  widget.list.getName(),
                   style: const TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w700,
@@ -192,9 +191,6 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
   IconData _iconDataFor(EntryList list) {
     if (list is SyncedEntryList) {
       return iconForSharedList(list.meta);
-    }
-    if (list.key == KEY_FAVOURITES_ENTRIES) {
-      return Icons.star;
     }
     return Icons.list_alt;
   }

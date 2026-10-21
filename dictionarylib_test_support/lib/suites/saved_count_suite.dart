@@ -43,7 +43,7 @@ void runSavedCountSuite(DictAppTestConfig cfg) {
       );
 
       final favList = userEntryListManager
-          .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+          .getEntryLists()[userEntryListManager.defaultListKey]!;
       const secondKey = 'CountTest_words';
 
       Future<void> cleanup() async {
@@ -73,7 +73,7 @@ void runSavedCountSuite(DictAppTestConfig cfg) {
       );
 
       final favRow = find.byKey(
-        ValueKey('saveVideoSheet.row.$KEY_FAVOURITES_ENTRIES'),
+        ValueKey('saveVideoSheet.row.${userEntryListManager.defaultListKey}'),
       );
       final secondRow = find.byKey(ValueKey('saveVideoSheet.row.$secondKey'));
 

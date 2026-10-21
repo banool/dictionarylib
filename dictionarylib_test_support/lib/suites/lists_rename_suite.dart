@@ -1,4 +1,3 @@
-import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/page_entry_list_overview.dart'
@@ -12,8 +11,8 @@ import '../config.dart';
 import '../helpers.dart';
 
 // End-to-end coverage for tap-to-rename in the lists overview's edit mode,
-// and the guarantee that favourites — whose key is fixed — can never be
-// renamed through the UI.
+// including that the default list (the one that starts out as "Favourites")
+// offers it like any other.
 //
 // The list is seeded directly (not created via the dialog) so the test
 // targets a known name, then driven through the real edit-mode tap → rename
@@ -24,8 +23,8 @@ void runListsRenameSuite(DictAppTestConfig cfg) {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'edit mode: tapping a list renames it (videos preserved); favourites '
-    'cannot be renamed',
+    'edit mode: tapping a list renames it (videos preserved); the default '
+    'list can be renamed too',
     (WidgetTester tester) async {
       await cfg.setup();
 
@@ -124,22 +123,25 @@ void runListsRenameSuite(DictAppTestConfig cfg) {
       );
       expect(find.text('RenameMe'), findsNothing);
 
-      // --- Favourites cannot be renamed. ---
-      // Still in edit mode. Favourites is wrapped in an IgnorePointer, so the
-      // tap is swallowed and no rename dialog appears.
-      expect(find.text('Favourites'), findsOneWidget);
-      await tester.tap(find.text('Favourites'), warnIfMissed: false);
+      // --- The default list offers a rename as well. ---
+      // Still in edit mode. Opened and cancelled rather than gone through
+      // with, so a run on a real install leaves the user's list as it was.
+      final defaultKey = userEntryListManager.defaultListKey;
+      final defaultName = userEntryListManager
+          .getEntryLists()[defaultKey]!
+          .getName();
+      await tester.tap(find.text(defaultName));
       await settle(tester);
       expect(
         find.text('Rename List'),
-        findsNothing,
-        reason: 'favourites must not be renamable',
+        findsOneWidget,
+        reason: 'the default list should be renamable like any other',
       );
-      // Favourites is still under its fixed key.
-      expect(
-        userEntryListManager.getEntryLists().keys.first,
-        KEY_FAVOURITES_ENTRIES,
-      );
+      expect(find.widgetWithText(TextField, defaultName), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await settle(tester);
+      expect(userEntryListManager.defaultListKey, defaultKey);
+      expect(find.text(defaultName), findsOneWidget);
     },
   );
 }

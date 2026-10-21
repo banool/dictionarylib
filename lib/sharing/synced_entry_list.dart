@@ -294,7 +294,7 @@ class SyncedEntryList extends EntryList {
   String get listId => meta.listId;
 
   @override
-  String getName([BuildContext? context]) => meta.displayName;
+  String getName() => meta.displayName;
 
   @override
   bool canBeEdited() =>

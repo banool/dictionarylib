@@ -25,9 +25,9 @@ class CategoryEntryListManager implements EntryListManager {
         // Category names come from the dictionary data, not user input, but
         // they run through the same key derivation as user lists — so any
         // printable text (emoji included) is preserved. Skip a category only
-        // when it can't form a valid list name (empty/whitespace, too long,
-        // or the reserved favourites name); getKeyFromName throws in those
-        // cases. Suffix length must equal 6, so "_categ" is short for
+        // when it can't form a valid list name (empty/whitespace or too
+        // long); getKeyFromName throws in those cases. Suffix length must
+        // equal 6, so "_categ" is short for
         // "_category".
         String key;
         try {

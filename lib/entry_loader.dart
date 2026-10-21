@@ -126,8 +126,17 @@ abstract class EntryLoader {
     }
     printAndLog("Updated keyedByEnglishEntriesGlobal");
 
-    // Update the list manager.
-    userEntryListManager = UserEntryListManager.fromStartup();
+    // Load the user's lists — but not again once sharing is up. A share
+    // made from this device wraps the list object it found when it loaded,
+    // and a fresh set of objects here would leave the two holding separate
+    // copies of one list for the rest of the session: a sign saved through
+    // one wouldn't show in the other, and could later be overwritten by it.
+    // Nothing is lost by keeping the lists as they are. They're stored apart
+    // from the dictionary data, and look entries up by key as they're read,
+    // so new data reaches them without a reload.
+    if (!sharing.isEnabled) {
+      userEntryListManager = UserEntryListManager.fromStartup();
+    }
 
     printAndLog(
       "Updated entriesGlobal and all its downstream variables (super class)",

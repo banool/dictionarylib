@@ -26,25 +26,17 @@ Widget getEntryListHelpPageEn() {
             "in the list so you can add them to the list, it will not show you "
             "words already in the list.",
       ],
-      "What does the star icon do on a word page?": [
-        "When you tap this, it adds the word to your Favourites. This is a convenience "
-            "for the Favourites list only. ",
-        "To add a word to any other list, you must add "
-            "it from the page for that list directly. See \"How do I add words to a list?\"",
+      "What does the Save button on a word page do?": [
+        "It shows your lists so you can tick the ones to save that video to. A word "
+            "can have several videos, and each is saved separately.",
+        "If you opened the word while adding to a list, the button saves the video "
+            "straight to that list instead.",
       ],
       "What does the sort button in the bottom right do?": [
         "This button toggles between two different sort orders. By default, we show "
             "items in the order you added them to the list. If you press this button, "
             "we instead show the items in alphabetical order. Each time you press the "
             "button the sort order will switch between these two options.",
-      ],
-      "Why can't I see the star icon on a word page?": [
-        "Originally, when you visited a word page from a list other than your favourites, "
-            "we showed the star icon. How it actually worked was it would add the word to "
-            "your Favourites no matter what, but some users expected it to add the word "
-            "to the list they just came from. To avoid this confusing situation, we just "
-            "do not show that button when visiting a word from a list (unless that list "
-            "is your Favourites).",
       ],
       "How do I share this list?": [
         "Tap the share icon in the top right of the list. The first time, we'll ask "

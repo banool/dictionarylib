@@ -12,6 +12,7 @@ import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
 import 'globals.dart';
+import 'list_storage.dart';
 import 'lists_service.dart';
 import 'revision.dart';
 import 'saved_video.dart';
@@ -111,6 +112,15 @@ class ResolvedSavedVideo {
   });
 }
 
+/// The keys of the lists chosen to revise from. Until the user has chosen,
+/// that's the default list alone.
+List<String> loadListsToReview() {
+  final chosen = sharedPreferences.getStringList(KEY_LISTS_TO_REVIEW);
+  if (chosen != null) return chosen;
+  final defaultList = readDefaultListKey();
+  return [if (defaultList != null) defaultList];
+}
+
 LinkedHashMap<String, EntryList> getCandidateEntryLists() {
   LinkedHashMap<String, EntryList> candidateEntryLists = LinkedHashMap();
   for (final el in listsService.myLists) {
@@ -144,7 +154,7 @@ LinkedHashMap<String, EntryList> getEntryListsToRevise(
 
 /// Resolve every saved video across the given lists into a unique,
 /// dictionary-backed set. Dedupes saved videos shared between lists
-/// (e.g. favourites + another list both holding the same one) so
+/// (e.g. two lists both holding the same one) so
 /// they don't produce duplicate cards.
 List<ResolvedSavedVideo> resolveSavedVideos(
   LinkedHashMap<String, EntryList> entryLists,

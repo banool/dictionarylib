@@ -4,7 +4,6 @@ import 'dart:collection';
 import 'package:flutter/widgets.dart';
 
 import 'analytics.dart';
-import 'common.dart';
 import 'entry_list.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
@@ -29,8 +28,7 @@ import 'sharing/synced_entry_list.dart';
 /// set by reference with the underlying local list, so "My Lists"
 /// shows the local list and edits through it remain visible there. UI
 /// code that wants to edit a shared list reads through this service:
-/// [ownedShareFor] returns the wrapper for a local list, [favouritesList]
-/// returns the wrapper if favourites is shared, and the overview
+/// [ownedShareFor] returns the wrapper for a local list, and the overview
 /// navigates straight to the wrapper for shared lists.
 class ListsService {
   ListsService._();
@@ -43,16 +41,6 @@ class ListsService {
   /// Subscribed lists have their own tab.
   List<EntryList> get myLists =>
       userEntryListManager.getEntryLists().values.toList();
-
-  /// The favourites list. If favourites has been shared from this device,
-  /// returns the owner-mode [SyncedEntryList] wrapper (whose [addEntry]
-  /// also enqueues a sync op); otherwise returns the plain local list.
-  /// Callers (e.g. the word-page star button) get the same `EntryList`
-  /// surface either way and don't need to know about sharing.
-  EntryList get favouritesList {
-    final local = userEntryListManager.getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
-    return ownedShareFor(local) ?? local;
-  }
 
   /// Every list a video can be saved into, in the order the save sheet
   /// shows them: the local user lists (each routed through its owner-mode
@@ -138,11 +126,14 @@ class ListsService {
       // guard here stops a stray caller pushing a non-owner's rename.
       throw StateError('only the owner can rename a shared list');
     }
-    // Validate the name (throws on empty / invalid chars / reserved).
-    // The derived key is discarded — shared lists are keyed by their
-    // server id, not a name-derived local key.
+    // Validate the name (throws on empty / too long). The derived key is
+    // discarded — shared lists are keyed by their server id, not a
+    // name-derived local key.
     EntryList.getKeyFromName(newName);
     final name = newName.trim();
+    if (isReservedShareName(name)) {
+      throw EntryListNameException(EntryListNameError.reserved, name);
+    }
     final session = sharing.auth.store.current;
     if (session == null) {
       throw StateError('renameSharedList: not signed in');
@@ -383,8 +374,8 @@ class ListsService {
   /// validity rules.
   ///
   /// [preferredName] is tried first. If it can't round-trip through
-  /// `getKeyFromName` (empty, too long, or the reserved favourites name),
-  /// the algorithm switches to [fallbackBase] — which
+  /// `getKeyFromName` (empty or too long), the algorithm switches to
+  /// [fallbackBase] — which
   /// callers should pick from their own localisation (e.g. "Imported
   /// list", "Duplicated list"). Either way, a numeric suffix is appended
   /// until the resulting key is free.

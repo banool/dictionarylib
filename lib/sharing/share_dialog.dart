@@ -28,7 +28,7 @@ String? _validateDisplayName(BuildContext context, String s) {
   if (trimmed.length > maxDisplayNameLen) {
     return l.shareValidationMaxLen(maxDisplayNameLen);
   }
-  if (EntryList.isReservedDisplayName(trimmed)) {
+  if (isReservedShareName(trimmed)) {
     return l.shareValidationReservedName(trimmed);
   }
   return null;
@@ -119,7 +119,7 @@ Future<SyncedEntryList?> showShareDialog({
     return null;
   }
 
-  final displayCtl = TextEditingController(text: sourceList.getName(context));
+  final displayCtl = TextEditingController(text: sourceList.getName());
   String? displayError;
   String? generalError;
   bool submitting = false;

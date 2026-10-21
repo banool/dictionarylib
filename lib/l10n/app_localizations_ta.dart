@@ -94,7 +94,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get settingsDeleteRevisionProgressExplanation =>
-      'இது உங்கள் எல்லா மதிப்புரைகளையும், முன்னேற்றத்தையும் நீக்கும். (உங்கள் பட்டியலில் பிடித்தவை பாதிக்கப்படாது.) இதை 100% உறுதியாகச் செய்ய விரும்புகிறீர்களா?';
+      'இது உங்கள் எல்லா மதிப்புரைகளையும், முன்னேற்றத்தையும் நீக்கும். (உங்கள் பட்டியல்கள் பாதிக்கப்படாது.) இதை 100% உறுதியாகச் செய்ய விரும்புகிறீர்களா?';
 
   @override
   String get settingsProgressDeleted =>
@@ -1040,9 +1040,8 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'மறுவரிசைப்படுத்த, பெயர்மாற்ற, அல்லது புதிய பட்டியலை உருவாக்க பென்சிலைத் தட்டவும்.';
 
   @override
-  String listsReorderHint(String name) {
-    return 'ஒரு பட்டியலை மறுவரிசைப்படுத்த இழுக்கவும், அல்லது பெயர்மாற்ற அதைத் தட்டவும். $name மேலே நிலைத்திருக்கும்.';
-  }
+  String get listsReorderHint =>
+      'ஒரு பட்டியலை மறுவரிசைப்படுத்த இழுக்கவும், அல்லது பெயர்மாற்ற அதைத் தட்டவும்.';
 
   @override
   String listWordCount(int count) {

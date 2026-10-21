@@ -42,7 +42,7 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     advisoryShownOnce = true;
 
     // The lists overview restores its last-active tab from storage; pin it to
-    // My Lists (index 0) so the Favourites tile is on the visible tab
+    // My Lists (index 0) so the default list's tile is on the visible tab
     // regardless of what tab a previous run/device session left selected.
     await sharedPreferences.setInt(KEY_LISTS_OVERVIEW_TAB_INDEX, 0);
 
@@ -60,9 +60,9 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     );
 
     final favList = userEntryListManager
-        .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+        .getEntryLists()[userEntryListManager.defaultListKey]!;
     // Start from a clean slate and leave it clean afterwards, so the test is
-    // re-runnable and doesn't pollute the simulator's real favourites.
+    // re-runnable and doesn't pollute the simulator's real default list.
     Future<void> ensureNotSaved() async {
       if (favList.containsVideo(expected)) await favList.removeVideo(expected);
     }
@@ -78,7 +78,7 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     await tester.pumpWidget(cfg.buildApp(LOCALE_ENGLISH));
     await settle(tester);
 
-    // Open the entry's word page in picker-sheet mode (showFavouritesButton:
+    // Open the entry's word page in picker-sheet mode (showSaveButton:
     // true, no saveToList).
     cfg.navigateToEntryPage(rootNavigatorKey.currentContext!, entry, true);
     await settle(tester);
@@ -94,40 +94,42 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     await tester.tap(saveButton);
     await settle(tester);
 
-    final favouritesRow = find.byKey(
-      ValueKey('saveVideoSheet.row.$KEY_FAVOURITES_ENTRIES'),
+    final defaultListRow = find.byKey(
+      ValueKey('saveVideoSheet.row.${userEntryListManager.defaultListKey}'),
     );
     expect(
-      favouritesRow,
+      defaultListRow,
       findsOneWidget,
-      reason: 'the save sheet should list the Favourites list',
+      reason: 'the save sheet should list the default list',
     );
 
     // --- Toggle ON ---
-    await tester.tap(favouritesRow);
+    await tester.tap(defaultListRow);
     await settle(tester);
     expect(
       favList.containsVideo(expected),
       isTrue,
-      reason: 'tapping the row should add the video to Favourites',
+      reason: 'tapping the row should add the video to the default list',
     );
     // The durable write is what a fresh launch reads back — assert against a
     // straight-from-SharedPreferences reload, not just the in-memory list.
     expect(
-      EntryList.loadSavedVideos(KEY_FAVOURITES_ENTRIES).contains(expected),
+      EntryList.loadSavedVideos(userEntryListManager.defaultListKey)
+          .contains(expected),
       isTrue,
       reason: 'the saved video should persist to storage',
     );
     // The reloaded list should report the entry, i.e. it would render as a row
     // in the list view.
     expect(
-      EntryList.fromRaw(KEY_FAVOURITES_ENTRIES).containsEntry(entry),
+      EntryList.fromRaw(userEntryListManager.defaultListKey)
+          .containsEntry(entry),
       isTrue,
       reason: 'the entry should appear in the reloaded list',
     );
 
     // --- Toggle OFF (removal also persists) ---
-    await tester.tap(favouritesRow);
+    await tester.tap(defaultListRow);
     await settle(tester);
     expect(
       favList.containsVideo(expected),
@@ -135,13 +137,14 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
       reason: 'tapping again should remove the video',
     );
     expect(
-      EntryList.loadSavedVideos(KEY_FAVOURITES_ENTRIES).contains(expected),
+      EntryList.loadSavedVideos(userEntryListManager.defaultListKey)
+          .contains(expected),
       isFalse,
       reason: 'the removal should persist to storage',
     );
 
     // --- Toggle ON again, then verify it shows in the real list UI ---
-    await tester.tap(favouritesRow);
+    await tester.tap(defaultListRow);
     await settle(tester);
     expect(favList.containsVideo(expected), isTrue);
 
@@ -153,10 +156,10 @@ void runSaveVideoSuite(DictAppTestConfig cfg) {
     rootNavigatorKey.currentState!.pop();
     await settle(tester);
 
-    // Lists tab -> open Favourites -> the entry row should be present.
+    // Lists tab -> open the default list -> the entry row should be present.
     await tester.tap(find.byIcon(Icons.view_list));
     await settle(tester);
-    await tester.tap(find.byKey(const ValueKey(KEY_FAVOURITES_ENTRIES)));
+    await tester.tap(find.byKey(ValueKey(userEntryListManager.defaultListKey)));
     await settle(tester);
     expect(
       find.byKey(ValueKey(entry.getKey())),

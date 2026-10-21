@@ -92,7 +92,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get settingsDeleteRevisionProgressExplanation =>
-      'මෙය මගින් ඔබගේ සියලුම සමාලෝචන, ප්‍රගතිය මාකාදමයි. (ඔබගේ ලැයිස්තු ප්‍රියතමයන් බලපාන්නේ නැත.) ඔබට මෙය කිරීමට අවශ්‍ය බව 100% විශ්වාසද?';
+      'මෙය මගින් ඔබගේ සියලුම සමාලෝචන, ප්‍රගතිය මාකාදමයි. (ඔබගේ ලැයිස්තුවලට බලපාන්නේ නැත.) ඔබට මෙය කිරීමට අවශ්‍ය බව 100% විශ්වාසද?';
 
   @override
   String get settingsProgressDeleted => 'සියලුම සමාලෝචන ප්‍රගතිය මකාදමා ඇත';
@@ -1027,9 +1027,8 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'නැවත පිළිවෙළට, නැවත නම් කිරීමට, හෝ නව ලැයිස්තුවක් සෑදීමට පැන්සල තට්ටු කරන්න.';
 
   @override
-  String listsReorderHint(String name) {
-    return 'ලැයිස්තුවක් නැවත පිළිවෙළට ඇදගෙන යන්න, නැතහොත් නැවත නම් කිරීමට එය තට්ටු කරන්න. $name ඉහළින් රඳවා තැබේ.';
-  }
+  String get listsReorderHint =>
+      'ලැයිස්තුවක් නැවත පිළිවෙළට ඇදගෙන යන්න, නැතහොත් නැවත නම් කිරීමට එය තට්ටු කරන්න.';
 
   @override
   String listWordCount(int count) {

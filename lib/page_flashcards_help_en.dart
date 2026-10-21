@@ -37,7 +37,7 @@ Widget getFlashcardsHelpPageEn({
       ],
       "Where do the ${subjectNoun}s for the flashcards come from?": [
         "You may select one or more lists as the flashcard source. By default "
-            "there is only one list, your favourites, but you may create additional "
+            "there is only one list, Favourites, but you may create additional "
             "lists and use ${subjectNoun}s from many of them at once in a single "
             "revision session. ",
         "Lists that other people have shared with you can be revision sources too. "

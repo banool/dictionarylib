@@ -15,29 +15,24 @@ Widget getEntryListOverviewHelpPageEn() {
       "How do I delete a list?": [
         "In the app bar in the top right corner, there is a pencil icon. Tap this to enter edit mode. "
             "Once in edit mode, tap the red icon to the right of the list you want to delete.",
-        "Note that you cannot delete the Favourites list.",
+        "One list can't be deleted: the one the app starts you off with, called "
+            "Favourites until you rename it. That way there is always a list to save "
+            "signs to.",
       ],
       "How do I change the order of my lists?": [
         "In the app bar in the top right corner, there is a pencil icon. "
             "First, tap this icon to enter edit mode. "
             "After that, you can drag the lists around to change the order.",
-        "Note that you cannot reorder the Favourites list, it will always be first.",
       ],
-      "How does the Favourites list work?": [
-        "The Favourites list is a special list that you cannot delete. When you visit "
-            "a word page, there is a star icon that you can use to save words to your "
-            "Favourites. The intention here is to make it easy to quickly save a word "
-            "that you come across while searching.",
-        "To add words to any other list, you must add them from the page for that list. "
-            "To see more information about how to do this, open any list (e.g. "
-            "Favourites), click the help icon in the top right, and read the information "
-            "under \"How do I add words to a list?\"",
-        "If you share your Favourites under a different name, it goes by that name "
-            "everywhere in the app. It is still your Favourites list.",
+      "How do I rename a list?": [
+        "In the app bar in the top right corner, there is a pencil icon. Tap this to "
+            "enter edit mode, then tap the list you want to rename.",
+        "If you have shared the list, the people you shared it with see the new name "
+            "too.",
       ],
       "What do the tabs at the top of the page mean?": [
-        "\"My Lists\" holds the lists that live on this device — your Favourites, any "
-            "lists you have made yourself, and any of those you have shared with other "
+        "\"My Lists\" holds the lists that live on this device — the one you start "
+            "with, any you have made yourself, and any of those you have shared with other "
             "people.",
         "\"Subscribed\" holds lists other people have shared with you: ones you are "
             "following along, plus any you have been invited to help edit.",
@@ -75,7 +70,7 @@ Widget getEntryListOverviewHelpPageEn() {
             "share your own.",
       ],
       "Do I need an account?": [
-        "Only for sharing. Searching, your Favourites, your own lists, revision, and "
+        "Only for sharing. Searching, your own lists, revision, and "
             "following other people's shared lists all work perfectly well without "
             "one.",
         "You'll be asked to sign in when you want to share a list of your own, or "

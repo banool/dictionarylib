@@ -4,6 +4,7 @@ import 'dart:io' show HttpDate;
 
 import 'package:http/http.dart' as http;
 
+import '../l10n/app_localizations.dart';
 import '../saved_video.dart';
 import 'sharing_config.dart';
 
@@ -40,6 +41,25 @@ const int supportedSchemaVersion = 3;
 /// so the user gets immediate feedback rather than a 400 round-trip;
 /// the server re-checks on every accepted request.
 const int maxDisplayNameLen = 80;
+
+/// Names a shared list may not go by: what the default list is called when
+/// it's created, in each language the apps come in. Most people never rename
+/// that list, so a list shared under the same name would sit beside theirs
+/// looking like it. Only shares are restricted — a list on the device can be
+/// called anything, and the default list is called this until it's renamed.
+///
+/// Compared trimmed and case-insensitively. The share-API Worker enforces
+/// the same set (`RESERVED_DISPLAY_NAMES` in `workers/src/validation.ts` in
+/// the private backend repo) — keep the two in step.
+final Set<String> reservedShareNamesLower = {
+  for (final locale in DictLibLocalizations.supportedLocales)
+    lookupDictLibLocalizations(locale).favouritesListName.toLowerCase(),
+};
+
+/// True if [name] is one a shared list may not go by. Use for validation
+/// before hitting the network; the server applies the same check.
+bool isReservedShareName(String name) =>
+    reservedShareNamesLower.contains(name.trim().toLowerCase());
 
 /// Mirror of the server's `MAX_ENTRIES` cap on entries per list. The
 /// share dialog refuses to publish a list larger than this with a

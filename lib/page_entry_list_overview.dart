@@ -442,7 +442,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
           HearthListRow(
             key: ValueKey('shared-${el.listId}'),
             leading: el.getLeadingIcon(),
-            title: el.getName(context),
+            title: el.getName(),
             subtitle: _formatSharedStatus(context, el),
             onTap: () async {
               await Navigator.push(
@@ -508,7 +508,7 @@ Widget _getUserLists(
             ? Icon(iconForSharedList(owned.meta))
             : el.getLeadingIcon(),
         // Owner-shared lists show the share's (renamable) display name.
-        title: (owned ?? el).getName(context),
+        title: (owned ?? el).getName(),
         // Shared lists show their sync status; plain lists show a word count.
         subtitle: owned != null
             ? _formatOwnedStatus(context, owned)
@@ -551,8 +551,7 @@ String _wordCount(BuildContext context, EntryList el) {
       .listWordCount(el.uniqueEntries.length);
 }
 
-/// Edit-mode list — reorders the local user lists. Favourites stays pinned
-/// at the top.
+/// Edit-mode list — reorders, renames and deletes the local user lists.
 Widget _buildEditModeList(
   BuildContext context,
   void Function(void Function() fn) setState,
@@ -561,7 +560,6 @@ Widget _buildEditModeList(
   var i = 0;
   for (final e in userEntryListManager.getEntryLists().entries) {
     final el = e.value;
-    final isFavouritesLocal = el.key == KEY_FAVOURITES_ENTRIES;
     // Owner-shared lists can't be deleted directly: the local list is the
     // source of truth for the wrapper's entries, so dropping it would
     // strand the wrapper pointing at a missing source and leave the
@@ -569,63 +567,66 @@ Widget _buildEditModeList(
     // unshare first (from the list page's share dialog).
     final ownedShare = listsService.ownedShareFor(el);
     final canDelete = el.canBeDeleted() && ownedShare == null;
-    final trailing = canDelete
-        ? IconButton(
-            icon: Icon(
-              Icons.remove_circle,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () async {
-              final confirmed = await confirmAlert(
-                context,
-                Text(DictLibLocalizations.of(context)!.listConfirmListDelete),
-              );
-              if (confirmed) {
-                await userEntryListManager.deleteEntryList(e.key);
-                setState(() {});
+    final Widget? trailing;
+    if (canDelete) {
+      trailing = IconButton(
+        icon: Icon(
+          Icons.remove_circle,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        onPressed: () async {
+          final confirmed = await confirmAlert(
+            context,
+            Text(DictLibLocalizations.of(context)!.listConfirmListDelete),
+          );
+          if (confirmed) {
+            await userEntryListManager.deleteEntryList(e.key);
+            setState(() {});
+          }
+        },
+      );
+    } else if (ownedShare != null) {
+      // The default list can't be deleted even once it's unshared, so for
+      // it the icon is only the share's status, with nothing to explain.
+      final unshareFirst = el.canBeDeleted();
+      trailing = IconButton(
+        icon: Icon(
+          iconForSharedList(ownedShare.meta),
+          color: Theme.of(context).hintColor,
+        ),
+        tooltip: unshareFirst
+            ? DictLibLocalizations.of(context)!.unshareToDeleteTooltip
+            : null,
+        onPressed: unshareFirst
+            ? () {
+                showSnack(
+                  context,
+                  DictLibLocalizations.of(context)!.unshareToDeleteTooltip,
+                );
               }
-            },
-          )
-        : (ownedShare != null
-              ? IconButton(
-                  icon: Icon(
-                    iconForSharedList(ownedShare.meta),
-                    color: Theme.of(context).hintColor,
-                  ),
-                  tooltip: DictLibLocalizations.of(context)!
-                      .unshareToDeleteTooltip,
-                  onPressed: () {
-                    showSnack(
-                      context,
-                      DictLibLocalizations.of(context)!.unshareToDeleteTooltip,
-                    );
-                  },
-                )
-              : null);
+            : null,
+      );
+    } else {
+      trailing = null;
+    }
     // Tapping a list opens the rename dialog. Plain owned lists rename
     // locally; owner-shared lists rename on the server too (only the
     // creator — which is the user here, since owner-shares appear in My
-    // Lists). Favourites (fixed name) stays untappable.
-    final canRename = !isFavouritesLocal;
+    // Lists).
     Widget tile = HearthListRow(
       leading: el.getLeadingIcon(inEditMode: true),
       // Owner-shared lists show the share's display name (the renamable
       // one), not the underlying local key's name.
-      title: (ownedShare ?? el).getName(context),
+      title: (ownedShare ?? el).getName(),
       trailing: trailing,
       showChevron: false,
-      onTap: canRename
-          ? () async {
-              final renamed = ownedShare != null
-                  ? await applyRenameSharedListDialog(context, ownedShare)
-                  : await applyRenameListDialog(context, el);
-              if (renamed) setState(() {});
-            }
-          : null,
+      onTap: () async {
+        final renamed = ownedShare != null
+            ? await applyRenameSharedListDialog(context, ownedShare)
+            : await applyRenameListDialog(context, el);
+        if (renamed) setState(() {});
+      },
     );
-    if (isFavouritesLocal) {
-      tile = IgnorePointer(key: ValueKey(el.key), child: tile);
-    }
     tile = ReorderableDragStartListener(
       key: ValueKey(el.key),
       index: i,
@@ -643,10 +644,7 @@ Widget _buildEditModeList(
     footer: Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
       child: Text(
-        // By the name its row shows, which isn't "Favourites" once it has
-        // been shared under another.
-        DictLibLocalizations.of(context)!
-            .listsReorderHint(listsService.favouritesList.getName(context)),
+        DictLibLocalizations.of(context)!.listsReorderHint,
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 13,
@@ -732,7 +730,7 @@ Widget getCommunityLists(
   for (MapEntry<String, EntryList> e
       in communityEntryListManager.getEntryLists().entries) {
     EntryList el = e.value;
-    String name = el.getName(context);
+    String name = el.getName();
     tiles.add(
       HearthListRow(
         key: ValueKey(name),
@@ -826,12 +824,12 @@ Future<bool> _showRenameDialog(
 }
 
 /// Returns true if [list] was renamed. Pre-fills the field with the
-/// current name. Favourites can't be renamed, so callers should only
-/// offer this for renamable lists.
+/// current name. For a list that isn't shared; a shared one is renamed
+/// through [applyRenameSharedListDialog].
 Future<bool> applyRenameListDialog(BuildContext context, EntryList list) {
   return _showRenameDialog(
     context,
-    currentName: list.getName(context),
+    currentName: list.getName(),
     onRename: (newName) async {
       final newKey = EntryList.getKeyFromName(newName, rejectUnderscores: true);
       await userEntryListManager.renameEntryList(list.key, newKey);
@@ -848,7 +846,7 @@ Future<bool> applyRenameSharedListDialog(
 ) {
   return _showRenameDialog(
     context,
-    currentName: owned.getName(context),
+    currentName: owned.getName(),
     // Renaming hits the server; retry transient failures with feedback
     // before the dialog's error handling surfaces the final failure.
     onRename: (newName) => retryWithFeedback(

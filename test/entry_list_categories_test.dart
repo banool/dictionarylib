@@ -58,13 +58,13 @@ void main() {
       FakeEntry(
         'a',
         categories: [
-          'Favourites', // reserved
           'a' * (maxListNameLength + 1), // too long
           '   ', // whitespace-only → empty after trim
           'Sport', // valid
+          'Favourites', // valid: no name is reserved for a list on the device
         ],
       ),
     };
-    expect(communityListNames(), ['Sport']);
+    expect(communityListNames(), ['Favourites', 'Sport']);
   });
 }

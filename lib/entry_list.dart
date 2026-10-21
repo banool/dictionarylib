@@ -6,6 +6,7 @@ import 'common.dart';
 import 'entry_types.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'list_storage.dart';
 import 'saved_video.dart';
 
 const String KEY_ENTRY_LIST_KEYS = "word_list_keys";
@@ -13,7 +14,7 @@ const int SUFFIX_LENGTH = 6;
 
 /// Bumped when the on-disk format for a single list's saved videos
 /// changes in a way [EntryList.loadSavedVideos] needs to adapt to.
-/// Recorded per-list under [_listSchemaVersionKey] after a successful
+/// Recorded per-list under [listSchemaVersionKey] after a successful
 /// migration so we don't re-scan / re-rewrite every launch.
 ///
 /// History (each step is applied in order by [_migrateRawList], so a list
@@ -36,7 +37,7 @@ const int listSchemaVersion = 3;
 /// Per-list shared-prefs key that records the schema version of the last
 /// successful migration. Lists without this key are treated as v1 and
 /// stepped all the way forward on load.
-String _listSchemaVersionKey(String listKey) => '${listKey}_schemaVersion';
+String listSchemaVersionKey(String listKey) => '${listKey}_schemaVersion';
 
 /// Upgrade a list's raw stored `List<String>` from [fromVersion] to the
 /// current [listSchemaVersion], applying one ordered step at a time. Each
@@ -140,7 +141,10 @@ enum EntryListNameError {
   /// (community lists, imports) tolerate underscores.
   underscore,
 
-  /// Name matched one of [EntryList._reservedNamesLower].
+  /// Name can't be used. For a share, it's one a shared list may not go by
+  /// (see [isReservedShareName]). For a list on the device, which can
+  /// otherwise be called anything, its storage key would land on one of the
+  /// app's own settings (see [storageKeyHoldsSomethingElse]).
   reserved,
 
   /// A list with the resulting storage key already exists.
@@ -241,7 +245,7 @@ class EntryList {
     final raw = sharedPreferences.getStringList(key) ?? const <String>[];
     // Absent flag ⇒ v1 (the pre-per-video format). Step forward from there.
     final storedVersion =
-        sharedPreferences.getInt(_listSchemaVersionKey(key)) ?? 1;
+        sharedPreferences.getInt(listSchemaVersionKey(key)) ?? 1;
 
     final migrated = storedVersion < listSchemaVersion
         ? _migrateRawList(raw, storedVersion)
@@ -265,20 +269,13 @@ class EntryList {
         key,
         out.map((v) => v.toStorage()).toList(),
       );
-      sharedPreferences.setInt(_listSchemaVersionKey(key), listSchemaVersion);
+      sharedPreferences.setInt(listSchemaVersionKey(key), listSchemaVersion);
     }
     printAndLog("Loaded ${out.length} saved videos in list $key");
     return out;
   }
 
   Widget getLeadingIcon({bool inEditMode = false}) {
-    if (key == KEY_FAVOURITES_ENTRIES) {
-      // The favourites star uses the warm accent (gold) colour.
-      return Builder(
-        builder: (context) =>
-            Icon(Icons.star, color: Theme.of(context).colorScheme.secondary),
-      );
-    }
     if (inEditMode) {
       return const Icon(Icons.drag_handle);
     } else {
@@ -286,22 +283,19 @@ class EntryList {
     }
   }
 
+  /// Every list can be deleted but the default one, which is what
+  /// guarantees there's always a list to save into.
   bool canBeDeleted() {
-    return !(key == KEY_FAVOURITES_ENTRIES);
+    return key != readDefaultListKey();
   }
 
   bool canBeEdited() {
     return _canBeEdited;
   }
 
-  /// Render a list's display name from its storage [key]. Pass a
-  /// [context] to localise the built-in favourites name; without one
-  /// the favourites name falls back to English (for `toString()`,
-  /// background-log lines, etc. that have no widget tree).
-  ///
-  /// User-derived names are stored case-/separator-preserving in the
-  /// key itself, so no l10n applies — every locale shows the name the
-  /// user typed.
+  /// Render a list's display name from its storage [key]. The name is
+  /// stored case-/separator-preserving in the key itself, so every locale
+  /// shows the name the user typed.
   ///
   /// Lossy round-trip warning: [getKeyFromName] stores spaces as
   /// underscores, and this method maps *every* underscore in the key
@@ -310,46 +304,24 @@ class EntryList {
   /// in the key and will display as a space. This is deliberately left
   /// as-is — changing the storage-key format would require migrating
   /// every existing on-disk list key.
-  static String getNameFromKey(String key, [BuildContext? context]) {
-    if (key == KEY_FAVOURITES_ENTRIES) {
-      if (context != null) {
-        final l = DictLibLocalizations.of(context);
-        if (l != null) return l.favouritesListName;
-      }
-      return "Favourites";
-    }
+  static String getNameFromKey(String key) {
     // This - 6 comes from the length of _words
     return key.substring(0, key.length - SUFFIX_LENGTH).replaceAll("_", " ");
   }
 
-  /// Display name for this list. Pass a [context] to get the
-  /// localised "Favourites" — without one it falls back to English.
+  /// Display name for this list.
   ///
   /// A list that's shared from this device goes by the share's display
   /// name, which is what the Lists page shows and need not match the name
-  /// in [key]: Favourites can be shared under any name, and a share can be
+  /// in [key]: a list can be shared under another name, and a share can be
   /// renamed afterwards. That's resolved here, rather than left to callers
   /// to fetch the owner wrapper first, so that every screen calls a list
   /// the same thing whichever object it happens to hold.
-  String getName([BuildContext? context]) {
+  String getName() {
     final owned = sharing.lists.ownerForSourceKey(key);
     if (owned != null) return owned.meta.displayName;
-    return EntryList.getNameFromKey(key, context);
+    return EntryList.getNameFromKey(key);
   }
-
-  /// Display names that conflict with the built-in favourites list. The
-  /// check is case-insensitive on the trimmed input — `"Favourites"`,
-  /// `"favourites"`, `"  FAVOURITES  "` all hit.
-  ///
-  /// Single source of truth on the client. The share-API Worker keeps its
-  /// own copy in `workers/src/validation.ts` in the private backend repo — keep them in sync.
-  static const Set<String> _reservedNamesLower = {'favourites'};
-
-  /// True if [name] (trimmed, case-insensitive) collides with a reserved
-  /// list name. Use this for inline UI validation before hitting the
-  /// network — the server applies the same check.
-  static bool isReservedDisplayName(String name) =>
-      _reservedNamesLower.contains(name.trim().toLowerCase());
 
   static String getKeyFromName(
     String name, {
@@ -366,8 +338,7 @@ class EntryList {
       throw EntryListNameException(EntryListNameError.empty, trimmed);
     }
     // Any printable text is allowed (emoji included) — the name is only
-    // constrained by length and the reserved-name check, matching the
-    // shared-list rule in sharing/share_dialog.dart. Emoji round-trip
+    // constrained by length. Emoji round-trip
     // through the key untouched: they contain no space or underscore, and
     // the 6-char ASCII suffix stripped by getNameFromKey never splits a
     // surrogate pair.
@@ -383,9 +354,6 @@ class EntryList {
     if (trimmed.length > maxListNameLength) {
       throw EntryListNameException(EntryListNameError.tooLong, trimmed);
     }
-    if (isReservedDisplayName(trimmed)) {
-      throw EntryListNameException(EntryListNameError.reserved, trimmed);
-    }
     return "$trimmed$suffix".replaceAll(" ", "_");
   }
 
@@ -397,7 +365,7 @@ class EntryList {
       savedVideos.map((v) => v.toStorage()).toList(),
     );
     await sharedPreferences.setInt(
-      _listSchemaVersionKey(key),
+      listSchemaVersionKey(key),
       listSchemaVersion,
     );
   }
@@ -539,9 +507,15 @@ class UserEntryListManager implements EntryListManager {
 
   factory UserEntryListManager.fromStartup() {
     printAndLog("Loading entry lists...");
-    List<String> entryListKeys =
-        sharedPreferences.getStringList(KEY_ENTRY_LIST_KEYS) ??
-        [KEY_FAVOURITES_ENTRIES];
+    // Settle what's stored before reading it: finish a key change that an
+    // earlier run was cut off in the middle of, then make sure the default
+    // list exists (which is also where an install from before it was an
+    // ordinary list gets moved over). See list_storage.dart.
+    finishInterruptedListMove();
+    ensureDefaultList();
+    List<String> entryListKeys = sharedPreferences.getStringList(
+      KEY_ENTRY_LIST_KEYS,
+    )!;
     LinkedHashMap<String, EntryList> entryLists = LinkedHashMap();
     for (String key in entryListKeys) {
       entryLists[key] = EntryList.fromRaw(key);
@@ -550,6 +524,9 @@ class UserEntryListManager implements EntryListManager {
     return UserEntryListManager(entryLists);
   }
 
+  /// The list that can't be deleted. See [KEY_DEFAULT_LIST_KEY].
+  String get defaultListKey => readDefaultListKey()!;
+
   Future<void> createEntryList(String key) async {
     if (_entryLists.containsKey(key)) {
       throw EntryListNameException(
@@ -557,34 +534,50 @@ class UserEntryListManager implements EntryListManager {
         EntryList.getNameFromKey(key),
       );
     }
+    _checkKeyIsFree(key);
+    // A new list starts out not chosen for revision, whatever a deleted
+    // list of the same name once was.
+    await forgetChosenForRevision(key);
     _entryLists[key] = EntryList.fromRaw(key);
     await _entryLists[key]!.write();
     await writeEntryListKeys();
   }
 
   Future<void> deleteEntryList(String key) async {
+    if (key == defaultListKey) {
+      throw StateError('The default list cannot be deleted');
+    }
     _entryLists.remove(key);
     await sharedPreferences.remove(key);
-    await sharedPreferences.remove(_listSchemaVersionKey(key));
+    await sharedPreferences.remove(listSchemaVersionKey(key));
     await writeEntryListKeys();
+    await forgetChosenForRevision(key);
+  }
+
+  /// Refuse a storage key that one of the app's own settings already uses.
+  void _checkKeyIsFree(String key) {
+    if (storageKeyHoldsSomethingElse(key)) {
+      throw EntryListNameException(
+        EntryListNameError.reserved,
+        EntryList.getNameFromKey(key),
+      );
+    }
   }
 
   /// Rename the list stored under [oldKey] to [newKey], preserving its
-  /// saved videos and its position in the overview. The favourites list
-  /// can't be renamed (its key is fixed). Throws
+  /// saved videos and its position in the overview. Throws
   /// [EntryListNameException] with [EntryListNameError.alreadyExists] if a
   /// list with [newKey] already exists.
   ///
-  /// Moves the persisted entries (and schema-version flag) from [oldKey]
-  /// to [newKey] on disk so nothing is stranded under the old key.
+  /// Everything stored against [oldKey] moves with it — the saved videos,
+  /// the revision selection, and the default-list pointer if this is the
+  /// default list — so nothing is stranded under the old key (see
+  /// [moveListStorage]).
+  ///
+  /// Not for a list that's shared from this device: that one goes by its
+  /// share's name, and renaming it means renaming the share.
   Future<void> renameEntryList(String oldKey, String newKey) async {
     if (oldKey == newKey) return;
-    if (oldKey == KEY_FAVOURITES_ENTRIES) {
-      throw EntryListNameException(
-        EntryListNameError.reserved,
-        EntryList.getNameFromKey(oldKey),
-      );
-    }
     if (_entryLists.containsKey(newKey)) {
       throw EntryListNameException(
         EntryListNameError.alreadyExists,
@@ -593,6 +586,10 @@ class UserEntryListManager implements EntryListManager {
     }
     final existing = _entryLists[oldKey];
     if (existing == null) return;
+    if (sharing.lists.ownerForSourceKey(oldKey) != null) {
+      throw StateError('"$oldKey" is shared; rename the share instead');
+    }
+    _checkKeyIsFree(newKey);
     // Rebuild the map preserving insertion order, swapping the key in place
     // so the renamed list stays exactly where it was in the overview.
     // ignore: prefer_collection_literals — assigned to a LinkedHashMap field.
@@ -606,11 +603,7 @@ class UserEntryListManager implements EntryListManager {
       }
     }
     _entryLists = rebuilt;
-    // Persist the entries under the new key, then clear the old key.
-    await existing.write();
-    await sharedPreferences.remove(oldKey);
-    await sharedPreferences.remove(_listSchemaVersionKey(oldKey));
-    await writeEntryListKeys();
+    await moveListStorage(oldKey, newKey);
   }
 
   Future<void> writeEntryListKeys() async {
@@ -621,14 +614,8 @@ class UserEntryListManager implements EntryListManager {
   }
 
   // Given an item that moved from index prev to index current,
-  // reorder the lists and persist that. Deny reordering the favourites.
+  // reorder the lists and persist that.
   void reorder(int prev, int updated) {
-    if (prev == 0 || updated == 0) {
-      printAndLog(
-        "Refusing to reorder with favourites list: $prev and $updated",
-      );
-      return;
-    }
     printAndLog("Moving item from $prev to $updated");
 
     MapEntry<String, EntryList> toMove = _entryLists.entries.toList()[prev];

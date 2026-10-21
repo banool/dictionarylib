@@ -35,6 +35,7 @@ class DictAppBootstrapConfig {
     this.aptabaseAppKey = '',
     this.faqUrl,
     this.buildStartupLogo,
+    this.resolveStartingLocale,
   });
 
   /// The app's advisories file (GitHub raw). Fetched best-effort at startup.
@@ -82,6 +83,14 @@ class DictAppBootstrapConfig {
   /// so the app can pick a variant off Theme.of(context).brightness. Null
   /// shows no logo. The referenced image must be in the app's asset bundle.
   final Widget Function(BuildContext context)? buildStartupLogo;
+
+  /// Works out which language the app starts in (a stored choice, else the
+  /// system's, else English). Null for an app that only comes in English. Runs
+  /// once [sharedPreferences] is available and before the entry load, which is
+  /// also when the user's lists load: the default list is named in this
+  /// language the first time it's created. The result lands in
+  /// [startingLocale].
+  final Future<Locale> Function()? resolveStartingLocale;
 }
 
 /// The shared body of the apps' `setup()`.
@@ -168,12 +177,21 @@ Future<void> setupDictionaryApp(
         .throwIfShouldUpgrade();
   }();
 
+  // The language the app starts in. Needs prefs (a stored choice lives there)
+  // and gates the entry load, which brings the user's lists up with it.
+  final localeReady = () async {
+    await httpReady;
+    final resolve = config.resolveStartingLocale;
+    startingLocale = resolve == null ? LOCALE_ENGLISH : await resolve();
+  }();
+
   // Essential data: resolve media + build the loader (may read the extra knobs,
   // e.g. SLSL's use_cdn_url), then load the dictionary — from disk, or a
   // blocking download if the local cache is empty. Gated only on the extra
-  // knobs, so it overlaps the advisory / yanked / flashcards fetches.
+  // knobs and the starting locale, so it overlaps the advisory / yanked /
+  // flashcards fetches.
   final entriesReady = () async {
-    await extraKnobsReady;
+    await Future.wait([extraKnobsReady, localeReady]);
     final loader = await config.setupMediaAndEntryLoader();
     await loadEntriesIntoGlobal(
       loader,
@@ -264,7 +282,6 @@ Future<void> runDictionaryApp(
   required String iOSAppId,
   required String androidAppId,
   required Widget Function(Locale startingLocale) buildApp,
-  Future<Locale> Function()? resolveStartingLocale,
 }) async {
   // Clean web URLs (e.g. /share/<id>) instead of the default hash routing, so
   // the share-link deep routes resolve. No-op on mobile.
@@ -295,10 +312,7 @@ Future<void> runDictionaryApp(
             ? kDataFetchTimeout
             : kDataFetchTimeoutRetry,
       );
-      final locale = resolveStartingLocale == null
-          ? LOCALE_ENGLISH
-          : await resolveStartingLocale();
-      runApp(buildApp(locale));
+      runApp(buildApp(startingLocale));
       return;
     } on YankedVersionError catch (e) {
       runApp(

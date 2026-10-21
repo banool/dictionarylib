@@ -1,4 +1,3 @@
-import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
@@ -106,8 +105,7 @@ void main() {
 
   testWidgets('Favourites shared under another name is offered, and can be '
       'revised, under that name', (tester) async {
-    final favourites = userEntryListManager
-        .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+    final favourites = userEntryListManager.getEntryLists()[kDefaultListKey]!;
     await favourites.addVideo(_video('apple'));
     await listsService.shareList(
       sourceList: favourites,
@@ -160,6 +158,41 @@ void main() {
     expect(find.text('2 signs'), findsOneWidget);
     expect(find.text('No lists chosen yet'), findsNothing);
     expect(_startEnabled(tester), isTrue);
+  });
+
+  testWidgets('before anything is chosen, the default list is the source, '
+      'whatever it is called now', (tester) async {
+    await sharedPreferences.remove(KEY_LISTS_TO_REVIEW);
+    final favourites = userEntryListManager.getEntryLists()[kDefaultListKey]!;
+    await favourites.addVideo(_video('apple'));
+    await userEntryListManager.renameEntryList(
+      kDefaultListKey,
+      'Everyday_Signs_words',
+    );
+
+    await _pumpLandingPage(tester);
+
+    expect(find.text('Everyday Signs'), findsOneWidget);
+    expect(find.text('1 sign'), findsOneWidget);
+    expect(find.text('No lists chosen yet'), findsNothing);
+    expect(_startEnabled(tester), isTrue);
+  });
+
+  testWidgets('no list gets a star', (tester) async {
+    await userEntryListManager.createEntryList('animals_words');
+    await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [
+      kDefaultListKey,
+      'animals_words',
+    ]);
+
+    await _pumpLandingPage(tester);
+    expect(find.byIcon(Icons.star), findsNothing);
+    expect(find.byIcon(Icons.list_alt), findsNWidgets(2));
+
+    await tester.tap(find.text('Favourites'));
+    await tester.pumpAndSettle();
+    expect(find.text('Select Lists'), findsOneWidget);
+    expect(find.byIcon(Icons.star), findsNothing);
   });
 
   testWidgets('an unshared list keeps its own name', (tester) async {

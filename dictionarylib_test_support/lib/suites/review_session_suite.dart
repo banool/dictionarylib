@@ -86,7 +86,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
       await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
       await cfg.clearFlashcardSettings?.call();
       await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [
-        KEY_FAVOURITES_ENTRIES,
+        userEntryListManager.defaultListKey,
       ]);
     });
 
