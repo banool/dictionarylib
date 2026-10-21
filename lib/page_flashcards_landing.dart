@@ -346,7 +346,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
               }
 
               final List<EntryList> myLists = <EntryList>[
-                ...listsService.myListsAsShared,
+                ...listsService.myLists,
                 if (sharing.isEnabled)
                   ...sharing.lists.editorLists.where((e) => !e.meta.orphaned),
               ];

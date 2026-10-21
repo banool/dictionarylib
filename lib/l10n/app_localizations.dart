@@ -1828,8 +1828,8 @@ abstract class DictLibLocalizations {
   /// No description provided for @listsReorderHint.
   ///
   /// In en, this message translates to:
-  /// **'Drag a list to reorder it, or tap it to rename. Favourites stays pinned to the top.'**
-  String get listsReorderHint;
+  /// **'Drag a list to reorder it, or tap it to rename. {name} stays pinned to the top.'**
+  String listsReorderHint(String name);
 
   /// No description provided for @listWordCount.
   ///

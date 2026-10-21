@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
@@ -359,6 +360,70 @@ void main() {
         userEntryListManager.getEntryLists().containsKey('cats_words'),
         isTrue,
       );
+    });
+  });
+
+  // A list has one name as far as the user is concerned: the one the Lists
+  // page shows. For a list shared from this device that's the share's
+  // display name, and it has to come back from the plain local list too,
+  // since not every screen goes and fetches the owner wrapper first.
+  group('the name of a list shared from this device', () {
+    setUp(() {
+      installFakeSharing((req) async {
+        if (req.method == 'POST' && req.url.path == '/v1/lists') {
+          return stubCreateResponse(req);
+        }
+        if (req.method == 'DELETE') return http.Response('', 204);
+        return http.Response('', 404);
+      });
+    });
+
+    test('is the share name, from the local list as well as the wrapper, '
+        'when Favourites is shared under another name', () async {
+      await userEntryListManager.createEntryList('cats_words');
+      final favourites = userEntryListManager
+          .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+      final owned = await listsService.shareList(
+        sourceList: favourites,
+        displayName: 'Tiny Tunks',
+        sessionToken: 'fake-session-jwt',
+      );
+
+      expect(owned.getName(), 'Tiny Tunks');
+      expect(favourites.getName(), 'Tiny Tunks');
+      // The unshared list next to it keeps its own name.
+      expect(listsService.myLists.map((l) => l.getName()).toList(), [
+        'Tiny Tunks',
+        'cats',
+      ]);
+    });
+
+    test('follows a rename of the share', () async {
+      await userEntryListManager.createEntryList('cats_words');
+      final cats = userEntryListManager.getEntryLists()['cats_words']!;
+      final owned = await listsService.shareList(
+        sourceList: cats,
+        displayName: 'cats',
+        sessionToken: 'fake-session-jwt',
+      );
+      expect(cats.getName(), 'cats');
+
+      // What a rename leaves behind once the server has confirmed it.
+      owned.meta.displayName = 'Big Cats';
+      expect(cats.getName(), 'Big Cats');
+    });
+
+    test('goes back to the local name once it is no longer shared', () async {
+      final favourites = userEntryListManager
+          .getEntryLists()[KEY_FAVOURITES_ENTRIES]!;
+      final owned = await listsService.shareList(
+        sourceList: favourites,
+        displayName: 'Tiny Tunks',
+        sessionToken: 'fake-session-jwt',
+      );
+      await listsService.unshareList(owned);
+
+      expect(favourites.getName(), 'Favourites');
     });
   });
 

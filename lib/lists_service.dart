@@ -44,18 +44,6 @@ class ListsService {
   List<EntryList> get myLists =>
       userEntryListManager.getEntryLists().values.toList();
 
-  /// [myLists], with each list that's shared from this device swapped for
-  /// its owner-mode [SyncedEntryList] wrapper. The wrapper has the local
-  /// list's key and videos but goes by the share's display name, which
-  /// need not match the local one: Favourites can be shared under any
-  /// name, and a share can be renamed afterwards. Anything that names
-  /// these lists or edits them should read this rather than [myLists], so
-  /// a shared list is called the same thing everywhere and edits to it
-  /// enqueue sync ops.
-  List<EntryList> get myListsAsShared => [
-    for (final el in myLists) ownedShareFor(el) ?? el,
-  ];
-
   /// The favourites list. If favourites has been shared from this device,
   /// returns the owner-mode [SyncedEntryList] wrapper (whose [addEntry]
   /// also enqueues a sync op); otherwise returns the plain local list.
@@ -77,7 +65,10 @@ class ListsService {
   /// this, so the count can never drift from what the sheet lets you
   /// toggle (e.g. an editor list the count used to miss).
   List<EntryList> get writableLists {
-    final out = myListsAsShared;
+    final out = <EntryList>[];
+    for (final el in myLists) {
+      out.add(ownedShareFor(el) ?? el);
+    }
     if (sharing.isEnabled) {
       for (final el in sharing.lists.editorLists) {
         if (el.meta.orphaned) continue;

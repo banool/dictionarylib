@@ -1040,8 +1040,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'மறுவரிசைப்படுத்த, பெயர்மாற்ற, அல்லது புதிய பட்டியலை உருவாக்க பென்சிலைத் தட்டவும்.';
 
   @override
-  String get listsReorderHint =>
-      'ஒரு பட்டியலை மறுவரிசைப்படுத்த இழுக்கவும், அல்லது பெயர்மாற்ற அதைத் தட்டவும். பிடித்தவை மேலே நிலைத்திருக்கும்.';
+  String listsReorderHint(String name) {
+    return 'ஒரு பட்டியலை மறுவரிசைப்படுத்த இழுக்கவும், அல்லது பெயர்மாற்ற அதைத் தட்டவும். $name மேலே நிலைத்திருக்கும்.';
+  }
 
   @override
   String listWordCount(int count) {

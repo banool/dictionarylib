@@ -1018,8 +1018,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'Tap the pencil to reorder, rename, or create a new list.';
 
   @override
-  String get listsReorderHint =>
-      'Drag a list to reorder it, or tap it to rename. Favourites stays pinned to the top.';
+  String listsReorderHint(String name) {
+    return 'Drag a list to reorder it, or tap it to rename. $name stays pinned to the top.';
+  }
 
   @override
   String listWordCount(int count) {

@@ -32,6 +32,8 @@ Widget getEntryListOverviewHelpPageEn() {
             "To see more information about how to do this, open any list (e.g. "
             "Favourites), click the help icon in the top right, and read the information "
             "under \"How do I add words to a list?\"",
+        "If you share your Favourites under a different name, it goes by that name "
+            "everywhere in the app. It is still your Favourites list.",
       ],
       "What do the tabs at the top of the page mean?": [
         "\"My Lists\" holds the lists that live on this device — your Favourites, any "

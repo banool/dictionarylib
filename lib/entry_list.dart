@@ -324,7 +324,16 @@ class EntryList {
 
   /// Display name for this list. Pass a [context] to get the
   /// localised "Favourites" — without one it falls back to English.
+  ///
+  /// A list that's shared from this device goes by the share's display
+  /// name, which is what the Lists page shows and need not match the name
+  /// in [key]: Favourites can be shared under any name, and a share can be
+  /// renamed afterwards. That's resolved here, rather than left to callers
+  /// to fetch the owner wrapper first, so that every screen calls a list
+  /// the same thing whichever object it happens to hold.
   String getName([BuildContext? context]) {
+    final owned = sharing.lists.ownerForSourceKey(key);
+    if (owned != null) return owned.meta.displayName;
     return EntryList.getNameFromKey(key, context);
   }
 

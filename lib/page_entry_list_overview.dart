@@ -643,7 +643,10 @@ Widget _buildEditModeList(
     footer: Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
       child: Text(
-        DictLibLocalizations.of(context)!.listsReorderHint,
+        // By the name its row shows, which isn't "Favourites" once it has
+        // been shared under another.
+        DictLibLocalizations.of(context)!
+            .listsReorderHint(listsService.favouritesList.getName(context)),
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 13,

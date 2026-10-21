@@ -1027,8 +1027,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'නැවත පිළිවෙළට, නැවත නම් කිරීමට, හෝ නව ලැයිස්තුවක් සෑදීමට පැන්සල තට්ටු කරන්න.';
 
   @override
-  String get listsReorderHint =>
-      'ලැයිස්තුවක් නැවත පිළිවෙළට ඇදගෙන යන්න, නැතහොත් නැවත නම් කිරීමට එය තට්ටු කරන්න. ප්‍රියතම ඉහළින් රඳවා තැබේ.';
+  String listsReorderHint(String name) {
+    return 'ලැයිස්තුවක් නැවත පිළිවෙළට ඇදගෙන යන්න, නැතහොත් නැවත නම් කිරීමට එය තට්ටු කරන්න. $name ඉහළින් රඳවා තැබේ.';
+  }
 
   @override
   String listWordCount(int count) {
