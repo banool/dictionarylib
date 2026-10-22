@@ -840,41 +840,47 @@ class FlashcardsPageState extends State<FlashcardsPage> {
           textAlign: TextAlign.center,
           style: tt.displaySmall?.copyWith(fontSize: 28),
         ),
-        const SizedBox(height: 26),
-        Center(
-          child: HearthRing(
-            percent: rememberRate,
-            size: 140,
-            centerLabel: l.summarySuccess,
+        // How it went, for spaced repetition only. Random revision never
+        // asks whether a card was remembered (its one button is "Next"), so
+        // it has no tally to show, and a success rate worked out from its
+        // answers came to 0% for anyone who used that button.
+        if (widget.revisionStrategy == RevisionStrategy.SpacedRepetition) ...[
+          const SizedBox(height: 26),
+          Center(
+            child: HearthRing(
+              percent: rememberRate,
+              size: 140,
+              centerLabel: l.summarySuccess,
+            ),
           ),
-        ),
-        const SizedBox(height: 28),
-        Row(
-          children: [
-            Expanded(
-              child: HearthStatTile(
-                value: "$totalAnswers",
-                label: l.summaryCards,
+          const SizedBox(height: 28),
+          Row(
+            children: [
+              Expanded(
+                child: HearthStatTile(
+                  value: "$totalAnswers",
+                  label: l.summaryCards,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: HearthStatTile(
-                value: "$numCardsRemembered",
-                label: l.summaryGotIt,
-                valueColor: cs.tertiary,
+              const SizedBox(width: 12),
+              Expanded(
+                child: HearthStatTile(
+                  value: "$numCardsRemembered",
+                  label: l.summaryGotIt,
+                  valueColor: cs.tertiary,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: HearthStatTile(
-                value: "$numCardsForgotten",
-                label: l.summaryForgot,
-                valueColor: cs.error,
+              const SizedBox(width: 12),
+              Expanded(
+                child: HearthStatTile(
+                  value: "$numCardsForgotten",
+                  label: l.summaryForgot,
+                  valueColor: cs.error,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ],
     );
   }

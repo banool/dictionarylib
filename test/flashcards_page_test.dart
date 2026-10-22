@@ -2,6 +2,7 @@ import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/page_flashcards.dart';
 import 'package:dictionarylib/revision.dart';
@@ -162,6 +163,13 @@ Future<void> _answer(WidgetTester tester, {bool forgot = false}) async {
   await tester.pump();
 }
 
+/// The number the summary shows against [label] ("Cards", "Got it",
+/// "Forgot").
+String _tally(WidgetTester tester, String label) => tester
+    .widgetList<HearthStatTile>(find.byType(HearthStatTile))
+    .singleWhere((tile) => tile.label == label)
+    .value;
+
 /// What the stored history holds for [word], oldest first.
 List<Rating> _ratingsFor(String word) => [
   for (final review in readReviews())
@@ -232,6 +240,12 @@ void main() {
     expect(_ratingsFor('apple'), [Rating.Good, Rating.Good, Rating.Again]);
     expect(_ratingsFor('banana'), [Rating.Good, Rating.Good, Rating.Good]);
     expect(_ratingsFor('cherry'), [Rating.Good, Rating.Good, Rating.Good]);
+
+    // The summary's tally says the same.
+    expect(_tally(tester, 'Cards'), '3');
+    expect(_tally(tester, 'Got it'), '2');
+    expect(_tally(tester, 'Forgot'), '1');
+    expect(find.text('67%'), findsOneWidget);
 
     // The forgotten card is due again straight away; the others are not.
     final next = getSessionCards(
@@ -367,6 +381,34 @@ void main() {
     expect(shown, unorderedEquals(words));
     expect(readReviews(), hasLength(stored.length));
     expect(sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER), 3);
+  });
+
+  // Random revision never asks whether a card was remembered: its one button
+  // is "Next". Its summary used to work out a success rate all the same,
+  // from answers that button doesn't count towards, and told anyone who had
+  // used it that they had got 0% right.
+  testWidgets('the summary after random revision says how many signs were '
+      'gone through, and nothing about how it went', (tester) async {
+    const words = ['apple', 'banana', 'cherry'];
+    await _startSession(tester, words, strategy: RevisionStrategy.Random);
+
+    // Two cards moved on from with "Next", one with a tap on the card.
+    for (var k = 1; k <= 3; k++) {
+      final word = _showing(words);
+      await tester.tap(_reveal);
+      await tester.pump();
+      await tester.tap(k == 2 ? find.text(word) : _next);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    expect(_summary, findsOneWidget);
+    expect(find.text("Nice work — that's 3 signs revised"), findsOneWidget);
+    expect(find.byType(HearthRing), findsNothing);
+    expect(find.byType(HearthStatTile), findsNothing);
+    expect(find.textContaining('%'), findsNothing);
+    expect(find.text('Got it'), findsNothing);
+    expect(find.text('Forgot'), findsNothing);
   });
 
   // The landing page underneath rebuilds its lookup whenever it refreshes.

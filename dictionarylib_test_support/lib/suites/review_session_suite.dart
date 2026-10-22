@@ -3,6 +3,7 @@ import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
+import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:flutter/material.dart';
@@ -333,6 +334,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     final revealButton = find.byKey(const ValueKey("revealButton"));
     final gotIt = find.byKey(const ValueKey("ratingButton.gotIt"));
     final forgot = find.byKey(const ValueKey("ratingButton.forgot"));
+    final l = lookupDictLibLocalizations(LOCALE_ENGLISH);
 
     // The word each card turns out to be, once it is revealed.
     final words = {
@@ -395,9 +397,13 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
           await settle(tester);
         }
       }
-      // The summary, not one card more.
+      // The summary, not one card more, with its tally of how it went.
       expect(revealButton, findsNothing);
       expect(gotIt, findsNothing);
+      expect(find.text(l.sessionCompleteHeadline(cards)), findsOneWidget);
+      expect(find.text(l.summarySuccess), findsOneWidget);
+      expect(find.text(l.summaryGotIt), findsOneWidget);
+      expect(find.text(l.summaryForgot), findsOneWidget);
       await tester.tap(find.byIcon(Icons.close));
       await settle(tester);
       expect(shown.toSet(), hasLength(cards), reason: 'a card came up twice');
@@ -474,6 +480,14 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     }
     expect(revealButton, findsNothing);
     expect(next, findsNothing);
+    // Its summary says how many signs were gone through and nothing about
+    // how it went: random revision never asks. (It used to work out a
+    // success rate anyway, which came to 0% for anyone using "Next".)
+    expect(find.text(l.sessionCompleteHeadline(12)), findsOneWidget);
+    expect(find.text(l.summarySuccess), findsNothing);
+    expect(find.text(l.summaryGotIt), findsNothing);
+    expect(find.text(l.summaryForgot), findsNothing);
+    expect(find.textContaining('%'), findsNothing);
     await tester.tap(find.byIcon(Icons.close));
     await settle(tester);
     // Random sessions don't add to the spaced-repetition history.
