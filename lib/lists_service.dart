@@ -7,6 +7,7 @@ import 'analytics.dart';
 import 'entry_list.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
+import 'list_storage.dart';
 import 'saved_video.dart';
 import 'sharing/sync_api.dart';
 import 'sharing/synced_entry_list.dart';
@@ -378,7 +379,8 @@ class ListsService {
   /// [fallbackBase] — which
   /// callers should pick from their own localisation (e.g. "Imported
   /// list", "Duplicated list"). Either way, a numeric suffix is appended
-  /// until the resulting key is free.
+  /// until the resulting key is free: not another list's, and not one the
+  /// app keeps a setting under (see [storageKeyBelongsToSomethingElse]).
   String allocateLocalKey({
     required String preferredName,
     required String fallbackBase,
@@ -393,7 +395,14 @@ class ListsService {
     var candidate = safeBase;
     for (var n = 2; ; n++) {
       final k = EntryList.getKeyFromName(candidate);
-      if (!userEntryListManager.getEntryLists().containsKey(k)) return k;
+      // A key one of the app's own settings lives under counts as taken
+      // too, the same as createEntryList would refuse it: a list that
+      // arrives from elsewhere with such a name gets the suffix rather
+      // than failing the import or the copy.
+      if (!userEntryListManager.getEntryLists().containsKey(k) &&
+          !storageKeyBelongsToSomethingElse(k)) {
+        return k;
+      }
       // Disambiguate with a " $n" suffix (space + digit) — keeps the
       // derived name readable and always survives getKeyFromName.
       candidate = '$safeBase $n';

@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
@@ -584,6 +585,73 @@ void main() {
         );
       },
     );
+
+    /// A share can be called whatever its owner typed on another device,
+    /// including the one name whose storage key the app keeps a setting
+    /// under ("search for" lands on the search filter's "words" switch).
+    /// Such a list takes the suffix like any other clash; it must not be
+    /// stored over the setting, and it must not stop the lists after it
+    /// from arriving.
+    test('an imported list called "search for" gets a suffixed local key, '
+        'and the lists after it still arrive', () async {
+      installFakeSharing((req) async {
+        if (req.url.path == '/v1/my-lists') {
+          return http.Response(
+            jsonEncode({
+              'ownedListIds': ['ownedlist001', 'ownedlist002'],
+              'editorListIds': <String>[],
+            }),
+            200,
+          );
+        }
+        if (req.url.path.endsWith('/state')) {
+          final first = req.url.path.contains('ownedlist001');
+          return http.Response(
+            jsonEncode(
+              snapshotJson(
+                listId: first ? 'ownedlist001' : 'ownedlist002',
+                displayName: first ? 'search for' : 'Zoo',
+                entries: [first ? 'apple' : 'banana'],
+                lastSeq: 3,
+              ),
+            ),
+            200,
+          );
+        }
+        return http.Response('', 404);
+      });
+
+      final result = await listsService.importEditableLists();
+      expect(result.imported, 2);
+      expect(result.skipped, 0);
+
+      // Nothing was stored where the search filter's switch is read from.
+      expect(sharedPreferences.get(KEY_SEARCH_FOR_WORDS), isNull);
+      final lists = userEntryListManager.getEntryLists();
+      expect(lists.containsKey(KEY_SEARCH_FOR_WORDS), isFalse);
+
+      // The list arrived under the next free key, and still goes by the
+      // name it is shared under.
+      final imported = lists['search_for_2_words'];
+      expect(imported, isNotNull);
+      expect(imported!.savedVideos.map((sv) => sv.entryKey), ['apple']);
+      expect(imported.getName(), 'search for');
+
+      // So did the one after it.
+      expect(lists['Zoo_words']!.savedVideos.map((sv) => sv.entryKey), [
+        'banana',
+      ]);
+    });
+
+    test('a copy of a list called "search for" gets a suffixed key too', () {
+      expect(
+        listsService.allocateLocalKey(
+          preferredName: 'search for',
+          fallbackBase: 'Duplicated list',
+        ),
+        'search_for_2_words',
+      );
+    });
   });
 
   group('SyncedEntryListManager.fromStartup — owner with missing source', () {

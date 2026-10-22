@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.4.15
+version: 0.4.16
 
 publish_to: 'none'
 
@@ -82,6 +82,10 @@ dev_dependencies:
   flutter_lints:
   # For the recording prefs store the list storage tests replay crashes with.
   shared_preferences_platform_interface: ^2.4.0
+  # For standing in for the deep-link and documents-directory plugins where
+  # a test goes through the real sharing startup.
+  app_links_platform_interface: ^2.0.0
+  path_provider_platform_interface: ^2.1.0
 
 # The following section is specific to Flutter packages.
 flutter:

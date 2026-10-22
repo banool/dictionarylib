@@ -174,10 +174,17 @@ class Sharing with ChangeNotifier {
     final authApi = AuthApi(config);
     final authStore = AuthStore();
     final auth = AuthService(config: config, api: authApi, store: authStore);
-    final lists = SyncedEntryListManager.fromStartup();
-    final engine = SyncEngine(api: api, manager: lists, auth: auth);
     final deepLinks = DeepLinkHandler(config: config);
     await Future.wait([authStore.load(), deepLinks.start()]);
+    // All the waiting is done before the user's lists are looked at, and
+    // nothing may wait between here and the return. The synced-list manager
+    // takes hold of the list objects it finds, and those are only safe from
+    // being rebuilt underneath it (see EntryLoader.setEntriesGlobal) once the
+    // caller has published this instance as `sharing`. A wait in between is
+    // a window for a background dictionary refresh to land in, leaving every
+    // share made from this device wrapping lists that nothing else reads.
+    final lists = SyncedEntryListManager.fromStartup();
+    final engine = SyncEngine(api: api, manager: lists, auth: auth);
     final instance = Sharing._(
       config: config,
       api: api,

@@ -144,7 +144,7 @@ enum EntryListNameError {
   /// Name can't be used. For a share, it's one a shared list may not go by
   /// (see [isReservedShareName]). For a list on the device, which can
   /// otherwise be called anything, its storage key would land on one of the
-  /// app's own settings (see [storageKeyHoldsSomethingElse]).
+  /// app's own settings (see [storageKeyBelongsToSomethingElse]).
   reserved,
 
   /// A list with the resulting storage key already exists.
@@ -556,7 +556,7 @@ class UserEntryListManager implements EntryListManager {
 
   /// Refuse a storage key that one of the app's own settings already uses.
   void _checkKeyIsFree(String key) {
-    if (storageKeyHoldsSomethingElse(key)) {
+    if (storageKeyBelongsToSomethingElse(key)) {
       throw EntryListNameException(
         EntryListNameError.reserved,
         EntryList.getNameFromKey(key),

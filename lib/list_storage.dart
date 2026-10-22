@@ -215,11 +215,21 @@ Future<void> forgetChosenForRevision(String key) {
   return _settled(writes);
 }
 
-/// True if something other than a list's saved videos is stored under
-/// [key]. A list's key is derived from its name, and a few of the app's own
-/// settings have keys of the same shape ("search for" lands on the key of
-/// the search-direction switch), so a list can't be allowed to take one.
-bool storageKeyHoldsSomethingElse(String key) {
+/// Keys shaped like a list's (they end in "_words") that the app keeps a
+/// setting under. A list's key is derived from its name, so a list called
+/// "search for" would be stored where the search filter's "words" switch is
+/// read from, and every search would then throw reading a list as a bool.
+///
+/// Any new setting whose key ends in "_words" belongs in here.
+const Set<String> settingKeysShapedLikeListKeys = {KEY_SEARCH_FOR_WORDS};
+
+/// True if [key] belongs to something other than a list's saved videos, so
+/// no list may take it: one of [settingKeysShapedLikeListKeys] (whether or
+/// not that setting has been written yet — most are only written when the
+/// user first changes them), or any key that already holds something that
+/// isn't a list.
+bool storageKeyBelongsToSomethingElse(String key) {
+  if (settingKeysShapedLikeListKeys.contains(key)) return true;
   final stored = sharedPreferences.get(key);
   return stored != null && stored is! List;
 }

@@ -9,6 +9,7 @@ import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/list_storage.dart';
 import 'package:dictionarylib/lists_service.dart';
+import 'package:dictionarylib/page_search.dart' show getEntryTypes;
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/sharing.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
@@ -234,6 +235,54 @@ void main() {
         userEntryListManager.getEntryLists()['Zoo_words']!.key,
         'Zoo_words',
       );
+    });
+
+    // The switch is only written when someone changes the search filter:
+    // never in Auslan, which has no filter button, and in SLSL only for
+    // those who have used it. For everyone else nothing is stored under the
+    // key yet, and the name has to be refused all the same, or the list is
+    // stored where the switch is read from and every search throws reading
+    // a list as a bool.
+    test('is refused when creating a list even if the setting has never '
+        'been written, and search still works', () async {
+      await installPrefs(_settled());
+      _boot();
+      await expectLater(
+        userEntryListManager.createEntryList(
+          EntryList.getKeyFromName('search for', rejectUnderscores: true),
+        ),
+        throwsA(
+          isA<EntryListNameException>().having(
+            (e) => e.kind,
+            'kind',
+            EntryListNameError.reserved,
+          ),
+        ),
+      );
+      expect(prefsSnapshot(), _settled());
+      // What every keystroke in the search box calls.
+      expect(getEntryTypes, returnsNormally);
+    });
+
+    test('is refused when renaming a list even if the setting has never '
+        'been written, and search still works', () async {
+      await installPrefs(_settled());
+      _boot();
+      await expectLater(
+        userEntryListManager.renameEntryList(
+          'Zoo_words',
+          EntryList.getKeyFromName('search for', rejectUnderscores: true),
+        ),
+        throwsA(
+          isA<EntryListNameException>().having(
+            (e) => e.kind,
+            'kind',
+            EntryListNameError.reserved,
+          ),
+        ),
+      );
+      expect(prefsSnapshot(), _settled());
+      expect(getEntryTypes, returnsNormally);
     });
   });
 
