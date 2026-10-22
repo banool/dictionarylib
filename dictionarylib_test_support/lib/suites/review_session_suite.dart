@@ -20,9 +20,11 @@ import '../helpers.dart';
 //     and
 //   - review persistence on exit (writeReviews → KEY_STORED_REVIEWS).
 //
-// A second test runs three sessions back to back over a list holding new
-// cards, cards due for review and one that gets forgotten: each session shows
-// each of its cards once, and the right ones are still due after it.
+// A second test runs sessions back to back over a list holding new cards,
+// cards due for review and one that gets forgotten: each session shows each
+// of its cards once, a capped one takes what is due for review before what
+// has never been seen, the right cards are still due after each, and random
+// revision goes through them all whatever is due.
 
 const int kSessionCards = 10;
 
@@ -228,9 +230,8 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
   // flashcards_page_test.dart in dictionarylib runs the same page without a
   // device; this is the check with real videos and the real landing page.)
   testWidgets('sessions over new cards, due cards and a forgotten one show '
-      'each card once and leave the right ones due', (
-    WidgetTester tester,
-  ) async {
+      'each card once, the ones that matter most first, and leave the right '
+      'ones due', (WidgetTester tester) async {
     await cfg.setup();
 
     tester.view.physicalSize = const Size(1080, 2400);
@@ -240,7 +241,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
 
     advisoryShownOnce = true;
 
-    // Five videos from five entries.
+    // Twelve videos from twelve entries.
     final saved = <SavedVideo>[];
     for (final e in entriesGlobal) {
       final subEntries = e.getSubEntries();
@@ -251,9 +252,9 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
           mediaPath: subEntries.first.getMedia().first,
         ),
       );
-      if (saved.length == 5) break;
+      if (saved.length == 12) break;
     }
-    expect(saved, hasLength(5));
+    expect(saved, hasLength(12));
 
     final listKey = EntryList.getKeyFromName('MixedReviewTest');
     if (!userEntryListManager.getEntryLists().containsKey(listKey)) {
@@ -265,19 +266,20 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     }
     addTearDown(() => userEntryListManager.deleteEntryList(listKey));
 
-    // One card per video (sign to word), no cap on the session.
+    // One card per video (sign to word), and sessions capped at ten cards
+    // (the smallest cap there is) to begin with.
     await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [listKey]);
     await sharedPreferences.setInt(
       KEY_REVISION_STRATEGY,
       RevisionStrategy.SpacedRepetition.index,
     );
-    await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
+    await sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, 10);
     await sharedPreferences.setBool(KEY_WORD_TO_SIGN, false);
     await sharedPreferences.setBool(KEY_SIGN_TO_WORD, true);
     await cfg.seedFlashcardSettings?.call();
 
     // The last three were learned eleven days ago (two correct answers, a
-    // day apart), which makes them due. The first two have never been seen.
+    // day apart), which makes them due. The other nine have never been seen.
     final now = DateTime.now();
     String storedReview(SavedVideo video, DateTime ts) => [
       savedVideoMasterId(video),
@@ -286,7 +288,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
       ts.microsecondsSinceEpoch,
     ].join(REVIEW_DELIMITER);
     await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
-      for (final (i, video) in saved.sublist(2).indexed) ...[
+      for (final (i, video) in saved.sublist(9).indexed) ...[
         storedReview(video, now.subtract(Duration(days: 12, minutes: i))),
         storedReview(video, now.subtract(Duration(days: 11, minutes: i))),
       ],
@@ -299,6 +301,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     );
     addTearDown(() async {
       await sharedPreferences.remove(KEY_STORED_REVIEWS);
+      await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
       await sharedPreferences.remove(KEY_WORD_TO_SIGN);
       await sharedPreferences.remove(KEY_SIGN_TO_WORD);
       await sharedPreferences.setInt(
@@ -331,10 +334,22 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     final gotIt = find.byKey(const ValueKey("ratingButton.gotIt"));
     final forgot = find.byKey(const ValueKey("ratingButton.forgot"));
 
+    // The word each card turns out to be, once it is revealed.
+    final words = {
+      for (final video in saved)
+        video.entryKey: keyedByEnglishEntriesGlobal[video.entryKey]!.getPhrase(
+          LOCALE_ENGLISH,
+        )!,
+    };
+    final dueOnes = [for (final video in saved.sublist(9)) video.entryKey];
+    final newOnes = [for (final video in saved.sublist(0, 9)) video.entryKey];
+
     // Start a session of [cards] cards and go through it, answering "Forgot"
     // on card [forget] (counting from 1) and "Got it" on the rest, then leave
-    // the summary for the landing page.
-    Future<void> runSession({required int cards, int? forget}) async {
+    // the summary for the landing page. Returns the entries the cards were
+    // for, in the order they came up.
+    Future<List<String>> runSession({required int cards, int? forget}) async {
+      final shown = <String>[];
       await tester.tap(startButton);
       await settle(tester);
       for (var k = 1; k <= cards; k++) {
@@ -348,76 +363,109 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
         );
         await tester.tap(revealButton);
         await settle(tester);
+        shown.add(
+          words.keys.singleWhere(
+            (key) => find.text(words[key]!).evaluate().isNotEmpty,
+          ),
+        );
         if (k == forget) {
           await tester.tap(forgot);
           await tester.pump(const Duration(seconds: 1)); // feedback timer
           await settle(tester);
-          // Stepping back shows it as it was answered, "Forgot" filled in,
-          // and stepping forward returns to the card after it.
-          expect(find.text('${k + 1} / $cards'), findsOneWidget);
-          await tester.tap(find.byIcon(Icons.chevron_left));
-          await settle(tester);
-          expect(find.text('$k / $cards'), findsOneWidget);
-          expect(
-            find.descendant(of: forgot, matching: find.byType(FilledButton)),
-            findsOneWidget,
-          );
-          expect(
-            find.descendant(of: gotIt, matching: find.byType(OutlinedButton)),
-            findsOneWidget,
-          );
-          await tester.tap(find.byIcon(Icons.chevron_right));
-          await settle(tester);
+          if (k < cards) {
+            // Stepping back shows it as it was answered, "Forgot" filled in,
+            // and stepping forward returns to the card after it.
+            expect(find.text('${k + 1} / $cards'), findsOneWidget);
+            await tester.tap(find.byIcon(Icons.chevron_left));
+            await settle(tester);
+            expect(find.text('$k / $cards'), findsOneWidget);
+            expect(
+              find.descendant(of: forgot, matching: find.byType(FilledButton)),
+              findsOneWidget,
+            );
+            expect(
+              find.descendant(of: gotIt, matching: find.byType(OutlinedButton)),
+              findsOneWidget,
+            );
+            await tester.tap(find.byIcon(Icons.chevron_right));
+            await settle(tester);
+          }
         } else {
           await tester.tap(gotIt);
           await settle(tester);
         }
       }
-      // The summary, not a sixth card.
+      // The summary, not one card more.
       expect(revealButton, findsNothing);
       expect(gotIt, findsNothing);
       await tester.tap(find.byIcon(Icons.close));
       await settle(tester);
+      expect(shown.toSet(), hasLength(cards), reason: 'a card came up twice');
+      return shown;
     }
 
-    // All five are due: three for review, two new. Those up for review come
-    // first, so card two is one of them.
-    expect(find.text('5 flashcards'), findsOneWidget);
-    await runSession(cards: 5, forget: 2);
+    // --- A capped session. All twelve are due, three for review and nine
+    // never seen, and the ten it has room for start with the three for
+    // review: with the new ones first, as they used to be, a long enough
+    // list of unseen signs kept everything else out of capped sessions
+    // altogether. The first card gets forgotten. ---
+    expect(find.text('10 flashcards'), findsOneWidget);
+    final first = await runSession(cards: 10, forget: 1);
+    expect(first.sublist(0, 3), unorderedEquals(dueOnes));
+    expect(newOnes, containsAll(first.sublist(3)));
+    final forgotten = first.first;
+    final seenOnce = first.sublist(3);
+    final unseen = [
+      for (final key in newOnes)
+        if (!seenOnce.contains(key)) key,
+    ];
+    expect(unseen, hasLength(2));
 
     var reviews = readReviews();
-    expect(reviews, hasLength(6 + 5), reason: 'one review per card shown');
+    expect(reviews, hasLength(6 + 10), reason: 'one review per card shown');
     expect(reviews.where((r) => r.rating == Rating.Again), hasLength(1));
 
-    // Still due: the two new cards, which want a second correct answer, and
-    // the one that was forgotten.
-    expect(find.text('3 flashcards'), findsOneWidget);
-    await runSession(cards: 3);
-    expect(readReviews(), hasLength(6 + 5 + 3));
+    // --- Due now: the one that was forgotten, the seven new cards that
+    // have had one correct answer and want a second, and the two never
+    // seen. In that order, each group longest-waiting first. ---
+    expect(find.text('10 flashcards'), findsOneWidget);
+    final second = await runSession(cards: 10);
+    expect(second.sublist(0, 8), [forgotten, ...seenOnce]);
+    expect(second.sublist(8), unorderedEquals(unseen));
+    expect(readReviews(), hasLength(6 + 10 + 10));
 
-    // The new cards are learned now. The forgotten one has been got right
-    // once since, and wants a second time too.
-    expect(find.text('1 flashcard'), findsOneWidget);
-    await runSession(cards: 1);
-    expect(readReviews(), hasLength(6 + 5 + 3 + 1));
+    // No cap from here on. (The landing page reads it when it is opened.)
+    await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
+    await tester.tap(find.byIcon(Icons.view_list));
+    await settle(tester);
+    await tester.tap(find.byIcon(Icons.style));
+    await settle(tester);
+
+    // --- The seven are learned now. Left: the forgotten one, got right
+    // once since and wanting a second time, and the last two new ones,
+    // likewise. ---
+    expect(find.text('3 flashcards'), findsOneWidget);
+    final third = await runSession(cards: 3);
+    expect(third, [forgotten, ...second.sublist(8)]);
+    expect(readReviews(), hasLength(6 + 10 + 10 + 3));
 
     // Nothing left to revise.
     expect(find.text('0 flashcards'), findsOneWidget);
     expect(tester.widget<FilledButton>(startButton).onPressed, isNull);
 
-    // Random revision isn't about what is due: it goes through all five. (It
-    // used to be handed out by the scheduler too, which would have had
+    // Random revision isn't about what is due: it goes through all twelve.
+    // (It used to be handed out by the scheduler too, which would have had
     // nothing to give it here.)
     final random = find.text(RevisionStrategy.Random.pretty);
     await tester.ensureVisible(random);
     await tester.tap(random);
     await settle(tester);
-    expect(find.text('5 flashcards'), findsOneWidget);
+    expect(find.text('12 flashcards'), findsOneWidget);
     await tester.tap(startButton);
     await settle(tester);
     final next = find.byKey(const ValueKey("ratingButton.next"));
-    for (var k = 1; k <= 5; k++) {
-      expect(find.text('$k / 5'), findsOneWidget);
+    for (var k = 1; k <= 12; k++) {
+      expect(find.text('$k / 12'), findsOneWidget);
       expect(revealButton, findsOneWidget);
       await tester.tap(revealButton);
       await settle(tester);
@@ -429,6 +477,6 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     await tester.tap(find.byIcon(Icons.close));
     await settle(tester);
     // Random sessions don't add to the spaced-repetition history.
-    expect(readReviews(), hasLength(6 + 5 + 3 + 1));
+    expect(readReviews(), hasLength(6 + 10 + 10 + 3));
   });
 }

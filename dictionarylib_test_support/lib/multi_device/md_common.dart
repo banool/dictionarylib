@@ -99,24 +99,30 @@ DictAppBootstrapConfig _mdBootstrapConfig() => DictAppBootstrapConfig(
     mediaBaseUrls = mdConfig.mediaBaseUrls;
     return mdConfig.buildEntryLoader();
   },
-  sharingConfig: SharingConfig(
-    appId: mdConfig.appId,
-    appName: mdConfig.appName,
-    apiBaseUrl: mdApiBaseUrl,
-    // Production link shape so minted invite links round-trip through the
-    // same parsing the share/subscribe dialogs apply to real links.
-    shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,
-    shareLinkHost: mdConfig.shareLinkHost,
-    urlScheme: mdConfig.urlScheme,
-    auth: SharingAuthConfig(
-      appleBundleId: mdConfig.appleBundleId,
-      googleServerClientId: 'unused-in-md-tests',
-    ),
-    testSignIn: const TestSignInConfig(
-      testAuthToken: mdTestAuthToken,
-      defaultUserIdPrefix: 'test:md',
-      defaultDisplayName: 'Md Tester',
-    ),
+  sharingConfig: mdSharingConfig(),
+);
+
+/// Sharing pointed at the local worker, signing in through its test
+/// provider. Public so a test can talk to the worker the way the app does
+/// before the app has started (to stand in for what an earlier version of it
+/// left behind).
+SharingConfig mdSharingConfig() => SharingConfig(
+  appId: mdConfig.appId,
+  appName: mdConfig.appName,
+  apiBaseUrl: mdApiBaseUrl,
+  // Production link shape so minted invite links round-trip through the
+  // same parsing the share/subscribe dialogs apply to real links.
+  shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,
+  shareLinkHost: mdConfig.shareLinkHost,
+  urlScheme: mdConfig.urlScheme,
+  auth: SharingAuthConfig(
+    appleBundleId: mdConfig.appleBundleId,
+    googleServerClientId: 'unused-in-md-tests',
+  ),
+  testSignIn: const TestSignInConfig(
+    testAuthToken: mdTestAuthToken,
+    defaultUserIdPrefix: 'test:md',
+    defaultDisplayName: 'Md Tester',
   ),
 );
 

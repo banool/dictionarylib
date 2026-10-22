@@ -12,6 +12,7 @@ class DictAppTestConfig {
     required this.navigateToEntryPage,
     this.seedFlashcardSettings,
     this.clearFlashcardSettings,
+    this.storedVideos = const [],
   });
 
   /// The app's `setup()` from lib/main.dart (loads the dictionary, prepares
@@ -31,6 +32,12 @@ class DictAppTestConfig {
 
   /// Teardown matching [seedFlashcardSettings]. Null → nothing to clear.
   final Future<void> Function()? clearFlashcardSettings;
+
+  /// Three saved videos from three entries of the app's dictionary, each
+  /// written the way a list stores it (`"<entryKey>|<mediaPath>"`). For the
+  /// suites that put an install's storage in place before the app starts,
+  /// when there is no dictionary loaded yet to pick videos from.
+  final List<String> storedVideos;
 }
 
 /// App-specific knobs for the screenshot suite.

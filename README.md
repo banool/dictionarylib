@@ -41,6 +41,19 @@ the same commit. Each app keeps thin `integration_test/*_test.dart` stubs plus
 two config files (`integration_test/test_config.dart`,
 `integration_test/multi_device/md_config.dart`).
 
+The suites are the apps' end-to-end tests: each starts the real app on a simulator, emulator or phone and drives it through the screen, on the device's real storage. A change to how the apps behave gets one, and they are run on both apps before a release. From the app's directory, `flutter test integration_test/<name>_test.dart -d <device>` runs one; each file is its own launch of the app on a fresh install.
+
+| Suite (`lib/suites/`) | What it covers |
+|---|---|
+| `lists_rename`, `default_list` | Renaming, reordering, deleting and naming lists; the default list (the one that starts out as "Favourites") behaving like any other except that it can't be deleted; the star going with the name; the names a list can't have or be shared under. |
+| `default_list_migration` | The first launch on an install from before Favourites became an ordinary list: plain, with favourites shared, and (SLSL) in Sinhala. One test file per kind of install, because the move happens once per launch. |
+| `save_video`, `saved_count` | Saving a single video to a list and the counts that follow from it. |
+| `review_session`, `review_early_exit` | Revision: a full session, stepping back and forward, leaving early, what is stored; sessions over new, due and forgotten cards, capped and not; random revision. |
+| `theme_picker`, `toast_dismiss` | Smaller pieces of UI. |
+| `screenshot` | The store screenshots. |
+
+`lib/multi_device/` holds the suites that need a server: `integration_test/multi_device/run.sh` in each app runs them against a local worker (`bunx wrangler dev --env dev` in the backend repo's `workers/`) on two devices. Phases A to D are two people sharing and editing one list. The solo runs are one person each: sharing their default list and revising from it straight away, a list of theirs arriving from another device, and a signed-in install with favourites shared taking the default-list update.
+
 Note the screenshot suite here is coupled to appci: the slugs it captures must
 match the `app_store_shots` / `play_shots` curation lists in the apps'
 `screenshots/upload_screenshots.py`, and `_posterUrlFor` in
