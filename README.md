@@ -41,7 +41,7 @@ the same commit. Each app keeps thin `integration_test/*_test.dart` stubs plus
 two config files (`integration_test/test_config.dart`,
 `integration_test/multi_device/md_config.dart`).
 
-The suites are the apps' end-to-end tests: each starts the real app on a simulator, emulator or phone and drives it through the screen, on the device's real storage. A change to how the apps behave gets one, and they are run on both apps before a release. From the app's directory, `flutter test integration_test/<name>_test.dart -d <device>` runs one; each file is its own launch of the app on a fresh install.
+The suites are the apps' end-to-end tests: each starts the real app on a simulator, emulator or phone and drives it through the screen, on the device's real storage. A change to how the apps behave gets one, and they are run on both apps before a release. From the app's directory, `flutter test integration_test/<name>_test.dart -d <device>` runs one; each file is its own launch of the app on a fresh install. (An Android run that loses its connection to the emulator part way leaves the app and its data installed, and the next run then starts from whatever it left: `adb uninstall <package>` first.)
 
 | Suite (`lib/suites/`) | What it covers |
 |---|---|
