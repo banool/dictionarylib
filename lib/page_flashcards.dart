@@ -89,13 +89,16 @@ class FlashcardsPage extends StatefulWidget {
 class FlashcardsPageState extends State<FlashcardsPage> {
   Map<DRCard, Review> answers = {};
 
-  /// The live [DolphinInformation] this session draws cards from.
-  /// Starts as [widget.di] but is replaced wholesale whenever a card is
-  /// re-rated — see [completeCard]. We can't mutate the in-place
-  /// DolphinSR back to one-review-per-card (the package only ever
-  /// accumulates reviews), so a re-rate rebuilds a fresh instance from
-  /// the retained masters + seed reviews + the latest answer per card.
-  late DolphinInformation di;
+  /// The cards this session goes through, in order: fixed when it starts
+  /// (see [getSessionCards]), and each shown once.
+  late final List<DRCard> _sessionCards;
+
+  /// The video behind each of those cards, as it was when the session
+  /// started. The landing page underneath builds its lookup afresh whenever
+  /// it refreshes, and this page can be rebuilt with the new one part way
+  /// through; a card whose video had since left its list would then have
+  /// nothing to show.
+  late final Map<String, ResolvedSavedVideo> _videos;
 
   late int numCardsToReview;
 
@@ -114,13 +117,12 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   /// per change rather than on every rebuild.
   Object? _tvFocusedFor;
 
-  /// The cards shown so far this session, in order, and our position within
-  /// them. Tracking the sequence ourselves (rather than only ever asking
-  /// Dolphin for the next card) lets a back gesture revisit the previous card
-  /// and then move forward again to exactly where the user was. Fresh cards are
-  /// only drawn from Dolphin when we step forward past the end of this list.
-  final List<DRCard> _shownCards = [];
+  /// Where we are in [_sessionCards], and the furthest we've been. They
+  /// differ once the user has stepped back to revisit an earlier card: the
+  /// forward arrow then takes them through the cards already shown, back to
+  /// exactly where they were.
   int _pos = -1;
+  int _furthest = -1;
 
   bool forgotRatingWidgetActive = false;
   bool rememberedRatingWidgetActive = true;
@@ -140,14 +142,16 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   @override
   void initState() {
     super.initState();
-    di = widget.di;
-    numCardsToReview = getNumDueCards(di.dolphin, widget.revisionStrategy);
+    var cards = getSessionCards(widget.di.dolphin, widget.revisionStrategy);
     // Apply the optional session-size cap the user set on the landing page.
     // 0 means no limit. The landing page caps its displayed count the same way.
     final cardLimit = sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT) ?? 0;
-    if (cardLimit > 0 && numCardsToReview > cardLimit) {
-      numCardsToReview = cardLimit;
+    if (cardLimit > 0 && cards.length > cardLimit) {
+      cards = cards.sublist(0, cardLimit);
     }
+    _sessionCards = cards;
+    _videos = widget.di.masterToVideoMap;
+    numCardsToReview = cards.length;
     Analytics.track(
       'revision_started',
       props: {
@@ -271,37 +275,34 @@ class FlashcardsPageState extends State<FlashcardsPage> {
   void _syncRevealStateToCurrentCard() {
     final prior = currentCard == null ? null : answers[currentCard]?.rating;
     currentCardRevealed = prior != null;
-    forgotRatingWidgetActive = prior == Rating.Hard;
-    rememberedRatingWidgetActive = prior != Rating.Hard;
+    forgotRatingWidgetActive = prior == Rating.Again;
+    rememberedRatingWidgetActive = prior != Rating.Again;
   }
 
   void nextCard() {
+    // If the pause after "Forgot" is still running, this step forward (the
+    // forward arrow, after stepping back) replaces the one it has pending.
+    // Left to fire as well, it would move on a second time, past a card the
+    // user hasn't answered.
+    nextCardTimer?.cancel();
+    nextCardTimer = null;
     setState(() {
       playbackSpeed = getDefaultPlaybackSpeed();
-      if (_pos < _shownCards.length - 1) {
-        // We'd stepped back earlier — move forward through the cards already
-        // shown rather than drawing a new one, so back-then-forward returns to
-        // exactly where the user was.
+      if (_pos < _sessionCards.length - 1) {
+        // On to the next card: a new one, or, if we'd stepped back earlier,
+        // one already shown, so back-then-forward returns to exactly where
+        // the user was.
         _pos++;
-        currentCard = _shownCards[_pos];
-      } else if (getCardsReviewed() >= numCardsToReview) {
-        // From here the only cards Dolphin will return are cards that were
-        // failed as part of the revision session. We choose to cut the user
-        // off here, they can start a new session to review these if they wish.
-        // Accordingly set currentCard to null and store the results.
+        if (_pos > _furthest) _furthest = _pos;
+        currentCard = _sessionCards[_pos];
+      } else {
+        // That was the last card. Any that were forgotten, and new ones
+        // still waiting on a second correct answer, are still due. We choose
+        // to cut the user off here rather than bring those round again; they
+        // can start a new session to review them if they wish. Accordingly
+        // set currentCard to null and store the results.
         currentCard = null;
         _finishSession();
-      } else {
-        final next = di.dolphin.nextCard();
-        currentCard = next;
-        if (next != null) {
-          _shownCards.add(next);
-          _pos = _shownCards.length - 1;
-        } else {
-          // Nothing left to draw — end the session.
-          currentCard = null;
-          _finishSession();
-        }
       }
       _syncRevealStateToCurrentCard();
     });
@@ -319,7 +320,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     setState(() {
       playbackSpeed = getDefaultPlaybackSpeed();
       _pos--;
-      currentCard = _shownCards[_pos];
+      currentCard = _sessionCards[_pos];
       _syncRevealStateToCurrentCard();
     });
   }
@@ -351,22 +352,10 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     );
     Rating? previousRating = answers[card]?.rating;
     bool shouldNavigate = answers.containsKey(card);
+    // One answer per card: re-rating a card replaces its earlier answer, and
+    // what is in [answers] when the session ends is what gets stored.
     setState(() {
       answers[card] = review;
-      if (shouldNavigate) {
-        // Re-rating a card we've already answered. We can't tell the
-        // in-session DolphinSR to forget the earlier rating — it only
-        // ever accumulates reviews — so the only way to keep its state
-        // at one-review-per-card (matching what next session rebuilds
-        // from the single persisted review) is to rebuild from scratch:
-        // the same masters + the same seed reviews + the persisted
-        // history + the latest answer per card, applied in ts order.
-        di = rebuildDolphin(di, answers.values);
-      } else {
-        // First answer for a fresh card: no prior review to reconcile,
-        // so the cheap in-place add is exact.
-        di.dolphin.addReviews([review]);
-      }
     });
     if (shouldNavigate) {
       // The pause before advancing exists purely as feedback for "Forgot" in
@@ -375,7 +364,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
       // Next button in random mode — proceeds immediately, matching a tap on
       // the card itself.
       final saidForgot =
-          review.rating == Rating.Hard && previousRating != review.rating;
+          review.rating == Rating.Again && previousRating != review.rating;
       if (widget.revisionStrategy == RevisionStrategy.SpacedRepetition &&
           saidForgot) {
         setState(() {
@@ -404,7 +393,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
 
     void onPressed() {
       switch (rating) {
-        case Rating.Hard:
+        case Rating.Again:
           forgotRatingWidgetActive = true;
           rememberedRatingWidgetActive = false;
           break;
@@ -431,7 +420,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     }
     // Forgot / Got it! fill when active and outline otherwise, so tapping one
     // visibly selects it (for the brief moment before the next card).
-    if (rating == Rating.Hard) {
+    if (rating == Rating.Again) {
       return active
           ? FilledButton.icon(
               onPressed: onPressed,
@@ -573,7 +562,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
                   child: KeyedSubtree(
                     key: const ValueKey("ratingButton.forgot"),
                     child: getRatingButton(
-                      Rating.Hard,
+                      Rating.Again,
                       forgotRatingWidgetActive,
                     ),
                   ),
@@ -639,7 +628,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     // to return to. Shown in both states so navigation is always available; the
     // region itself stays hidden until the card is revealed.
     Widget navArrow(bool forward) {
-      final enabled = forward ? _pos < _shownCards.length - 1 : _pos > 0;
+      final enabled = forward ? _pos < _furthest : _pos > 0;
       // An InkWell with a tap handler even when disabled (rather than an
       // IconButton) so the tap is ALWAYS consumed here — nav when enabled, a
       // no-op when disabled — and never falls through to the card's
@@ -797,7 +786,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
         .where((e) => e.rating == Rating.Good)
         .length;
     int numCardsForgotten = answers.values
-        .where((e) => e.rating == Rating.Hard)
+        .where((e) => e.rating == Rating.Again)
         .length;
     int totalAnswers = answers.length;
     double rememberRate = totalAnswers == 0
@@ -900,7 +889,7 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     if (currentCard != null) {
       DRCard card = currentCard!;
 
-      final resolved = di.masterToVideoMap[card.master];
+      final resolved = _videos[card.master];
       if (resolved == null) {
         // Defensive: we couldn't resolve the saved video for this card (e.g.
         // the dictionary data changed mid-session). Skip to the next card

@@ -19,6 +19,10 @@ import '../helpers.dart';
 //     revealed with its prior rating, and the position counter stays correct),
 //     and
 //   - review persistence on exit (writeReviews → KEY_STORED_REVIEWS).
+//
+// A second test runs three sessions back to back over a list holding new
+// cards, cards due for review and one that gets forgotten: each session shows
+// each of its cards once, and the right ones are still due after it.
 
 const int kSessionCards = 10;
 
@@ -110,7 +114,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     final forgot = find.byKey(const ValueKey("ratingButton.forgot"));
 
     // Reveal the current card and rate it, advancing to the next card. Revealing
-    // records a default "Got it"; tapping Forgot overwrites it to Hard and waits
+    // records a default "Got it"; tapping Forgot overwrites it to Again and waits
     // out the brief feedback timer before the card auto-advances.
     Future<void> revealAndRate({required bool forgotIt}) async {
       expect(revealButton, findsOneWidget);
@@ -195,7 +199,7 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
     await settle(tester);
 
     // --- Persistence: exactly one review per card, with the single Forgot
-    // recorded as Hard and the rest as Good. ---
+    // recorded as Again and the rest as Good. ---
     final reviews = readReviews();
     expect(
       reviews.length,
@@ -203,14 +207,228 @@ void runReviewSessionSuite(DictAppTestConfig cfg) {
       reason: 'one persisted review per reviewed card',
     );
     expect(
-      reviews.where((r) => r.rating == Rating.Hard).length,
+      reviews.where((r) => r.rating == Rating.Again).length,
       1,
-      reason: 'the one Forgot rating should persist as Hard',
+      reason: 'the one Forgot rating should persist as Again',
     );
     expect(
       reviews.where((r) => r.rating == Rating.Good).length,
       kSessionCards - 1,
       reason: 'the remaining ratings should persist as Good',
     );
+  });
+
+  // A session used to take each card from the scheduler as it went. A card
+  // that is answered but still being learned (a new one, which needs two
+  // correct answers, or one that was forgotten) is still the first thing the
+  // scheduler has, so with other cards waiting behind it the session showed
+  // it over and over and never reached them, or its own end. That was also
+  // why "Forgot" had been stored as Hard, which doesn't send a card back to
+  // be relearned: it makes it wait longer than before. (test/
+  // flashcards_page_test.dart in dictionarylib runs the same page without a
+  // device; this is the check with real videos and the real landing page.)
+  testWidgets('sessions over new cards, due cards and a forgotten one show '
+      'each card once and leave the right ones due', (
+    WidgetTester tester,
+  ) async {
+    await cfg.setup();
+
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    advisoryShownOnce = true;
+
+    // Five videos from five entries.
+    final saved = <SavedVideo>[];
+    for (final e in entriesGlobal) {
+      final subEntries = e.getSubEntries();
+      if (subEntries.isEmpty || subEntries.first.getMedia().isEmpty) continue;
+      saved.add(
+        SavedVideo(
+          entryKey: e.getKey(),
+          mediaPath: subEntries.first.getMedia().first,
+        ),
+      );
+      if (saved.length == 5) break;
+    }
+    expect(saved, hasLength(5));
+
+    final listKey = EntryList.getKeyFromName('MixedReviewTest');
+    if (!userEntryListManager.getEntryLists().containsKey(listKey)) {
+      await userEntryListManager.createEntryList(listKey);
+    }
+    final testList = userEntryListManager.getEntryLists()[listKey]!;
+    for (final v in saved) {
+      await testList.addVideo(v);
+    }
+    addTearDown(() => userEntryListManager.deleteEntryList(listKey));
+
+    // One card per video (sign to word), no cap on the session.
+    await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [listKey]);
+    await sharedPreferences.setInt(
+      KEY_REVISION_STRATEGY,
+      RevisionStrategy.SpacedRepetition.index,
+    );
+    await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
+    await sharedPreferences.setBool(KEY_WORD_TO_SIGN, false);
+    await sharedPreferences.setBool(KEY_SIGN_TO_WORD, true);
+    await cfg.seedFlashcardSettings?.call();
+
+    // The last three were learned eleven days ago (two correct answers, a
+    // day apart), which makes them due. The first two have never been seen.
+    final now = DateTime.now();
+    String storedReview(SavedVideo video, DateTime ts) => [
+      savedVideoMasterId(video),
+      '1${COMBINATION_DELIMETER}0',
+      Rating.Good.index,
+      ts.microsecondsSinceEpoch,
+    ].join(REVIEW_DELIMITER);
+    await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+      for (final (i, video) in saved.sublist(2).indexed) ...[
+        storedReview(video, now.subtract(Duration(days: 12, minutes: i))),
+        storedReview(video, now.subtract(Duration(days: 11, minutes: i))),
+      ],
+    ]);
+    final randomReviewsBefore = sharedPreferences.getInt(
+      KEY_RANDOM_REVIEWS_COUNTER,
+    );
+    final firstRandomReviewBefore = sharedPreferences.getInt(
+      KEY_FIRST_RANDOM_REVIEW,
+    );
+    addTearDown(() async {
+      await sharedPreferences.remove(KEY_STORED_REVIEWS);
+      await sharedPreferences.remove(KEY_WORD_TO_SIGN);
+      await sharedPreferences.remove(KEY_SIGN_TO_WORD);
+      await sharedPreferences.setInt(
+        KEY_REVISION_STRATEGY,
+        RevisionStrategy.SpacedRepetition.index,
+      );
+      for (final (key, before) in [
+        (KEY_RANDOM_REVIEWS_COUNTER, randomReviewsBefore),
+        (KEY_FIRST_RANDOM_REVIEW, firstRandomReviewBefore),
+      ]) {
+        if (before == null) {
+          await sharedPreferences.remove(key);
+        } else {
+          await sharedPreferences.setInt(key, before);
+        }
+      }
+      await cfg.clearFlashcardSettings?.call();
+      await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [
+        userEntryListManager.defaultListKey,
+      ]);
+    });
+
+    await tester.pumpWidget(cfg.buildApp(LOCALE_ENGLISH));
+    await settle(tester);
+    await tester.tap(find.byIcon(Icons.style));
+    await settle(tester);
+
+    final startButton = find.byKey(const ValueKey("startButton"));
+    final revealButton = find.byKey(const ValueKey("revealButton"));
+    final gotIt = find.byKey(const ValueKey("ratingButton.gotIt"));
+    final forgot = find.byKey(const ValueKey("ratingButton.forgot"));
+
+    // Start a session of [cards] cards and go through it, answering "Forgot"
+    // on card [forget] (counting from 1) and "Got it" on the rest, then leave
+    // the summary for the landing page.
+    Future<void> runSession({required int cards, int? forget}) async {
+      await tester.tap(startButton);
+      await settle(tester);
+      for (var k = 1; k <= cards; k++) {
+        expect(find.text('$k / $cards'), findsOneWidget);
+        // A card the session hasn't shown before: face down, not already
+        // answered.
+        expect(
+          revealButton,
+          findsOneWidget,
+          reason: 'card $k of $cards came up already answered',
+        );
+        await tester.tap(revealButton);
+        await settle(tester);
+        if (k == forget) {
+          await tester.tap(forgot);
+          await tester.pump(const Duration(seconds: 1)); // feedback timer
+          await settle(tester);
+          // Stepping back shows it as it was answered, "Forgot" filled in,
+          // and stepping forward returns to the card after it.
+          expect(find.text('${k + 1} / $cards'), findsOneWidget);
+          await tester.tap(find.byIcon(Icons.chevron_left));
+          await settle(tester);
+          expect(find.text('$k / $cards'), findsOneWidget);
+          expect(
+            find.descendant(of: forgot, matching: find.byType(FilledButton)),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(of: gotIt, matching: find.byType(OutlinedButton)),
+            findsOneWidget,
+          );
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await settle(tester);
+        } else {
+          await tester.tap(gotIt);
+          await settle(tester);
+        }
+      }
+      // The summary, not a sixth card.
+      expect(revealButton, findsNothing);
+      expect(gotIt, findsNothing);
+      await tester.tap(find.byIcon(Icons.close));
+      await settle(tester);
+    }
+
+    // All five are due: three for review, two new. Those up for review come
+    // first, so card two is one of them.
+    expect(find.text('5 flashcards'), findsOneWidget);
+    await runSession(cards: 5, forget: 2);
+
+    var reviews = readReviews();
+    expect(reviews, hasLength(6 + 5), reason: 'one review per card shown');
+    expect(reviews.where((r) => r.rating == Rating.Again), hasLength(1));
+
+    // Still due: the two new cards, which want a second correct answer, and
+    // the one that was forgotten.
+    expect(find.text('3 flashcards'), findsOneWidget);
+    await runSession(cards: 3);
+    expect(readReviews(), hasLength(6 + 5 + 3));
+
+    // The new cards are learned now. The forgotten one has been got right
+    // once since, and wants a second time too.
+    expect(find.text('1 flashcard'), findsOneWidget);
+    await runSession(cards: 1);
+    expect(readReviews(), hasLength(6 + 5 + 3 + 1));
+
+    // Nothing left to revise.
+    expect(find.text('0 flashcards'), findsOneWidget);
+    expect(tester.widget<FilledButton>(startButton).onPressed, isNull);
+
+    // Random revision isn't about what is due: it goes through all five. (It
+    // used to be handed out by the scheduler too, which would have had
+    // nothing to give it here.)
+    final random = find.text(RevisionStrategy.Random.pretty);
+    await tester.ensureVisible(random);
+    await tester.tap(random);
+    await settle(tester);
+    expect(find.text('5 flashcards'), findsOneWidget);
+    await tester.tap(startButton);
+    await settle(tester);
+    final next = find.byKey(const ValueKey("ratingButton.next"));
+    for (var k = 1; k <= 5; k++) {
+      expect(find.text('$k / 5'), findsOneWidget);
+      expect(revealButton, findsOneWidget);
+      await tester.tap(revealButton);
+      await settle(tester);
+      await tester.tap(next);
+      await settle(tester);
+    }
+    expect(revealButton, findsNothing);
+    expect(next, findsNothing);
+    await tester.tap(find.byIcon(Icons.close));
+    await settle(tester);
+    // Random sessions don't add to the spaced-repetition history.
+    expect(readReviews(), hasLength(6 + 5 + 3 + 1));
   });
 }

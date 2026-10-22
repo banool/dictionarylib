@@ -121,7 +121,7 @@ void runReviewEarlyExitSuite(DictAppTestConfig cfg) {
       }
 
       // Reveal the current card and rate it, advancing to the next card. Revealing
-      // records a default "Got it"; tapping Forgot overwrites it to Hard and waits
+      // records a default "Got it"; tapping Forgot overwrites it to Again and waits
       // out the brief feedback timer before the card auto-advances.
       Future<void> revealAndRate({required bool forgotIt}) async {
         expect(revealButton, findsOneWidget);
@@ -176,7 +176,7 @@ void runReviewEarlyExitSuite(DictAppTestConfig cfg) {
         reason: 'exiting part way should not drop back to the landing page',
       );
 
-      // The three answers so far are persisted (one Hard, two Good) — the whole
+      // The three answers so far are persisted (one Again, two Good) — the whole
       // reason it's safe to show the summary on early exit.
       final partial = readReviews();
       expect(
@@ -185,9 +185,9 @@ void runReviewEarlyExitSuite(DictAppTestConfig cfg) {
         reason: 'one persisted review per answered card so far',
       );
       expect(
-        partial.where((r) => r.rating == Rating.Hard).length,
+        partial.where((r) => r.rating == Rating.Again).length,
         1,
-        reason: 'the one Forgot rating should persist as Hard',
+        reason: 'the one Forgot rating should persist as Again',
       );
       expect(
         partial.where((r) => r.rating == Rating.Good).length,

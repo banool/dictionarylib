@@ -63,7 +63,8 @@ Widget getFlashcardsHelpPageEn({
             "Imagine a set of buckets. When a card is first added, it is put in the "
             "first bucket. If you successfully recall what that card is, we move it "
             "into the second bucket. If you get it right again, we move it into the "
-            "third bucket. Conversely, if you forget a card, we move it back a bucket.",
+            "third bucket. Conversely, if you forget a card, we move it back to the "
+            "first bucket.",
         "When a card is in the earlier buckets, we show it to you more frequently "
             "to help you learn. As you become more confident with a card and it "
             "moves into higher buckets, we show you the card less and less "
@@ -71,6 +72,10 @@ Widget getFlashcardsHelpPageEn({
         "When you select this option, we figure out which cards are "
             "due at that particular time. You may not see every card in every "
             "review session, as some cards might not be due until a later date.",
+        "A card you forgot is due again straight away, and so is a new card "
+            "until you have got it right twice. Those cards will still be waiting "
+            "when you finish a session, so you can start another one to go over "
+            "them again, or leave them for next time.",
         "Spaced Repetition Learning is most effective if you check in often, "
             "ideally every day (otherwise the cards can tend to pile up). Fortunately, "
             "if a single session seems overwhelming because there are so many "

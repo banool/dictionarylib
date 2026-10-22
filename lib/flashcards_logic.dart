@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'dart:math';
 
 import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/material.dart';
@@ -63,13 +62,7 @@ SavedVideo? parseSavedVideoMasterId(String id) {
 }
 
 class DolphinInformation {
-  DolphinInformation({
-    required this.dolphin,
-    required this.masterToVideoMap,
-    required this.masters,
-    required this.orderSeed,
-    required this.sessionReviews,
-  });
+  DolphinInformation({required this.dolphin, required this.masterToVideoMap});
 
   DolphinSR dolphin;
 
@@ -77,22 +70,6 @@ class DolphinInformation {
   /// resolved [SubEntry] and parent [Entry]. The flashcard page reads
   /// from this to render the right video.
   Map<String, ResolvedSavedVideo> masterToVideoMap;
-
-  /// The exact masters this [dolphin] was built from. Retained so the
-  /// session can rebuild a fresh [DolphinSR] from scratch (the package
-  /// throws if you re-add masters to a non-empty instance, so any
-  /// rebuild needs the original list to hand to a new instance).
-  final List<Master> masters;
-
-  /// The seed for the shuffled order DolphinSR serves fresh cards in
-  /// (see `addMasters(shuffleCardOrder:)`). Retained so a mid-session
-  /// rebuild reproduces the same card order.
-  final int orderSeed;
-
-  /// The persisted reviews (already filtered to this build's masters /
-  /// combinations) that were applied to [dolphin]. Retained so a
-  /// rebuild doesn't have to re-filter the caller's raw history.
-  final List<Review> sessionReviews;
 }
 
 /// Resolved view of a [SavedVideo] — the saved video itself plus the
@@ -221,7 +198,7 @@ List<Master> getMastersFromVideos(
   }
   // No shuffle here: the card order (per combination, not just per
   // master) is shuffled by DolphinSR itself via addMasters'
-  // shuffleCardOrder, seeded so rebuilds reproduce it.
+  // shuffleCardOrder.
   printAndLog("Built ${masters.length} masters");
   return masters;
 }
@@ -234,17 +211,15 @@ DolphinInformation getDolphinInformationFromVideos(
   List<ResolvedSavedVideo> videos,
   List<Master> masters, {
   List<Review>? reviews,
-  int? orderSeed,
 }) {
   reviews = reviews ?? [];
   final masterToVideoMap = <String, ResolvedSavedVideo>{};
   for (final r in videos) {
     masterToVideoMap[savedVideoMasterId(r.video)] = r;
   }
-  // Fresh cards come out of nextCard() in DolphinSR's shuffled insertion
-  // order; the seed makes the shuffle reproducible so a mid-session
-  // rebuild keeps the same order. (This replaced the old trick of seeding
-  // every card with a synthetic Again review at staggered epoch
+  // Fresh cards are served in DolphinSR's shuffled insertion order, a new
+  // shuffle each time this is built. (This replaced the old trick of
+  // seeding every card with a synthetic Again review at staggered epoch
   // timestamps, whose timestamps could collide with real reviews at scale
   // and blank the revision tab.)
   //
@@ -252,11 +227,10 @@ DolphinInformation getDolphinInformationFromVideos(
   // reviews (e.g. a history written while a device clock misbehaved) —
   // this runs during the landing page's build, where an uncaught throw
   // renders as a blank ErrorWidget with no way back.
-  final seed = orderSeed ?? Random().nextInt(1 << 31);
   final dolphin = DolphinSR(
     outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip,
   );
-  dolphin.addMasters(masters, shuffleCardOrder: true, random: Random(seed));
+  dolphin.addMasters(masters, shuffleCardOrder: true);
 
   // Filter to reviews for known masters / combinations — DolphinSR
   // throws on unknown masters. Don't write the filtered set back; the
@@ -264,8 +238,7 @@ DolphinInformation getDolphinInformationFromVideos(
   // includes their masters.
   final filteredReviews = filterReviewsToMasters(reviews, masters);
   // Sort so per-card order is chronological even if the stored history
-  // was written out of order (rebuildDolphin sorts its replay the same
-  // way).
+  // was written out of order.
   filteredReviews.sort((a, b) => a.ts!.compareTo(b.ts!));
   dolphin.addReviews(filteredReviews);
   printAndLog("Added ${filteredReviews.length} stored reviews to Dolphin");
@@ -278,9 +251,6 @@ DolphinInformation getDolphinInformationFromVideos(
   return DolphinInformation(
     dolphin: dolphin,
     masterToVideoMap: masterToVideoMap,
-    masters: masters,
-    orderSeed: seed,
-    sessionReviews: filteredReviews,
   );
 }
 
@@ -301,56 +271,6 @@ List<Review> filterReviewsToMasters(
     filtered.add(r);
   }
   return filtered;
-}
-
-/// Rebuild a fresh [DolphinSR] from scratch so its in-session state
-/// reflects exactly one review per card. The package mutates card
-/// state cumulatively on every `addReviews` call and refuses to re-add
-/// masters to a populated instance, so re-rating a card can't be undone
-/// in place — the only correct fix is to discard the old instance and
-/// replay the canonical review set.
-///
-/// [di] supplies the original masters and the card-order seed used to
-/// build it (so card ordering stays deterministic). [sessionAnswers]
-/// is the latest review per card from the live session (typically
-/// `answers.values`).
-///
-/// Reviews are sorted by timestamp before being applied so per-card
-/// order is chronological (out-of-order leftovers are dropped by the
-/// skip policy rather than throwing). The returned [DolphinInformation]
-/// carries the same masters / seed / persisted reviews so it too can be
-/// rebuilt.
-DolphinInformation rebuildDolphin(
-  DolphinInformation di,
-  Iterable<Review> sessionAnswers,
-) {
-  final dolphin = DolphinSR(
-    outOfOrderReviewPolicy: OutOfOrderReviewPolicy.skip,
-  );
-  dolphin.addMasters(
-    di.masters,
-    shuffleCardOrder: true,
-    random: Random(di.orderSeed),
-  );
-
-  // Apply persisted history plus the session's latest-per-card answers,
-  // filtered to this build's masters and sorted ascending by ts. The
-  // session answers are already one-per-card (the page keys them by
-  // card), so there are no phantom duplicates to reconcile here.
-  final replay = <Review>[
-    ...di.sessionReviews,
-    ...filterReviewsToMasters(sessionAnswers.toList(), di.masters),
-  ];
-  replay.sort((a, b) => a.ts!.compareTo(b.ts!));
-  dolphin.addReviews(replay);
-
-  return DolphinInformation(
-    dolphin: dolphin,
-    masterToVideoMap: di.masterToVideoMap,
-    masters: di.masters,
-    orderSeed: di.orderSeed,
-    sessionReviews: di.sessionReviews,
-  );
 }
 
 const String KEY_STORED_REVIEWS = "stored_reviews";
@@ -632,6 +552,93 @@ int getNumDueCards(DolphinSR dolphin, RevisionStrategy revisionStrategy) {
           (summary.due ?? 0) + (summary.overdue ?? 0) + (summary.learning ?? 0);
       return due;
   }
+}
+
+/// The cards a session started now goes through, in order. The list is
+/// worked out once, as the session starts, and each card in it is shown
+/// once, whatever it is answered with.
+///
+/// For spaced repetition that's every card [getNumDueCards] counts, the
+/// ones DolphinSR has due, in its order but for one thing. First come the
+/// cards part way through being learned or relearned (ones shown before
+/// that haven't yet been answered correctly twice running, and ones that
+/// were forgotten), then the overdue, then those due today, and within each
+/// the one answered longest ago first. Cards never shown come last, in the
+/// shuffled order they were set up in. DolphinSR puts those first, which
+/// makes no odds until the session is capped ([KEY_REVISION_CARD_LIMIT]).
+/// Then a list with more unseen cards than the cap filled every session
+/// with new ones, and nothing forgotten or due for review was shown until
+/// the last of them had been seen once. For random revision it's every
+/// card, in the shuffled order they were set up in.
+///
+/// The session takes its cards from here rather than asking DolphinSR for
+/// `nextCard()` as it goes, because that returns whatever is most due at
+/// that moment, and answering a card doesn't always make it less due. A
+/// new card needs two correct answers before it's given a due date, and a
+/// forgotten one goes back to being learned, so both are still first in
+/// line straight after being answered. A session that drew as it went
+/// showed such a card again and again, never reached the cards behind it
+/// and never ended. And cards that aren't due are never returned at all,
+/// which left random revision with only the cards spaced repetition
+/// happened to have due. Cards still due when the session ends are there
+/// for the next one.
+List<DRCard> getSessionCards(
+  DolphinSR dolphin,
+  RevisionStrategy revisionStrategy, {
+  DateTime? now,
+}) {
+  final cards = dolphin.getAllCardState();
+  switch (revisionStrategy) {
+    case RevisionStrategy.Random:
+      return cards;
+    case RevisionStrategy.SpacedRepetition:
+      final today = now ?? DateTime.now();
+      // (group, position, card). The position keeps cards that are level
+      // on everything else in the order DolphinSR holds them, which is the
+      // shuffled order cards never shown are meant to come out in.
+      final due = <(int, int, DRCard)>[];
+      for (final (i, card) in cards.indexed) {
+        final group = _dueGroup(card, today);
+        if (group != null) due.add((group, i, card));
+      }
+      due.sort((a, b) {
+        if (a.$1 != b.$1) return a.$1.compareTo(b.$1);
+        final aReviewed = a.$3.lastReviewed;
+        final bReviewed = b.$3.lastReviewed;
+        if (aReviewed != null && bReviewed != null) {
+          final byAge = aReviewed.compareTo(bReviewed);
+          if (byAge != 0) return byAge;
+        }
+        return a.$2.compareTo(b.$2);
+      });
+      return [for (final d in due) d.$3];
+  }
+}
+
+/// Where [card] goes in a session started at [now]: 0 for part way through
+/// being learned or relearned, 1 for overdue, 2 for due today, 3 for never
+/// shown, and null when it isn't due yet.
+///
+/// DolphinSR keeps its due groups to itself and only says how many cards
+/// are in each (`summary()`), so this reads them off the card's due date
+/// the way it does: by calendar day, not by the hour.
+int? _dueGroup(DRCard card, DateTime now) {
+  final dueDate = card.dueDate;
+  final lastReviewed = card.lastReviewed;
+  // No due date: it has never been scheduled. Either it has never been
+  // shown, or it has and isn't learned yet.
+  if (dueDate == null) return lastReviewed == null ? 3 : 0;
+  // Due the moment it was last answered: it was forgotten then, and stays
+  // due until it has been relearned. (That is dolphinsr 4.1.1 onwards.
+  // Before it, a forgotten card went on reporting the due date it had.)
+  if (lastReviewed != null && !dueDate.isAfter(lastReviewed)) return 0;
+  final daysPastDue = DateTime.utc(
+    now.year,
+    now.month,
+    now.day,
+  ).difference(DateTime.utc(dueDate.year, dueDate.month, dueDate.day)).inDays;
+  if (daysPastDue < 0) return null;
+  return daysPastDue >= 1 ? 1 : 2;
 }
 
 Future<void> bumpRandomReviewCounter(int bumpAmount) async {
