@@ -616,6 +616,13 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get listSharedWithMeEmpty => 'Nothing here yet.';
 
   @override
+  String get listNewTag => 'NEW';
+
+  @override
+  String get listSubscribedNewHint =>
+      'Lists you open from a share link are kept here, so you can find them again any time.';
+
+  @override
   String get ownedStatusOrphaned => 'Shared — deleted by you';
 
   @override

@@ -632,6 +632,13 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get listSharedWithMeEmpty => 'இங்கே இன்னும் எதுவும் இல்லை.';
 
   @override
+  String get listNewTag => 'புதியது';
+
+  @override
+  String get listSubscribedNewHint =>
+      'பகிர்வு இணைப்பிலிருந்து நீங்கள் திறக்கும் பட்டியல்கள் இங்கே வைக்கப்படும், எனவே எப்போது வேண்டுமானாலும் அவற்றை மீண்டும் காணலாம்.';
+
+  @override
   String get ownedStatusOrphaned => 'பகிரப்பட்டது — உங்களால் நீக்கப்பட்டது';
 
   @override

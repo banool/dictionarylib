@@ -296,6 +296,8 @@
 
     "listSharedWithMeTab": "Subscribed",
     "listSharedWithMeEmpty": "Nothing here yet.",
+    "listNewTag": "NEW",
+    "listSubscribedNewHint": "Lists you open from a share link are kept here, so you can find them again any time.",
 
     "ownedStatusOrphaned": "Shared — deleted by you",
     "ownedStatusSharedBy": "Shared by you",

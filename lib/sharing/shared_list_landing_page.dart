@@ -7,8 +7,10 @@ import '../globals.dart';
 import '../l10n/app_localizations.dart';
 import '../lists_service.dart';
 import '../page_entry_list.dart';
+import '../page_entry_list_overview.dart' show newlyAddedSharedListId;
 import '../retry.dart';
 import '../theme.dart' show kRadiusCard;
+import '../top_level_scaffold.dart' show LISTS_ROUTE;
 import 'auth/sign_in_dialog.dart';
 import 'sync_api.dart';
 import 'synced_entry_list.dart';
@@ -17,9 +19,12 @@ import 'synced_entry_list.dart';
 ///
 /// Two flavours:
 /// - **Subscribe** (no `?invite=<token>` on the URL): subscribes to the
-///   list anonymously and routes to the regular entry list page.
+///   list anonymously.
 /// - **Accept invite** (with token): prompts for sign-in if needed,
 ///   then calls `acceptInvite` to register the caller as an editor.
+///
+/// Either way it then goes to the list's place on the lists page (see
+/// [_showAddedList]).
 class SharedListLandingPage extends StatefulWidget {
   final String listId;
 
@@ -234,7 +239,7 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
                   _navigated = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
-                    _showList(context, list);
+                    _showAddedList(context, list);
                   });
                 }
                 return const Center(child: CircularProgressIndicator());
@@ -346,6 +351,21 @@ class _SharedListLandingPageState extends State<SharedListLandingPage> {
     if (_navigated) return;
     _navigated = true;
     _showList(context, list);
+  }
+
+  /// Show a list that's just been followed or joined where it will live from
+  /// now on: the lists page's Subscribed tab, marked as new. Opening the list
+  /// straight away left people unable to find it again afterwards. A list
+  /// they own (their own share link) lives under My lists and just opens, as
+  /// does everything when there's no router (widget tests).
+  void _showAddedList(BuildContext context, SyncedEntryList list) {
+    final router = GoRouter.maybeOf(context);
+    if (router == null || list.meta.role == ListRole.owner) {
+      _showList(context, list);
+      return;
+    }
+    newlyAddedSharedListId.value = list.listId;
+    router.go(LISTS_ROUTE);
   }
 
   /// Show [list] in its full page. Normally we replace the landing page; but on

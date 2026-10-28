@@ -206,6 +206,8 @@
 
     "listSharedWithMeTab": "දායක වූ",
     "listSharedWithMeEmpty": "තවම මෙහි කිසිවක් නැත.",
+    "listNewTag": "නව",
+    "listSubscribedNewHint": "බෙදාගැනීමේ සබැඳියකින් ඔබ විවෘත කරන ලැයිස්තු මෙහි තබා ඇත, එබැවින් ඔබට ඒවා ඕනෑම වේලාවක නැවත සොයාගත හැක.",
 
     "ownedStatusOrphaned": "බෙදාගත් — ඔබ විසින් මකා දමන ලදී",
     "ownedStatusSharedBy": "ඔබ විසින් බෙදාගත්",

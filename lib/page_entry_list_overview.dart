@@ -24,6 +24,12 @@ typedef BuildEntryListWidgetCallback = Widget Function(EntryList entryList);
 /// SharedPreferences key for the last-active tab on the lists overview.
 const String KEY_LISTS_OVERVIEW_TAB_INDEX = 'lists_overview_tab_index';
 
+/// A shared list just followed or joined from a share link. The landing page
+/// sets it and goes to the lists page, which switches to the Subscribed tab
+/// and marks the list as new, so people learn where to find it next time.
+/// The page clears it when it takes it, so the list is only marked once.
+final ValueNotifier<String?> newlyAddedSharedListId = ValueNotifier(null);
+
 class EntryListsOverviewPage extends StatefulWidget {
   final BuildEntryListWidgetCallback buildEntryListWidgetCallback;
 
@@ -47,10 +53,17 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
   bool inEditMode = false;
 
+  /// The list taken from [newlyAddedSharedListId], marked as new on the
+  /// Subscribed tab for as long as this page is up.
+  String? _newListId;
+  final GlobalKey _newListRowKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _rebuildTabs();
+    _takeNewlyAddedList();
+    newlyAddedSharedListId.addListener(_takeNewlyAddedList);
     if (sharing.isEnabled) {
       // Fire-and-forget refresh of all synced lists on open.
       unawaited(
@@ -72,6 +85,23 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
   void _onSharingChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _takeNewlyAddedList() {
+    final id = newlyAddedSharedListId.value;
+    if (id == null) return;
+    newlyAddedSharedListId.value = null;
+    final tab = _tabs.indexOf(_TabDescriptor.sharedWithMe);
+    if (tab < 0) return;
+    setState(() => _newListId = id);
+    tabController.index = tab;
+    // It may be below the fold if they follow a lot of lists.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final rowContext = _newListRowKey.currentContext;
+      if (rowContext != null && rowContext.mounted) {
+        Scrollable.ensureVisible(rowContext, alignment: 0.3);
+      }
+    });
   }
 
   void _rebuildTabs({int? initialIndex}) {
@@ -141,6 +171,7 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
 
   @override
   void dispose() {
+    newlyAddedSharedListId.removeListener(_takeNewlyAddedList);
     if (sharing.isEnabled) {
       WidgetsBinding.instance.removeObserver(this);
       sharing.removeListener(_onSharingChanged);
@@ -435,24 +466,52 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
         ],
       );
     }
+    final cs = Theme.of(context).colorScheme;
+    final newShown = shared.any((el) => el.listId == _newListId);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
+        if (newShown)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
+            child: Text(
+              l.listSubscribedNewHint,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+            ),
+          ),
         for (final el in shared)
-          HearthListRow(
-            key: ValueKey('shared-${el.listId}'),
-            leading: el.getLeadingIcon(),
-            title: el.getName(),
-            subtitle: _formatSharedStatus(context, el),
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => widget.buildEntryListWidgetCallback(el),
-                ),
-              );
-              if (mounted) setState(() {});
-            },
+          KeyedSubtree(
+            key: el.listId == _newListId ? _newListRowKey : null,
+            child: HearthListRow(
+              key: ValueKey('shared-${el.listId}'),
+              leading: el.getLeadingIcon(),
+              title: el.getName(),
+              subtitle: _formatSharedStatus(context, el),
+              borderColor: el.listId == _newListId ? cs.primary : null,
+              trailing: el.listId == _newListId
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HearthTag(
+                          l.listNewTag,
+                          color: cs.onPrimary,
+                          background: cs.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                      ],
+                    )
+                  : null,
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => widget.buildEntryListWidgetCallback(el),
+                  ),
+                );
+                if (mounted) setState(() {});
+              },
+            ),
           ),
         _subscribeViaLinkButton(),
       ],

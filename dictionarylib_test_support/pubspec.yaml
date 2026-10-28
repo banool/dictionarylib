@@ -20,6 +20,7 @@ dependencies:
   dictionarylib:
     path: ../
   device_info_plus:
+  go_router:
   http:
   media_kit:
   shared_preferences:

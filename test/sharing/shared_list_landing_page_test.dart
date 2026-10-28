@@ -4,6 +4,7 @@ import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/page_entry_list.dart';
+import 'package:dictionarylib/page_entry_list_overview.dart';
 import 'package:dictionarylib/sharing/auth/auth_api.dart';
 import 'package:dictionarylib/sharing/auth/auth_service.dart';
 import 'package:dictionarylib/sharing/auth/auth_store.dart';
@@ -11,8 +12,10 @@ import 'package:dictionarylib/sharing/shared_list_landing_page.dart';
 import 'package:dictionarylib/sharing/sharing.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
+import 'package:dictionarylib/top_level_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,6 +53,7 @@ void main() {
     sharedPreferences = await SharedPreferences.getInstance();
     seedDictionary(['apple']);
     userEntryListManager = UserEntryListManager.fromStartup();
+    communityEntryListManager = DummyEntryListManager();
   });
 
   Widget wrap() => MaterialApp(
@@ -279,6 +283,81 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(EntryListPage), findsOneWidget);
     expect(posts, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  /// People who opened a list from a link couldn't find it again later, so
+  /// the link now lands on the list's home, the Subscribed tab, with the
+  /// list marked as new — once.
+  testWidgets('a followed link lands on Subscribed with the list marked new, '
+      'once', (tester) async {
+    installFakeSharing(
+      (req) async => http.Response(
+        listPayload(),
+        200,
+        headers: {'content-type': 'application/json', 'etag': '"e1"'},
+      ),
+    );
+    tester.view.physicalSize = const Size(1206, 2622);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(
+      initialLocation: '/share/list000001',
+      routes: [
+        GoRoute(
+          path: LISTS_ROUTE,
+          builder: (context, state) => EntryListsOverviewPage(
+            buildEntryListWidgetCallback: (entryList) =>
+                const SizedBox.shrink(),
+          ),
+        ),
+        GoRoute(
+          path: SEARCH_ROUTE,
+          builder: (context, state) => const Text('search'),
+        ),
+        GoRoute(
+          path: '/share/:listId',
+          builder: (context, state) => SharedListLandingPage(
+            listId: state.pathParameters['listId']!,
+            navigateToEntryPage: (
+              context,
+              entry,
+              _, {
+              focusVideo,
+              saveToList,
+            }) async {},
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        supportedLocales: DictLibLocalizations.supportedLocales,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EntryListsOverviewPage), findsOneWidget);
+    expect(find.byType(EntryListPage), findsNothing);
+    expect(find.text('Greetings'), findsOneWidget);
+    expect(find.text('NEW'), findsOneWidget);
+    expect(
+      find.textContaining('Lists you open from a share link are kept here'),
+      findsOneWidget,
+    );
+    expect(newlyAddedSharedListId.value, isNull);
+
+    // Back on the lists page later, it's an ordinary row again, and the
+    // page remembers Subscribed as the tab to open on.
+    router.go(SEARCH_ROUTE);
+    await tester.pumpAndSettle();
+    router.go(LISTS_ROUTE);
+    await tester.pumpAndSettle();
+    expect(find.text('Greetings'), findsOneWidget);
+    expect(find.text('NEW'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

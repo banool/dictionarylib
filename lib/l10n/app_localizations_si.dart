@@ -621,6 +621,13 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get listSharedWithMeEmpty => 'තවම මෙහි කිසිවක් නැත.';
 
   @override
+  String get listNewTag => 'නව';
+
+  @override
+  String get listSubscribedNewHint =>
+      'බෙදාගැනීමේ සබැඳියකින් ඔබ විවෘත කරන ලැයිස්තු මෙහි තබා ඇත, එබැවින් ඔබට ඒවා ඕනෑම වේලාවක නැවත සොයාගත හැක.';
+
+  @override
   String get ownedStatusOrphaned => 'බෙදාගත් — ඔබ විසින් මකා දමන ලදී';
 
   @override

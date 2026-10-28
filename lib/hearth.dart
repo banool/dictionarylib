@@ -655,6 +655,10 @@ class HearthListRow extends StatelessWidget {
   final VoidCallback? onTap;
   final bool showChevron;
 
+  /// Accent border for a row that should catch the eye, such as a list
+  /// that's just been added; see [HearthCard.borderColor].
+  final Color? borderColor;
+
   const HearthListRow({
     this.leading,
     required this.title,
@@ -662,6 +666,7 @@ class HearthListRow extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.showChevron = true,
+    this.borderColor,
     super.key,
   });
 
@@ -678,6 +683,8 @@ class HearthListRow extends StatelessWidget {
       child: HearthCard(
         onTap: onTap,
         padding: const EdgeInsets.all(12),
+        borderColor: borderColor,
+        borderWidth: borderColor != null ? 1.5 : 1,
         child: Row(
           children: [
             if (leading != null) ...[

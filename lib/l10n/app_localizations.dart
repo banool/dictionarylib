@@ -1189,6 +1189,18 @@ abstract class DictLibLocalizations {
   /// **'Nothing here yet.'**
   String get listSharedWithMeEmpty;
 
+  /// No description provided for @listNewTag.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get listNewTag;
+
+  /// No description provided for @listSubscribedNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists you open from a share link are kept here, so you can find them again any time.'**
+  String get listSubscribedNewHint;
+
   /// No description provided for @ownedStatusOrphaned.
   ///
   /// In en, this message translates to:

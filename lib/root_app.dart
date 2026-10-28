@@ -256,10 +256,11 @@ class _DictRootAppState extends State<DictRootApp> {
     // anonymous subscribe.
     //
     // We `push` rather than `go` so the app's existing screen stays
-    // underneath: the landing page (and the list page it swaps itself for)
-    // then has something to pop back to. On a cold start the initial
-    // location (search) is the base, so opening a shared list still leaves a
-    // working back button instead of stranding the user on a rootless route.
+    // underneath: the landing page then has something to pop back to while
+    // it loads, fails, or asks to accept an invite. On a cold start the
+    // initial location (search) is the base, so there's still a working back
+    // button instead of a rootless route. Once the list is in, the landing
+    // page goes to the Lists tab, where it lives.
     _deepLinkSub = sharing.deepLinks.payloads.listen((payload) {
       router.push(payload.toRouteLocation());
     });
