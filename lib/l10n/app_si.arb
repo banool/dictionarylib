@@ -183,7 +183,10 @@
     "settingsDeleteAccount": "ගිණුම මකන්න",
     "settingsDeleteAccountConfirmTitle": "ගිණුම මකන්නද?",
     "settingsDeleteAccountConfirmButton": "ගිණුම මකන්න",
-    "settingsDeleteAccountConfirmBody": "මෙය ඔබගේ ගිණුම සහ අප ඔබ වෙනුවෙන් ගබඩා කරන සියල්ල ස්ථිරවම මකා දමයි:\n  • ඔබ බෙදාගත් සෑම ලැයිස්තුවක්ම සේවාදායකයෙන් මකා දැමේ — දායක වූ ඕනෑම අයෙකු ඔවුන්ගේ උපාංගයේ ඇති පිටපත රඳවා ගනී, නමුත් එය යාවත්කාලීන වීම නවතින අතර ඉවත් කළ ලෙස සලකුණු වේ.\n  • අන් අයගේ ලැයිස්තුවලින් ඔබ සංස්කාරකවරයෙකු ලෙස ඉවත් කරනු ලැබේ.\n  • අප සතු ඕනෑම පුද්ගලික තොරතුරක් (ඔබගේ නම) අප මකා දමයි.\n\nමෙම උපාංගයේ ඇති ලැයිස්තු ඒවායේ ඇතුළත් කිරීම් රඳවා ගනී; බෙදා ගැනීම පමණක් ඉවත් වේ. මෙය නැවත හැරවිය නොහැක.",
+    "settingsDeleteAccountConfirmBody": "මෙය ඔබගේ ගිණුම සහ අප ඔබ වෙනුවෙන් ගබඩා කරන සියල්ල ස්ථිරවම මකා දමයි:\n  • ඔබගේ ලැයිස්තු සහ ප්‍රගතිය සේවාදායකයෙන් මකා දැමේ, එබැවින් ඒවා ඔබගේ උපාංග අතර සමමුහුර්ත වීම නවතී.\n  • ඔබ බෙදාගත් සෑම ලැයිස්තුවක්ම ද මකා දැමේ — දායක වූ ඕනෑම අයෙකු ඔවුන්ගේ උපාංගයේ ඇති පිටපත රඳවා ගනී, නමුත් එය යාවත්කාලීන වීම නවතින අතර ඉවත් කළ ලෙස සලකුණු වේ.\n  • අන් අයගේ ලැයිස්තුවලින් ඔබ සංස්කාරකවරයෙකු ලෙස ඉවත් කරනු ලැබේ.\n  • අප සතු ඕනෑම පුද්ගලික තොරතුරක් (ඔබගේ නම) අප මකා දමයි.\n\nමෙම උපාංගයේ ඇති ලැයිස්තු සහ ප්‍රගතිය එහිම පවතී. මෙය නැවත හැරවිය නොහැක.",
+    "@settingsDeleteAccountConfirmBody": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker. (the first bullet and the last paragraph)"
+    },
     "settingsDeleteAccountRunning": "ගිණුම මකමින්…",
     "settingsDeleteAccountFailed": "ඔබගේ ගිණුම මැකීමට නොහැකි විය: {message}",
 
@@ -420,12 +423,16 @@
     "errorFallbackDetailsTitle": "තාක්ෂණික විස්තර",
     "errorFallbackCopyDetailsButton": "විස්තර පිටපත් කරන්න",
     "errorFallbackDetailsCopiedSnack": "විස්තර පසුරු පුවරුවට පිටපත් විය",
-    "settingsAccount": "ගිණුම",
-    "@settingsAccount": {
+    "settingsSharingAndSyncing": "බෙදා ගැනීම සහ සමමුහුර්ත කිරීම",
+    "@settingsSharingAndSyncing": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
-    "settingsAccountSignIn": "ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න",
-    "@settingsAccountSignIn": {
+    "settingsSignInRow": "පුරනය වන්න",
+    "@settingsSignInRow": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "settingsSignInRowSubtitle": "ඔබේම උපාංග අතර ඔබේ ලැයිස්තු සහ ප්‍රගතිය සමමුහුර්ත කර, ලැයිස්තු බෙදා ගන්න",
+    "@settingsSignInRowSubtitle": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
     "settingsSignedInWith": "{provider} සමඟ පුරනය වී ඇත",
@@ -468,11 +475,11 @@
     "@accountSyncStatusPaused": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
-    "listsSignInFooter": "ඔබගේ ලැයිස්තු ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.",
-    "@listsSignInFooter": {
+    "listsSignInSyncHint": "ඔබේම උපාංග අතර ලැයිස්තු සමමුහුර්ත කිරීමට පුරනය වන්න",
+    "@listsSignInSyncHint": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
-    "signInDialogBodySync": "ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.",
+    "signInDialogBodySync": "පුරනය වීමෙන් ඔබේ ලැයිස්තු සහ ප්‍රගතිය ඔබේම උපාංග අතර සමමුහුර්ත වන අතර, ලැයිස්තු බෙදා ගැනීමටද හැකි වේ.",
     "@signInDialogBodySync": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },

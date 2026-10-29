@@ -41,18 +41,19 @@ Widget getSettingsHelpPageEn() {
         "If you encounter an issue, I appreciate you using the appropriate option for getting help.",
       ],
       "What does signing in do?": [
-        "Signing in gives you an account, which is what makes list sharing work. With "
-            "an account you can share your own lists, accept invitations to help edit "
-            "other people's, and keep all of that in sync across your devices.",
+        "Signing in gives you an account. Your lists and your revision progress then "
+            "sync between your own devices: sign in with the same account on each one. "
+            "An account is also what makes list sharing work: you can share your own "
+            "lists and accept invitations to help edit other people's.",
         "You can sign in with Apple, Google or Microsoft — you'll see "
             "whichever of these are available on your device. If you only want to "
             "search, save signs and revise, you don't need to sign in at all.",
       ],
       "What happens if I delete my account?": [
-        "We remove every list you own and your editor access to other people's lists "
-            "from our servers, along with the display name you chose when sharing. "
-            "Anything that doesn't need an account — your local lists and any lists "
-            "you've only subscribed to — stays right where it is.",
+        "We remove every list you own (shared or not), your synced revision progress "
+            "and your editor access to other people's lists from our servers, along "
+            "with the display name you chose when sharing. The lists and progress on "
+            "this device stay on it, as do any lists you've only subscribed to.",
         "This can't be undone, so we'll ask you to confirm first. If you just want to "
             "step away without removing anything, signing out is the gentler option.",
       ],

@@ -106,7 +106,8 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
       final failMessage =
           DictLibLocalizations.of(context)?.saveVideoFailed ??
           "Couldn't update your lists. Please try again.";
-      final isShared = widget.list is SyncedEntryList;
+      final list = widget.list;
+      final isShared = list is SyncedEntryList && list.meta.isShared;
       try {
         if (saved) {
           await widget.list.removeVideo(widget.video);
@@ -189,7 +190,10 @@ class _SaveVideoSheetRowState extends State<_SaveVideoSheetRow> {
   }
 
   IconData _iconDataFor(EntryList list) {
-    if (list is SyncedEntryList) {
+    // A private list of the person's own (on the account, not shared) looks
+    // like any list on the device, as in My lists.
+    if (list is SyncedEntryList &&
+        (list.meta.isShared || list.ownerSource == null)) {
       return iconForSharedList(list.meta);
     }
     return Icons.list_alt;

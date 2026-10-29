@@ -158,10 +158,10 @@ class Sharing with ChangeNotifier {
   /// (it preserves pending ops across an expiry so the next sign-in
   /// by the same user resumes the flush).
   ///
-  /// With account sync this also flushes the account's queued ops, then
-  /// drops the account state and the unsent-answers queue (section 5.9 of
-  /// the plan). Every local list keeps its signs and the revision history
-  /// stays; nothing on the server changes.
+  /// With account sync this also drops the account state and the
+  /// unsent-answers queue (section 5.9 of the plan), after capturing what
+  /// was still queued, which goes up in the background. Every local list
+  /// keeps its signs and the revision history stays.
   Future<void> signOut() async {
     // Nothing waits for the network (section 5.2): what is still queued is
     // captured, the device signs out at once, and the capture goes up in

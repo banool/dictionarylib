@@ -389,6 +389,9 @@ Future<bool> confirmAlert(
           }
 
           return AlertDialog(
+            // Long bodies (deleting an account, in Tamil, on a small phone
+            // or with large text) scroll rather than overflow.
+            scrollable: true,
             title: Text(title!),
             content: content,
             actions: [

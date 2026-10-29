@@ -21,6 +21,7 @@ import 'theme.dart';
 import 'sharing/account_sync.dart';
 import 'sharing/auth/auth_store.dart';
 import 'sharing/auth/sign_in_dialog.dart';
+import 'sharing/sharing.dart';
 import 'sharing/sync_api.dart';
 import 'top_level_scaffold.dart';
 import 'video_player_screen.dart';
@@ -60,6 +61,28 @@ class SettingsPage extends StatefulWidget {
 
 class SettingsPageState extends State<SettingsPage> {
   bool checkingForNewData = false;
+
+  /// The sharing state this page listens to: the section follows sign-in
+  /// and sign-out wherever they happen (the session-expired snackbar, the
+  /// share flow), and the status line follows sync cycles.
+  late final Sharing _sharing;
+
+  @override
+  void initState() {
+    super.initState();
+    _sharing = sharing;
+    _sharing.addListener(_onSharingChanged);
+  }
+
+  @override
+  void dispose() {
+    _sharing.removeListener(_onSharingChanged);
+    super.dispose();
+  }
+
+  void _onSharingChanged() {
+    if (mounted) setState(() {});
+  }
 
   /// "Syncing…", "Synced 3 minutes ago", "Waiting for a connection" or
   /// "Sync is paused", from the account-sync controller.
@@ -228,10 +251,12 @@ class SettingsPageState extends State<SettingsPage> {
       // Signing in is syncing (no separate switch): the section says what
       // it does, then how it's going.
       if (shareState.isEnabled && !kIsWeb && !isAndroidTv)
-        ...section(l.settingsAccount, [
+        ...section(l.settingsSharingAndSyncing, [
           if (session == null)
-            navRow(
-              l.settingsAccountSignIn,
+            HearthRow(
+              title: l.settingsSignInRow,
+              subtitle: l.settingsSignInRowSubtitle,
+              trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
               onTap: () async {
                 // The sign-in itself kicks the first sync (the merge).
                 await showSignInDialog(context);
@@ -239,20 +264,17 @@ class SettingsPageState extends State<SettingsPage> {
               },
             )
           else ...[
-            // Rebuilt as cycles start and finish.
-            ListenableBuilder(
-              listenable: shareState,
-              builder: (context, _) => HearthRow(
-                title: l.settingsSignedInWith(session.provider.label(l)),
-                subtitle: _accountSyncStatusLine(l),
-              ),
+            HearthRow(
+              title: l.settingsSignedInWith(session.provider.label(l)),
+              subtitle: _accountSyncStatusLine(l),
             ),
             navRow(
               l.settingsSignOutRow,
               onTap: () async {
                 // Pass [onConfirm] so the dialog keeps itself open with the
-                // built-in spinner while sign-out runs (it does a best-effort
-                // flush of queued changes first, so it isn't instant).
+                // built-in spinner while sign-out runs (it takes this
+                // device's links away; queued changes go up after, without
+                // holding the dialog).
                 final confirmed = await confirmAlert(
                   context,
                   Text(l.settingsSignOutConfirmBodySync),

@@ -183,6 +183,12 @@ class AccountSyncState {
   /// beside them).
   bool clearing;
 
+  /// Set at the start of the sign-in merge when the account had no default
+  /// list: no device has merged with it, so its order is only the order
+  /// lists were shared in before account sync, and this device's order is
+  /// kept rather than the account's.
+  bool mergeKeepsDeviceOrder;
+
   AccountSyncState({
     required this.userId,
     this.incarnation = '',
@@ -203,6 +209,7 @@ class AccountSyncState {
     List<String>? editorListIds,
     this.lastErrorKind,
     this.clearing = false,
+    this.mergeKeepsDeviceOrder = false,
   }) : linking = linking ?? {},
        unsyncable = unsyncable ?? {},
        pendingOps = pendingOps ?? [],
@@ -236,6 +243,7 @@ class AccountSyncState {
     'editorListIds': editorListIds,
     'lastErrorKind': lastErrorKind,
     if (clearing) 'clearing': true,
+    if (mergeKeepsDeviceOrder) 'mergeKeepsDeviceOrder': true,
   };
 
   /// Null for a blob from another layout version or one that can't be read.
@@ -305,6 +313,7 @@ class AccountSyncState {
       editorListIds: strings(json['editorListIds']),
       lastErrorKind: json['lastErrorKind'] as String?,
       clearing: json['clearing'] == true,
+      mergeKeepsDeviceOrder: json['mergeKeepsDeviceOrder'] == true,
     );
   }
 

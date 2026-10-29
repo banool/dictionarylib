@@ -157,7 +157,8 @@ class EntryListPageState extends State<EntryListPage> {
     final failMessage =
         DictLibLocalizations.of(context)?.saveVideoFailed ??
         "Couldn't update your lists. Please try again.";
-    final isShared = widget.entryList is SyncedEntryList;
+    final list = widget.entryList;
+    final isShared = list is SyncedEntryList && list.meta.isShared;
     try {
       await widget.entryList.addAllVideosOfEntry(entry);
       Analytics.track(

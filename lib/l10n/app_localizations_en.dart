@@ -531,7 +531,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsDeleteAccountConfirmBody =>
-      'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.';
+      'This permanently deletes your account and everything we store for you:\n  • Your lists and revision progress are deleted from the server, so they stop syncing between your devices.\n  • Every list you\'ve shared is deleted too — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists and progress on this device stay on it. This can\'t be undone.';
 
   @override
   String get settingsDeleteAccountRunning => 'Deleting account…';
@@ -1375,11 +1375,14 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get errorFallbackDetailsCopiedSnack => 'Details copied to clipboard';
 
   @override
-  String get settingsAccount => 'Account';
+  String get settingsSharingAndSyncing => 'Sharing and syncing';
 
   @override
-  String get settingsAccountSignIn =>
-      'Sign in to keep your lists and progress on all your devices';
+  String get settingsSignInRow => 'Sign in';
+
+  @override
+  String get settingsSignInRowSubtitle =>
+      'Sync your lists and progress between your own devices, and share lists';
 
   @override
   String settingsSignedInWith(String provider) {
@@ -1439,16 +1442,16 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get accountSyncStatusPaused => 'Sync is paused';
 
   @override
-  String get listsSignInFooter =>
-      'Sign in to keep your lists on all your devices.';
+  String get listsSignInSyncHint =>
+      'Sign in to sync lists between your own devices';
 
   @override
   String get signInDialogBodySync =>
-      'Sign in to keep your lists and progress on all your devices.';
+      'Signing in syncs your lists and progress between your own devices and lets you share lists.';
 
   @override
   String get shareSignInContextSync =>
-      'Sharing needs an account. Signing in also keeps your lists and progress in sync across your devices.';
+      'Sharing needs an account. Signing in also syncs your lists and progress between your own devices.';
 
   @override
   String get accountSyncMergedSnack =>

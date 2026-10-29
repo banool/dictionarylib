@@ -9,7 +9,6 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/retry.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
 import 'package:dictionarylib/sharing/account_sync_state.dart';
-import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
@@ -592,39 +591,28 @@ Widget _getUserLists(
       ),
     );
   }
-  // Signed out: one tappable line saying what signing in does. Nothing when
-  // signed in. Not on web or TV, where there's no sign-in.
-  if (sharing.isEnabled &&
-      sharing.auth.store.current == null &&
-      sharing.accountSync.supported) {
-    tiles.add(
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Align(
-          alignment: Alignment.center,
-          child: TextButton(
-            onPressed: () => showSignInDialog(context),
-            child: Text(
-              DictLibLocalizations.of(context)!.listsSignInFooter,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
   // A gentle hint pointing at the edit (pencil) affordance, mirroring the
-  // design's sparse-state guidance.
+  // design's sparse-state guidance. Signed out (where sign-in exists), a
+  // second line says what signing in would do: plain text, since Settings
+  // is where signing in lives. Nothing extra when signed in.
+  final hintStyle = TextStyle(
+    fontSize: 13,
+    color: Theme.of(context).colorScheme.onSurfaceVariant,
+  );
+  final l = DictLibLocalizations.of(context)!;
+  final offerSync =
+      sharing.isEnabled &&
+      sharing.auth.store.current == null &&
+      sharing.accountSync.supported;
   tiles.add(
     Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       child: Text(
-        DictLibLocalizations.of(context)!.listsEditHint,
+        offerSync
+            ? '${l.listsEditHint}\n·\n${l.listsSignInSyncHint}'
+            : l.listsEditHint,
         textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 13,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        style: hintStyle,
       ),
     ),
   );

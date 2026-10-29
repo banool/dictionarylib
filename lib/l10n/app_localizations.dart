@@ -1048,7 +1048,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @settingsDeleteAccountConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account and everything we store for you:\n  • Every list you\'ve shared is deleted from the server — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists on this device keep their entries; only the sharing is removed. This can\'t be undone.'**
+  /// **'This permanently deletes your account and everything we store for you:\n  • Your lists and revision progress are deleted from the server, so they stop syncing between your devices.\n  • Every list you\'ve shared is deleted too — anyone subscribed keeps the copy already on their device, but it stops updating and is marked as removed.\n  • You\'re removed as an editor from other people\'s lists.\n  • We delete any personal information on file (your name).\n\nThe lists and progress on this device stay on it. This can\'t be undone.'**
   String get settingsDeleteAccountConfirmBody;
 
   /// No description provided for @settingsDeleteAccountRunning.
@@ -2377,17 +2377,23 @@ abstract class DictLibLocalizations {
   /// **'Details copied to clipboard'**
   String get errorFallbackDetailsCopiedSnack;
 
-  /// No description provided for @settingsAccount.
+  /// No description provided for @settingsSharingAndSyncing.
   ///
   /// In en, this message translates to:
-  /// **'Account'**
-  String get settingsAccount;
+  /// **'Sharing and syncing'**
+  String get settingsSharingAndSyncing;
 
-  /// No description provided for @settingsAccountSignIn.
+  /// No description provided for @settingsSignInRow.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to keep your lists and progress on all your devices'**
-  String get settingsAccountSignIn;
+  /// **'Sign in'**
+  String get settingsSignInRow;
+
+  /// No description provided for @settingsSignInRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync your lists and progress between your own devices, and share lists'**
+  String get settingsSignInRowSubtitle;
 
   /// No description provided for @settingsSignedInWith.
   ///
@@ -2449,22 +2455,22 @@ abstract class DictLibLocalizations {
   /// **'Sync is paused'**
   String get accountSyncStatusPaused;
 
-  /// No description provided for @listsSignInFooter.
+  /// No description provided for @listsSignInSyncHint.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to keep your lists on all your devices.'**
-  String get listsSignInFooter;
+  /// **'Sign in to sync lists between your own devices'**
+  String get listsSignInSyncHint;
 
   /// No description provided for @signInDialogBodySync.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to keep your lists and progress on all your devices.'**
+  /// **'Signing in syncs your lists and progress between your own devices and lets you share lists.'**
   String get signInDialogBodySync;
 
   /// No description provided for @shareSignInContextSync.
   ///
   /// In en, this message translates to:
-  /// **'Sharing needs an account. Signing in also keeps your lists and progress in sync across your devices.'**
+  /// **'Sharing needs an account. Signing in also syncs your lists and progress between your own devices.'**
   String get shareSignInContextSync;
 
   /// No description provided for @accountSyncMergedSnack.

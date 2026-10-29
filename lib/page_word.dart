@@ -1230,7 +1230,7 @@ class _BookmarkButtonState extends State<_BookmarkButton> {
       final saved = target.containsVideo(v);
       // Capture before the await so we don't touch BuildContext across the gap.
       final messenger = ScaffoldMessenger.of(context);
-      final isShared = target is SyncedEntryList;
+      final isShared = target is SyncedEntryList && target.meta.isShared;
       Future<void> toggle() async {
         try {
           if (saved) {

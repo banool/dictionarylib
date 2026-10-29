@@ -804,4 +804,43 @@ void main() {
     await expectAgreed(phone, when: 'after');
     expectQuiet(phone, 'l');
   });
+
+  fakeTimeTest('m: Settings says "waiting for a connection" while retries run '
+      'into a black hole, not "syncing", and "synced" once one gets through', (
+    t,
+  ) async {
+    final phone = TestDevice(server, 'phone');
+    await phone.activate();
+    await phone.addLocalList('Animals', ['cat']);
+    await phone.signIn('alice');
+    await phone.settle();
+    expect(sharing.accountSync.status, AccountSyncStatus.synced);
+
+    server.net.blackhole();
+    final first = sharing.accountSync.kick(SyncReason.pullToRefresh);
+    await spin();
+    expect(
+      sharing.accountSync.status,
+      AccountSyncStatus.syncing,
+      reason: 'the first try, before anything has failed',
+    );
+    await first;
+    expectWaiting('after a cycle that timed out');
+
+    // Ten minutes of retries, each held until its request times out.
+    var retriesInFlight = 0;
+    final seen = <AccountSyncStatus>{};
+    for (var i = 0; i < 600; i++) {
+      seen.add(sharing.accountSync.status);
+      if (sharing.accountSync.isSyncing) retriesInFlight++;
+      await t.wait(const Duration(seconds: 1));
+    }
+    expect(retriesInFlight, greaterThan(0), reason: 'retries ran meanwhile');
+    expect(seen, {AccountSyncStatus.waitingForConnection});
+
+    server.net.up();
+    await sharing.accountSync.kick(SyncReason.pullToRefresh);
+    expect(sharing.accountSync.status, AccountSyncStatus.synced);
+    expectQuiet(phone, 'm');
+  });
 }

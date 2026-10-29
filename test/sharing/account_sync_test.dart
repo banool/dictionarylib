@@ -173,6 +173,41 @@ void main() {
       expect(phone.localLists().keys, ['X', 'Y', 'B', 'A']);
     });
 
+    test('an account with only lists shared before account sync keeps the '
+        "device's order", () async {
+      // An upgrade: the old build shared Birds (and another device shared
+      // Fish) under this account, which has no default list yet, so its
+      // order is only the order things were shared in.
+      final phone = await freshDevice('phone');
+      await sharedPreferences.setBool(KEY_ACCOUNT_SYNC_KNOB, false);
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.addLocalList('Birds', ['owl']);
+      await phone.signIn('alice');
+      server.createAccountList('alice', 'Fish', visibility: 'shared');
+      await listsService.shareList(
+        sourceList: userEntryListManager.getEntryLists()['Birds_words']!,
+        displayName: 'Birds',
+        sessionToken: phone.token!,
+      );
+      expect(phone.localLists().keys, ['Favourites', 'Animals', 'Birds']);
+
+      await sharedPreferences.setBool(KEY_ACCOUNT_SYNC_KNOB, true);
+      await phone.settle();
+      expect(phone.localLists().keys, [
+        'Favourites',
+        'Animals',
+        'Birds',
+        'Fish',
+      ]);
+      expect(server.liveRows('alice').map((r) => r['name']), [
+        'Favourites',
+        'Animals',
+        'Birds',
+        'Fish',
+      ]);
+      expect(server.liveRows('alice').first['isDefault'], isTrue);
+    });
+
     test('account lists arriving with names already taken', () async {
       // Two lists called MyList on the account, and one called "search for",
       // whose key is a setting's.

@@ -272,18 +272,22 @@ class AccountSyncController {
 
   bool get isSyncing => _syncing;
 
+  /// What Settings says. After a cycle that couldn't reach the server it
+  /// stays "waiting for connection" while the retries run, rather than
+  /// "syncing" for as long as each takes to time out (a network that
+  /// swallows requests), until a cycle gets through.
   AccountSyncStatus get status {
     if (!supported || _auth.store.current == null) {
       return AccountSyncStatus.signedOut;
     }
-    if (_syncing) return AccountSyncStatus.syncing;
     final st = _state;
+    final err = st?.lastErrorKind;
+    final unreachable =
+        err == SyncErrorKind.network.name || err == SyncErrorKind.server.name;
+    if (_syncing && !unreachable) return AccountSyncStatus.syncing;
     final paused = st?.pausedUntil;
     if (paused != null && paused > _now()) return AccountSyncStatus.paused;
-    final err = st?.lastErrorKind;
-    if (err == SyncErrorKind.network.name || err == SyncErrorKind.server.name) {
-      return AccountSyncStatus.waitingForConnection;
-    }
+    if (unreachable) return AccountSyncStatus.waitingForConnection;
     return AccountSyncStatus.synced;
   }
 
@@ -704,6 +708,12 @@ class AccountSyncController {
     _mergeSettings = dir.settings;
     _mergeResetTsUs = dir.resetTsUs;
     if (st.mergePhase == MergePhase.directory) {
+      // Every merge leaves the account with a default list, so an account
+      // without one has only lists shared before account sync, in the order
+      // they were shared: this device's order wins over that.
+      st.mergeKeepsDeviceOrder = !dir.directory.any(
+        (d) => d.isLive && d.isDefault,
+      );
       st.mergePhase = MergePhase.lists;
       await _save();
     }
@@ -1375,15 +1385,18 @@ class AccountSyncController {
 
   /// After the merge: the account's order, then the lists this device
   /// created, in its order; the local index set the same way, with lists
-  /// that don't sync at the end.
+  /// that don't sync at the end. On an account no device had merged with
+  /// (see [AccountSyncState.mergeKeepsDeviceOrder]) the device's order
+  /// throughout, the account's other lists after it as they were installed.
   Future<void> _sendMergeReorder(AuthSession session) async {
     final st = _st!;
     final linked = _linkedKeysById();
-    final directoryOrder =
-        ([...st.directory]..sort((a, b) => a.position.compareTo(b.position)))
-            .where((d) => d.isLive)
-            .map((d) => d.listId)
-            .toList();
+    final directoryOrder = st.mergeKeepsDeviceOrder
+        ? const <String>[]
+        : ([...st.directory]..sort((a, b) => a.position.compareTo(b.position)))
+              .where((d) => d.isLive)
+              .map((d) => d.listId)
+              .toList();
     final ids = <String>[
       for (final id in directoryOrder)
         if (linked.containsKey(id)) id,

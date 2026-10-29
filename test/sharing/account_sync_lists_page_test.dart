@@ -78,4 +78,66 @@ void main() {
     expect(find.textContaining(note), findsNothing);
     await tester.runAsync(() async => phone.deactivate());
   });
+
+  testWidgets('signed out, My lists says what signing in would do, in plain '
+      'text under the edit hint; signed in, nothing extra', (tester) async {
+    seedDictionary(const ['cat']);
+    final server = FakeAccountServer();
+    final phone = TestDevice(server, 'phone');
+    await tester.runAsync(() async {
+      await phone.activate();
+      await phone.addLocalList('Animals', ['cat']);
+    });
+    communityEntryListManager = DummyEntryListManager();
+    tester.view.physicalSize = const Size(750, 1334);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(
+      initialLocation: LISTS_ROUTE,
+      routes: [
+        GoRoute(
+          path: LISTS_ROUTE,
+          builder: (context, state) => EntryListsOverviewPage(
+            buildEntryListWidgetCallback: (entryList) =>
+                const SizedBox.shrink(),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        supportedLocales: DictLibLocalizations.supportedLocales,
+      ),
+    );
+    await tester.pumpAndSettle();
+    const hint = 'Sign in to sync lists between your own devices';
+    expect(find.textContaining(hint), findsOneWidget);
+    expect(find.textContaining('Tap the pencil'), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.textContaining(hint),
+        matching: find.byType(TextButton),
+      ),
+      findsNothing,
+      reason: 'plain text, not a button',
+    );
+    // The Animals row looks like any list: no badge, a word count.
+    expect(find.text('1 word'), findsOneWidget);
+
+    await tester.runAsync(() async {
+      await phone.signIn('alice');
+      await phone.settle();
+    });
+    sharing.bumpState();
+    await tester.pumpAndSettle();
+    expect(find.textContaining(hint), findsNothing);
+    expect(find.textContaining('Tap the pencil'), findsOneWidget);
+    // Linked and private, it still looks like an ordinary list.
+    expect(sharing.lists.ownerForSourceKey('Animals_words'), isNotNull);
+    expect(find.text('1 word'), findsOneWidget);
+    await tester.runAsync(() async => phone.deactivate());
+  });
 }

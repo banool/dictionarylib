@@ -535,7 +535,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get settingsDeleteAccountConfirmBody =>
-      'මෙය ඔබගේ ගිණුම සහ අප ඔබ වෙනුවෙන් ගබඩා කරන සියල්ල ස්ථිරවම මකා දමයි:\n  • ඔබ බෙදාගත් සෑම ලැයිස්තුවක්ම සේවාදායකයෙන් මකා දැමේ — දායක වූ ඕනෑම අයෙකු ඔවුන්ගේ උපාංගයේ ඇති පිටපත රඳවා ගනී, නමුත් එය යාවත්කාලීන වීම නවතින අතර ඉවත් කළ ලෙස සලකුණු වේ.\n  • අන් අයගේ ලැයිස්තුවලින් ඔබ සංස්කාරකවරයෙකු ලෙස ඉවත් කරනු ලැබේ.\n  • අප සතු ඕනෑම පුද්ගලික තොරතුරක් (ඔබගේ නම) අප මකා දමයි.\n\nමෙම උපාංගයේ ඇති ලැයිස්තු ඒවායේ ඇතුළත් කිරීම් රඳවා ගනී; බෙදා ගැනීම පමණක් ඉවත් වේ. මෙය නැවත හැරවිය නොහැක.';
+      'මෙය ඔබගේ ගිණුම සහ අප ඔබ වෙනුවෙන් ගබඩා කරන සියල්ල ස්ථිරවම මකා දමයි:\n  • ඔබගේ ලැයිස්තු සහ ප්‍රගතිය සේවාදායකයෙන් මකා දැමේ, එබැවින් ඒවා ඔබගේ උපාංග අතර සමමුහුර්ත වීම නවතී.\n  • ඔබ බෙදාගත් සෑම ලැයිස්තුවක්ම ද මකා දැමේ — දායක වූ ඕනෑම අයෙකු ඔවුන්ගේ උපාංගයේ ඇති පිටපත රඳවා ගනී, නමුත් එය යාවත්කාලීන වීම නවතින අතර ඉවත් කළ ලෙස සලකුණු වේ.\n  • අන් අයගේ ලැයිස්තුවලින් ඔබ සංස්කාරකවරයෙකු ලෙස ඉවත් කරනු ලැබේ.\n  • අප සතු ඕනෑම පුද්ගලික තොරතුරක් (ඔබගේ නම) අප මකා දමයි.\n\nමෙම උපාංගයේ ඇති ලැයිස්තු සහ ප්‍රගතිය එහිම පවතී. මෙය නැවත හැරවිය නොහැක.';
 
   @override
   String get settingsDeleteAccountRunning => 'ගිණුම මකමින්…';
@@ -1386,11 +1386,14 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'විස්තර පසුරු පුවරුවට පිටපත් විය';
 
   @override
-  String get settingsAccount => 'ගිණුම';
+  String get settingsSharingAndSyncing => 'බෙදා ගැනීම සහ සමමුහුර්ත කිරීම';
 
   @override
-  String get settingsAccountSignIn =>
-      'ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න';
+  String get settingsSignInRow => 'පුරනය වන්න';
+
+  @override
+  String get settingsSignInRowSubtitle =>
+      'ඔබේම උපාංග අතර ඔබේ ලැයිස්තු සහ ප්‍රගතිය සමමුහුර්ත කර, ලැයිස්තු බෙදා ගන්න';
 
   @override
   String settingsSignedInWith(String provider) {
@@ -1450,12 +1453,12 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get accountSyncStatusPaused => 'සමමුහුර්ත කිරීම නවතා ඇත';
 
   @override
-  String get listsSignInFooter =>
-      'ඔබගේ ලැයිස්තු ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.';
+  String get listsSignInSyncHint =>
+      'ඔබේම උපාංග අතර ලැයිස්තු සමමුහුර්ත කිරීමට පුරනය වන්න';
 
   @override
   String get signInDialogBodySync =>
-      'ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.';
+      'පුරනය වීමෙන් ඔබේ ලැයිස්තු සහ ප්‍රගතිය ඔබේම උපාංග අතර සමමුහුර්ත වන අතර, ලැයිස්තු බෙදා ගැනීමටද හැකි වේ.';
 
   @override
   String get shareSignInContextSync =>
