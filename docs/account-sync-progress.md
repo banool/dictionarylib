@@ -14,7 +14,7 @@ Build log for `docs/account-sync-plan.md` (the spec lives in the main dictionary
 ## Status
 
 - Phase 1 (backend): complete. Committed on `dictionary_backend` `account-sync`: 6100314 (the build) and 6c8fadb (fixes from an independent review of it, below).
-- Phase 2 (lists in the app): in progress. The client side is built and committed on `dictionarylib` `account-sync` (first commit of the phase: the controller, merge, steady state, UI, strings, tests). Still to do: Android backup rules in both apps, the multi-device on-device suites and the appci driver, and running them on simulators.
+- Phase 2 (lists in the app): complete, except the old-build-then-new-build upgrade check, which is folded into Phase 3's (it covers history and progress figures as well as lists, so it runs once, at the end). Committed on `dictionarylib` `account-sync` (88b275b, the client; then the wire tests and the on-device suites), on both apps' `account-sync` (backup rules, suite stubs) and on appci's `account-sync` (the driver).
 - Phase 3 (revision): not started.
 - Phase 4 (Recently deleted): not started.
 
@@ -36,6 +36,9 @@ Build log for `docs/account-sync-plan.md` (the spec lives in the main dictionary
 - UI: Settings → Account (sign-in row, "Signed in with …" with the status line, Sign out, Delete account), My lists footer when signed out, share badges and the members page only for shared lists, delete confirmation "from all your devices", stop-sharing copy, sign-in dialog body, share flow's sign-in message, snackbars for the merge, too-large and deleted-elsewhere notices. `offerImportEditableLists` and the "unshare first" rule removed.
 - Strings in the three arbs (Sinhala and Tamil machine translations, each marked in its `@` metadata as needing review), dead strings removed (the import flow's, `unshareToDeleteTooltip`, the old Sharing section's, `signInDialogBody`, `unshareConfirmBody`).
 - Knob `enable_account_sync` read at start-up in the background (`readKnob`, cached in prefs, fallback true).
+- Android backup rules in both apps (`res/xml/backup_rules.xml`, `res/xml/data_extraction_rules.xml`, referenced from the manifest's `<application>`), excluding the `install_marker` file and `FlutterSecureStorage.xml`. Checked in a built debug APK (Auslan): both attributes are in the compiled manifest and the rules compiled.
+- On-device suites in `dictionarylib_test_support/lib/multi_device/account_sync_suites.dart` (phases E1 to E3, F, G and the old-build stop-sharing solo), stubs for them in both apps, and the runs added to appci's `multi_device_run.sh` (with an `MD_SKIP` variable that leaves runs out by name). Phases C and D and the three existing solo suites were rewritten or adjusted for account sync (C and D sign in and wait for the merge instead of importing).
+- `test/sharing/account_sync_wire_test.dart`: every new request and response parses, unknown fields are ignored, 503 `UNAVAILABLE` maps to `unavailable`, plus the state blob and restore detection (fresh install, upgrade, restored).
 - Tests: `test/sharing/_fake_account_server.dart` (an in-memory Worker with fault injection, clonable), `_account_sync_harness.dart` (a "device" is a prefs map swapped in and out), `account_sync_test.dart` (merge cases, controller, lists, follows, and a kill at every one of the merge's ~100 prefs writes with the server either side of it: 206 resumed runs checked for nothing lost or doubled), `account_sync_multi_device_test.dart` (two devices' full stacks against the real Worker). Checked the tests bite: removing the upload of local extras fails 8 tests; queueing seed ops after the wrapper is installed (a kill in between loses them) fails the kill test.
 
 ## Deviations from the plan
@@ -87,6 +90,9 @@ From Phase 2:
 37. Renaming a linked list needs the network (it is a `PUT` on the list). The plan says so; it's a change for signed-in people, whose lists were all renamed offline before.
 38. `AsyncLock` no longer makes its first future at construction (a future made in one zone and awaited in a widget test's fake-async zone never resumes there; this hung a widget test). No behaviour change in the app.
 39. The sign-in dialog's title stays "Sign in to share" (only its body changed, as the plan says), which reads a little oddly when signing in from Settings.
+40. The on-device phases run one device at a time, as the driver's other phases do: `flutter test integration_test` installs the app afresh for every run and removes it afterwards. Phase E is three runs (A, then B, then A again as a new install), so the two devices sign in one after the other, not "within seconds of each other"; the concurrent case is covered by the backend's race test, the in-process two-device tests and `account_sync_multi_device_test.dart` (two full client stacks against the real Worker). In F and G "the other device" is played by the suite over HTTP as the same person (`MdOtherDevice`), the way another phone's app would talk to the Worker.
+41. The device-restore check from 5.13 (copy one simulator's app container into a fresh install) was not run on a device. Restore detection is covered by unit tests (fresh install, upgrade, restored) only.
+42. The upgrade suite (`upgrade_shared_favourites_suite.dart`) now waits for the account merge and clears its snackbar before opening the Revision tab: the "now syncing" snackbar covered the Start button.
 
 Considered and kept as the plan has it: account deletion purges shared lists in the directory on the spot, so their old-build editors see three 404s rather than an immediate 410 (the plan accepts this); lists only in the owner index are tombstoned as before.
 
@@ -100,6 +106,8 @@ Every run, with its result. A suite that did not run is listed as not run.
 - 2026-10-28, `scripts/backup.ts --base-url http://localhost:8790` with a private list on an account: wrote the list (found through the directory) and the account.
 - 2026-10-28, after the review fixes (6c8fadb), on a fresh `wrangler dev` state: `bun run typecheck` clean, `bun test` 240 pass / 0 fail, `bun run test:integration` 70 pass / 0 fail, and the unchanged Dart client at `HEAD` against it (`multi_device_sync_test.dart`) 7 pass.
 - 2026-10-29, Phase 2 client (before the first Phase 2 commit): `flutter analyze` 17 issues, all present at `HEAD` (none new); `flutter test` with `--dart-define=INTEGRATION_BASE_URL=http://localhost:8790` and `REQUIRE_SERVER=1`: 472 pass, including `account_sync_test.dart` (27, with the kill-at-every-write test) and `account_sync_multi_device_test.dart` (5, against the real Worker on 8790; the Worker log shows 144 account-sync requests from them). Backend re-checked at the same point: typecheck clean, `bun test` 240 pass, integration 70 pass.
+- 2026-10-29, on-device (Auslan, two simulators of our own, iOS, against `wrangler dev` on 8790, each phase as its own `flutter test integration_test/multi_device/<file> -d <udid>` run): phases A, B, C, D, E1, E2, E3, F, G and the solo runs `solo-revise`, `solo-imports`, `solo-old-stop-sharing` passed. `solo-upgrade` failed on its first run (the merge's snackbar covered the Revision page's Start button), passed after the fix (deviation 42). `solo-follow` not run (the suite isn't on this branch, coordination rule 6). SLSL's on-device runs: not run yet (planned after Phase 3, with the whole set again on both apps).
+- 2026-10-29, before the second Phase 2 commit, fresh `wrangler dev` state: backend `bun run typecheck` clean, `bun test` 240 pass, `bun run test:integration` 70 pass; dictionarylib `flutter analyze` 17 issues, none new against `HEAD`; `dictionarylib_test_support` analyze clean; `flutter test` (with the real-Worker tests on) 494 pass. Auslan `flutter build apk --debug` succeeds with the backup rules.
 - Not run: point-in-time recovery (it does not run under `wrangler dev`; the rehearsal is in `RUNBOOK.md` and on Daniel's list below).
 
 ## Incidents
@@ -109,5 +117,9 @@ Every run, with its result. A suite that did not run is listed as not run.
 ## For Daniel to do by hand
 
 - Before deploying the backend: nothing extra; the `v2` migration (`AccountDO`) applies on the first deploy that carries it. The backend serves old and new builds alike, so it can ship first.
+- Before the app ships: create the `enable_account_sync` knob file reading `true` in each app's knob directory (section 8 of the plan; the hard-coded fallback is also `true`, so the knob can only turn the feature off).
+- Before the store release: App Store privacy label (both apps; the October audit found "Data Not Collected"), Play's Data safety form and the privacy policy, to cover lists, follows and revision history tied to the account.
+- Have the Sinhala and Tamil strings reviewed (machine translations, marked in each arb's `@` metadata).
+- Rebase `account-sync` onto the share-landing work (`share-landing-highlight` in dictionarylib and both apps) once that lands, then add back appci's `solo-follow` run for these branches.
 - Before the app's store release: the PITR rehearsal on a deployed `--env dev` (`workers/RUNBOOK.md` → "Point-in-time recovery"), including confirming that a DO emptied with `deleteAll()` can be restored to a point before it; and a `scripts/backup.ts` run against production that shows `accounts/` being written.
 

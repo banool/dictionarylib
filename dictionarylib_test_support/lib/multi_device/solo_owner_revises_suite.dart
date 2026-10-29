@@ -47,9 +47,11 @@ void runSoloOwnerRevises(MdSuiteConfig cfg) {
       favourites,
       reason: 'expected an install whose default list is still "$favourites"',
     );
+    // Signed in, every list is on the account (linked, private) once
+    // account sync has run; what matters is that it isn't shared.
     expect(
-      listsService.ownedShareFor(defaultList),
-      isNull,
+      listsService.ownedShareFor(defaultList)?.meta.isShared ?? false,
+      isFalse,
       reason: 'expected an install whose default list is not shared yet',
     );
 
@@ -105,7 +107,10 @@ void runSoloOwnerRevises(MdSuiteConfig cfg) {
       find.text(mdL10n.shareValidationReservedName(favourites)),
       findsOneWidget,
     );
-    expect(sharing.lists.ownerForSourceKey(defaultKey), isNull);
+    expect(
+      sharing.lists.ownerForSourceKey(defaultKey)?.meta.isShared ?? false,
+      isFalse,
+    );
 
     await tester.enterText(nameField, _shareName);
     await tester.tap(find.text(mdL10n.shareDialogShareButton));
@@ -119,6 +124,7 @@ void runSoloOwnerRevises(MdSuiteConfig cfg) {
 
     final share = sharing.lists.ownerForSourceKey(defaultKey);
     expect(share, isNotNull, reason: 'sharing should leave an owned share');
+    expect(share!.meta.isShared, isTrue);
     // The list on the device is the one it was: same key, same signs, still
     // the default list.
     expect(userEntryListManager.defaultListKey, defaultKey);
@@ -167,7 +173,7 @@ void runSoloOwnerRevises(MdSuiteConfig cfg) {
     expect(readReviews(), hasLength(2));
 
     // --- Server truth. ---
-    final state = await mdServerState(share!.listId);
+    final state = await mdServerState(share.listId);
     expect(state.displayName, _shareName);
     expect(state.ownerUserId, userId);
     expect(state.entryKeys, unorderedEquals([first.getKey(), second.getKey()]));

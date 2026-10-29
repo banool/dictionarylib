@@ -159,6 +159,13 @@ void runUpgradeWithSharedFavourites(
     expect(sharing.lists.ownerForSourceKey(newKey), isNotNull);
     expect(sharedPreferences.getStringList(newKey), storedVideos.sublist(0, 3));
 
+    // Account sync's first run (the sign-in merge, started a few seconds
+    // after launch) ends with a snackbar; let it finish and clear it so it
+    // doesn't sit over the Start button.
+    await mdWaitForAccountSync();
+    mdClearSnackBars();
+    await settle(tester);
+
     // --- And it is what revision draws from, by that name. ---
     await mdTapWhenVisible(
       tester,
