@@ -11,6 +11,7 @@
 // HTTP, the way another phone's app would. The phases that need both real
 // apps (E) carry their state through the account itself.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dictionarylib/dictionarylib.dart';
@@ -23,6 +24,7 @@ import 'package:integration_test/integration_test.dart';
 
 import '../config.dart';
 import '../helpers.dart';
+import '../net_proxy.dart';
 import 'md_common.dart';
 
 /// The person each scenario signs in as (one per scenario and run).
@@ -759,5 +761,247 @@ void runPhaseHFirstDeviceAgain(MdSuiteConfig cfg) {
     expect(page.existingReviews, hasLength(all));
     expect(_mdDue(page), lessThan(_mdDueWithoutHistory(page)));
     await _mdExpectProgressTotal(tester, all);
+  });
+}
+
+// -------- Solo: offline, then online --------
+
+/// The person behind [mdSyncUser] for the offline/online pair.
+String get _mdOfflineUser => mdSyncUser('offline');
+
+const String _mdOfflineName = 'Offline list';
+const String _mdOfflineRenamed = 'Offline renamed';
+
+/// Pump until [done] holds, at most [within]; fail with [what] if it
+/// doesn't. Each step offline must show its result within a second.
+Future<void> _mdWithin(
+  WidgetTester tester,
+  bool Function() done,
+  String what, {
+  Duration within = const Duration(seconds: 1),
+}) async {
+  final sw = Stopwatch()..start();
+  while (!done()) {
+    if (sw.elapsed > within) {
+      fail('$what took longer than $within with the network down');
+    }
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+void _mdNoSnackBar(String when) {
+  expect(find.byType(SnackBar), findsNothing, reason: '$when: a snackbar');
+}
+
+/// One device, the app's network taken away mid-session by a proxy inside
+/// the app between it and the worker: the person makes a list, saves signs
+/// into it, renames it, does a revision session and changes a revision
+/// setting through the real UI, each showing at once with nothing said
+/// about the network, Settings reading "Waiting for a connection"; then the
+/// network comes back and it all reaches the account. The second run
+/// ([runSoloOfflineOnlineAfter], another device) checks it from scratch.
+void runSoloOfflineOnline(
+  MdSuiteConfig cfg, {
+  required NavigateToEntryPageFn navigateToEntryPage,
+}) {
+  mdConfig = cfg;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('offline: everything shows at once; online: it all goes up', (
+    tester,
+  ) async {
+    await mdRequireServer();
+    final proxy = await NetProxy.start(Uri.parse(mdApiBaseUrl));
+    addTearDown(proxy.close);
+    await mdSetup(apiBaseUrl: proxy.baseUrl);
+    await sharedPreferences.setInt(KEY_LISTS_OVERVIEW_TAB_INDEX, 0);
+    await _mdRevisionSettings();
+    await mdSignInAs(_mdOfflineUser, 'Md Offline');
+    await mdWaitForAccountSync();
+
+    await proxy.down();
+    await mdPumpApp(tester);
+    mdClearSnackBars();
+
+    // Make a list.
+    await mdOpenListsTab(tester);
+    await mdOpenOverviewTab(tester, mdL10n.listMyLists);
+    await mdTapWhenVisible(
+      tester,
+      find.byIcon(Icons.edit_outlined),
+      reason: 'edit lists',
+    );
+    await mdTapWhenVisible(tester, find.byIcon(Icons.add), reason: 'new list');
+    await tester.enterText(find.byType(TextField).last, _mdOfflineName);
+    await tester.tap(find.text(mdL10n.alertConfirm));
+    final key = EntryList.getKeyFromName(_mdOfflineName);
+    await _mdWithin(
+      tester,
+      () =>
+          userEntryListManager.getEntryLists().containsKey(key) &&
+          find.text(_mdOfflineName).evaluate().isNotEmpty,
+      'making a list',
+    );
+    _mdNoSnackBar('made a list');
+    await settle(tester);
+
+    // Save two signs into it, from their word pages.
+    final saved = <SavedVideo>[];
+    for (final entry in [
+      mdEntryWithVideo(),
+      mdEntryWithVideo(exclude: {mdEntryWithVideo().getKey()}),
+    ]) {
+      final video = SavedVideo(
+        entryKey: entry.getKey(),
+        mediaPath: entry
+            .getSubEntries()
+            .firstWhere((s) => s.getMedia().isNotEmpty)
+            .getMedia()
+            .first,
+      );
+      unawaited(
+        navigateToEntryPage(rootNavigatorKey.currentContext!, entry, true),
+      );
+      await settle(tester);
+      await mdTapWhenVisible(
+        tester,
+        find.byKey(const ValueKey('wordPage.saveButton')).first,
+        reason: 'the save button on ${entry.getKey()}',
+      );
+      await tester.tap(find.byKey(ValueKey('saveVideoSheet.row.$key')));
+      await _mdWithin(
+        tester,
+        () =>
+            userEntryListManager.getEntryLists()[key]!.savedVideos.isNotEmpty &&
+            userEntryListManager.getEntryLists()[key]!.savedVideos.any(
+              (v) => v.entryKey == video.entryKey,
+            ),
+        'saving ${entry.getKey()}',
+      );
+      saved.add(
+        userEntryListManager.getEntryLists()[key]!.savedVideos.firstWhere(
+          (v) => v.entryKey == video.entryKey,
+        ),
+      );
+      _mdNoSnackBar('saved a sign');
+      // Close the sheet and the word page.
+      await tester.tapAt(const Offset(20, 20));
+      await settle(tester);
+      await tester.pageBack();
+      await settle(tester);
+    }
+
+    // Rename it.
+    await mdOpenListsTab(tester);
+    await mdTapWhenVisible(
+      tester,
+      find.byIcon(Icons.edit_outlined),
+      reason: 'edit lists',
+    );
+    await mdTapWhenVisible(
+      tester,
+      find.text(_mdOfflineName),
+      reason: 'the new list in edit mode',
+    );
+    await tester.enterText(find.byType(TextField).last, _mdOfflineRenamed);
+    await tester.tap(find.text(mdL10n.alertConfirm));
+    final renamedKey = EntryList.getKeyFromName(_mdOfflineRenamed);
+    await _mdWithin(
+      tester,
+      () => userEntryListManager.getEntryLists().values.any(
+        (l) => l.getName() == _mdOfflineRenamed,
+      ),
+      'renaming the list',
+    );
+    _mdNoSnackBar('renamed');
+    await settle(tester);
+    final renamed = userEntryListManager.getEntryLists().values.firstWhere(
+      (l) => l.getName() == _mdOfflineRenamed,
+    );
+    expect(renamed.savedVideos.length, 2);
+
+    // A revision session on it.
+    await sharedPreferences.setStringList(KEY_LISTS_TO_REVIEW, [renamed.key]);
+    final page = await _mdOpenRevision(tester);
+    page.updateRevisionSettings();
+    await settle(tester);
+    final due = _mdDue(page);
+    expect(due, greaterThan(0));
+    final before = reviewHistory.read().length;
+    await _mdRunSession(tester, due);
+    await _mdWithin(
+      tester,
+      () => reviewHistory.read().length == before + due,
+      'storing the session',
+    );
+    _mdNoSnackBar('revised');
+
+    // A revision setting: the card limit.
+    await tester.tap(find.byType(DropdownButton<int>));
+    await settle(tester);
+    await tester.tap(find.text('10').last);
+    await _mdWithin(
+      tester,
+      () => sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT) == 10,
+      'changing the card limit',
+    );
+    _mdNoSnackBar('changed a setting');
+    await settle(tester);
+
+    // Settings says what's going on, and nothing else does.
+    await mdTapWhenVisible(
+      tester,
+      mdNavIcon(Icons.settings),
+      reason: 'Settings tab',
+    );
+    await mdWaitForUi(
+      tester,
+      () => find.text(mdL10n.accountSyncStatusWaiting).evaluate().isNotEmpty,
+      reason: 'Settings reads "Waiting for a connection"',
+    );
+    _mdNoSnackBar('offline');
+
+    // Back online (the app comes back to the foreground).
+    await proxy.up();
+    await sharing.accountSync.kick(SyncReason.resumed);
+    await mdWaitForAccountSync();
+    final other = await MdOtherDevice.signIn(_mdOfflineUser);
+    final lists = await other.liveLists();
+    expect(lists.keys, contains(_mdOfflineRenamed));
+    expect((await other.entryKeys(lists[_mdOfflineRenamed]!)).toSet(), {
+      for (final v in saved) v.entryKey,
+    });
+    expect(sharing.lists.ownerForSourceKey(renamedKey), isNotNull);
+    expect(await other.answers(), hasLength(due));
+    final settings = (await other.account())['settings'] as List;
+    expect(
+      settings.firstWhere((x) => x['key'] == KEY_REVISION_CARD_LIMIT)['value'],
+      '10',
+    );
+    mdEmit('MD_OFFLINE_ANSWERS', '$due');
+  });
+}
+
+/// The second run of the offline/online pair: a fresh install signing in as
+/// the same person has the list (renamed, with its signs), the answers and
+/// the setting.
+void runSoloOfflineOnlineAfter(MdSuiteConfig cfg) {
+  mdConfig = cfg;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('another device has everything done offline', (tester) async {
+    await mdRequireServer();
+    await mdSetup();
+    final other = await MdOtherDevice.signIn(_mdOfflineUser);
+    final lists = await other.liveLists();
+    expect(lists.keys, contains(_mdOfflineRenamed), reason: 'run first');
+    final keys = (await other.entryKeys(lists[_mdOfflineRenamed]!)).toSet();
+    final answers = (await other.answers()).length;
+    await mdSignInAs(_mdOfflineUser, 'Md Offline');
+    await mdWaitForAccountSync();
+    expect(mdLocalKeys(_mdOfflineRenamed), keys);
+    expect(reviewHistory.read(), hasLength(answers));
+    expect(sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT), 10);
+    await mdPumpApp(tester);
+    mdClearSnackBars();
+    await mdExpectListOnScreen(tester, _mdOfflineRenamed);
   });
 }

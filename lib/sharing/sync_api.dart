@@ -1076,6 +1076,9 @@ class SyncApi {
   /// directory, follows and settings back whole, plus the answers and
   /// random sessions stored after [sinceSeq] (a page at a time; see
   /// [AccountSyncResponse.hasMore]).
+  /// How long an account-sync request may take.
+  static const Duration accountSyncTimeout = Duration(seconds: 30);
+
   Future<AccountSyncResponse> accountSync({
     required String clientId,
     required int sinceSeq,
@@ -1085,6 +1088,10 @@ class SyncApi {
     final resp = await _request(
       method: 'POST',
       url: Uri.parse('${config.apiBaseUrl}/v1/account/sync'),
+      // A page of answers is up to about 100 KB, which a bad mobile link
+      // can take a while over. Nothing waits on it: a list operation
+      // pre-empts a cycle's request (see AccountSyncController).
+      timeout: accountSyncTimeout,
       headers: {
         ..._baseHeaders(),
         'content-type': 'application/json',
@@ -1182,21 +1189,23 @@ class SyncApi {
     required Uri url,
     required Map<String, String> headers,
     String? body,
+    Duration? timeout,
   }) async {
+    final limit = timeout ?? this.timeout;
     try {
       switch (method) {
         case 'GET':
-          return await _client.get(url, headers: headers).timeout(timeout);
+          return await _client.get(url, headers: headers).timeout(limit);
         case 'POST':
           return await _client
               .post(url, headers: headers, body: body)
-              .timeout(timeout);
+              .timeout(limit);
         case 'PUT':
           return await _client
               .put(url, headers: headers, body: body)
-              .timeout(timeout);
+              .timeout(limit);
         case 'DELETE':
-          return await _client.delete(url, headers: headers).timeout(timeout);
+          return await _client.delete(url, headers: headers).timeout(limit);
         default:
           throw ArgumentError('unsupported method: $method');
       }

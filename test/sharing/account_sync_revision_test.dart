@@ -608,6 +608,10 @@ void main() {
       server.failBefore = null;
       expect(reviewHistory.unsentCount, 1);
       await sharing.signOut();
+      // The parting flush goes in the background, after signing out.
+      for (var i = 0; i < 200 && serverAnswers().isEmpty; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
       expect(serverAnswers(), hasLength(1));
       expect(reviewHistory.read(), hasLength(1));
     });

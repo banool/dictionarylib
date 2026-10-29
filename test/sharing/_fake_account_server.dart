@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:dictionarylib/sharing/sync_clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -38,6 +41,9 @@ class FakeAccountServer {
   /// When set, account routes answer 503 UNAVAILABLE (the kill switch).
   bool accountSyncDisabled = false;
 
+  /// The network between the devices and this server.
+  final NetworkSwitch net = NetworkSwitch();
+
   /// Called for each account op not seen before; return true to answer it
   /// `rejected retry` (the list it needs unreachable for now, say).
   bool Function(Map<String, dynamic> op)? answerRetry;
@@ -51,7 +57,7 @@ class FakeAccountServer {
   /// devices' clocks in a test are the real one, moved by
   /// `debugSyncClockOffsetSeconds`), not [_clock], which tests move for
   /// day-scale things like follow retries and purges.
-  static int _realNow() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  static int _realNow() => debugSyncClock().millisecondsSinceEpoch ~/ 1000;
 
   /// A client time as last-intent-wins compares it: at most five minutes
   /// ahead of the server, the server's time when absent (`clampClientTs` in
@@ -92,6 +98,32 @@ class FakeAccountServer {
 
   Future<http.Response> handle(http.Request req) async {
     log.add('${req.method} ${req.url.path}');
+    switch (net.mode) {
+      case NetMode.up:
+        break;
+      case NetMode.down:
+        throw http.ClientException('connection refused', req.url);
+      case NetMode.blackhole:
+        // Accepted and never answered; when the switch changes, the
+        // connection drops.
+        final held = Completer<void>();
+        net._held.add(held);
+        await held.future;
+        throw http.ClientException('connection dropped', req.url);
+      case NetMode.flaky:
+        if (net._rng.nextDouble() < net._p) {
+          if (net._rng.nextBool()) {
+            return _err(503, 'INTERNAL', 'flaky');
+          }
+          throw http.ClientException('flaky: connection reset', req.url);
+        }
+      case NetMode.slow:
+        await Future<void>.delayed(net._delay);
+      case NetMode.lossy:
+        // The server does the work; the answer never arrives.
+        _route(req);
+        throw http.ClientException('response lost', req.url);
+    }
     if (failBefore?.call(req) ?? false) {
       throw http.ClientException('fake network failure', req.url);
     }
@@ -101,6 +133,9 @@ class FakeAccountServer {
     }
     return resp;
   }
+
+  /// Requests that reached the network (any mode), `METHOD path`.
+  int get requestCount => log.length;
 
   // -------- helpers --------
 
@@ -438,6 +473,7 @@ class FakeAccountServer {
         'type': type,
         'args': logged,
         'userId': user,
+        'clientTs': op['clientTs'],
       });
       applied.add({
         'opId': opId,
@@ -844,6 +880,28 @@ class FakeAccountServer {
         final id = a['listId'] as String;
         final row = _row(acc, id);
         if (row != null && row['isDefault'] == true) return rej('default_list');
+        // Edited later (by the editing device's clock) than the delete was
+        // made: the list stays (list_do.ts `deleteList`).
+        final l = lists[id];
+        if (l != null && l['tombstoned'] != true && l['owner'] == user) {
+          var newest = -1;
+          for (final o in (l['ops'] as List).cast<Map<String, dynamic>>()) {
+            if (const {
+                  'addEntry',
+                  'removeEntry',
+                  'addEntries',
+                  'rename',
+                }.contains(o['type']) &&
+                o['clientTs'] is int) {
+              final c = clampTs(o['clientTs']);
+              if (c > newest) newest = c;
+            }
+          }
+          if (newest > ts) {
+            stale = true;
+            break;
+          }
+        }
         final err = _deleteList(id, user);
         if (err != null && err.statusCode == 403) return rej('forbidden');
         if (row != null) {
@@ -1021,5 +1079,50 @@ class FakeAccountServer {
             l['listId'],
       ],
     };
+  }
+}
+
+enum NetMode { up, down, blackhole, flaky, slow, lossy }
+
+/// The network between the test devices and a [FakeAccountServer]:
+/// - [up]: as normal;
+/// - [down]: connection refused, at once;
+/// - [blackhole]: requests are accepted and never answered (a captive
+///   portal, dead Wi-Fi) until the switch changes, when they fail;
+/// - [flaky]: that share of requests answer 503 or fail, the rest go through;
+/// - [slow]: every request waits that long first;
+/// - [lossy]: the server applies every request and the answer is lost (what
+///   proves every request idempotent).
+class NetworkSwitch {
+  NetMode mode = NetMode.up;
+  double _p = 0.5;
+  Random _rng = Random(1);
+  Duration _delay = Duration.zero;
+  final List<Completer<void>> _held = [];
+
+  /// Requests the black hole is holding.
+  int get held => _held.length;
+
+  void up() => _set(NetMode.up);
+  void down() => _set(NetMode.down);
+  void blackhole() => _set(NetMode.blackhole);
+  void lossy() => _set(NetMode.lossy);
+  void flaky(double p, {int seed = 1}) {
+    _p = p;
+    _rng = Random(seed);
+    _set(NetMode.flaky);
+  }
+
+  void slow(Duration delay) {
+    _delay = delay;
+    _set(NetMode.slow);
+  }
+
+  void _set(NetMode m) {
+    mode = m;
+    for (final c in _held) {
+      c.complete();
+    }
+    _held.clear();
   }
 }

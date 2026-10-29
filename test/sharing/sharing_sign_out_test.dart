@@ -77,6 +77,12 @@ void main() {
         await sharing.engine.enqueueAddVideo(owned.listId, _v('cherry'));
 
         await sharing.signOut();
+        // Signed out at once; the queued edit goes up afterwards, in the
+        // background, under the session it was made in.
+        expect(sharing.auth.store.current, isNull);
+        for (var i = 0; i < 50; i++) {
+          await Future<void>.delayed(Duration.zero);
+        }
 
         final syncPosts = requests
             .where((r) => r.url.path.endsWith('/sync'))
@@ -84,7 +90,12 @@ void main() {
         expect(
           syncPosts,
           isNotEmpty,
-          reason: 'sign-out must attempt to land queued edits first',
+          reason: 'sign-out must still try to land queued edits',
+        );
+        expect(
+          syncPosts.first.headers['authorization'],
+          contains('Bearer'),
+          reason: 'with the session it had',
         );
         final body = jsonDecode(syncPosts.first.body) as Map<String, dynamic>;
         expect((body['ops'] as List).length, 1);

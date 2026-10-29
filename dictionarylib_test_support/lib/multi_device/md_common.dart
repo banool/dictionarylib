@@ -79,9 +79,12 @@ final DictLibLocalizationsEn mdL10n = DictLibLocalizationsEn();
 /// the yanked-version check is skipped (a forced upgrade must not veto an e2e
 /// run) and the native splash is left alone (the tests own it). Sharing points
 /// at the local worker via the [DictAppBootstrapConfig] built below.
-Future<void> mdSetup() async {
+///
+/// [apiBaseUrl] points sharing somewhere other than the worker (a proxy in
+/// front of it, say).
+Future<void> mdSetup({String? apiBaseUrl}) async {
   await setupDictionaryApp(
-    _mdBootstrapConfig(),
+    _mdBootstrapConfig(apiBaseUrl),
     checkYankedVersion: false,
     handleNativeSplash: false,
   );
@@ -93,25 +96,26 @@ Future<void> mdSetup() async {
 /// dump URL for determinism rather than going through the use_cdn_url knob), so
 /// there are no extraStartupTasks. yankedVersionsUrl is unused (the check is
 /// skipped above).
-DictAppBootstrapConfig _mdBootstrapConfig() => DictAppBootstrapConfig(
-  advisoriesUrl: mdConfig.advisoriesUrl,
-  yankedVersionsUrl: '',
-  knobUrlBase: mdConfig.knobUrlBase,
-  setupMediaAndEntryLoader: () async {
-    mediaBaseUrls = mdConfig.mediaBaseUrls;
-    return mdConfig.buildEntryLoader();
-  },
-  sharingConfig: mdSharingConfig(),
-);
+DictAppBootstrapConfig _mdBootstrapConfig([String? apiBaseUrl]) =>
+    DictAppBootstrapConfig(
+      advisoriesUrl: mdConfig.advisoriesUrl,
+      yankedVersionsUrl: '',
+      knobUrlBase: mdConfig.knobUrlBase,
+      setupMediaAndEntryLoader: () async {
+        mediaBaseUrls = mdConfig.mediaBaseUrls;
+        return mdConfig.buildEntryLoader();
+      },
+      sharingConfig: mdSharingConfig(apiBaseUrl: apiBaseUrl),
+    );
 
 /// Sharing pointed at the local worker, signing in through its test
 /// provider. Public so a test can talk to the worker the way the app does
 /// before the app has started (to stand in for what an earlier version of it
 /// left behind).
-SharingConfig mdSharingConfig() => SharingConfig(
+SharingConfig mdSharingConfig({String? apiBaseUrl}) => SharingConfig(
   appId: mdConfig.appId,
   appName: mdConfig.appName,
-  apiBaseUrl: mdApiBaseUrl,
+  apiBaseUrl: apiBaseUrl ?? mdApiBaseUrl,
   // Production link shape so minted invite links round-trip through the
   // same parsing the share/subscribe dialogs apply to real links.
   shareLinkBaseUrl: mdConfig.shareLinkBaseUrl,

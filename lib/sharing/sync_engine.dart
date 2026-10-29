@@ -508,6 +508,9 @@ class SyncEngine {
           sessionToken: session.sessionToken,
           clientId: getOrCreateClientId(),
         );
+        // Dropped while the request was out (a delete, a sign-out): its
+        // answer is for nothing on the device any more.
+        if (!identical(_manager.get(listId), list)) return;
         await _applySyncResponse(list, batch, response);
         _stateOf(listId).backoffSeconds = null;
         _stateOf(listId).consecutiveNotFound = 0;
@@ -517,6 +520,7 @@ class SyncEngine {
           _scheduleFlush(listId);
         }
       } on SyncException catch (e) {
+        if (!identical(_manager.get(listId), list)) return;
         await _handleSyncError(list, e, batch);
         // Only transient failures surface on a foreground refresh; terminal
         // outcomes (notFound/gone/auth/permission) are reconciled into local
@@ -588,9 +592,7 @@ class SyncEngine {
     final missedOps = response.missedOps;
     if (snapshot != null) {
       _adoptSnapshot(list, snapshot);
-      if (response.wasSnapshotCatchUp) {
-        _notifications.add(SyncNotification.snapshotCatchUp);
-      }
+      if (response.wasSnapshotCatchUp) _noteCatchUp(list);
     } else if (missedOps != null && missedOps.isNotEmpty) {
       for (final op in missedOps) {
         list.applyOpToSavedVideos(op.type, op.args);
@@ -627,6 +629,17 @@ class SyncEngine {
       printAndLog('SyncEngine: writeAll ${list.listId} failed: $e');
     }
     sharing.bumpState();
+  }
+
+  /// Tell the person a catch-up may have lost someone's work, which can
+  /// only be so for a shared list with editors. For a private list (or a
+  /// shared one nobody else edits) set semantics resolved it and there is
+  /// nothing to tell: background sync raises nothing it settles itself.
+  void _noteCatchUp(SyncedEntryList list) {
+    final editors = list.meta.cachedMembers?.editors ?? const [];
+    if (list.meta.isShared && editors.isNotEmpty) {
+      _notifications.add(SyncNotification.snapshotCatchUp);
+    }
   }
 
   /// Replace local state with a server snapshot (catch-up case).
@@ -765,7 +778,7 @@ class SyncEngine {
       }
       // Reuse the catch-up notification: the user's view was replaced
       // wholesale by server state with local edits re-applied on top.
-      _notifications.add(SyncNotification.snapshotCatchUp);
+      _noteCatchUp(list);
       sharing.bumpState();
       if (list.meta.pendingOps.isNotEmpty) _scheduleFlush(listId);
     } on SyncException catch (err) {
@@ -935,6 +948,8 @@ class SyncEngine {
           ifNoneMatch: local.meta.etag,
           forceFresh: forceFresh,
         );
+        // Unfollowed while the request was out.
+        if (!identical(_manager.get(listId), local)) return;
         final state = _stateOf(listId);
         state.backoffSeconds = null;
         state.consecutiveNotFound = 0;
@@ -1317,16 +1332,17 @@ class SyncEngine {
   }
 
   /// Drop the owner wrapper of [listId] (its local list stays, unlinked).
-  /// Under the list's lock, so an in-flight flush finishes first.
-  Future<void> dropOwned(String listId) {
-    return _stateOf(listId).lock.synchronized(() async {
-      final list = _manager.get(listId);
-      if (list == null || list.meta.role != ListRole.owner) return;
-      list.meta.pendingOps.clear();
-      await _manager.removeLocal(listId);
-      _clearListState(listId);
-      sharing.bumpState();
-    });
+  /// Not under the list's lock: a flush waiting on the network must not
+  /// hold up a delete or a sign-out (nothing on the device waits for the
+  /// network), and a flush whose answer comes back afterwards finds the
+  /// list gone and drops it ([_flushOps]).
+  Future<void> dropOwned(String listId) async {
+    final list = _manager.get(listId);
+    if (list == null || list.meta.role != ListRole.owner) return;
+    list.meta.pendingOps.clear();
+    _clearListState(listId);
+    await _manager.removeLocal(listId);
+    sharing.bumpState();
   }
 
   /// Owner-only: make a list private or shared (`PUT .../visibility`) and

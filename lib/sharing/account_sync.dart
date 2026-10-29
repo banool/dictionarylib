@@ -48,6 +48,17 @@ enum SyncReason {
 
   /// The app is going to the background: flush what's queued, best-effort.
   paused,
+
+  /// The retry after a failure (backoff, Retry-After, or ops the account
+  /// asked to have sent again): keeps the backoff growing.
+  retry,
+}
+
+/// Thrown into a cycle's network await when a list operation starts
+/// waiting for the controller's lock: the cycle abandons the step and lets
+/// it run (see [AccountSyncController._net]).
+class _Preempted implements Exception {
+  const _Preempted();
 }
 
 /// One-shot events for the UI (snackbars), from [AccountSyncController.notices].
@@ -144,6 +155,17 @@ class AccountSyncController {
   Timer? _retryTimer;
   int _backoffSeconds = 0;
   int _waiters = 0;
+
+  /// A cycle is running (its network awaits can be pre-empted).
+  bool _inCycle = false;
+
+  /// The cycle's network awaits in flight, as [_net] wraps them.
+  final Set<Completer<Object?>> _preemptible = {};
+
+  /// Longest wait before retrying after a network or server failure: a
+  /// device left in the foreground syncs within five minutes of the
+  /// network coming back, without a resume.
+  static const int _maxBackoffSeconds = 300;
   bool _syncing = false;
 
   /// Set when a link installs a wrapper with ops to send.
@@ -284,6 +306,26 @@ class AccountSyncController {
   /// finished; callers that don't care needn't await it.
   Future<void> kick(SyncReason reason) {
     if (!supported) return Future.value();
+    switch (reason) {
+      case SyncReason.resumed:
+      case SyncReason.startup:
+      case SyncReason.pullToRefresh:
+      case SyncReason.signedIn:
+        // The person is here (or just came back): try at once, whatever
+        // the backoff. (A Retry-After pause still holds, except for a
+        // pull to refresh; see [_cycle].)
+        _retryTimer?.cancel();
+        _retryTimer = null;
+        _backoffSeconds = 0;
+        _retryOpsBackoff = 0;
+      case SyncReason.localChange:
+        // A retry is pending after a failure: the change rides it, rather
+        // than a cycle going early against a failing server.
+        if (_retryTimer?.isActive ?? false) return Future.value();
+      case SyncReason.paused:
+      case SyncReason.retry:
+        break;
+    }
     if (reason == SyncReason.localChange) {
       _debounce?.cancel();
       final completer = Completer<void>();
@@ -326,6 +368,12 @@ class AccountSyncController {
   /// For the list operations that change which lists the device has.
   Future<T> exclusive<T>(Future<T> Function() body) async {
     _waiters++;
+    // Pre-empt a cycle waiting on the network: list operations never wait
+    // for it (section 5.2).
+    for (final c in _preemptible.toList()) {
+      if (!c.isCompleted) c.completeError(const _Preempted());
+    }
+    _preemptible.clear();
     try {
       return await _lock.synchronized(body);
     } finally {
@@ -336,6 +384,35 @@ class AccountSyncController {
   /// A list operation is waiting: stop the cycle at the next step and run
   /// again afterwards.
   bool get _shouldYield => _waiters > 0;
+
+  /// Await [f], a network call a cycle makes, unless a list operation
+  /// starts waiting first: then the step is abandoned at once ([_Preempted]
+  /// unwinds the cycle, which runs again after the operation) and [f]'s
+  /// answer, whenever it comes, is dropped unapplied. Safe because every
+  /// request is idempotent: list ops resent answer `duplicate`, `createList`
+  /// carries its request id, answer batches have ids from their contents,
+  /// account ops dedupe in the op log. Outside a cycle (sign-out's parting
+  /// flush, say) it just awaits.
+  Future<T> _net<T>(Future<T> f) {
+    if (!_inCycle) return f;
+    if (_shouldYield) {
+      f.ignore();
+      return Future.error(const _Preempted());
+    }
+    final c = Completer<T>();
+    _preemptible.add(c);
+    f.then<void>(
+      (v) {
+        _preemptible.remove(c);
+        if (!c.isCompleted) c.complete(v);
+      },
+      onError: (Object e, StackTrace st) {
+        _preemptible.remove(c);
+        if (!c.isCompleted) c.completeError(e, st);
+      },
+    );
+    return c.future;
+  }
 
   Future<void> _cycle(SyncReason reason) async {
     if (!supported) return;
@@ -353,10 +430,15 @@ class AccountSyncController {
     if (reason != SyncReason.pullToRefresh &&
         paused != null &&
         paused > _now()) {
+      // Paused (Retry-After): make sure a retry is due when it ends.
+      if (!(_retryTimer?.isActive ?? false)) {
+        _scheduleRetry(paused - _now() + 1);
+      }
       return;
     }
 
     _syncing = true;
+    _inCycle = true;
     sharing.bumpState();
     try {
       var st = _state;
@@ -386,7 +468,7 @@ class AccountSyncController {
         return;
       }
       // Lists first, through the engine (its own per-list locks).
-      await _engine.syncAll();
+      await _net(_engine.syncAll());
       if (_shouldYield) {
         _again = true;
         return;
@@ -398,7 +480,7 @@ class AccountSyncController {
       }
       _linkedThisCycle = false;
       await _linkLocalLists(session, merging: false);
-      if (_linkedThisCycle) await _engine.syncAll();
+      if (_linkedThisCycle) await _net(_engine.syncAll());
       await _afterCycle();
       final cur = _st;
       if (cur != null) {
@@ -408,6 +490,14 @@ class AccountSyncController {
         await _save();
       }
       _backoffSeconds = 0;
+      if (_retryOpsBackoff == 0) {
+        // Nothing failed: no retry is due (and none holds back changes).
+        _retryTimer?.cancel();
+        _retryTimer = null;
+      }
+    } on _Preempted {
+      // A list operation is waiting: let it run, then go again.
+      _again = true;
     } on SyncException catch (e) {
       await _handleFailure(e);
     } catch (e, stack) {
@@ -417,6 +507,8 @@ class AccountSyncController {
       Analytics.track('sync_failed', props: {'kind': 'client'});
       _scheduleRetry(3600);
     } finally {
+      _inCycle = false;
+      _preemptible.clear();
       _syncing = false;
       sharing.bumpState();
     }
@@ -582,7 +674,7 @@ class AccountSyncController {
       case SyncErrorKind.server:
         _backoffSeconds = _backoffSeconds == 0
             ? 2
-            : (_backoffSeconds * 2).clamp(2, 3600);
+            : (_backoffSeconds * 2).clamp(2, _maxBackoffSeconds);
         _scheduleRetry(_backoffSeconds);
       default:
         // Anything else is a client bug; try again much later rather than
@@ -595,7 +687,8 @@ class AccountSyncController {
   void _scheduleRetry(int seconds) {
     _retryTimer?.cancel();
     _retryTimer = Timer(Duration(seconds: seconds), () {
-      unawaited(kick(SyncReason.resumed));
+      _retryTimer = null;
+      unawaited(kick(SyncReason.retry));
     });
   }
 
@@ -732,11 +825,13 @@ class AccountSyncController {
     int? sinceSeq,
   }) async {
     final st = _st!;
-    final resp = await _api.accountSync(
-      clientId: getOrCreateClientId(),
-      sinceSeq: sinceSeq ?? st.sinceSeq,
-      ops: ops,
-      sessionToken: session.sessionToken,
+    final resp = await _net(
+      _api.accountSync(
+        clientId: getOrCreateClientId(),
+        sinceSeq: sinceSeq ?? st.sinceSeq,
+        ops: ops,
+        sessionToken: session.sessionToken,
+      ),
     );
     st.directory = resp.directory;
     st.editorListIds = resp.editorListIds;
@@ -1031,9 +1126,8 @@ class AccountSyncController {
     }
     final ListSnapshot snapshot;
     try {
-      snapshot = await _api.getState(
-        listId: rec.listId,
-        sessionToken: session.sessionToken,
+      snapshot = await _net(
+        _api.getState(listId: rec.listId, sessionToken: session.sessionToken),
       );
     } on SyncException catch (e) {
       if (e.kind == SyncErrorKind.notFound ||
@@ -1362,7 +1456,7 @@ class AccountSyncController {
       final gone = st.followsGone[id];
       if (gone != null && _now() - gone < 24 * 3600) continue;
       try {
-        await _engine.subscribe(id, fromAccount: true);
+        await _net(_engine.subscribe(id, fromAccount: true));
         st.followsGone.remove(id);
       } on SyncException catch (e) {
         if (e.kind == SyncErrorKind.notFound || e.kind == SyncErrorKind.gone) {
@@ -1389,9 +1483,8 @@ class AccountSyncController {
       }
       final ListSnapshot snapshot;
       try {
-        snapshot = await _api.getState(
-          listId: id,
-          sessionToken: session.sessionToken,
+        snapshot = await _net(
+          _api.getState(listId: id, sessionToken: session.sessionToken),
         );
       } on SyncException catch (e) {
         if (e.kind == SyncErrorKind.notFound ||
@@ -1520,7 +1613,7 @@ class AccountSyncController {
         // rather than straight away, backing off.
         _retryOpsBackoff = _retryOpsBackoff == 0
             ? 30
-            : (_retryOpsBackoff * 2).clamp(30, 3600);
+            : (_retryOpsBackoff * 2).clamp(30, _maxBackoffSeconds);
         _scheduleRetry(_retryOpsBackoff);
         return;
       }
@@ -1719,7 +1812,7 @@ class AccountSyncController {
       if (pendingFollows.contains(id)) continue;
       final l = _lists.get(id);
       if (l != null && l.meta.role == ListRole.subscriber) {
-        await _engine.unsubscribe(id, fromAccount: true);
+        await _net(_engine.unsubscribe(id, fromAccount: true));
       }
     }
     st.follows = resp.follows;
@@ -1975,28 +2068,61 @@ class AccountSyncController {
     await _save();
   }
 
-  /// Sign out (section 5.9): a best-effort flush of the account queue for
-  /// up to 10 s (the caller flushes list queues), then the local clear.
-  Future<void> signOutLocally({bool flush = true}) async {
-    await exclusive(() async {
+  /// Sign out (section 5.9), the local half: what is still queued (list
+  /// ops, account ops, unsent answers) is captured with the session as a
+  /// [PartingFlush], then the links, queues and account state are cleared.
+  /// Nothing here waits for the network: the caller sends the parting
+  /// flush in the background once the device has signed out.
+  Future<PartingFlush?> signOutLocally({bool flush = true}) {
+    return exclusive(() async {
       final session = _auth.store.current;
-      if (flush && session != null) {
-        try {
-          await () async {
-            await _flushAccountOps(session);
-            final st = _state;
-            if (st != null &&
-                st.mergeDone &&
-                st.userId == sessionUserId(session)) {
-              await _uploadAnswers(session, yieldable: false);
-            }
-          }().timeout(const Duration(seconds: 10));
-        } catch (e) {
-          printAndLog('AccountSync: sign-out flush failed: $e');
-        }
-      }
+      final parting = flush && session != null
+          ? _capturePartingFlush(session)
+          : null;
       await _clearLinksLocally();
+      return parting;
     });
+  }
+
+  PartingFlush _capturePartingFlush(AuthSession session) {
+    final lists = <(String, int, List<Map<String, dynamic>>)>[
+      for (final l in _lists.editableLists)
+        if (l.meta.pendingOps.isNotEmpty && !l.meta.orphaned)
+          (
+            l.listId,
+            l.meta.lastKnownSeq,
+            [for (final o in l.meta.pendingOps) o.toJson()],
+          ),
+    ];
+    final st = _state;
+    final mine =
+        st != null && st.mergeDone && st.userId == sessionUserId(session);
+    final accountOps = mine ? List.of(st.pendingOps) : const <AccountOp>[];
+    final answers = <AccountOp>[];
+    if (mine) {
+      var skip = 0;
+      for (var i = 0; i < _maxReviewBatchesPerCycle; i++) {
+        final batch = reviewHistory.nextUploadBatch(skip: skip);
+        if (batch == null) break;
+        skip += batch.lines.length;
+        if (batch.wire.isEmpty) continue;
+        answers.add(
+          AccountOp(
+            opId: batch.opId,
+            type: 'addReviews',
+            args: {'reviews': batch.wire},
+          ),
+        );
+      }
+    }
+    return PartingFlush._(
+      _api,
+      session.sessionToken,
+      getOrCreateClientId(),
+      lists,
+      accountOps,
+      answers,
+    );
   }
 
   /// Test helper: forget the in-memory state so the next access reloads it
@@ -2005,5 +2131,69 @@ class AccountSyncController {
   void reloadStateForTesting() {
     _st = null;
     _stLoaded = false;
+  }
+}
+
+/// What a device had queued when it signed out, sent afterwards in the
+/// background with the session it had (best effort: nothing waits for it,
+/// and if it fails the work stays on the device, where the next sign-in's
+/// merge picks it up again). Every request is idempotent.
+class PartingFlush {
+  final SyncApi _api;
+  final String _token;
+  final String _clientId;
+  final List<(String, int, List<Map<String, dynamic>>)> _lists;
+  final List<AccountOp> _accountOps;
+  final List<AccountOp> _answers;
+
+  PartingFlush._(
+    this._api,
+    this._token,
+    this._clientId,
+    this._lists,
+    this._accountOps,
+    this._answers,
+  );
+
+  bool get isEmpty => _lists.isEmpty && _accountOps.isEmpty && _answers.isEmpty;
+
+  Future<void> send() async {
+    for (final (listId, seq, ops) in _lists) {
+      for (var i = 0; i < ops.length; i += 50) {
+        try {
+          await _api.syncOps(
+            listId: listId,
+            lastKnownSeq: seq,
+            ops: ops.sublist(i, i + 50 > ops.length ? ops.length : i + 50),
+            sessionToken: _token,
+            clientId: _clientId,
+          );
+        } catch (e) {
+          printAndLog('AccountSync: parting flush of $listId failed: $e');
+          break;
+        }
+      }
+    }
+    final batches = [
+      for (var i = 0; i < _accountOps.length; i += 50)
+        _accountOps.sublist(
+          i,
+          i + 50 > _accountOps.length ? _accountOps.length : i + 50,
+        ),
+      for (final op in _answers) [op],
+    ];
+    for (final ops in batches) {
+      try {
+        await _api.accountSync(
+          clientId: _clientId,
+          sinceSeq: _noAnswers,
+          ops: ops,
+          sessionToken: _token,
+        );
+      } catch (e) {
+        printAndLog('AccountSync: parting flush failed: $e');
+        return;
+      }
+    }
   }
 }

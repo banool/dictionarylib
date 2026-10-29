@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../common.dart';
 import 'account_sync.dart';
 import 'auth/auth_api.dart';
 import 'auth/auth_service.dart';
@@ -164,14 +163,10 @@ class Sharing with ChangeNotifier {
   /// the plan). Every local list keeps its signs and the revision history
   /// stays; nothing on the server changes.
   Future<void> signOut() async {
-    try {
-      await engine.pushAllDirty().timeout(const Duration(seconds: 10));
-    } catch (e) {
-      printAndLog('Sharing.signOut: best-effort flush failed: $e');
-    }
-    // Flushes the account queue (10 s at most), then clears pending ops,
-    // the owner and editor wrappers and the account state.
-    await accountSync.signOutLocally();
+    // Nothing waits for the network (section 5.2): what is still queued is
+    // captured, the device signs out at once, and the capture goes up in
+    // the background with the session it was made under, best effort.
+    final parting = await accountSync.signOutLocally();
     await engine.clearAllPendingOps();
     await auth.signOut();
     // Drop account-bound list mirrors (owned + editor) so the next account to
@@ -179,6 +174,7 @@ class Sharing with ChangeNotifier {
     // anonymous public reads, so they stay.
     await lists.clearEditableLists();
     bumpState();
+    if (parting != null && !parting.isEmpty) unawaited(parting.send());
   }
 
   /// Permanently delete the signed-in user's account: every list they own

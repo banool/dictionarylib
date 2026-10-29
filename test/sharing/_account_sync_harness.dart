@@ -8,6 +8,7 @@ import 'package:dictionarylib/sharing/auth/auth_store.dart';
 import 'package:dictionarylib/sharing/sharing.dart';
 import 'package:dictionarylib/sharing/sharing_config.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
+import 'package:dictionarylib/sharing/sync_engine.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 
 import 'package:http/http.dart' as http;
@@ -49,6 +50,9 @@ class TestDevice {
   String? userId;
   RecordingPrefsStore? store;
   final List<AccountSyncNotice> notices = [];
+
+  /// The engine's notifications (snackbars in the app) while active.
+  final List<SyncNotification> engineNotices = [];
 
   /// The server this device talks to: the in-memory one by default.
   final SharingConfig config;
@@ -109,6 +113,7 @@ class TestDevice {
       auth: auth,
     );
     sharing.accountSync.notices.listen(notices.add);
+    sharing.engineNotifications.listen(engineNotices.add);
     _active = this;
   }
 

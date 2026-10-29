@@ -514,59 +514,81 @@ void main() {
       );
     });
 
-    test('stale-cursor 400 re-adopts server state, keeps the queue, and '
-        'reflushes', () async {
-      final notifications = <SyncNotification>[];
-      var stateGets = 0;
-      final ctx = _makeEngine((req) async {
-        if (req.method == 'GET' && req.url.path.endsWith('/state')) {
-          stateGets++;
-          return http.Response(
-            jsonEncode(
-              snapshotJson(
-                listId: 'listidaaaaa1',
-                displayName: 'Cats',
-                entries: ['apple'],
-                lastSeq: 2,
+    for (final withEditor in [false, true]) {
+      test('stale-cursor 400 re-adopts server state, keeps the queue, and '
+          'reflushes (${withEditor ? 'an editor' : 'no editors'})', () async {
+        final notifications = <SyncNotification>[];
+        var stateGets = 0;
+        final ctx = _makeEngine((req) async {
+          if (req.method == 'GET' && req.url.path.endsWith('/state')) {
+            stateGets++;
+            return http.Response(
+              jsonEncode(
+                snapshotJson(
+                  listId: 'listidaaaaa1',
+                  displayName: 'Cats',
+                  entries: ['apple'],
+                  lastSeq: 2,
+                  members: {
+                    'owner': {
+                      'userId': 'apple:test-user',
+                      'displayName': 'Test User',
+                    },
+                    'editors': [
+                      if (withEditor)
+                        {
+                          'userId': 'apple:bob',
+                          'displayName': 'Bob',
+                          'addedAt': 1,
+                          'addedBy': 'apple:test-user',
+                        },
+                    ],
+                  },
+                ),
               ),
-            ),
-            200,
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'error': {
+                'code': 'INVALID_BODY',
+                'message': 'lastKnownSeq is ahead of the server',
+                'details': {'reason': 'stale_cursor'},
+              },
+            }),
+            400,
           );
-        }
-        return http.Response(
-          jsonEncode({
-            'error': {
-              'code': 'INVALID_BODY',
-              'message': 'lastKnownSeq is ahead of the server',
-              'details': {'reason': 'stale_cursor'},
-            },
-          }),
-          400,
+        });
+        ctx.engine.notifications.listen(notifications.add);
+        final list = await setUpOwnedList(ctx.engine, ctx.manager);
+        // Simulate a cursor from before the server lost state.
+        list.meta.lastKnownSeq = 99;
+        ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
+
+        await ctx.engine.pushAllDirty();
+
+        expect(stateGets, 1, reason: 'recovery must fetch /state');
+        expect(
+          list.meta.lastKnownSeq,
+          2,
+          reason: 'cursor must be re-adopted from the authoritative snapshot',
+        );
+        expect(
+          list.meta.pendingOps,
+          isNotEmpty,
+          reason: 'queued edits must survive the cursor reset',
+        );
+        // Server state (apple) plus the still-pending local edit (banana).
+        expect(list.savedVideos, containsAll({_v('apple'), _v('banana')}));
+        // Only someone else's possibly lost work is worth a word: a list
+        // nobody else edits says nothing (set semantics settled it).
+        expect(
+          notifications.contains(SyncNotification.snapshotCatchUp),
+          withEditor,
         );
       });
-      ctx.engine.notifications.listen(notifications.add);
-      final list = await setUpOwnedList(ctx.engine, ctx.manager);
-      // Simulate a cursor from before the server lost state.
-      list.meta.lastKnownSeq = 99;
-      ctx.engine.enqueueAddVideo(list.listId, _v('banana'));
-
-      await ctx.engine.pushAllDirty();
-
-      expect(stateGets, 1, reason: 'recovery must fetch /state');
-      expect(
-        list.meta.lastKnownSeq,
-        2,
-        reason: 'cursor must be re-adopted from the authoritative snapshot',
-      );
-      expect(
-        list.meta.pendingOps,
-        isNotEmpty,
-        reason: 'queued edits must survive the cursor reset',
-      );
-      // Server state (apple) plus the still-pending local edit (banana).
-      expect(list.savedVideos, containsAll({_v('apple'), _v('banana')}));
-      expect(notifications, contains(SyncNotification.snapshotCatchUp));
-    });
+    }
 
     test(
       'list-full rejection notifies and drops the op without retrying',
