@@ -131,7 +131,6 @@ Future<void> _startSession(
       home: FlashcardsPage(
         di: di ?? _dolphin(words, stored),
         revisionStrategy: strategy,
-        existingReviews: stored,
         config: _config,
       ),
     ),

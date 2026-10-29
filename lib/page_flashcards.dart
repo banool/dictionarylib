@@ -73,13 +73,11 @@ class FlashcardsPage extends StatefulWidget {
     super.key,
     required this.di,
     required this.revisionStrategy,
-    required this.existingReviews,
     required this.config,
   });
 
   final DolphinInformation di;
   final RevisionStrategy revisionStrategy;
-  final List<Review> existingReviews;
   final FlashcardsConfig config;
 
   @override
@@ -201,7 +199,10 @@ class FlashcardsPageState extends State<FlashcardsPage> {
     try {
       switch (widget.revisionStrategy) {
         case RevisionStrategy.SpacedRepetition:
-          await writeReviews(widget.existingReviews, answers.values.toList());
+          // Appended to what is stored now (answers from the person's other
+          // devices may have arrived during the session), never written over
+          // it.
+          await sharing.accountSync.recordAnswers(answers.values.toList());
           break;
         case RevisionStrategy.Random:
           await bumpRandomReviewCounter(answers.length);

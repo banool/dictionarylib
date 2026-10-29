@@ -6,6 +6,8 @@ import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/page_flashcards_landing.dart';
 import 'package:dictionarylib/revision.dart';
+import 'package:dictionarylib/revision_history.dart';
+import 'package:dictionarylib/sharing/sharing.dart' show Sharing;
 import 'package:dictionarylib/theme.dart' show kRadiusBox, kRadiusCard;
 import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,23 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
   void initState() {
     super.initState();
     revisionStrategy = loadRevisionStrategy();
+    // Answers from the person's other devices can arrive while this is open.
+    reviewHistory.version.addListener(_rebuild);
+    _sharing.addListener(_rebuild);
+  }
+
+  // The instance listened to (tests swap the global).
+  final Sharing _sharing = sharing;
+
+  @override
+  void dispose() {
+    reviewHistory.version.removeListener(_rebuild);
+    _sharing.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -181,8 +200,12 @@ class RevisionHistoryPageState extends State<RevisionHistoryPage> {
               );
         break;
       case RevisionStrategy.Random:
-        int totalRandomReviews =
-            sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
+        // Signed in (with account sync running), the account's total across
+        // every device, plus sessions on their way to it; otherwise this
+        // device's own count.
+        int totalRandomReviews = sharing.accountSync.isActive
+            ? sharing.accountSync.randomTotalWithPending
+            : sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
         content = totalRandomReviews == 0
             ? _emptyState(context)
             : HearthStatTile(

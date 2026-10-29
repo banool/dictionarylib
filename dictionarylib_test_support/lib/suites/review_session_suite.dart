@@ -19,7 +19,7 @@ import '../helpers.dart';
 //   - the back/forward card navigation (stepping back revisits an earlier card
 //     revealed with its prior rating, and the position counter stays correct),
 //     and
-//   - review persistence on exit (writeReviews → KEY_STORED_REVIEWS).
+//   - review persistence on exit (reviewHistory.appendLocal → KEY_STORED_REVIEWS).
 //
 // A second test runs sessions back to back over a list holding new cards,
 // cards due for review and one that gets forgotten: each session shows each

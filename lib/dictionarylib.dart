@@ -22,6 +22,7 @@ export 'page_news.dart';
 export 'page_search.dart';
 export 'page_word.dart';
 export 'revision.dart';
+export 'revision_history.dart';
 export 'root_app.dart';
 export 'page_settings.dart';
 export 'startup_loading.dart';
@@ -44,5 +45,6 @@ export 'sharing/sharing_config.dart';
 export 'sharing/sync_api.dart';
 export 'sharing/sync_engine.dart';
 export 'sharing/synced_entry_list.dart';
+export 'sharing/synced_settings.dart';
 
 export 'l10n/app_localizations.dart';

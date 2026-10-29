@@ -2,11 +2,15 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:dolphinsr/dolphinsr.dart' show Review;
 import 'package:flutter/foundation.dart';
 
 import '../analytics.dart';
 import '../common.dart';
 import '../entry_list.dart';
+import '../flashcards_logic.dart'
+    show KEY_FIRST_RANDOM_REVIEW, KEY_RANDOM_REVIEWS_COUNTER;
+import '../revision_history.dart';
 import '../globals.dart';
 import '../l10n/app_localizations.dart';
 import '../list_storage.dart';
@@ -21,6 +25,7 @@ import 'list_id.dart';
 import 'sync_api.dart';
 import 'sync_engine.dart';
 import 'synced_entry_list.dart';
+import 'synced_settings.dart';
 
 /// Why a cycle was asked for (section 5.2 of the plan).
 enum SyncReason {
@@ -412,8 +417,111 @@ class AccountSyncController {
     }
   }
 
-  /// Hook for Phase 3 (revision upload); nothing more to do for lists.
-  Future<void> _afterCycle() async {}
+  /// Most answer batches uploaded per cycle (each its own request); the
+  /// rest go on the next.
+  static const int _maxReviewBatchesPerCycle = 40;
+
+  /// Step 6 of a cycle: send unsent answers in batches of up to 500 (and
+  /// ~40 KB), each an `addReviews` op whose id comes from its lines; a batch
+  /// leaves the queue only once the account has it (applied or duplicate).
+  Future<void> _afterCycle() async {
+    final session = _auth.store.current;
+    if (session == null) return;
+    for (var i = 0; i < _maxReviewBatchesPerCycle; i++) {
+      if (_shouldYield) {
+        _again = true;
+        return;
+      }
+      final batch = reviewHistory.nextUploadBatch();
+      if (batch == null) return;
+      if (batch.wire.isEmpty) {
+        // Nothing in it could be read: it can never be accepted.
+        await reviewHistory.removeUploaded(batch);
+        continue;
+      }
+      final op = AccountOp(
+        opId: batch.opId,
+        type: 'addReviews',
+        args: {'reviews': batch.wire},
+      );
+      final resp = await _send(session, [op], sinceSeq: _noAnswers);
+      final out = resp.outcomeFor(op.opId);
+      if (out == null || out.shouldRetry) return;
+      if (!out.isDone) {
+        printAndLog(
+          'AccountSync: answers refused (${out.reasonCode}); dropping the batch',
+        );
+      }
+      await reviewHistory.removeUploaded(batch);
+    }
+    _again = true;
+  }
+
+  /// Answers waiting to go up (for the UI).
+  int get unsentAnswerCount => reviewHistory.unsentCount;
+
+  /// Store a revision session's [answers] on this device and, when account
+  /// sync runs for the signed-in account, queue them for it and start a
+  /// cycle to send them.
+  Future<void> recordAnswers(List<Review> answers) async {
+    final queue = ownsLinks;
+    await reviewHistory.appendLocal(answers, queueForUpload: queue);
+    if (queue && answers.isNotEmpty) {
+      unawaited(kick(SyncReason.localChange));
+    }
+  }
+
+  /// Record [count] random-mode cards as one session (when account sync
+  /// runs for the signed-in account and its merge is done): an op with a
+  /// fresh id, so the account adds it once.
+  Future<void> recordRandomSession(int count) async {
+    // Before the merge is done the session is in the device's counter,
+    // which the merge sends as one session.
+    if (count <= 0 || !ownsLinks || !(_state?.mergeDone ?? false)) return;
+    await enqueue(
+      AccountOp(
+        opId: generateOpId(),
+        type: 'randomSession',
+        args: {
+          'count': count.clamp(1, 10000),
+          'tsUs': DateTime.now().microsecondsSinceEpoch,
+        },
+      ),
+    );
+    unawaited(kick(SyncReason.localChange));
+  }
+
+  /// Random-mode cards counted on the account, plus those still on their
+  /// way there (the progress page, signed in).
+  int get randomTotalWithPending {
+    final st = _state;
+    if (st == null) return 0;
+    var total = st.randomTotal;
+    for (final op in st.pendingOps) {
+      if (op.type == 'randomSession') total += (op.args['count'] as int?) ?? 0;
+    }
+    return total;
+  }
+
+  /// Revision progress is being deleted on this device at [tsUs]: tell the
+  /// account, which drops every answer and random session from before it,
+  /// everywhere. The device's own reset is the caller's; the account's
+  /// answer resets this device again ([_applyRevisionPage]), which drops
+  /// nothing more and covers a kill before the caller got to it.
+  Future<void> recordReset(int tsUs) async {
+    final st = _state;
+    if (st == null || !ownsLinks) return;
+    st.pendingOps.removeWhere((o) => o.type == 'randomSession');
+    st.pendingOps.add(
+      AccountOp(
+        opId: generateOpId(),
+        type: 'resetProgress',
+        args: {'tsUs': tsUs},
+      ),
+    );
+    await _save();
+    unawaited(kick(SyncReason.localChange));
+  }
 
   Future<void> _handleFailure(SyncException e) async {
     printAndLog('AccountSync: cycle ended: $e');
@@ -463,6 +571,8 @@ class AccountSyncController {
     // M1: the directory. Re-fetched on resume, which is harmless.
     final dir = await _send(session, const [], sinceSeq: _noAnswers);
     st.follows = dir.follows;
+    _mergeSettings = dir.settings;
+    _mergeResetTsUs = dir.resetTsUs;
     if (st.mergePhase == MergePhase.directory) {
       st.mergePhase = MergePhase.lists;
       await _save();
@@ -509,10 +619,50 @@ class AccountSyncController {
     return true;
   }
 
-  /// M6, revision history (Phase 3). Phase 2 has nothing to upload yet.
-  Future<void> _mergeHistory(AuthSession session) async {}
+  /// M6: the device's flashcard history goes up (all of it; answers already
+  /// on the account are duplicates there), its random-mode count goes up as
+  /// one session keyed by this install (so signing out and in again here
+  /// never counts it twice), and the synced revision settings meet: the
+  /// account's values win, and the device's go up where the account has
+  /// none (the next round trip's change detection sends them).
+  Future<void> _mergeHistory(AuthSession session) async {
+    final st = _st!;
+    await reviewHistory.queueEverythingForUpload();
+    // From here to the save nothing awaits, so a random-mode session can't
+    // end in between: until the merge is done one goes into the counter
+    // read here, afterwards it is an op of its own ([recordRandomSession]).
+    final counter = sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
+    if (counter > 0) {
+      final first = sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
+      _enqueue(
+        AccountOp(
+          opId: 'random-initial-${getOrCreateClientId()}',
+          type: 'randomSession',
+          args: {
+            'count': counter.clamp(1, 10000),
+            'tsUs': first != null
+                ? first * 1000000
+                : DateTime.now().microsecondsSinceEpoch,
+          },
+        ),
+      );
+    }
+    applyIncomingSettings(st, _mergeSettings, const {}, accountWins: true);
+    // A reset made on the account before this device joined it isn't
+    // applied here: it was never about this device's answers, and the
+    // account already refuses the ones from before it (they stay on this
+    // device only). Later resets apply as usual.
+    if (_mergeResetTsUs > st.lastResetTsUs) st.lastResetTsUs = _mergeResetTsUs;
+    st.mergePhase = MergePhase.done;
+    await _save();
+  }
 
-  int _storedAnswerCount() => 0;
+  int _storedAnswerCount() => reviewHistory.storedCount;
+
+  /// The account's settings and reset time as M1 read them (re-read on
+  /// resume).
+  List<SettingValue> _mergeSettings = const [];
+  int _mergeResetTsUs = 0;
 
   bool _incarnationChanged(AccountSyncResponse resp) {
     final st = _st;
@@ -1193,6 +1343,13 @@ class AccountSyncController {
   }
 
   Future<void> _accountRoundTrip(AuthSession session) async {
+    // A setting changed here goes up in this request, so it is pending
+    // before the account's values are applied (an incoming value never
+    // overwrites a change this device hasn't sent).
+    for (final op in detectSettingChanges(_st!)) {
+      _enqueue(op);
+    }
+    await _save();
     var staleCursorReset = false;
     for (var page = 0; page < _maxPagesPerCycle; page++) {
       final st = _st!;
@@ -1227,8 +1384,13 @@ class AccountSyncController {
   /// Flush queued account ops without the rest of a cycle (app paused).
   Future<void> _flushAccountOps(AuthSession session) async {
     final st = _state;
-    if (st == null || !st.mergeDone || st.pendingOps.isEmpty) return;
+    if (st == null || !st.mergeDone) return;
     if (st.userId != sessionUserId(session)) return;
+    for (final op in detectSettingChanges(st)) {
+      _enqueue(op);
+    }
+    if (st.pendingOps.isEmpty) return;
+    await _save();
     try {
       final batch = _takeBatch();
       final resp = await _send(session, batch, sinceSeq: _noAnswers);
@@ -1240,8 +1402,27 @@ class AccountSyncController {
     }
   }
 
-  /// Phase 3 applies answers, resets and random sessions here.
-  Future<void> _applyRevisionPage(AccountSyncResponse resp) async {}
+  /// One page of revision data: a reset made elsewhere first (so late
+  /// answers from before it are dropped), then the answers, then settings.
+  /// The caller saves `sinceSeq` only after this returns: a kill in between
+  /// re-reads the same page, which is harmless.
+  Future<void> _applyRevisionPage(AccountSyncResponse resp) async {
+    final st = _st!;
+    if (resp.resetTsUs > st.lastResetTsUs) {
+      await reviewHistory.reset(resp.resetTsUs);
+      await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
+      await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
+      st.lastResetTsUs = resp.resetTsUs;
+      await _save();
+    }
+    final incoming = [for (final r in resp.reviews) ?reviewFromWire(r)];
+    if (incoming.isNotEmpty) await reviewHistory.mergeRemote(incoming);
+    final pendingKeys = {
+      for (final op in st.pendingOps)
+        if (op.type == 'setSetting') op.args['key'] as String?,
+    };
+    applyIncomingSettings(st, resp.settings, pendingKeys);
+  }
 
   /// Take answered ops off the queue and act on refusals.
   Future<void> _applyResults(
@@ -1504,8 +1685,9 @@ class AccountSyncController {
     await clearRevisionUploadQueue();
   }
 
-  /// Phase 3: the unsent-answers queue goes with the account state.
-  Future<void> clearRevisionUploadQueue() async {}
+  /// The unsent-answers queue goes with the account state (the history
+  /// itself stays on the device).
+  Future<void> clearRevisionUploadQueue() => reviewHistory.clearUnsent();
 
   /// The incarnation changed under a merged device: the account it was
   /// linked to was deleted and this is a new one. Start over (dropping

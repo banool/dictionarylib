@@ -20,6 +20,8 @@ dependencies:
   dictionarylib:
     path: ../
   device_info_plus:
+  # Revision answers built by the account-sync suites.
+  dolphinsr: ^4.1.1
   go_router:
   http:
   media_kit:

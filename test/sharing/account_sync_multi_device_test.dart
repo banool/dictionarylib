@@ -12,11 +12,16 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dictionarylib/common.dart';
+import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
+import 'package:dictionarylib/revision_history.dart';
+import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
 import 'package:dictionarylib/sharing/account_sync_state.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
+import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
@@ -282,5 +287,59 @@ Future<void> main() async {
     );
     expect(gone.statusCode, 404);
     expect(phone.localLists()['Zoo Signs'], ['lion']);
+  });
+
+  test('revision both ways against the real Worker: answers, random '
+      'sessions, a setting and a reset', () async {
+    final user = randomTestUserId('test:acc-rev');
+    final now = DateTime.now().microsecondsSinceEpoch;
+    Review answer(String key, int tsUs) => Review(
+      master: savedVideoMasterId(
+        SavedVideo(entryKey: key, mediaPath: videoFor(key)),
+      ),
+      combination: const Combination(front: [0], back: [1]),
+      rating: Rating.Good,
+      ts: DateTime.fromMicrosecondsSinceEpoch(tsUs),
+    );
+
+    final phone = device('phone');
+    await phone.activate();
+    // History from before signing in: 700 answers, so it goes up in two
+    // batches.
+    await reviewHistory.appendLocal([
+      for (var i = 0; i < 700; i++) answer('w$i', now - 3600000000 + i),
+    ], queueForUpload: false);
+    await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 4);
+    await sharedPreferences.setInt(KEY_REVISION_CARD_LIMIT, 25);
+    await phone.signIn(user);
+    await phone.settle();
+    expect(reviewHistory.unsentCount, 0);
+
+    final tablet = device('tablet');
+    await tablet.activate();
+    await tablet.signIn(user);
+    await tablet.settle();
+    expect(reviewHistory.read(), hasLength(700));
+    expect(sharedPreferences.getInt(KEY_REVISION_CARD_LIMIT), 25);
+    expect(sharing.accountSync.randomTotalWithPending, 4);
+    await sharing.accountSync.recordAnswers([answer('t1', now - 1000)]);
+    await bumpRandomReviewCounter(2);
+    await tablet.settle();
+
+    await phone.settle();
+    expect(reviewHistory.read(), hasLength(701));
+    expect(sharing.accountSync.randomTotalWithPending, 6);
+
+    // The phone deletes all revision progress; the tablet follows.
+    final resetAt = DateTime.now().microsecondsSinceEpoch;
+    await sharing.accountSync.recordReset(resetAt);
+    await reviewHistory.reset(resetAt);
+    await phone.settle();
+    final acc = await accountState(phone.token!);
+    expect(acc['reviews'], isEmpty);
+    expect(acc['randomTotal'], 0);
+    await tablet.settle();
+    expect(reviewHistory.read(), isEmpty);
+    expect(sharing.accountSync.randomTotalWithPending, 0);
   });
 }

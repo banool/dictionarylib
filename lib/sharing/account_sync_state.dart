@@ -148,6 +148,17 @@ class AccountSyncState {
   /// The reset cut-off (microseconds) last applied on this device.
   int lastResetTsUs;
 
+  /// Synced setting key → its value (wire JSON) as last known to be the
+  /// same here and on the account. A setting whose value on the device
+  /// differs from this was changed here and goes up (see
+  /// `synced_settings.dart`).
+  Map<String, String> settingsSynced;
+
+  /// Synced setting key → the account's value (wire JSON) as last applied
+  /// or found already here. An account value equal to this isn't applied
+  /// again.
+  Map<String, String> settingsSeen;
+
   /// What the server last said.
   List<DirectoryRow> directory;
   List<String> follows;
@@ -170,6 +181,8 @@ class AccountSyncState {
     this.lastSyncAt,
     this.pausedUntil,
     this.lastResetTsUs = 0,
+    Map<String, String>? settingsSynced,
+    Map<String, String>? settingsSeen,
     List<DirectoryRow>? directory,
     List<String>? follows,
     List<String>? editorListIds,
@@ -178,6 +191,8 @@ class AccountSyncState {
        unsyncable = unsyncable ?? {},
        pendingOps = pendingOps ?? [],
        followsGone = followsGone ?? {},
+       settingsSynced = settingsSynced ?? {},
+       settingsSeen = settingsSeen ?? {},
        directory = directory ?? [],
        follows = follows ?? [],
        editorListIds = editorListIds ?? [];
@@ -198,6 +213,8 @@ class AccountSyncState {
     'lastSyncAt': lastSyncAt,
     'pausedUntil': pausedUntil,
     'lastResetTsUs': lastResetTsUs,
+    'settingsSynced': settingsSynced,
+    'settingsSeen': settingsSeen,
     'directory': directory.map((d) => d.toJson()).toList(),
     'follows': follows,
     'editorListIds': editorListIds,
@@ -235,6 +252,12 @@ class AccountSyncState {
         }
       }
     }
+    Map<String, String> stringMap(Object? raw) => {
+      if (raw is Map)
+        for (final e in raw.entries)
+          if (e.key is String && e.value is String)
+            e.key as String: e.value as String,
+    };
     List<String> strings(Object? raw) => [
       for (final x in (raw is List ? raw : const []))
         if (x is String) x,
@@ -255,6 +278,8 @@ class AccountSyncState {
       lastSyncAt: json['lastSyncAt'] as int?,
       pausedUntil: json['pausedUntil'] as int?,
       lastResetTsUs: json['lastResetTsUs'] as int? ?? 0,
+      settingsSynced: stringMap(json['settingsSynced']),
+      settingsSeen: stringMap(json['settingsSeen']),
       directory: [
         for (final raw in (json['directory'] as List<dynamic>? ?? const []))
           if (raw is Map<String, dynamic>) DirectoryRow.fromJson(raw),

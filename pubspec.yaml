@@ -1,6 +1,6 @@
 name: dictionarylib
 description: "Library for the sign language dictionary apps"
-version: 0.4.22
+version: 0.4.23
 
 publish_to: 'none'
 
@@ -14,6 +14,10 @@ dependencies:
   cached_network_image: ^4.0.0
   carousel_slider:
   collection:
+  # sha256 for the op ids of uploaded revision answers
+  # (lib/revision_history.dart): a batch re-sent after a lost answer must
+  # carry the same id.
+  crypto: ^3.0.0
   # https://github.com/yako-dev/flutter-settings-ui/issues/161
   cupertino_icons:
   device_info_plus:

@@ -14,6 +14,7 @@ import 'globals.dart';
 import 'list_storage.dart';
 import 'lists_service.dart';
 import 'revision.dart';
+import 'revision_history.dart';
 import 'saved_video.dart';
 
 const String VIDEO_LINKS_MARKER = "videolinks";
@@ -508,39 +509,9 @@ String? _resolveSuffixEntryKeyMaster(
   return fallback;
 }
 
-List<Review> readReviews() {
-  List<String> encoded =
-      sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? [];
-  // Decode defensively: a single malformed stored review (e.g. from an older
-  // encoding) must not throw and blank out the whole revision-progress page.
-  // Skip anything we can't parse rather than aborting the lot.
-  final out = <Review>[];
-  for (final e in encoded) {
-    try {
-      out.add(decodeReview(e));
-    } catch (err) {
-      printAndLog("Skipping undecodable stored review '$e': $err");
-    }
-  }
-  return out;
-}
-
-Future<void> writeReviews(
-  List<Review> existing,
-  List<Review> additional, {
-  bool force = false,
-}) async {
-  if (!force && additional.isEmpty) {
-    printAndLog("No reviews to write and force = $force");
-    return;
-  }
-  List<Review> toWrite = existing + additional;
-  List<String> encoded = toWrite.map((e) => encodeReview(e)).toList();
-  await sharedPreferences.setStringList(KEY_STORED_REVIEWS, encoded);
-  printAndLog(
-    "Wrote ${additional.length} new reviews (making ${toWrite.length} in total) to storage",
-  );
-}
+/// Every stored answer (see [ReviewHistory.read]; undecodable ones are
+/// skipped). Writes go through [reviewHistory] only.
+List<Review> readReviews() => reviewHistory.read();
 
 int getNumDueCards(DolphinSR dolphin, RevisionStrategy revisionStrategy) {
   switch (revisionStrategy) {
@@ -641,7 +612,10 @@ int? _dueGroup(DRCard card, DateTime now) {
   return daysPastDue >= 1 ? 1 : 2;
 }
 
+/// Count [bumpAmount] random-mode cards on this device and, when account
+/// sync runs for the signed-in account, on the account as one session.
 Future<void> bumpRandomReviewCounter(int bumpAmount) async {
+  await sharing.accountSync.recordRandomSession(bumpAmount);
   int current = sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
   int updated = current + bumpAmount;
   await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, updated);

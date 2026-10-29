@@ -56,6 +56,10 @@ const String KEY_REVISION_LANGUAGE_CODE = "revision_language_code";
 // Optional cap on how many cards a revision session serves. 0 means no limit
 // (do every due/selected card). Remembered across sessions.
 const String KEY_REVISION_CARD_LIMIT = "revision_card_limit";
+
+/// The values [KEY_REVISION_CARD_LIMIT] can take (0: no limit), as the
+/// Revision page offers them.
+const List<int> revisionCardLimitOptions = [0, 10, 25, 50, 100];
 const String KEY_THEME_MODE = "theme_mode";
 const String KEY_USE_SYSTEM_HTTP_PROXY = "use_system_http_proxy";
 

@@ -9,6 +9,7 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_flashcards.dart';
 import 'package:dictionarylib/page_revision_history.dart';
 import 'package:dictionarylib/revision.dart';
+import 'package:dictionarylib/revision_history.dart';
 import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -67,11 +68,9 @@ abstract class FlashcardsLandingPageController {
   Widget buildFlashcardsPage({
     required DolphinInformation dolphinInformation,
     required RevisionStrategy revisionStrategy,
-    required List<Review> existingReviews,
   }) => FlashcardsPage(
     di: dolphinInformation,
     revisionStrategy: revisionStrategy,
-    existingReviews: existingReviews,
     config: flashcardsConfig,
   );
 
@@ -149,6 +148,7 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
       },
     );
     WidgetsBinding.instance.addObserver(_lifecycleObserver!);
+    reviewHistory.version.addListener(_onHistoryChanged);
     updateRevisionSettings();
     initialValueSignToEntry =
         sharedPreferences.getBool(KEY_SIGN_TO_WORD) ?? true;
@@ -168,7 +168,16 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
     if (_lifecycleObserver != null) {
       WidgetsBinding.instance.removeObserver(_lifecycleObserver!);
     }
+    reviewHistory.version.removeListener(_onHistoryChanged);
     super.dispose();
+  }
+
+  /// Answers arrived from the person's other devices, or a reset dropped
+  /// some: read the history again, so the due counts include them.
+  void _onHistoryChanged() {
+    if (!mounted) return;
+    existingReviews = null;
+    updateRevisionSettings();
   }
 
   void updateFilteredSubentries() {
@@ -443,7 +452,6 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
             builder: (context) => widget.controller.buildFlashcardsPage(
               dolphinInformation: dolphinInformation,
               revisionStrategy: revisionStrategy,
-              existingReviews: existingReviews ?? [],
             ),
           ),
         );
@@ -589,12 +597,11 @@ class FlashcardsLandingPageState extends State<FlashcardsLandingPage> {
                 DropdownButton<int>(
                   value: cardLimit,
                   items: [
-                    DropdownMenuItem(
-                      value: 0,
-                      child: Text(l.flashcardsCardLimitNone),
-                    ),
-                    for (final n in const [10, 25, 50, 100])
-                      DropdownMenuItem(value: n, child: Text('$n')),
+                    for (final n in revisionCardLimitOptions)
+                      DropdownMenuItem(
+                        value: n,
+                        child: Text(n == 0 ? l.flashcardsCardLimitNone : '$n'),
+                      ),
                   ],
                   onChanged: (v) {
                     if (v == null) return;

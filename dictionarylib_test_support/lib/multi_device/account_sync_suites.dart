@@ -17,10 +17,12 @@ import 'package:dictionarylib/dictionarylib.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dolphinsr/dolphinsr.dart' show Combination, Review;
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
 import '../config.dart';
+import '../helpers.dart';
 import 'md_common.dart';
 
 /// The person each scenario signs in as (one per scenario and run).
@@ -123,6 +125,24 @@ class MdOtherDevice {
     );
     expect(r.statusCode, 200, reason: 'account sync: ${r.body}');
     return jsonDecode(r.body) as Map<String, dynamic>;
+  }
+
+  /// Every answer on the account (paged from the start).
+  Future<List<Map<String, dynamic>>> answers() async {
+    final out = <Map<String, dynamic>>[];
+    var since = 0;
+    while (true) {
+      final r = await http.post(
+        Uri.parse('$mdApiBaseUrl/v1/account/sync'),
+        headers: _headers(),
+        body: jsonEncode({'clientId': clientId, 'sinceSeq': since, 'ops': []}),
+      );
+      expect(r.statusCode, 200, reason: 'account sync: ${r.body}');
+      final json = jsonDecode(r.body) as Map<String, dynamic>;
+      out.addAll((json['reviews'] as List).cast<Map<String, dynamic>>());
+      since = json['nextSinceSeq'] as int;
+      if (json['hasMore'] != true) return out;
+    }
   }
 
   /// Live lists on the account, name → id.
@@ -464,5 +484,220 @@ void runSoloOldBuildStopSharing(MdSuiteConfig cfg) {
     expect(w.meta.isShared, isFalse);
     await mdPumpApp(tester);
     await mdExpectListOnScreen(tester, 'Old Share');
+  });
+}
+
+// -------- Phase H: revision both ways --------
+
+/// The revision settings every phase H run starts from: spaced repetition,
+/// sign-to-word cards only (one card per sign), the default list, no cap.
+Future<void> _mdRevisionSettings() async {
+  await sharedPreferences.setInt(
+    KEY_REVISION_STRATEGY,
+    RevisionStrategy.SpacedRepetition.index,
+  );
+  await sharedPreferences.setBool(KEY_WORD_TO_SIGN, false);
+  await sharedPreferences.setBool(KEY_SIGN_TO_WORD, true);
+  await sharedPreferences.remove(KEY_LISTS_TO_REVIEW);
+  await sharedPreferences.remove(KEY_REVISION_CARD_LIMIT);
+}
+
+/// The default list holding [videos].
+Future<void> _mdDefaultListHolds(List<SavedVideo> videos) async {
+  final list = userEntryListManager
+      .getEntryLists()[userEntryListManager.defaultListKey]!;
+  for (final v in videos) {
+    if (!list.savedVideos.contains(v)) await list.addVideo(v);
+  }
+}
+
+/// Open the Revision tab and return its page's state once it is up.
+Future<FlashcardsLandingPageState> _mdOpenRevision(WidgetTester tester) async {
+  mdClearSnackBars();
+  await mdTapWhenVisible(
+    tester,
+    mdNavIcon(Icons.style),
+    reason: 'Revision tab icon in the bottom navigation',
+  );
+  await mdWaitForUi(
+    tester,
+    () => find.byKey(const ValueKey('startButton')).evaluate().isNotEmpty,
+    reason: 'the Revision page',
+  );
+  return tester.state<FlashcardsLandingPageState>(
+    find.byType(FlashcardsLandingPage),
+  );
+}
+
+/// Cards due on the Revision page now.
+int _mdDue(FlashcardsLandingPageState page) => getNumDueCards(
+  page.dolphinInformation.dolphin,
+  RevisionStrategy.SpacedRepetition,
+);
+
+/// Cards that would be due with no history at all (every card new).
+int _mdDueWithoutHistory(FlashcardsLandingPageState page) => getNumDueCards(
+  page.widget.controller
+      .getDolphin(
+        page.filteredVideos,
+        const [],
+        revisionStrategy: RevisionStrategy.SpacedRepetition,
+      )
+      .dolphin,
+  RevisionStrategy.SpacedRepetition,
+);
+
+/// Answer every due card "Got it" through the session page, then close it.
+Future<void> _mdRunSession(WidgetTester tester, int cards) async {
+  expect(find.text(mdL10n.revisionFlashcardCount(cards)), findsOneWidget);
+  await tester.tap(find.byKey(const ValueKey('startButton')));
+  await settle(tester);
+  for (var k = 1; k <= cards; k++) {
+    expect(find.text('$k / $cards'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('revealButton')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('ratingButton.gotIt')));
+    await settle(tester);
+  }
+  expect(find.byKey(const ValueKey('revealButton')), findsNothing);
+  await tester.tap(find.widgetWithIcon(IconButton, Icons.close));
+  await settle(tester);
+}
+
+/// The progress page (from the Revision page) shows [total] answers.
+Future<void> _mdExpectProgressTotal(WidgetTester tester, int total) async {
+  await tester.tap(find.byIcon(Icons.timeline));
+  await settle(tester);
+  await mdWaitForUi(
+    tester,
+    () => find
+        .byWidgetPredicate(
+          (w) =>
+              w is HearthStatTile &&
+              w.label == mdL10n.flashcardsTotalReviews &&
+              w.value == '$total',
+        )
+        .evaluate()
+        .isNotEmpty,
+    reason: 'the progress page should count $total answers',
+  );
+  await tester.pageBack();
+  await settle(tester);
+}
+
+/// Two answers ("Got it", two days and one day ago) to [video]'s card:
+/// learned, and not due again for a while.
+List<Review> _mdLearnedAndResting(SavedVideo video) {
+  final now = DateTime.now();
+  return [
+    for (final daysAgo in [2, 1])
+      Review(
+        master: savedVideoMasterId(video),
+        combination: const Combination(front: [1], back: [0]),
+        rating: Rating.Good,
+        ts: now.subtract(Duration(days: daysAgo)),
+      ),
+  ];
+}
+
+/// H1, device A: two cards learned in earlier sessions, a session now on the
+/// rest; every answer reaches the account.
+void runPhaseHFirstDevice(MdSuiteConfig cfg) {
+  mdConfig = cfg;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('device A: its answers go up', (tester) async {
+    await mdRequireServer();
+    await mdSetup();
+    await reviewHistory.reset(DateTime.now().microsecondsSinceEpoch);
+    await _mdRevisionSettings();
+    await _mdDefaultListHolds(mdVideos(4));
+    await mdSignInAs(mdSyncUser('h'), 'Md Sync H');
+    await mdWaitForAccountSync();
+    await mdPumpApp(tester);
+    var page = await _mdOpenRevision(tester);
+    final cards = page.filteredVideos;
+    expect(cards.length, greaterThanOrEqualTo(3), reason: 'cards to revise');
+    expect(_mdDue(page), cards.length, reason: 'every card new and due');
+
+    // Earlier sessions (on this device) learned the first two.
+    await sharing.accountSync.recordAnswers([
+      ..._mdLearnedAndResting(cards[0].video),
+      ..._mdLearnedAndResting(cards[1].video),
+    ]);
+    await settle(tester);
+    page = tester.state(find.byType(FlashcardsLandingPage));
+    expect(_mdDue(page), cards.length - 2, reason: 'the page re-read them');
+
+    await _mdRunSession(tester, cards.length - 2);
+    final total = 4 + cards.length - 2;
+    expect(reviewHistory.read(), hasLength(total));
+    await mdWaitForAccountSync();
+    expect(reviewHistory.unsentCount, 0);
+    final other = await MdOtherDevice.signIn(mdSyncUser('h'));
+    expect(await other.answers(), hasLength(total));
+    await _mdExpectProgressTotal(tester, total);
+  });
+}
+
+/// H2, device B: A's answers arrive and count in its due cards and progress
+/// page; its own session goes up.
+void runPhaseHSecondDevice(MdSuiteConfig cfg) {
+  mdConfig = cfg;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets("device B: A's answers count here, its own go up", (
+    tester,
+  ) async {
+    await mdRequireServer();
+    await mdSetup();
+    await reviewHistory.reset(DateTime.now().microsecondsSinceEpoch);
+    final other = await MdOtherDevice.signIn(mdSyncUser('h'));
+    final fromA = (await other.answers()).length;
+    expect(fromA, greaterThan(4), reason: 'phase H1 ran first');
+    // A sign of its own that A hasn't seen, so B has a card due whatever
+    // A's answers did.
+    await _mdDefaultListHolds([mdVideos(5)[4]]);
+    await mdSignInAs(mdSyncUser('h'), 'Md Sync H');
+    await mdWaitForAccountSync();
+    expect(reviewHistory.read(), hasLength(fromA));
+    // A's revision settings came with the account.
+    expect(sharedPreferences.getBool(KEY_WORD_TO_SIGN), isFalse);
+    await mdPumpApp(tester);
+    final page = await _mdOpenRevision(tester);
+    expect(page.existingReviews, hasLength(fromA));
+    final due = _mdDue(page);
+    expect(
+      due,
+      lessThanOrEqualTo(_mdDueWithoutHistory(page) - 2),
+      reason: "the two cards A learned aren't due here",
+    );
+    expect(due, greaterThan(0));
+
+    await _mdRunSession(tester, due);
+    await mdWaitForAccountSync();
+    expect(reviewHistory.unsentCount, 0);
+    expect(await other.answers(), hasLength(fromA + due));
+    await _mdExpectProgressTotal(tester, fromA + due);
+  });
+}
+
+/// H3, device A again (a new install): every answer from both, in its due
+/// cards and progress page.
+void runPhaseHFirstDeviceAgain(MdSuiteConfig cfg) {
+  mdConfig = cfg;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('device A again: answers from both devices', (tester) async {
+    await mdRequireServer();
+    await mdSetup();
+    await reviewHistory.reset(DateTime.now().microsecondsSinceEpoch);
+    final other = await MdOtherDevice.signIn(mdSyncUser('h'));
+    final all = (await other.answers()).length;
+    await mdSignInAs(mdSyncUser('h'), 'Md Sync H');
+    await mdWaitForAccountSync();
+    expect(reviewHistory.read(), hasLength(all));
+    await mdPumpApp(tester);
+    final page = await _mdOpenRevision(tester);
+    expect(page.existingReviews, hasLength(all));
+    expect(_mdDue(page), lessThan(_mdDueWithoutHistory(page)));
+    await _mdExpectProgressTotal(tester, all);
   });
 }

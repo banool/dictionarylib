@@ -19,15 +19,17 @@ import 'synced_entry_list.dart';
 /// for its one controller lock. Not re-entrant: a body that waits on its
 /// own lock never finishes.
 class AsyncLock {
-  // No future is made up front: one created where the lock was constructed
-  // (at start-up, or in a test's setUp) and awaited in another zone (a
-  // widget test's fake-async body) never resumes there.
+  // No future is kept while the lock is idle: one created in one zone (at
+  // start-up, in a test's setUp, or in an earlier widget test's fake-async
+  // body, for a global lock) and awaited in another (a widget test's
+  // fake-async body) never resumes there.
   Future<void>? _last;
 
   Future<T> synchronized<T>(Future<T> Function() body) {
     final prev = _last;
     final completer = Completer<void>();
-    _last = completer.future;
+    final mine = completer.future;
+    _last = mine;
     return () async {
       try {
         if (prev != null) await prev;
@@ -38,6 +40,7 @@ class AsyncLock {
         return await body();
       } finally {
         completer.complete();
+        if (identical(_last, mine)) _last = null;
       }
     }();
   }

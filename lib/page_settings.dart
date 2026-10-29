@@ -16,6 +16,7 @@ import 'globals.dart';
 import 'hearth.dart';
 import 'l10n/app_localizations.dart';
 import 'page_settings_help_en.dart';
+import 'revision_history.dart';
 import 'theme.dart';
 import 'sharing/account_sync.dart';
 import 'sharing/auth/auth_store.dart';
@@ -357,7 +358,12 @@ class SettingsPageState extends State<SettingsPage> {
                 Text(l.settingsDeleteRevisionProgressExplanation),
               );
               if (confirmed) {
-                await writeReviews([], [], force: true);
+                final nowUs = DateTime.now().microsecondsSinceEpoch;
+                // Signed in, from the account and so every device too. The
+                // account's op is queued first: if the app dies before the
+                // rest, the account's answer resets this device as well.
+                await sharing.accountSync.recordReset(nowUs);
+                await reviewHistory.reset(nowUs);
                 await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 0);
                 await sharedPreferences.remove(KEY_FIRST_RANDOM_REVIEW);
                 if (!context.mounted) return;

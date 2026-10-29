@@ -15,6 +15,7 @@ import 'entry_types.dart';
 import 'error_fallback.dart';
 import 'flashcards_logic.dart';
 import 'globals.dart';
+import 'revision_history.dart';
 import 'page_force_upgrade.dart';
 import 'sharing/sharing_config.dart';
 import 'startup_loading.dart';
@@ -248,9 +249,7 @@ Future<void> setupDictionaryApp(
   // a revision session, so its size bounds both startup-adjacent work and how
   // long that replay takes on slow devices. Logged so user reports show when a
   // history has grown big enough to need compaction.
-  printAndLog(
-    "Stored review history: ${sharedPreferences.getStringList(KEY_STORED_REVIEWS)?.length ?? 0} reviews",
-  );
+  printAndLog("Stored review history: ${reviewHistory.storedCount} reviews");
 
   // Opt in to the shared-lists feature. Runs after the entry load because the
   // synced-list manager resolves owner-share metadata against
