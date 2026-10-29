@@ -47,6 +47,21 @@ class FakeAccountServer {
 
   int _now() => _clock;
 
+  /// The server's time for ordering ops by client time: the real clock (the
+  /// devices' clocks in a test are the real one, moved by
+  /// `debugSyncClockOffsetSeconds`), not [_clock], which tests move for
+  /// day-scale things like follow retries and purges.
+  static int _realNow() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+  /// A client time as last-intent-wins compares it: at most five minutes
+  /// ahead of the server, the server's time when absent (`clampClientTs` in
+  /// the worker's validation.ts).
+  static int clampTs(Object? clientTs) {
+    final now = _realNow();
+    if (clientTs is! int || clientTs < 0) return now;
+    return clientTs < now + 300 ? clientTs : now + 300;
+  }
+
   /// Move the server clock (unix seconds) on.
   void advance(int seconds) => _clock += seconds;
 
@@ -143,6 +158,7 @@ class FakeAccountServer {
     'visibility': visibility,
     'tombstoned': false,
     'deletedAt': null,
+    'displayNameTs': 0,
     'lastSeq': 0,
     'entries': [for (final e in entries) List<String>.from(e)],
     'ops': <Map<String, dynamic>>[],
@@ -232,7 +248,7 @@ class FakeAccountServer {
       if (r != null) return r;
       if (hasCap && acc != null) {
         final row = _row(acc, id);
-        if (row != null) _markDeleted(row);
+        if (row != null) _markDeleted(row, deletedClientTs: _realNow());
       }
       return http.Response('', 204);
     }
@@ -352,6 +368,33 @@ class FakeAccountServer {
         (l['entries'] as List).removeWhere(
           (x) => x[0] == args['entry'] && x[1] == args['video'],
         );
+      } else if (type == 'rename') {
+        Map<String, dynamic> rejected(String code) => {
+          'opId': opId,
+          'status': 'rejected',
+          'reasonCode': code,
+        };
+        final name = args['displayName'];
+        if (l['owner'] != user) {
+          applied.add(rejected('forbidden'));
+          continue;
+        }
+        if (name is! String || name.isEmpty || name.length > 60) {
+          applied.add(rejected('invalid'));
+          continue;
+        }
+        if (l['visibility'] == 'shared' &&
+            const {'favourites', 'favorites'}.contains(name.toLowerCase())) {
+          applied.add(rejected('reserved'));
+          continue;
+        }
+        final ts = clampTs(op['clientTs']);
+        if (ts < ((l['displayNameTs'] as int?) ?? 0)) {
+          reasonCode = 'stale';
+        } else {
+          l['displayName'] = name;
+          l['displayNameTs'] = ts;
+        }
       } else if (type == 'addEntries') {
         if (l['visibility'] != 'private') {
           applied.add({
@@ -497,8 +540,12 @@ class FakeAccountServer {
     if (l['tombstoned'] == true) return _err(410, 'GONE', 'deleted');
     if (l['owner'] != user) return _err(403, 'FORBIDDEN', 'not owner');
     l['displayName'] = name;
+    l['displayNameTs'] = _realNow();
     final row = _row(account(user), id);
-    if (row != null) row['name'] = name;
+    if (row != null) {
+      row['name'] = name;
+      row['nameTs'] = _realNow();
+    }
     return _json(_snapshot(l));
   }
 
@@ -566,9 +613,10 @@ class FakeAccountServer {
     return row;
   }
 
-  void _markDeleted(Map<String, dynamic> row) {
+  void _markDeleted(Map<String, dynamic> row, {int? deletedClientTs}) {
     row['state'] = 'deleted';
     row['deletedAt'] = _now();
+    row['deletedClientTs'] = deletedClientTs;
     row['isDefault'] = false;
   }
 
@@ -584,6 +632,7 @@ class FakeAccountServer {
       ..['state'] = 'live'
       ..['visibility'] = 'private'
       ..['deletedAt'] = null
+      ..['deletedClientTs'] = null
       ..['position'] = _nextPosition(acc);
   }
 
@@ -693,6 +742,8 @@ class FakeAccountServer {
     if (answerRetry?.call(op) ?? false) return rej('retry');
     Map<String, dynamic>? result;
     final nextSeq = (acc['lastSeq'] as int) + 1;
+    final ts = clampTs(op['clientTs']);
+    var stale = false;
     switch (type) {
       case 'createList':
         final requestId = a['requestId'] as String;
@@ -748,10 +799,20 @@ class FakeAccountServer {
       case 'setDefault':
         final row = _row(acc, a['listId'] as String);
         if (row == null || row['state'] != 'live') return rej('not_found');
+        if (ts < ((acc['defaultTs'] as int?) ?? 0)) {
+          stale = true;
+          break;
+        }
+        acc['defaultTs'] = ts;
         for (final r in (acc['directory'] as List)) {
           r['isDefault'] = r['listId'] == a['listId'];
         }
       case 'reorder':
+        if (ts < ((acc['orderTs'] as int?) ?? 0)) {
+          stale = true;
+          break;
+        }
+        acc['orderTs'] = ts;
         final ids = (a['listIds'] as List).cast<String>();
         final rows = (acc['directory'] as List).cast<Map<String, dynamic>>()
           ..sort(
@@ -773,7 +834,12 @@ class FakeAccountServer {
       case 'rename':
         final row = _row(acc, a['listId'] as String);
         if (row == null) return rej('not_found');
-        row['name'] = a['name'];
+        if (ts < ((row['nameTs'] as int?) ?? 0)) {
+          stale = true;
+        } else {
+          row['name'] = a['name'];
+          row['nameTs'] = ts;
+        }
       case 'delete':
         final id = a['listId'] as String;
         final row = _row(acc, id);
@@ -781,7 +847,7 @@ class FakeAccountServer {
         final err = _deleteList(id, user);
         if (err != null && err.statusCode == 403) return rej('forbidden');
         if (row != null) {
-          if (row['state'] != 'deleted') _markDeleted(row);
+          if (row['state'] != 'deleted') _markDeleted(row, deletedClientTs: ts);
         } else if (err == null) {
           _insertRow(
             acc,
@@ -789,7 +855,7 @@ class FakeAccountServer {
             lists[id]!['displayName'] as String,
             'private',
             'deleted',
-          );
+          )['deletedClientTs'] = ts;
         }
       case 'unlink':
         final id = a['listId'] as String;
@@ -867,11 +933,17 @@ class FakeAccountServer {
           });
         }
       case 'setSetting':
-        (acc['settings'] as Map)[a['key']] = {
-          'key': a['key'],
-          'value': a['value'],
-          'seq': nextSeq,
-        };
+        final held = (acc['settings'] as Map)[a['key']];
+        if (held != null && ts < ((held['clientTs'] as int?) ?? 0)) {
+          stale = true;
+        } else {
+          (acc['settings'] as Map)[a['key']] = {
+            'key': a['key'],
+            'value': a['value'],
+            'seq': nextSeq,
+            'clientTs': ts,
+          };
+        }
       default:
         return rej('unknown_type');
     }
@@ -882,6 +954,7 @@ class FakeAccountServer {
       'status': 'applied',
       'seq': nextSeq,
       'result': ?result,
+      if (stale) 'reasonCode': 'stale',
     };
   }
 
@@ -929,6 +1002,7 @@ class FakeAccountServer {
             'name': r['name'],
             'state': r['state'],
             'deletedAt': r['deletedAt'],
+            'deletedClientTs': r['deletedClientTs'],
           },
       ],
       'follows': acc['follows'],

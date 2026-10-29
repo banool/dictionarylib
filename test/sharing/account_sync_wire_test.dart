@@ -85,6 +85,57 @@ void main() {
       expect(r.editorListIds, ['e1']);
     });
 
+    test('a deleted row carries its delete time; stale is applied', () {
+      final r = AccountSyncResponse.fromJson({
+        'seq': 3,
+        'results': [
+          {'opId': 'o1', 'status': 'applied', 'seq': 3, 'reasonCode': 'stale'},
+        ],
+        'directory': [
+          {
+            'listId': 'l1',
+            'position': 1,
+            'isDefault': false,
+            'visibility': 'private',
+            'name': 'Old',
+            'state': 'deleted',
+            'deletedAt': 1800000000,
+            'deletedClientTs': 1799999990,
+          },
+          {
+            'listId': 'l2',
+            'position': 2,
+            'isDefault': false,
+            'visibility': 'private',
+            'name': 'Unknown when',
+            'state': 'deleted',
+            'deletedAt': 1800000000,
+          },
+        ],
+      });
+      expect(r.outcomeFor('o1')!.isDone, isTrue);
+      expect(r.outcomeFor('o1')!.reasonCode, reasonStale);
+      expect(r.directory[0].deletedClientTs, 1799999990);
+      expect(r.directory[1].deletedClientTs, isNull);
+      // Kept through the state blob.
+      final again = DirectoryRow.fromJson(r.directory[0].toJson());
+      expect(again.deletedClientTs, 1799999990);
+    });
+
+    test('account ops carry their client time; old saved ones have none', () {
+      final op = AccountOp(opId: 'o', type: 'reorder', args: {'listIds': []});
+      expect(op.toJson()['clientTs'], isA<int>());
+      final back = AccountOp.fromJson(op.toJson())!;
+      expect(back.clientTs, op.clientTs);
+      final old = AccountOp.fromJson({
+        'opId': 'p',
+        'type': 'reorder',
+        'args': {'listIds': []},
+      })!;
+      expect(old.clientTs, isNull);
+      expect(old.toJson().containsKey('clientTs'), isFalse);
+    });
+
     test('a minimal response takes defaults', () {
       final r = AccountSyncResponse.fromJson({'seq': 4});
       expect(r.nextSinceSeq, 4);
@@ -196,7 +247,7 @@ void main() {
           },
           unsyncable: {'B_words': UnsyncableReason.tooLarge},
           pendingOps: [
-            const AccountOp(opId: 'o', type: 'follow', args: {'listId': 'f'}),
+            AccountOp(opId: 'o', type: 'follow', args: {'listId': 'f'}),
           ],
         );
         final back = AccountSyncState.fromJson(

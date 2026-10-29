@@ -45,10 +45,6 @@ class UnsyncableReason {
   /// More than `maxEntriesPerPrivateList` signs.
   static const String tooLarge = 'too_large';
 
-  /// Deleted on another device while this one had unsent changes to it,
-  /// which are kept here as a list of their own.
-  static const String keptUnsent = 'kept_unsent';
-
   /// The account is at its list limit.
   static const String listLimit = 'list_limit';
 
@@ -74,12 +70,18 @@ class LinkingRecord {
   /// this device already has linked to another of its lists).
   bool noNameMatch;
 
+  /// The person renamed the local list while it was being linked (the key
+  /// moved with the record): when the link lands, the local name goes to
+  /// the account list as a rename.
+  bool renamed;
+
   LinkingRecord({
     required this.listId,
     this.requestId,
     required this.step,
     this.makeDefault = false,
     this.noNameMatch = false,
+    this.renamed = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -88,6 +90,7 @@ class LinkingRecord {
     'step': step,
     if (makeDefault) 'makeDefault': true,
     if (noNameMatch) 'noNameMatch': true,
+    if (renamed) 'renamed': true,
   };
 
   static LinkingRecord? fromJson(Object? raw) {
@@ -101,6 +104,7 @@ class LinkingRecord {
       step: step,
       makeDefault: raw['makeDefault'] == true,
       noNameMatch: raw['noNameMatch'] == true,
+      renamed: raw['renamed'] == true,
     );
   }
 }

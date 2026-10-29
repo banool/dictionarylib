@@ -445,8 +445,11 @@ class SyncedEntryList extends EntryList {
       case 'addEditor':
       case 'removeEditor':
       case 'setVisibility':
-        // Membership and visibility live in the meta; the engine takes them
-        // from the members block and the echoed `visibility`.
+      case 'rename':
+        // Membership, visibility and the name live in the meta; the engine
+        // takes them from the members block and the echoed `visibility` and
+        // `displayName` (a pending rename of this device's is already in
+        // the meta).
         break;
       default:
         printAndLog('Synced list ${meta.listId}: unknown op type "$type"');

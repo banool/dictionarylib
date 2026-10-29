@@ -230,37 +230,45 @@ void main() {
       );
     }
 
-    test('owner rename PUTs the new name and updates the wrapper', () async {
-      final requests = installFakeSharing((req) async {
-        if (req.method == 'POST' && req.url.path == '/v1/lists') {
-          return stubCreateResponse(req);
-        }
-        if (req.method == 'PUT') {
-          final body = jsonDecode(req.body) as Map<String, dynamic>;
-          return http.Response(
-            jsonEncode(
-              snapshotJson(
-                listId: 'ownedlist001',
-                displayName: body['displayName'] as String,
-                entries: const <String>[],
-                lastSeq: 3,
+    test(
+      'owner rename takes effect at once and is queued, with no request',
+      () async {
+        final requests = installFakeSharing((req) async {
+          if (req.method == 'POST' && req.url.path == '/v1/lists') {
+            return stubCreateResponse(req);
+          }
+          if (req.method == 'PUT') {
+            final body = jsonDecode(req.body) as Map<String, dynamic>;
+            return http.Response(
+              jsonEncode(
+                snapshotJson(
+                  listId: 'ownedlist001',
+                  displayName: body['displayName'] as String,
+                  entries: const <String>[],
+                  lastSeq: 3,
+                ),
               ),
-            ),
-            200,
-            headers: {'content-type': 'application/json'},
-          );
-        }
-        return http.Response('', 404);
-      });
-      final owned = await shareCats();
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          return http.Response('', 404);
+        });
+        final owned = await shareCats();
 
-      await listsService.renameSharedList(owned, 'Kittens');
+        final before = requests.length;
+        await listsService.renameSharedList(owned, 'Kittens');
 
-      final put = requests.singleWhere((r) => r.method == 'PUT');
-      expect(jsonDecode(put.body), {'displayName': 'Kittens'});
-      expect(owned.meta.displayName, 'Kittens');
-      expect(owned.getName(), 'Kittens');
-    });
+        // Nothing waits for the network: no PUT, no request at all yet.
+        expect(requests.length, before);
+        expect(requests.where((r) => r.method == 'PUT'), isEmpty);
+        expect(owned.meta.displayName, 'Kittens');
+        expect(owned.getName(), 'Kittens');
+        final op = owned.meta.pendingOps.last;
+        expect(op.type, 'rename');
+        expect(op.args, {'displayName': 'Kittens'});
+      },
+    );
 
     test('a non-owner (editor) rename throws and sends no PUT', () async {
       final requests = installFakeSharing((_) async => http.Response('', 404));

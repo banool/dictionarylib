@@ -8,6 +8,7 @@ import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/retry.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
+import 'package:dictionarylib/sharing/account_sync_state.dart';
 import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
@@ -651,11 +652,21 @@ Widget _unsharedListIcon(BuildContext context, EntryList el) {
 }
 
 /// A short "N words" subtitle for a list (counts distinct entries), with a
-/// note when a signed-in device keeps the list here only.
+/// note when a signed-in device keeps the list here only: for a list with
+/// more signs than a synced list may hold, for as long as that is true
+/// (no snackbar; section 5.11).
 String _wordCount(BuildContext context, EntryList el) {
   final l = DictLibLocalizations.of(context)!;
   final count = l.listWordCount(el.uniqueEntries.length);
-  if (sharing.accountSync.unsyncableReason(el.key) != null) {
+  final sync = sharing.accountSync;
+  if (sync.queuesForAccount &&
+      sharing.lists.ownerForSourceKey(el.key) == null &&
+      el.savedVideos.length > maxEntriesPerPrivateList) {
+    return '$count · ${l.listNotSyncedTooLarge(maxEntriesPerPrivateList)}';
+  }
+  final reason = sync.unsyncableReason(el.key);
+  // (too_large is the size check above, which goes as soon as it is false.)
+  if (reason != null && reason != UnsyncableReason.tooLarge) {
     return '$count · ${l.listOnlyOnThisDevice}';
   }
   return count;
@@ -935,9 +946,10 @@ Future<bool> applyRenameListDialog(BuildContext context, EntryList list) {
   );
 }
 
-/// Returns true if the owner-shared list was renamed. Renames on the
-/// server (which syncs the new name to editors + subscribers) and
-/// refreshes the local owner wrapper.
+/// Returns true if the owner-linked list was renamed. The name changes
+/// here at once and the rename is queued for the server (which syncs it to
+/// the owner's other devices, editors and subscribers); nothing waits for
+/// the network.
 Future<bool> applyRenameSharedListDialog(
   BuildContext context,
   SyncedEntryList owned,
@@ -945,12 +957,7 @@ Future<bool> applyRenameSharedListDialog(
   return _showRenameDialog(
     context,
     currentName: owned.getName(),
-    // Renaming hits the server; retry transient failures with feedback
-    // before the dialog's error handling surfaces the final failure.
-    onRename: (newName) => retryWithFeedback(
-      () => listsService.renameSharedList(owned, newName),
-      onRetry: snackRetryFeedback(context),
-    ),
+    onRename: (newName) => listsService.renameSharedList(owned, newName),
   );
 }
 

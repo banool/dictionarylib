@@ -386,7 +386,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get qrCodeDialogClose => 'மூடு';
 
   @override
-  String get signInDialogTitle => 'பகிர உள்நுழையவும்';
+  String get signInDialogTitle => 'பகிரவும் ஒத்திசைக்கவும் உள்நுழையவும்';
 
   @override
   String signInLastUsedHint(String provider) {
@@ -1493,12 +1493,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
-  String accountSyncDeletedElsewhereKeptSnack(String name) {
-    return '“$name” வேறொரு சாதனத்தில் நீக்கப்பட்டது. அதில் நீங்கள் செய்த அனுப்பப்படாத மாற்றங்கள் இங்கே தனிப் பட்டியலாக வைக்கப்பட்டுள்ளன.';
-  }
-
-  @override
-  String accountSyncListTooLargeSnack(String name, int limit) {
+  String listTooLargeToSyncBody(String name, int limit) {
     return '“$name” இல் $limit க்கும் மேற்பட்ட சைகைகள் உள்ளன, எனவே அது இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.';
   }
 
@@ -1509,4 +1504,9 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get listOnlyOnThisDevice => 'இந்தச் சாதனத்தில் மட்டும்';
+
+  @override
+  String listNotSyncedTooLarge(int limit) {
+    return 'ஒத்திசைக்கப்படவில்லை: $limit க்கும் மேற்பட்ட சைகைகள்';
+  }
 }

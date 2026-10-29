@@ -287,17 +287,17 @@ class ListsService {
     sharing.bumpState();
   }
 
-  /// Owner-only: rename a linked list on the server. The new name
-  /// propagates to the owner's other devices and editors (on their next
-  /// /sync) and subscribers (on their next R2 poll). The owner wrapper's
-  /// local display name is refreshed from the server's reply.
+  /// Owner-only: rename a linked list. The name changes here at once and a
+  /// `rename` op is queued with the list's other ops; it reaches the
+  /// owner's other devices and editors (on their next /sync) and
+  /// subscribers (on their next R2 poll) once it lands. Offline is fine.
   ///
   /// Validates [newName] with the same rules as a local list name
   /// (throwing [EntryListNameException] on empty / invalid / reserved)
   /// so the rename dialog can surface a localised message; the server
-  /// re-validates as a backstop. A shared list may not take a reserved name
-  /// (Favourites); a private one may. Throws [SyncException] on a network /
-  /// server failure.
+  /// re-validates as a backstop (a refusal there quietly puts the old name
+  /// back). A shared list may not take a reserved name (Favourites); a
+  /// private one may.
   Future<void> renameSharedList(SyncedEntryList owned, String newName) async {
     if (!sharing.isEnabled) {
       throw StateError('sharing is not configured for this app');
@@ -315,11 +315,21 @@ class ListsService {
     if (owned.meta.isShared && isReservedShareName(name)) {
       throw EntryListNameException(EntryListNameError.reserved, name);
     }
-    final session = sharing.auth.store.current;
-    if (session == null) {
-      throw StateError('renameSharedList: not signed in');
+    // Renamed here at once and queued with the list's other ops: nothing
+    // waits for the network (section 5.5). The account's directory keeps a
+    // copy of the name for matching; it gets its own op.
+    await sharing.engine.renameOwnedLocally(owned.listId, name);
+    final sync = sharing.accountSync;
+    if (sync.queuesForAccount) {
+      await sync.enqueue(
+        AccountOp(
+          opId: generateOpId(),
+          type: 'rename',
+          args: {'listId': owned.listId, 'name': name},
+        ),
+      );
+      unawaited(sync.kick(SyncReason.localChange));
     }
-    await sharing.engine.renameOwned(owned.listId, name, session.sessionToken);
   }
 
   /// Subscriber-only: force a refresh of [list] from the server now.

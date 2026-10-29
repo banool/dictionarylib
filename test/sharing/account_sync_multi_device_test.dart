@@ -24,8 +24,8 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/revision_history.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
-import 'package:dictionarylib/sharing/account_sync_state.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
+import 'package:dictionarylib/sharing/sync_clock.dart';
 import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -103,6 +103,7 @@ Future<void> main() async {
 
   tearDown(() {
     TestDevice(unused, 'none').deactivate();
+    debugSyncClockOffsetSeconds = 0;
   });
 
   test('two devices with "Animals" signing in close together end with one, '
@@ -185,28 +186,34 @@ Future<void> main() async {
     },
   );
 
-  test('a list deleted on one device goes from the other, or stays with its '
-      'unsent changes', () async {
+  test('a list deleted on one device: edits elsewhere older than the delete '
+      'go with it, newer ones bring it back everywhere', () async {
     final user = randomTestUserId('test:acc-g');
     var tabletOffline = false;
     final phone = device('phone');
     final tablet = device('tablet', fail: (_) => tabletOffline);
     await phone.activate();
-    await phone.addLocalList('Gone', ['a']);
-    await phone.addLocalList('Kept', ['b']);
+    await phone.addLocalList('Older', ['a']);
+    await phone.addLocalList('Newer', ['b']);
     await phone.signIn(user);
     await phone.settle();
     await tablet.signIn(user);
     await tablet.settle();
 
-    // The tablet edits Kept offline.
+    // The tablet edits both offline: by its clock, one a minute before the
+    // delete and one a minute after.
     tabletOffline = true;
     await tablet.activate();
-    await sharing.lists.ownerForSourceKey('Kept_words')!.addVideo(video('c'));
+    debugSyncClockOffsetSeconds = -60;
+    await sharing.lists.ownerForSourceKey('Older_words')!.addVideo(video('c'));
+    debugSyncClockOffsetSeconds = 60;
+    await sharing.lists.ownerForSourceKey('Newer_words')!.addVideo(video('d'));
+    debugSyncClockOffsetSeconds = 0;
     tablet.deactivate();
 
     await phone.activate();
-    for (final key in ['Gone_words', 'Kept_words']) {
+    final newerId = sharing.lists.ownerForSourceKey('Newer_words')!.listId;
+    for (final key in ['Older_words', 'Newer_words']) {
       await listsService.deleteList(userEntryListManager.getEntryLists()[key]!);
     }
     await phone.settle();
@@ -214,11 +221,56 @@ Future<void> main() async {
     tabletOffline = false;
     await tablet.settle();
     final lists = tablet.localLists();
-    expect(lists.containsKey('Gone'), isFalse);
-    expect(lists['Kept']!.toSet(), {'b', 'c'});
+    expect(lists.containsKey('Older'), isFalse);
+    expect(lists['Newer']!.toSet(), {'b', 'd'});
+    expect(sharing.lists.ownerForSourceKey('Newer_words')!.listId, newerId);
+    expect((await serverKeys(tablet.token!, newerId)).toSet(), {'b', 'd'});
+    await phone.settle();
+    expect(phone.localLists()['Newer']!.toSet(), {'b', 'd'});
+    expect(phone.localLists().containsKey('Older'), isFalse);
+  });
+
+  test('two devices renaming offline end with the later rename', () async {
+    final user = randomTestUserId('test:acc-rn');
+    var offline = false;
+    final phone = device('phone', fail: (_) => offline);
+    final tablet = device('tablet', fail: (_) => offline);
+    await phone.activate();
+    await phone.addLocalList('Zoo', ['a']);
+    await phone.signIn(user);
+    await phone.settle();
+    await tablet.signIn(user);
+    await tablet.settle();
+    offline = true;
+    debugSyncClockOffsetSeconds = 30;
+    await listsService.renameList(
+      userEntryListManager.getEntryLists()['Zoo_words']!,
+      'Later',
+    );
+    tablet.deactivate();
+    await phone.activate();
+    debugSyncClockOffsetSeconds = 0;
+    await listsService.renameList(
+      userEntryListManager.getEntryLists()['Zoo_words']!,
+      'Earlier',
+    );
+    offline = false;
+    await tablet.settle();
+    await phone.settle();
+    final id = sharing.lists.ownerForSourceKey('Zoo_words')!.listId;
+    final r = await http.get(
+      Uri.parse('$kIntegrationBaseUrl/v1/lists/$id/state'),
+      headers: {
+        'x-app-id': kIntegrationAppId,
+        'authorization': 'Bearer ${phone.token}',
+      },
+    );
+    expect((jsonDecode(r.body) as Map)['displayName'], 'Later');
+    expect(sharing.lists.ownerForSourceKey('Zoo_words')!.getName(), 'Later');
+    final dir = await accountState(phone.token!);
     expect(
-      sharing.accountSync.unsyncableReason('Kept_words'),
-      UnsyncableReason.keptUnsent,
+      (dir['directory'] as List).firstWhere((d) => d['listId'] == id)['name'],
+      'Later',
     );
   });
 

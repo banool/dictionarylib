@@ -1,4 +1,5 @@
 import 'sync_api.dart';
+import 'sync_clock.dart';
 
 /// Wire shapes for `POST /v1/account/sync`, the one call behind account
 /// sync. Mirrors `AccountSyncResponse` and the op handlers in
@@ -24,6 +25,14 @@ const String accountReasonUnknownType = 'unknown_type';
 const String accountReasonFollowLimit = 'follow_limit';
 const String accountReasonForbidden = 'forbidden';
 
+/// A list `rename` to a reserved name while the list is shared (list /sync).
+const String listReasonReserved = 'reserved';
+
+/// Not a refusal: applied, changing nothing, because a later intent (by
+/// client time) holds. On `rename` (list and account), `reorder`,
+/// `setDefault` and `setSetting`.
+const String reasonStale = 'stale';
+
 /// One queued account op. [opId] is the server's dedupe key; ops that must
 /// never count twice (a random session, a batch of answers) derive it from
 /// their content or their origin rather than at random.
@@ -32,9 +41,28 @@ class AccountOp {
   final String type;
   final Map<String, dynamic> args;
 
-  const AccountOp({required this.opId, required this.type, required this.args});
+  /// Unix seconds on this device when the op was made. The account orders
+  /// `rename`, `reorder`, `setDefault` and `setSetting` by it (the later
+  /// intent wins, whichever device's op arrives last), and keeps a
+  /// `delete`'s as the time unsent edits elsewhere are compared against.
+  /// Null only for an op saved by a build before it existed (the account
+  /// then takes its own time).
+  final int? clientTs;
 
-  Map<String, dynamic> toJson() => {'opId': opId, 'type': type, 'args': args};
+  AccountOp({
+    required this.opId,
+    required this.type,
+    required this.args,
+    int? clientTs,
+    bool stampNow = true,
+  }) : clientTs = clientTs ?? (stampNow ? syncNowSecs() : null);
+
+  Map<String, dynamic> toJson() => {
+    'opId': opId,
+    'type': type,
+    'args': args,
+    'clientTs': ?clientTs,
+  };
 
   static AccountOp? fromJson(Object? raw) {
     if (raw is! Map) return null;
@@ -42,10 +70,13 @@ class AccountOp {
     final type = raw['type'];
     final args = raw['args'];
     if (opId is! String || type is! String || args is! Map) return null;
+    final clientTs = raw['clientTs'];
     return AccountOp(
       opId: opId,
       type: type,
       args: Map<String, dynamic>.from(args),
+      clientTs: clientTs is int ? clientTs : null,
+      stampNow: false,
     );
   }
 }
@@ -144,6 +175,11 @@ class DirectoryRow {
   /// Unix seconds; null unless [state] is `deleted`.
   final int? deletedAt;
 
+  /// The deleting device's clock (unix seconds, clamped by the account)
+  /// when it was deleted; null when nobody knows (found gone by `unlink`).
+  /// Unsent edits here newer than this restore the list (section 5.5).
+  final int? deletedClientTs;
+
   const DirectoryRow({
     required this.listId,
     required this.position,
@@ -152,6 +188,7 @@ class DirectoryRow {
     required this.name,
     required this.state,
     this.deletedAt,
+    this.deletedClientTs,
   });
 
   bool get isLive => state == directoryStateLive;
@@ -165,6 +202,7 @@ class DirectoryRow {
     name: json['name'] as String? ?? '',
     state: json['state'] as String? ?? directoryStateLive,
     deletedAt: json['deletedAt'] as int?,
+    deletedClientTs: json['deletedClientTs'] as int?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -175,6 +213,7 @@ class DirectoryRow {
     'name': name,
     'state': state,
     'deletedAt': deletedAt,
+    'deletedClientTs': deletedClientTs,
   };
 }
 

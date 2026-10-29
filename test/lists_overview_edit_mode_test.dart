@@ -324,9 +324,11 @@ void main() {
 
       await _rename(tester, 'Tiny Tunks', 'Wee Tunks');
 
-      final renames = requests.where((r) => r.method == 'PUT').toList();
-      expect(renames, hasLength(1));
-      expect(jsonDecode(renames.single.body), {'displayName': 'Wee Tunks'});
+      // Renamed here at once, queued for the server (no PUT any more).
+      expect(requests.where((r) => r.method == 'PUT'), isEmpty);
+      final share = sharing.lists.ownerForSourceKey(kDefaultListKey)!;
+      expect(share.meta.pendingOps.last.type, 'rename');
+      expect(share.meta.pendingOps.last.args, {'displayName': 'Wee Tunks'});
       expect(find.text('Wee Tunks'), findsOneWidget);
       expect(find.text('Tiny Tunks'), findsNothing);
       expect(_keys(), [kDefaultListKey, 'cats_words']);
@@ -335,6 +337,9 @@ void main() {
         userEntryListManager.getEntryLists()[kDefaultListKey]!.getName(),
         'Wee Tunks',
       );
+      // Let the queued rename's flush run (it is debounced).
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
     });
 
     for (final reserved in [

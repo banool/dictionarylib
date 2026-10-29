@@ -379,7 +379,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get qrCodeDialogClose => 'වසන්න';
 
   @override
-  String get signInDialogTitle => 'බෙදා ගැනීමට පුරනය වන්න';
+  String get signInDialogTitle => 'බෙදා ගැනීමට සහ සමමුහුර්ත කිරීමට පුරනය වන්න';
 
   @override
   String signInLastUsedHint(String provider) {
@@ -1476,12 +1476,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   }
 
   @override
-  String accountSyncDeletedElsewhereKeptSnack(String name) {
-    return '“$name” වෙනත් උපාංගයක මකා දමන ලදී. එයට ඔබ කළ නොයැවූ වෙනස්කම් මෙහි වෙනම ලැයිස්තුවක් ලෙස තබා ඇත.';
-  }
-
-  @override
-  String accountSyncListTooLargeSnack(String name, int limit) {
+  String listTooLargeToSyncBody(String name, int limit) {
     return '“$name” හි සංඥා $limitකට වඩා ඇති බැවින්, එය මෙම උපාංගයේ පමණක් රැඳී පවතී.';
   }
 
@@ -1492,4 +1487,9 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get listOnlyOnThisDevice => 'මෙම උපාංගයේ පමණි';
+
+  @override
+  String listNotSyncedTooLarge(int limit) {
+    return 'සමමුහුර්ත කර නැත: සංඥා $limitකට වඩා';
+  }
 }

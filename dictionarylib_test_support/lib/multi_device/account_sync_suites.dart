@@ -199,17 +199,48 @@ class MdOtherDevice {
     expect(r.statusCode, 200, reason: 'list sync: ${r.body}');
   }
 
-  /// Delete a list the way a device with account sync does.
-  Future<void> deleteList(String listId) async {
+  /// Delete a list the way a device with account sync does, at [clientTs]
+  /// by this device's clock (now by default).
+  Future<void> deleteList(String listId, {int? clientTs}) async {
     final out = await account([
       {
         'type': 'delete',
         'args': {'listId': listId},
+        'clientTs': clientTs ?? _nowSecs(),
       },
     ]);
     final result = (out['results'] as List).single;
     expect(result['status'], 'applied', reason: 'delete: $result');
   }
+
+  /// Rename a list the way a device with account sync does (a `rename` op
+  /// through `/sync`), at [clientTs] by this device's clock; the answer.
+  Future<Map<String, dynamic>> renameList(
+    String listId,
+    String name, {
+    required int clientTs,
+  }) async {
+    final st = await state(listId);
+    final r = await http.post(
+      Uri.parse('$mdApiBaseUrl/v1/lists/$listId/sync'),
+      headers: _headers(),
+      body: jsonEncode({
+        'lastKnownSeq': st['lastSeq'],
+        'ops': [
+          {
+            'opId': _opId(),
+            'type': 'rename',
+            'args': {'displayName': name},
+            'clientTs': clientTs,
+          },
+        ],
+      }),
+    );
+    expect(r.statusCode, 200, reason: 'list sync: ${r.body}');
+    return jsonDecode(r.body) as Map<String, dynamic>;
+  }
+
+  static int _nowSecs() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
   /// Share a list the way a build from before account sync does
   /// (`POST /v1/lists`); returns its id.
@@ -347,15 +378,24 @@ void runPhaseFOfflineEdits(MdSuiteConfig cfg) {
     await mdWaitForAccountSync();
     final birds = sharing.lists.ownerForSourceKey('Birds_words')!;
 
-    // This device goes "offline" and edits.
+    // This device goes "offline" and edits, and renames the list: the new
+    // name shows at once.
     await sharing.auth.dropSessionLocally();
     await birds.addVideo(v[1]);
     await birds.addVideo(v[2]);
-    expect(birds.meta.pendingOps, hasLength(2));
+    await listsService.renameList(birds, 'Garden birds');
+    expect(birds.getName(), 'Garden birds');
+    expect(birds.meta.pendingOps, hasLength(3));
 
-    // The other device edits the same list meanwhile, one sign in common.
+    // The other device edits the same list meanwhile, one sign in common,
+    // and renamed it too, but earlier (by its clock).
     final other = await MdOtherDevice.signIn(mdSyncUser('f'));
     await other.addToList(birds.listId, [v[2], v[3]]);
+    await other.renameList(
+      birds.listId,
+      'Birds two',
+      clientTs: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 120,
+    );
 
     // Back online.
     await sharing.auth.signInWithTestToken(
@@ -368,28 +408,34 @@ void runPhaseFOfflineEdits(MdSuiteConfig cfg) {
     final keys = await other.entryKeys(birds.listId);
     expect(keys.toSet(), want);
     expect(keys, hasLength(want.length), reason: 'no sign twice');
-    expect(mdLocalKeys('Birds'), want);
+    expect(mdLocalKeys('Garden birds'), want);
     expect(birds.meta.pendingOps, isEmpty);
+    // The later rename (this device's) is the name everywhere.
+    expect((await other.state(birds.listId))['displayName'], 'Garden birds');
+    expect(birds.getName(), 'Garden birds');
+    await mdPumpApp(tester);
+    await mdExpectListOnScreen(tester, 'Garden birds');
   });
 }
 
 // -------- Phase G: a list deleted on another device --------
 
 /// One device, with the other as raw HTTP: a list deleted elsewhere goes
-/// from this device; one this device had unsent changes to stays, as a list
-/// of its own, and the person is told; and a list deleted here (through the
-/// Lists page) goes from the account.
+/// from this device; against unsent changes here the later intent wins,
+/// silently: changes older than the delete go with the list, changes newer
+/// than it bring the list back on the account with them; and a list deleted
+/// here (through the Lists page) goes from the account.
 void runPhaseGDeleteElsewhere(MdSuiteConfig cfg) {
   mdConfig = cfg;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('deleted elsewhere: gone here, or kept with unsent changes', (
-    tester,
-  ) async {
+  testWidgets('deleted elsewhere: the later of the delete and the edits here '
+      'wins', (tester) async {
     await mdRequireServer();
     await mdSetup();
-    final v = mdVideos(4);
+    final v = mdVideos(5);
     await mdLocalList('Gone', [v[0]]);
-    await mdLocalList('Kept', [v[1]]);
+    await mdLocalList('Older', [v[1]]);
+    await mdLocalList('Newer', [v[4]]);
     await mdLocalList('Mine', [v[2]]);
     await mdSignInAs(mdSyncUser('g'), 'Md Sync G');
     await mdWaitForAccountSync();
@@ -401,23 +447,37 @@ void runPhaseGDeleteElsewhere(MdSuiteConfig cfg) {
     await mdWaitForAccountSync();
     expect(mdLocalKeys('Gone'), isNull);
 
-    // Unsent changes here (offline), deleted elsewhere: kept, unlinked.
-    final kept = sharing.lists.ownerForSourceKey('Kept_words')!;
+    // Unsent changes here (offline) to two lists, both deleted elsewhere:
+    // one a minute after the changes (by the other device's clock), one a
+    // minute before.
+    final older = sharing.lists.ownerForSourceKey('Older_words')!;
+    final newer = sharing.lists.ownerForSourceKey('Newer_words')!;
     await sharing.auth.dropSessionLocally();
-    await kept.addVideo(v[3]);
-    await other.deleteList(ids['Kept']!);
+    await older.addVideo(v[3]);
+    await newer.addVideo(v[3]);
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    await other.deleteList(ids['Older']!, clientTs: now + 60);
+    await other.deleteList(ids['Newer']!, clientTs: now - 60);
     await sharing.auth.signInWithTestToken(
       testAuthToken: mdTestAuthToken,
       userId: mdSyncUser('g'),
       displayName: 'Md Sync G',
     );
     await mdWaitForAccountSync();
-    expect(mdLocalKeys('Kept'), {v[1].entryKey, v[3].entryKey});
-    expect(sharing.lists.ownerForSourceKey('Kept_words'), isNull);
+    // The delete was later: the list and the change are gone, here and
+    // there.
+    expect(mdLocalKeys('Older'), isNull);
+    expect((await other.liveLists()).containsKey('Older'), isFalse);
+    // The change was later: the list is back on the account, change and
+    // all, under the same id.
+    final want = {v[4].entryKey, v[3].entryKey};
+    expect(mdLocalKeys('Newer'), want);
     expect(
-      sharing.accountSync.unsyncableReason('Kept_words'),
-      UnsyncableReason.keptUnsent,
+      sharing.lists.ownerForSourceKey('Newer_words')?.listId,
+      ids['Newer'],
     );
+    expect((await other.liveLists())['Newer'], ids['Newer']);
+    expect((await other.entryKeys(ids['Newer']!)).toSet(), want);
 
     // Deleted here, through the Lists page: gone from the account too.
     await mdPumpApp(tester);

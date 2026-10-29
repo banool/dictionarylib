@@ -179,7 +179,7 @@ Future<SyncedEntryList?> showShareDialog({
               await _showLimitDialog(
                 ctx,
                 title: l.shareTooManyEntriesTitle,
-                body: l.accountSyncListTooLargeSnack(
+                body: l.listTooLargeToSyncBody(
                   sourceList.getName(),
                   maxEntriesPerPrivateList,
                 ),

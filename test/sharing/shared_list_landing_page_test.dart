@@ -95,7 +95,7 @@ void main() {
       // Tap it: the sign-in dialog opens.
       await tester.tap(find.text('Sign in to accept'));
       await tester.pumpAndSettle();
-      expect(find.text('Sign in to share'), findsOneWidget);
+      expect(find.text('Sign in to share and sync'), findsOneWidget);
 
       // Cancel the dialog (returns a null session).
       await tester.tap(find.text('Cancel'));

@@ -10,6 +10,7 @@ import 'auth/auth_service.dart';
 import 'list_id.dart';
 import 'sync_api.dart';
 import 'synced_entry_list.dart';
+import 'sync_clock.dart';
 
 /// Lightweight async mutex. Each `synchronized` call appends its body
 /// to a serial chain, guaranteeing at most one body runs at a time for
@@ -251,6 +252,49 @@ class SyncEngine {
 
   Future<void> enqueueRemoveVideo(String listId, SavedVideo video) {
     return _enqueueOp(listId, 'removeEntry', video.toJson());
+  }
+
+  /// Rename an owner list on this device now (every screen shows the new
+  /// name at once) and queue a `rename` op with its other ops, in one
+  /// meta write. Needs no network: the server takes it with the next
+  /// /sync, and a rename from another device made later than this one wins
+  /// there (by client time). A refused rename (a reserved name on a shared
+  /// list) leaves the queue and the echoed name puts the old one back.
+  Future<void> renameOwnedLocally(String listId, String name) async {
+    final list = _manager.get(listId);
+    if (list == null || list.meta.role != ListRole.owner) {
+      throw StateError('renameOwnedLocally: $listId is not owner-role');
+    }
+    if (list.meta.displayName == name &&
+        !list.meta.pendingOps.any((o) => o.type == 'rename')) {
+      return;
+    }
+    final previous = list.meta.displayName;
+    final op = PendingOp(
+      opId: generateOpId(),
+      type: 'rename',
+      args: {'displayName': name},
+      clientTs: _nowSecs(),
+    );
+    list.meta.displayName = name;
+    list.meta.pendingOps.add(op);
+    try {
+      await list.writeMeta();
+    } catch (e) {
+      list.meta.displayName = previous;
+      list.meta.pendingOps.remove(op);
+      rethrow;
+    }
+    sharing.bumpState();
+    _scheduleFlush(listId);
+  }
+
+  /// Take the server's name for [list], unless a rename of this device's
+  /// is still queued: the server hasn't seen it yet (a partial batch echoes
+  /// the old name), and once it has, its answer echoes the outcome.
+  static void _adoptServerName(SyncedEntryList list, String name) {
+    if (list.meta.pendingOps.any((o) => o.type == 'rename')) return;
+    list.meta.displayName = name;
   }
 
   Future<void> _enqueueOp(
@@ -567,7 +611,7 @@ class SyncEngine {
     list.meta.lastSyncedAt = _nowSecs();
     list.meta.cachedMembers = response.members;
     if (response.displayName != null) {
-      list.meta.displayName = response.displayName!;
+      _adoptServerName(list, response.displayName!);
     }
     // A share or stop-sharing from another of the owner's devices.
     final visibility = response.visibility;
@@ -592,7 +636,7 @@ class SyncEngine {
   /// owner-mode wrappers share their entries set with the source list
   /// by reference, so a single replace path serves everyone.
   void _adoptSnapshot(SyncedEntryList list, ListSnapshot snapshot) {
-    list.meta.displayName = snapshot.displayName;
+    _adoptServerName(list, snapshot.displayName);
     list.meta.serverUpdatedAt = snapshot.updatedAt;
     list.meta.cachedMembers = snapshot.members;
     list.meta.lastKnownSeq = snapshot.lastSeq;
@@ -1313,7 +1357,13 @@ class SyncEngine {
       final current = _manager.get(listId);
       if (current == null) return;
       current.meta.visibility = snapshot.visibility;
-      current.meta.displayName = snapshot.displayName;
+      if (displayName != null) {
+        // Shared under this name now: newer than any rename still queued
+        // here, which the server will find stale.
+        current.meta.displayName = snapshot.displayName;
+      } else {
+        _adoptServerName(current, snapshot.displayName);
+      }
       current.meta.serverUpdatedAt = snapshot.updatedAt;
       current.meta.cachedMembers = snapshot.members;
       // The cursor stays: the flip logged one op, which the next /sync
@@ -1346,7 +1396,7 @@ class SyncEngine {
     sharing.bumpState();
   }
 
-  int _nowSecs() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  int _nowSecs() => syncNowSecs();
 
   LinkedHashSet<SavedVideo> _hydrateSavedVideos(List<SavedVideo> entries) {
     // LinkedHashSet preserves first-occurrence insertion order; the

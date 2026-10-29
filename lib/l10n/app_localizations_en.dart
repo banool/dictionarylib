@@ -378,7 +378,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get qrCodeDialogClose => 'Close';
 
   @override
-  String get signInDialogTitle => 'Sign in to share';
+  String get signInDialogTitle => 'Sign in to share and sync';
 
   @override
   String signInLastUsedHint(String provider) {
@@ -1465,12 +1465,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
-  String accountSyncDeletedElsewhereKeptSnack(String name) {
-    return '“$name” was deleted on another device. Your unsent changes to it are kept here as a separate list.';
-  }
-
-  @override
-  String accountSyncListTooLargeSnack(String name, int limit) {
+  String listTooLargeToSyncBody(String name, int limit) {
     return '“$name” has more than $limit signs, so it stays on this device only.';
   }
 
@@ -1481,4 +1476,9 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get listOnlyOnThisDevice => 'Only on this device';
+
+  @override
+  String listNotSyncedTooLarge(int limit) {
+    return 'Not synced: more than $limit signs';
+  }
 }

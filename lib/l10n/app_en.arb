@@ -169,7 +169,7 @@
     "qrCodeDialogBody": "Other people can scan this to subscribe.",
     "qrCodeDialogClose": "Close",
 
-    "signInDialogTitle": "Sign in to share",
+    "signInDialogTitle": "Sign in to share and sync",
     "signInLastUsedHint": "Last time, you signed in with {provider}.",
     "@signInLastUsedHint": {
         "placeholders": {
@@ -670,17 +670,18 @@
     "@stopSharingConfirmBody": {
         "placeholders": { "name": { "type": "String" } }
     },
-    "accountSyncDeletedElsewhereKeptSnack": "“{name}” was deleted on another device. Your unsent changes to it are kept here as a separate list.",
-    "@accountSyncDeletedElsewhereKeptSnack": {
-        "placeholders": { "name": { "type": "String" } }
-    },
-    "accountSyncListTooLargeSnack": "“{name}” has more than {limit} signs, so it stays on this device only.",
-    "@accountSyncListTooLargeSnack": {
+    "listTooLargeToSyncBody": "“{name}” has more than {limit} signs, so it stays on this device only.",
+    "@listTooLargeToSyncBody": {
         "placeholders": { "name": { "type": "String" }, "limit": { "type": "int" } }
     },
     "enginePrivateListFullSnack": "This list is full ({max} signs), so your latest additions stay on this device only.",
     "@enginePrivateListFullSnack": {
         "placeholders": { "max": { "type": "int" } }
     },
-    "listOnlyOnThisDevice": "Only on this device"
+    "listOnlyOnThisDevice": "Only on this device",
+    "listNotSyncedTooLarge": "Not synced: more than {limit} signs",
+    "@listNotSyncedTooLarge": {
+        "description": "Subtitle on a list in My lists while it has more signs than a synced list may.",
+        "placeholders": { "limit": { "type": "int" } }
+    }
 }

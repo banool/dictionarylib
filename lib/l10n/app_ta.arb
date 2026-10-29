@@ -132,7 +132,10 @@
     "qrCodeDialogBody": "மற்றவர்கள் குழுசேர இதை ஸ்கேன் செய்யலாம்.",
     "qrCodeDialogClose": "மூடு",
 
-    "signInDialogTitle": "பகிர உள்நுழையவும்",
+    "signInDialogTitle": "பகிரவும் ஒத்திசைக்கவும் உள்நுழையவும்",
+    "@signInDialogTitle": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
     "signInLastUsedHint": "கடந்த முறை, நீங்கள் {provider} மூலம் உள்நுழைந்தீர்கள்.",
     "signInWithApple": "Apple உடன் தொடரவும்",
     "signInWithGoogle": "Google உடன் தொடரவும்",
@@ -489,12 +492,8 @@
     "@stopSharingConfirmBody": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
-    "accountSyncDeletedElsewhereKeptSnack": "“{name}” வேறொரு சாதனத்தில் நீக்கப்பட்டது. அதில் நீங்கள் செய்த அனுப்பப்படாத மாற்றங்கள் இங்கே தனிப் பட்டியலாக வைக்கப்பட்டுள்ளன.",
-    "@accountSyncDeletedElsewhereKeptSnack": {
-        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
-    },
-    "accountSyncListTooLargeSnack": "“{name}” இல் {limit} க்கும் மேற்பட்ட சைகைகள் உள்ளன, எனவே அது இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.",
-    "@accountSyncListTooLargeSnack": {
+    "listTooLargeToSyncBody": "“{name}” இல் {limit} க்கும் மேற்பட்ட சைகைகள் உள்ளன, எனவே அது இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.",
+    "@listTooLargeToSyncBody": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
     "enginePrivateListFullSnack": "இந்தப் பட்டியல் நிரம்பியுள்ளது ({max} சைகைகள்), எனவே உங்கள் சமீபத்திய சேர்க்கைகள் இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.",
@@ -503,6 +502,10 @@
     },
     "listOnlyOnThisDevice": "இந்தச் சாதனத்தில் மட்டும்",
     "@listOnlyOnThisDevice": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "listNotSyncedTooLarge": "ஒத்திசைக்கப்படவில்லை: {limit} க்கும் மேற்பட்ட சைகைகள்",
+    "@listNotSyncedTooLarge": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     }
 }

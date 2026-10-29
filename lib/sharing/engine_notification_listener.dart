@@ -76,8 +76,8 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
   });
 }
 
-/// The same, for account sync's one-shot events (the merge finished, a
-/// list stays on this device, a list deleted elsewhere kept here). Install
+/// The same, for account sync's one-shot events (the merge finished; the
+/// rest of what account sync settles, it settles without a word). Install
 /// once from the app root, next to [installEngineNotificationSnackbars].
 StreamSubscription<AccountSyncNotice> installAccountSyncSnackbars() {
   return sharing.accountSync.notices.listen((notice) {
@@ -88,13 +88,6 @@ StreamSubscription<AccountSyncNotice> installAccountSyncSnackbars() {
     switch (notice) {
       case MergeCompletedNotice():
         showSnackVia(messenger, l.accountSyncMergedSnack);
-      case ListTooLargeNotice(:final name):
-        showSnackVia(
-          messenger,
-          l.accountSyncListTooLargeSnack(name, maxEntriesPerPrivateList),
-        );
-      case DeletedElsewhereKeptNotice(:final name):
-        showSnackVia(messenger, l.accountSyncDeletedElsewhereKeptSnack(name));
     }
   });
 }

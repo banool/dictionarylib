@@ -132,7 +132,10 @@
     "qrCodeDialogBody": "දායක වීමට අන් අයට මෙය ස්කෑන් කළ හැක.",
     "qrCodeDialogClose": "වසන්න",
 
-    "signInDialogTitle": "බෙදා ගැනීමට පුරනය වන්න",
+    "signInDialogTitle": "බෙදා ගැනීමට සහ සමමුහුර්ත කිරීමට පුරනය වන්න",
+    "@signInDialogTitle": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
     "signInLastUsedHint": "පසුගිය වර, ඔබ {provider} සමඟ පුරනය විය.",
     "signInWithApple": "Apple සමඟ දිගටම",
     "signInWithGoogle": "Google සමඟ දිගටම",
@@ -489,12 +492,8 @@
     "@stopSharingConfirmBody": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
-    "accountSyncDeletedElsewhereKeptSnack": "“{name}” වෙනත් උපාංගයක මකා දමන ලදී. එයට ඔබ කළ නොයැවූ වෙනස්කම් මෙහි වෙනම ලැයිස්තුවක් ලෙස තබා ඇත.",
-    "@accountSyncDeletedElsewhereKeptSnack": {
-        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
-    },
-    "accountSyncListTooLargeSnack": "“{name}” හි සංඥා {limit}කට වඩා ඇති බැවින්, එය මෙම උපාංගයේ පමණක් රැඳී පවතී.",
-    "@accountSyncListTooLargeSnack": {
+    "listTooLargeToSyncBody": "“{name}” හි සංඥා {limit}කට වඩා ඇති බැවින්, එය මෙම උපාංගයේ පමණක් රැඳී පවතී.",
+    "@listTooLargeToSyncBody": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
     "enginePrivateListFullSnack": "මෙම ලැයිස්තුව පිරී ඇත (සංඥා {max}), එබැවින් ඔබගේ නවතම එකතු කිරීම් මෙම උපාංගයේ පමණක් රැඳී පවතී.",
@@ -503,6 +502,10 @@
     },
     "listOnlyOnThisDevice": "මෙම උපාංගයේ පමණි",
     "@listOnlyOnThisDevice": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "listNotSyncedTooLarge": "සමමුහුර්ත කර නැත: සංඥා {limit}කට වඩා",
+    "@listNotSyncedTooLarge": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     }
 }

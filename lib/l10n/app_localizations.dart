@@ -778,7 +778,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @signInDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to share'**
+  /// **'Sign in to share and sync'**
   String get signInDialogTitle;
 
   /// No description provided for @signInLastUsedHint.
@@ -2485,17 +2485,11 @@ abstract class DictLibLocalizations {
   /// **'Stop sharing “{name}”? People following it lose access. It stays on your devices.'**
   String stopSharingConfirmBody(String name);
 
-  /// No description provided for @accountSyncDeletedElsewhereKeptSnack.
-  ///
-  /// In en, this message translates to:
-  /// **'“{name}” was deleted on another device. Your unsent changes to it are kept here as a separate list.'**
-  String accountSyncDeletedElsewhereKeptSnack(String name);
-
-  /// No description provided for @accountSyncListTooLargeSnack.
+  /// No description provided for @listTooLargeToSyncBody.
   ///
   /// In en, this message translates to:
   /// **'“{name}” has more than {limit} signs, so it stays on this device only.'**
-  String accountSyncListTooLargeSnack(String name, int limit);
+  String listTooLargeToSyncBody(String name, int limit);
 
   /// No description provided for @enginePrivateListFullSnack.
   ///
@@ -2508,6 +2502,12 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Only on this device'**
   String get listOnlyOnThisDevice;
+
+  /// Subtitle on a list in My lists while it has more signs than a synced list may.
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced: more than {limit} signs'**
+  String listNotSyncedTooLarge(int limit);
 }
 
 class _DictLibLocalizationsDelegate

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:math' show max;
 
 import 'package:dolphinsr/dolphinsr.dart' show Review;
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,7 @@ import 'sync_api.dart';
 import 'sync_engine.dart';
 import 'synced_entry_list.dart';
 import 'synced_settings.dart';
+import 'sync_clock.dart';
 
 /// Why a cycle was asked for (section 5.2 of the plan).
 enum SyncReason {
@@ -56,19 +58,6 @@ sealed class AccountSyncNotice {
 /// The sign-in merge finished: "Your lists and progress are now syncing."
 class MergeCompletedNotice extends AccountSyncNotice {
   const MergeCompletedNotice();
-}
-
-/// A list holds more signs than a synced list may and stays on this device.
-class ListTooLargeNotice extends AccountSyncNotice {
-  final String name;
-  const ListTooLargeNotice(this.name);
-}
-
-/// A list was deleted on another device while this one had unsent changes
-/// to it; they're kept here as a list of their own.
-class DeletedElsewhereKeptNotice extends AccountSyncNotice {
-  final String name;
-  const DeletedElsewhereKeptNotice(this.name);
 }
 
 /// What the Settings status line shows.
@@ -208,7 +197,7 @@ class AccountSyncController {
   /// Read-only view of the stored state, for the UI and tests.
   AccountSyncState? get state => _state;
 
-  int _now() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  int _now() => syncNowSecs();
 
   /// Account sync can run on this device at all: the app wired sharing, it
   /// isn't the web or a TV, and the knob is on.
@@ -829,7 +818,6 @@ class AccountSyncController {
         if (list.savedVideos.length > maxEntriesPerPrivateList) {
           st.unsyncable[key] = UnsyncableReason.tooLarge;
           await _save();
-          _notices.add(ListTooLargeNotice(list.getName()));
           Analytics.track(
             'sync_list_unsyncable',
             props: {'reason': UnsyncableReason.tooLarge},
@@ -1081,10 +1069,18 @@ class AccountSyncController {
     local.savedVideos
       ..clear()
       ..addAll(merged);
+    // Renamed here while it was being linked: the local name wins (it's the
+    // later intent), queued in the wrapper's first meta write with its seed
+    // ops, and in the same account save that forgets the record.
+    final localName = _serverName(localKey);
+    final renameOnLanding =
+        rec.renamed &&
+        normalizeListName(localName) != normalizeListName(snapshot.displayName);
+    final now = _now();
     final wrapper = SyncedEntryList.owner(
       meta: SyncedListMeta(
         listId: snapshot.listId,
-        displayName: snapshot.displayName,
+        displayName: renameOnLanding ? localName : snapshot.displayName,
         role: ListRole.owner,
         lastKnownSeq: snapshot.lastSeq,
         etag: null,
@@ -1092,7 +1088,16 @@ class AccountSyncController {
         serverUpdatedAt: snapshot.updatedAt,
         orphaned: false,
         sourceLocalKey: localKey,
-        pendingOps: seedOps(localOnly, snapshot.visibility),
+        pendingOps: [
+          if (renameOnLanding)
+            PendingOp(
+              opId: generateOpId(),
+              type: 'rename',
+              args: {'displayName': localName},
+              clientTs: now,
+            ),
+          ...seedOps(localOnly, snapshot.visibility),
+        ],
         cachedMembers: snapshot.members,
         visibility: snapshot.visibility,
       ),
@@ -1111,6 +1116,15 @@ class AccountSyncController {
       }
     }
     st.linking.remove(localKey);
+    if (renameOnLanding) {
+      _enqueue(
+        AccountOp(
+          opId: generateOpId(),
+          type: 'rename',
+          args: {'listId': snapshot.listId, 'name': localName},
+        ),
+      );
+    }
     await _save();
     // Its seed ops go with the engine's next pass over the lists, which the
     // cycle runs (see [_cycle]).
@@ -1122,7 +1136,7 @@ class AccountSyncController {
   /// The ops that put [videos] on a list: `addEntries` of at most 200 and
   /// ~40 KB each for a private list, one `addEntry` each for a shared one.
   static List<PendingOp> seedOps(List<SavedVideo> videos, String visibility) {
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final now = syncNowSecs();
     if (visibility != listVisibilityPrivate) {
       return [
         for (final v in videos)
@@ -1190,6 +1204,14 @@ class AccountSyncController {
 
   /// Ids this device has asked the account to delete or unlink: not to be
   /// installed again while the op is on its way.
+  /// An `unlink` or `restore` for [listId] is queued: the account's answer
+  /// will settle what happens to it here.
+  bool _verdictPending(String listId) => _st!.pendingOps.any(
+    (o) =>
+        (o.type == 'unlink' || o.type == 'restore') &&
+        o.args['listId'] == listId,
+  );
+
   Set<String> _suppressedIds() => {
     for (final op in _st!.pendingOps)
       if ((op.type == 'delete' || op.type == 'unlink') &&
@@ -1587,6 +1609,28 @@ class AccountSyncController {
           await wrapper.writeMeta();
           _linkedThisCycle = true;
         }
+      } else if (op.type == 'restore') {
+        // Restored because this device's unsent edits were newer than the
+        // delete (see [_handleDeletedElsewhere]).
+        final listId = op.args['listId'] as String?;
+        final wrapper = listId == null ? null : _lists.get(listId);
+        if (wrapper == null || wrapper.meta.role != ListRole.owner) continue;
+        if (out.isDone) {
+          // Back on every device, private; the edits go up now.
+          wrapper.meta.orphaned = false;
+          wrapper.meta.visibility = listVisibilityPrivate;
+          await wrapper.writeMeta();
+          _linkedThisCycle = true;
+        } else {
+          // It can't come back (purged since): kept here as a list of its
+          // own, which the next pass links again by name.
+          printAndLog(
+            'AccountSync: restore refused (${out.reasonCode}); keeping '
+            '${wrapper.listId} here',
+          );
+          await _engine.dropOwned(wrapper.listId);
+          sharing.bumpState();
+        }
       } else if (!out.isDone) {
         printAndLog(
           'AccountSync: ${op.type} refused (${out.reasonCode}): ${out.reason}',
@@ -1606,8 +1650,23 @@ class AccountSyncController {
     final pendingDeletes = _suppressedIds();
     // Lists this device has linked.
     for (final w in _lists.ownedLists.toList()) {
-      if (w.meta.orphaned) continue; // awaiting an unlink verdict
       final row = st.rowFor(w.listId);
+      if (w.meta.orphaned) {
+        // Waiting for the account's verdict (an unlink or a restore on its
+        // way). Without one (the app died between orphaning it and queueing
+        // that), settle it from the directory now.
+        if (_verdictPending(w.listId)) continue;
+        if (row != null && row.isLive) {
+          w.meta.orphaned = false;
+          await w.writeMeta();
+          _linkedThisCycle = true;
+          continue;
+        }
+        if (row != null && row.isDeleted) {
+          await _handleDeletedElsewhere(w);
+          continue;
+        }
+      }
       if (row == null) {
         // Missing, not deleted: verify with the list itself before
         // anything happens to the local copy (a directory restored to an
@@ -1669,29 +1728,52 @@ class AccountSyncController {
     await _installEditorLists(session);
   }
 
-  /// A linked list deleted on another device (or verified gone): its
-  /// wrapper goes; the local list goes too unless it has unsent changes,
-  /// which are kept as a list of their own. The default list is never
-  /// deleted this way (the server refuses to delete it): it just stops
-  /// being linked, and links again on the next pass.
+  /// A linked list deleted on another device (or verified gone), resolved
+  /// by timestamps without a word to the person (section 5.5):
+  /// - the directory row is `deleted` and this device has unsent edits newer
+  ///   than the delete (or the delete's time is unknown): the edits are the
+  ///   later intent, so the list is restored, everywhere, and they go up
+  ///   once the account has it back;
+  /// - deleted, and nothing unsent or only older edits: the delete is the
+  ///   later intent, so the list goes here too, edits and all;
+  /// - the row gone altogether (purged, or the account restored to an
+  ///   earlier point): with unsent edits the list stays here as a list of
+  ///   its own, which the next pass links again by name; without, it goes.
+  /// The default list is never deleted this way (the server refuses to
+  /// delete it): it just stops being linked, and links again.
   Future<void> _handleDeletedElsewhere(SyncedEntryList wrapper) async {
-    final st = _st!;
     final key = wrapper.meta.sourceLocalKey;
     if (key == null) {
       await _lists.removeLocal(wrapper.listId);
       return;
     }
-    final name = wrapper.getName();
     if (key == readDefaultListKey()) {
       await _engine.dropOwned(wrapper.listId);
       return;
     }
-    if (wrapper.meta.pendingOps.isNotEmpty) {
-      st.unsyncable[key] = UnsyncableReason.keptUnsent;
-      await _save();
-      await _engine.dropOwned(wrapper.listId);
-      _notices.add(DeletedElsewhereKeptNotice(name));
+    final pending = wrapper.meta.pendingOps;
+    final row = _st!.rowFor(wrapper.listId);
+    if (row != null && row.isLive) {
+      // The account has it live after all: nothing to settle.
+      if (wrapper.meta.orphaned) {
+        wrapper.meta.orphaned = false;
+        await wrapper.writeMeta();
+        _linkedThisCycle = true;
+      }
       return;
+    }
+    if (pending.isNotEmpty) {
+      if (row == null || !row.isDeleted) {
+        await _engine.dropOwned(wrapper.listId);
+        sharing.bumpState();
+        return;
+      }
+      final newest = pending.map((o) => o.clientTs).reduce(max);
+      final deletedAt = row.deletedClientTs;
+      if (deletedAt == null || newest >= deletedAt) {
+        await _restoreWithEdits(wrapper);
+        return;
+      }
     }
     // The list first: a kill before the wrapper goes leaves a wrapper whose
     // source is missing, which start-up drops; the other way round would
@@ -1699,6 +1781,31 @@ class AccountSyncController {
     await userEntryListManager.deleteEntryList(key);
     await _engine.dropOwned(wrapper.listId);
     sharing.bumpState();
+  }
+
+  /// Queue the account's `restore` of [wrapper]'s list, then hold the list
+  /// back from syncing (orphaned, still editable) until the answer: its
+  /// edits can only go up once it is live again. In that order, so a kill
+  /// in between leaves the restore queued (the list's next sync is a 410,
+  /// which orphans it with an `unlink` that the restore then answers).
+  Future<void> _restoreWithEdits(SyncedEntryList wrapper) async {
+    final st = _st!;
+    if (!st.pendingOps.any(
+      (o) => o.type == 'restore' && o.args['listId'] == wrapper.listId,
+    )) {
+      _enqueue(
+        AccountOp(
+          opId: generateOpId(),
+          type: 'restore',
+          args: {'listId': wrapper.listId},
+        ),
+      );
+      await _save();
+    }
+    if (!wrapper.meta.orphaned) {
+      wrapper.meta.orphaned = true;
+      await wrapper.writeMeta();
+    }
   }
 
   // -------- Engine hooks --------
@@ -1780,7 +1887,7 @@ class AccountSyncController {
     final st = _state;
     if (st == null) return;
     final rec = st.linking.remove(oldKey);
-    if (rec != null) st.linking[newKey] = rec;
+    if (rec != null) st.linking[newKey] = rec..renamed = true;
     final reason = st.unsyncable.remove(oldKey);
     // A name the account refused is tried again under the new one.
     if (reason != null && reason != UnsyncableReason.refused) {

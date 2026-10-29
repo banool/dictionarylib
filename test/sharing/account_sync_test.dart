@@ -3,6 +3,7 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
 import 'package:dictionarylib/sharing/account_sync_state.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
+import 'package:dictionarylib/sharing/sync_clock.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,6 +27,7 @@ void main() {
   tearDown(() {
     // Put the active device away so its timers die with it.
     TestDevice(server, 'none').deactivate();
+    debugSyncClockOffsetSeconds = 0;
   });
 
   Future<TestDevice> freshDevice(String name) async {
@@ -149,7 +151,8 @@ void main() {
         UnsyncableReason.tooLarge,
       );
       expect(server.liveRows('alice').map((r) => r['name']), ['Favourites']);
-      expect(phone.notices.whereType<ListTooLargeNotice>().single.name, 'Huge');
+      // No snackbar: My lists says so on the list's row instead.
+      expect(phone.notices, everyElement(isA<MergeCompletedNotice>()));
       // It's shown last.
       expect(userEntryListManager.getEntryLists().keys.last, 'Huge_words');
     });
@@ -375,40 +378,104 @@ void main() {
       expect(tablet.localLists().containsKey('Animals'), isFalse);
     });
 
+    test('a list deleted elsewhere goes here too when the edits here are '
+        'older than the delete', () async {
+      await twoDevices();
+      // The tablet edits offline, a minute before the delete by its clock...
+      await tablet.activate();
+      server.failBefore = (_) => true;
+      debugSyncClockOffsetSeconds = -60;
+      await sharing.lists
+          .ownerForSourceKey('Animals_words')!
+          .addVideo(video('owl'));
+      debugSyncClockOffsetSeconds = 0;
+      await sharing.engine.pushAllDirty();
+      server.failBefore = null;
+      tablet.deactivate();
+      // ...and the phone deletes it.
+      await phone.activate();
+      await listsService.deleteList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+      );
+      await phone.settle();
+      await tablet.settle();
+      expect(tablet.localLists().containsKey('Animals'), isFalse);
+      expect(sharing.lists.ownerForSourceKey('Animals_words'), isNull);
+      expect(server.liveRows('alice').map((r) => r['name']), ['Favourites']);
+      expect(tablet.notices, everyElement(isA<MergeCompletedNotice>()));
+    });
+
+    test('a list deleted elsewhere comes back everywhere when the edits here '
+        'are newer than the delete', () async {
+      await twoDevices();
+      final id = sharing.lists.ownerForSourceKey('Animals_words')!.listId;
+      await tablet.activate();
+      server.failBefore = (_) => true;
+      debugSyncClockOffsetSeconds = 60;
+      await sharing.lists
+          .ownerForSourceKey('Animals_words')!
+          .addVideo(video('owl'));
+      debugSyncClockOffsetSeconds = 0;
+      await sharing.engine.pushAllDirty();
+      server.failBefore = null;
+      tablet.deactivate();
+      await phone.activate();
+      await listsService.deleteList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+      );
+      await phone.settle();
+      expect(phone.localLists().containsKey('Animals'), isFalse);
+      await tablet.settle();
+      // Restored, with the edit, under the same id.
+      expect(tablet.localLists()['Animals'], ['cat', 'dog', 'owl']);
+      final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+      expect(w.listId, id);
+      expect(w.meta.orphaned, isFalse);
+      expect(w.meta.pendingOps, isEmpty);
+      expect(server.entryKeys(id), ['cat', 'dog', 'owl']);
+      expect(server.lists[id]!['tombstoned'], isFalse);
+      expect(
+        server.liveRows('alice').where((r) => r['name'] == 'Animals'),
+        hasLength(1),
+      );
+      // And back on the phone.
+      await phone.settle();
+      expect(phone.localLists()['Animals'], ['cat', 'dog', 'owl']);
+      expect(tablet.notices, everyElement(isA<MergeCompletedNotice>()));
+    });
+
     test(
-      'a list deleted elsewhere is kept here when it had unsent changes',
+      'a list gone from the account altogether (purged) stays here as a '
+      'list of its own when it has unsent edits, and goes when not',
       () async {
         await twoDevices();
-        // The tablet edits offline...
         await tablet.activate();
+        await tablet.addLocalList('Birds', ['owl']);
+        await tablet.settle();
+        final animals = sharing.lists
+            .ownerForSourceKey('Animals_words')!
+            .listId;
+        final birds = sharing.lists.ownerForSourceKey('Birds_words')!.listId;
         server.failBefore = (_) => true;
-        final w = sharing.lists.ownerForSourceKey('Animals_words')!;
-        await w.addVideo(video('owl'));
-        await sharing.engine.pushAllDirty();
+        await sharing.lists
+            .ownerForSourceKey('Animals_words')!
+            .addVideo(video('eel'));
         server.failBefore = null;
         tablet.deactivate();
-        // ...while the phone deletes it.
-        await phone.activate();
-        await listsService.deleteList(
-          userEntryListManager.getEntryLists()['Animals_words']!,
-        );
-        await phone.settle();
-        // The tablet's list: kept, unlinked, flagged, the person told.
-        await tablet.activate();
-        server.failBefore = (req) =>
-            req.url.path.endsWith('/sync') && !req.url.path.contains('account');
-        await sharing.accountSync.kick(SyncReason.pullToRefresh);
-        server.failBefore = null;
-        expect(tablet.localLists()['Animals'], ['cat', 'dog', 'owl']);
-        expect(sharing.lists.ownerForSourceKey('Animals_words'), isNull);
-        expect(
-          sharing.accountSync.unsyncableReason('Animals_words'),
-          UnsyncableReason.keptUnsent,
-        );
-        expect(
-          tablet.notices.whereType<DeletedElsewhereKeptNotice>(),
-          isNotEmpty,
-        );
+        // Both deleted and purged, rows and all (a server rewound, say).
+        for (final id in [animals, birds]) {
+          server.purgeList(id);
+          (server.account('alice')['directory'] as List).removeWhere(
+            (r) => r['listId'] == id,
+          );
+        }
+        await tablet.settle(rounds: 6);
+        expect(tablet.localLists().containsKey('Birds'), isFalse);
+        expect(tablet.localLists()['Animals'], ['cat', 'dog', 'eel']);
+        // Linked again by name, as a new list.
+        final again = sharing.lists.ownerForSourceKey('Animals_words')!;
+        expect(again.listId, isNot(animals));
+        expect(server.entryKeys(again.listId), ['cat', 'dog', 'eel']);
       },
     );
 
@@ -526,6 +593,8 @@ void main() {
         userEntryListManager.getEntryLists()['Animals_words']!,
         'Beasts',
       );
+      // Queued, so it goes with the phone's next sync.
+      await phone.settle();
       await tablet.settle();
       expect(tablet.localLists().containsKey('Beasts'), isTrue);
     });
@@ -894,6 +963,319 @@ void main() {
       expect(shared.listId, w.listId);
       expect(server.lists.length, listsBefore);
       expect(server.lists[w.listId]!['visibility'], 'shared');
+    });
+  });
+
+  group('last intent wins, offline first', () {
+    int requests() => server.log.length;
+
+    Future<TestDevice> phoneWithAnimals() async {
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.signIn('alice');
+      await phone.settle();
+      return phone;
+    }
+
+    test('a rename takes effect at once, offline, without a request', () async {
+      final phone = await phoneWithAnimals();
+      final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+      server.failBefore = (_) => true;
+      final before = requests();
+      await listsService.renameList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+        'Beasts',
+      );
+      expect(requests(), before, reason: 'no request on rename');
+      expect(w.getName(), 'Beasts');
+      expect(
+        userEntryListManager.getEntryLists()['Animals_words']!.getName(),
+        'Beasts',
+      );
+      expect(w.meta.pendingOps.map((o) => o.type), ['rename']);
+      expect(
+        sharing.accountSync.state!.pendingOps.map((o) => o.type),
+        contains('rename'),
+      );
+      // Still Beasts after a failed sync and a restart.
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      phone.deactivate();
+      await phone.activate();
+      expect(
+        sharing.lists.ownerForSourceKey('Animals_words')!.getName(),
+        'Beasts',
+      );
+      server.failBefore = null;
+      await phone.settle();
+      expect(server.lists[w.listId]!['displayName'], 'Beasts');
+      expect(
+        server.liveRows('alice').where((r) => r['name'] == 'Beasts'),
+        hasLength(1),
+      );
+    });
+
+    test(
+      'a queued rename is not undone by the old name echoed meanwhile',
+      () async {
+        final phone = await phoneWithAnimals();
+        final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+        server.failBefore = (_) => true;
+        for (var i = 0; i < 60; i++) {
+          await w.addVideo(video('w$i'));
+        }
+        await listsService.renameSharedList(w, 'Beasts');
+        // The first batch (50 ops, not the rename) goes through and echoes the
+        // old name; the rest fail.
+        var lists = 0;
+        server.failBefore = (req) =>
+            req.url.path.endsWith('/sync') &&
+            !req.url.path.contains('account') &&
+            ++lists > 1;
+        await sharing.engine.pushAllDirty();
+        expect(server.lists[w.listId]!['displayName'], 'Animals');
+        expect(w.meta.pendingOps.map((o) => o.type), contains('rename'));
+        expect(w.getName(), 'Beasts');
+        server.failBefore = null;
+        await phone.settle();
+        expect(w.getName(), 'Beasts');
+        expect(server.lists[w.listId]!['displayName'], 'Beasts');
+      },
+    );
+
+    test('two devices renaming offline end with the later rename', () async {
+      final phone = await phoneWithAnimals();
+      final tablet = await freshDevice('tablet');
+      await tablet.signIn('alice');
+      await tablet.settle();
+      final id = sharing.lists.ownerForSourceKey('Animals_words')!.listId;
+      server.failBefore = (_) => true;
+      // The tablet renames first in the test, but later by the clocks.
+      debugSyncClockOffsetSeconds = 30;
+      await listsService.renameList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+        'Later',
+      );
+      tablet.deactivate();
+      await phone.activate();
+      debugSyncClockOffsetSeconds = 0;
+      await listsService.renameList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+        'Earlier',
+      );
+      server.failBefore = null;
+      // The tablet's rename lands first, the phone's (older) second.
+      await tablet.settle();
+      await phone.settle();
+      expect(server.lists[id]!['displayName'], 'Later');
+      expect(
+        sharing.lists.ownerForSourceKey('Animals_words')!.getName(),
+        'Later',
+      );
+      expect(
+        server.liveRows('alice').firstWhere((r) => r['listId'] == id)['name'],
+        'Later',
+      );
+      await tablet.settle();
+      expect(
+        sharing.lists.ownerForSourceKey('Animals_words')!.getName(),
+        'Later',
+      );
+      expect(phone.notices, everyElement(isA<MergeCompletedNotice>()));
+    });
+
+    test(
+      'a rename the server refuses puts the old name back, quietly',
+      () async {
+        final phone = await phoneWithAnimals();
+        final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+        server.failBefore = (_) => true;
+        // Allowed while private...
+        await listsService.renameSharedList(w, 'Favourites');
+        expect(w.getName(), 'Favourites');
+        // ...but shared from another device before it landed.
+        server.lists[w.listId]!['visibility'] = 'shared';
+        server.failBefore = null;
+        await phone.settle();
+        expect(w.getName(), 'Animals');
+        expect(w.meta.pendingOps, isEmpty);
+        expect(server.lists[w.listId]!['displayName'], 'Animals');
+        expect(phone.notices, everyElement(isA<MergeCompletedNotice>()));
+      },
+    );
+
+    test(
+      'a rename made while the list was being linked reaches the account',
+      () async {
+        final phone = await freshDevice('phone');
+        await phone.signIn('alice');
+        await phone.settle();
+        // A new list whose create lands on the account but whose answer is
+        // lost, then renamed before the link finishes.
+        server.loseResponse = (req) =>
+            req.url.path == '/v1/account/sync' &&
+            req.body.contains('"createList"');
+        await listsService.createList('Fish');
+        await sharing.accountSync.kick(SyncReason.pullToRefresh);
+        server.loseResponse = null;
+        expect(sharing.lists.ownerForSourceKey('Fish_words'), isNull);
+        await listsService.renameList(
+          userEntryListManager.getEntryLists()['Fish_words']!,
+          'Sea life',
+        );
+        await phone.settle();
+        final w = sharing.lists.ownerForSourceKey('Sea_life_words')!;
+        expect(w.getName(), 'Sea life');
+        expect(server.lists[w.listId]!['displayName'], 'Sea life');
+        expect(
+          server.liveRows('alice').map((r) => r['name']),
+          containsAll(['Sea life']),
+        );
+        expect(
+          server.liveRows('alice').where((r) => r['name'] == 'Fish'),
+          isEmpty,
+        );
+      },
+    );
+
+    test('two devices reordering offline end with the later order', () async {
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.addLocalList('Birds', ['owl']);
+      await phone.signIn('alice');
+      await phone.settle();
+      final tablet = await freshDevice('tablet');
+      await tablet.signIn('alice');
+      await tablet.settle();
+      server.failBefore = (_) => true;
+      debugSyncClockOffsetSeconds = 30;
+      await listsService.reorderLists(2, 0); // Birds first (later)
+      final tabletOrder = tablet.localLists().keys.toList();
+      tablet.deactivate();
+      await phone.activate();
+      debugSyncClockOffsetSeconds = 0;
+      await listsService.reorderLists(1, 0); // Animals first (earlier)
+      server.failBefore = null;
+      await tablet.settle();
+      await phone.settle();
+      expect(phone.localLists().keys.toList(), tabletOrder);
+      await tablet.settle();
+      expect(tablet.localLists().keys.toList(), tabletOrder);
+    });
+
+    test('a rename killed at any point ends with one name, the same here and '
+        'on the account', () async {
+      final setup = await phoneWithAnimals();
+      final id = sharing.lists.ownerForSourceKey('Animals_words')!.listId;
+      setup.deactivate();
+      final initial = setup.prefs;
+      final token = setup.token!;
+      final server0 = server.clone();
+      final snapshots = <FakeAccountServer>[];
+      final original = TestDevice(server, 'original', prefs: initial)
+        ..token = token
+        ..userId = 'alice';
+      await original.activate(onWrite: () => snapshots.add(server.clone()));
+      await listsService.renameList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+        'Beasts',
+      );
+      await original.settle();
+      final writes = List.of(original.store!.writes);
+      final finalServer = server.clone();
+      original.deactivate();
+      expect(finalServer.lists[id]!['displayName'], 'Beasts');
+      for (var k = 0; k <= writes.length; k++) {
+        for (final serverAfter in [false, true]) {
+          final base = serverAfter
+              ? (k == writes.length ? finalServer : snapshots[k])
+              : (k == 0 ? server0 : snapshots[k - 1]);
+          final s = base.clone();
+          final label =
+              'killed after $k of ${writes.length} writes, '
+              'server ${serverAfter ? 'after' : 'before'}';
+          final d =
+              TestDevice(s, label, prefs: replayWrites(initial, writes, k))
+                ..token = token
+                ..userId = 'alice';
+          await d.settle(rounds: 6);
+          final w = sharing.lists.ownerForSourceKey('Animals_words');
+          expect(w, isNotNull, reason: label);
+          expect(w!.listId, id, reason: label);
+          final name = s.lists[id]!['displayName'];
+          expect(['Animals', 'Beasts'], contains(name), reason: label);
+          expect(w.getName(), name, reason: '$label: same name here');
+          expect(w.meta.pendingOps, isEmpty, reason: '$label: queue');
+          if (k > 0) expect(name, 'Beasts', reason: label);
+          d.deactivate();
+        }
+      }
+    });
+
+    test('restoring a list for newer edits, killed at any point, ends with '
+        'the list back once, edits and all', () async {
+      final phone = await phoneWithAnimals();
+      final id = sharing.lists.ownerForSourceKey('Animals_words')!.listId;
+      final tablet = await freshDevice('tablet');
+      await tablet.signIn('alice');
+      await tablet.settle();
+      server.failBefore = (_) => true;
+      debugSyncClockOffsetSeconds = 60;
+      await sharing.lists
+          .ownerForSourceKey('Animals_words')!
+          .addVideo(video('owl'));
+      debugSyncClockOffsetSeconds = 0;
+      server.failBefore = null;
+      tablet.deactivate();
+      await phone.activate();
+      await listsService.deleteList(
+        userEntryListManager.getEntryLists()['Animals_words']!,
+      );
+      await phone.settle();
+      phone.deactivate();
+      final initial = tablet.prefs;
+      final token = tablet.token!;
+      final server0 = server.clone();
+      final snapshots = <FakeAccountServer>[];
+      final original = TestDevice(server, 'original', prefs: initial)
+        ..token = token
+        ..userId = 'alice';
+      await original.activate(onWrite: () => snapshots.add(server.clone()));
+      await original.settle();
+      final writes = List.of(original.store!.writes);
+      final finalServer = server.clone();
+      original.deactivate();
+      expect(finalServer.entryKeys(id), ['cat', 'owl']);
+      for (var k = 0; k <= writes.length; k++) {
+        for (final serverAfter in [false, true]) {
+          final base = serverAfter
+              ? (k == writes.length ? finalServer : snapshots[k])
+              : (k == 0 ? server0 : snapshots[k - 1]);
+          final s = base.clone();
+          final label =
+              'killed after $k of ${writes.length} writes, '
+              'server ${serverAfter ? 'after' : 'before'}';
+          final d =
+              TestDevice(s, label, prefs: replayWrites(initial, writes, k))
+                ..token = token
+                ..userId = 'alice';
+          await d.settle(rounds: 6);
+          expect(d.localLists()['Animals'], ['cat', 'owl'], reason: label);
+          final live = s
+              .liveRows('alice')
+              .where((r) => r['name'] == 'Animals')
+              .toList();
+          expect(live, hasLength(1), reason: '$label: once on the account');
+          final w = sharing.lists.ownerForSourceKey('Animals_words');
+          expect(w?.listId, live.single['listId'], reason: label);
+          expect(w!.meta.orphaned, isFalse, reason: label);
+          expect(w.meta.pendingOps, isEmpty, reason: label);
+          expect(s.entryKeys(live.single['listId'] as String).toSet(), {
+            'cat',
+            'owl',
+          }, reason: '$label: on the account');
+          d.deactivate();
+        }
+      }
     });
   });
 
