@@ -935,7 +935,10 @@ void runSoloOfflineOnline(
     );
     _mdNoSnackBar('revised');
 
-    // A revision setting: the card limit.
+    // A revision setting: the card limit (scrolled into view first: on a
+    // small phone it sits below the Start panel).
+    await tester.ensureVisible(find.byType(DropdownButton<int>));
+    await settle(tester);
     await tester.tap(find.byType(DropdownButton<int>));
     await settle(tester);
     await tester.tap(find.text('10').last);
