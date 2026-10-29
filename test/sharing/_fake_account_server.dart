@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:dictionarylib/sharing/sync_api.dart'
+    show maxEntriesPerPrivateList;
 import 'package:dictionarylib/sharing/sync_clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -366,7 +368,7 @@ class FakeAccountServer {
     final ops = (body['ops'] as List).cast<Map<String, dynamic>>();
     final applied = <Map<String, dynamic>>[];
     final batchIds = <String>{};
-    final cap = l['visibility'] == 'private' ? 5000 : 500;
+    final cap = l['visibility'] == 'private' ? maxEntriesPerPrivateList : 500;
     for (final op in ops) {
       final opId = op['opId'] as String;
       batchIds.add(opId);

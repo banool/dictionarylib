@@ -1410,7 +1410,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get settingsSignInRowSubtitle =>
-      'உங்கள் சொந்தச் சாதனங்களுக்கு இடையே உங்கள் பட்டியல்களையும் முன்னேற்றத்தையும் ஒத்திசைத்து, பட்டியல்களைப் பகிரவும்';
+      'உங்கள் சொந்தச் சாதனங்களுக்கு இடையே உங்கள் பட்டியல்களையும் முன்னேற்றத்தையும் ஒத்திசைத்து, பட்டியல்களைப் பிறருடன் பகிரவும்';
 
   @override
   String settingsSignedInWith(String provider) {
@@ -1512,4 +1512,120 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String listNotSyncedTooLarge(int limit) {
     return 'ஒத்திசைக்கப்படவில்லை: $limit க்கும் மேற்பட்ட சைகைகள்';
   }
+
+  @override
+  String get syncStatusTitle => 'ஒத்திசைவு நிலை';
+
+  @override
+  String get syncStatusAccount => 'கணக்கு';
+
+  @override
+  String syncStatusAccountValue(String provider, String name) {
+    return '$provider · $name';
+  }
+
+  @override
+  String get syncStatusSignedOut => 'வெளியேறியுள்ளீர்கள்';
+
+  @override
+  String get syncStatusStatus => 'நிலை';
+
+  @override
+  String get syncStatusLastSynced => 'கடைசியாக ஒத்திசைத்தது';
+
+  @override
+  String get syncStatusNever => 'இதுவரை இல்லை';
+
+  @override
+  String get syncStatusLists => 'பட்டியல்கள்';
+
+  @override
+  String syncStatusListsSyncing(int count) {
+    return '$count ஒத்திசைகின்றன';
+  }
+
+  @override
+  String syncStatusListsNotSyncing(int count) {
+    return '$count ஒத்திசைக்கப்படவில்லை';
+  }
+
+  @override
+  String syncStatusListReason(String name, String reason) {
+    return '$name: $reason';
+  }
+
+  @override
+  String syncStatusReasonTooLarge(int limit) {
+    return '$limit க்கும் மேற்பட்ட சைகைகள்';
+  }
+
+  @override
+  String get syncStatusReasonListLimit => 'கணக்கு நிரம்பியுள்ளது';
+
+  @override
+  String get syncStatusReasonRefused => 'கணக்கு ஏற்காத பெயர்';
+
+  @override
+  String get syncStatusFollowed => 'பின்தொடரும் பட்டியல்கள்';
+
+  @override
+  String get syncStatusPending => 'அனுப்பக் காத்திருப்பவை';
+
+  @override
+  String syncStatusPendingValue(String changes, String answers) {
+    return '$changes, $answers';
+  }
+
+  @override
+  String syncStatusListChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count பட்டியல் மாற்றங்கள்',
+      one: '1 பட்டியல் மாற்றம்',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncStatusAnswers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count திருத்தப் பதில்கள்',
+      one: '1 திருத்தப் பதில்',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncStatusNothing => 'எதுவும் இல்லை';
+
+  @override
+  String get syncStatusProblem => 'கடைசிச் சிக்கல்';
+
+  @override
+  String get syncStatusProblemNetwork => 'சேவையகத்தை அணுக முடியவில்லை';
+
+  @override
+  String syncStatusProblemServer(String time) {
+    return 'சேவையகம் கிடைக்கவில்லை, $time மணிக்கு மீண்டும் முயலும்';
+  }
+
+  @override
+  String get syncStatusProblemServerNoTime => 'சேவையகம் கிடைக்கவில்லை';
+
+  @override
+  String syncStatusProblemPaused(String time) {
+    return '$time வரை சேவையகத்தால் இடைநிறுத்தப்பட்டது';
+  }
+
+  @override
+  String get syncStatusProblemSessionExpired => 'உள்நுழைவு அமர்வு காலாவதியானது';
+
+  @override
+  String get syncStatusProblemOther => 'ஏதோ தவறு நடந்தது; மீண்டும் முயலும்';
+
+  @override
+  String get syncStatusSyncNow => 'இப்போது ஒத்திசை';
 }

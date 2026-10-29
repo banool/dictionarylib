@@ -1,9 +1,13 @@
+import 'package:dictionarylib/common.dart' show rootNavigatorKey;
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_settings.dart';
 import 'package:dictionarylib/save_video_sheet.dart';
+import 'package:dictionarylib/sharing/sync_status_sheet.dart';
+import 'package:dictionarylib/sharing/account_sync.dart';
+import 'package:dictionarylib/sharing/engine_notification_listener.dart';
 import 'package:dictionarylib/top_level_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,10 +80,60 @@ void main() {
     expect(find.textContaining('Synced'), findsOneWidget);
     expect(find.text('Sign in'), findsNothing);
 
+    // "Signed in with …" opens the sync status sheet.
+    await tester.tap(find.byKey(const ValueKey('settings.syncStatusRow')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sync status'), findsOneWidget);
+    expect(find.byKey(SyncStatusKeys.syncNow), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Sync status'), findsNothing);
+
     await tester.runAsync(() async => sharing.signOut());
     await tester.pumpAndSettle();
     expect(find.text('Sign in'), findsOneWidget);
     expect(find.text('Sign out'), findsNothing);
+    await tester.runAsync(() async => phone.deactivate());
+  });
+
+  testWidgets('a "signed out, sign in again" snackbar goes once a session is '
+      'back, however the person signed in', (tester) async {
+    seedDictionary(const []);
+    final server = FakeAccountServer();
+    final phone = TestDevice(server, 'phone');
+    await tester.runAsync(() async {
+      await phone.activate();
+      await phone.signIn('alice');
+      await phone.settle();
+    });
+    final sub = installEngineNotificationSnackbars();
+    addTearDown(sub.cancel);
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        scaffoldMessengerKey: rootScaffoldMessengerKey,
+        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        supportedLocales: DictLibLocalizations.supportedLocales,
+        home: const Scaffold(body: SizedBox.shrink()),
+      ),
+    );
+    // The session expires.
+    await tester.runAsync(() async {
+      server.tokens.clear();
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Signed out — please sign in again'), findsOneWidget);
+    // Signed in again from Settings, not from the snackbar.
+    await tester.runAsync(() async {
+      phone.token = null;
+      await phone.signIn('alice');
+      await phone.settle();
+    });
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    expect(find.text('Signed out — please sign in again'), findsNothing);
     await tester.runAsync(() async => phone.deactivate());
   });
 

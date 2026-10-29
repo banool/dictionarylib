@@ -68,9 +68,9 @@ bool isReservedShareName(String name) =>
 const int maxEntriesPerList = 500;
 
 /// Mirror of the server's `MAX_ENTRIES_PRIVATE`: what a private (synced but
-/// not shared) list may hold. A list over it stays on the device only
-/// (`unsyncable: too_large`).
-const int maxEntriesPerPrivateList = 5000;
+/// not shared) list may hold, the same as a shared list. A list over it
+/// stays on the device only (`unsyncable: too_large`).
+const int maxEntriesPerPrivateList = 500;
 
 /// Most live lists one account holds (`MAX_PRIVATE_LISTS_PER_USER` in the
 /// worker's `validation.ts`).

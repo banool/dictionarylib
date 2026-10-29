@@ -698,8 +698,15 @@ class AccountSyncController {
     await _save();
   }
 
+  /// Unix seconds the pending retry is due, while one is (for the sync
+  /// status sheet's "trying again at …").
+  int? get nextRetryAt =>
+      (_retryTimer?.isActive ?? false) ? _nextRetryAtSecs : null;
+  int? _nextRetryAtSecs;
+
   void _scheduleRetry(int seconds) {
     _retryTimer?.cancel();
+    _nextRetryAtSecs = _now() + seconds;
     _retryTimer = Timer(Duration(seconds: seconds), () {
       _retryTimer = null;
       unawaited(kick(SyncReason.retry));

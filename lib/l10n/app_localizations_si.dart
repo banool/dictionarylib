@@ -1393,7 +1393,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get settingsSignInRowSubtitle =>
-      'ඔබේම උපාංග අතර ඔබේ ලැයිස්තු සහ ප්‍රගතිය සමමුහුර්ත කර, ලැයිස්තු බෙදා ගන්න';
+      'ඔබේම උපාංග අතර ඔබේ ලැයිස්තු සහ ප්‍රගතිය සමමුහුර්ත කර, ලැයිස්තු අන් අය සමඟ බෙදා ගන්න';
 
   @override
   String settingsSignedInWith(String provider) {
@@ -1495,4 +1495,120 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String listNotSyncedTooLarge(int limit) {
     return 'සමමුහුර්ත කර නැත: සංඥා $limitකට වඩා';
   }
+
+  @override
+  String get syncStatusTitle => 'සමමුහුර්ත තත්ත්වය';
+
+  @override
+  String get syncStatusAccount => 'ගිණුම';
+
+  @override
+  String syncStatusAccountValue(String provider, String name) {
+    return '$provider · $name';
+  }
+
+  @override
+  String get syncStatusSignedOut => 'පිටවී ඇත';
+
+  @override
+  String get syncStatusStatus => 'තත්ත්වය';
+
+  @override
+  String get syncStatusLastSynced => 'අවසන් වරට සමමුහුර්ත කළේ';
+
+  @override
+  String get syncStatusNever => 'කිසි විටෙකත් නැත';
+
+  @override
+  String get syncStatusLists => 'ලැයිස්තු';
+
+  @override
+  String syncStatusListsSyncing(int count) {
+    return '$countක් සමමුහුර්ත වෙමින්';
+  }
+
+  @override
+  String syncStatusListsNotSyncing(int count) {
+    return '$countක් සමමුහුර්ත නොවේ';
+  }
+
+  @override
+  String syncStatusListReason(String name, String reason) {
+    return '$name: $reason';
+  }
+
+  @override
+  String syncStatusReasonTooLarge(int limit) {
+    return 'සංඥා $limitකට වඩා';
+  }
+
+  @override
+  String get syncStatusReasonListLimit => 'ගිණුම පිරී ඇත';
+
+  @override
+  String get syncStatusReasonRefused => 'ගිණුම ප්‍රතික්ෂේප කළ නමක්';
+
+  @override
+  String get syncStatusFollowed => 'අනුගමනය කරන ලැයිස්තු';
+
+  @override
+  String get syncStatusPending => 'යැවීමට බලා සිටින';
+
+  @override
+  String syncStatusPendingValue(String changes, String answers) {
+    return '$changes, $answers';
+  }
+
+  @override
+  String syncStatusListChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ලැයිස්තු වෙනස්කම් $count',
+      one: 'ලැයිස්තු වෙනස්කම් 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncStatusAnswers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'සංශෝධන පිළිතුරු $count',
+      one: 'සංශෝධන පිළිතුරු 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncStatusNothing => 'කිසිවක් නැත';
+
+  @override
+  String get syncStatusProblem => 'අවසන් ගැටලුව';
+
+  @override
+  String get syncStatusProblemNetwork => 'සේවාදායකයට සම්බන්ධ විය නොහැකි විය';
+
+  @override
+  String syncStatusProblemServer(String time) {
+    return 'සේවාදායකය ලබා ගත නොහැක, $timeට නැවත උත්සාහ කරයි';
+  }
+
+  @override
+  String get syncStatusProblemServerNoTime => 'සේවාදායකය ලබා ගත නොහැක';
+
+  @override
+  String syncStatusProblemPaused(String time) {
+    return 'සේවාදායකය විසින් $time දක්වා විරාම කර ඇත';
+  }
+
+  @override
+  String get syncStatusProblemSessionExpired => 'පුරනය වූ සැසිය කල් ඉකුත් විය';
+
+  @override
+  String get syncStatusProblemOther => 'යමක් වැරදී ගියේය; එය නැවත උත්සාහ කරයි';
+
+  @override
+  String get syncStatusSyncNow => 'දැන් සමමුහුර්ත කරන්න';
 }

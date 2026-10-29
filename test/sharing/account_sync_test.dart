@@ -136,7 +136,9 @@ void main() {
       expect(server.entryKeys(accountPets), ['dog']);
     });
 
-    test('a list over 5000 signs stays on the device', () async {
+    test('a list over 500 signs (the private cap, the same as a shared '
+        "list's) stays on the device", () async {
+      expect(maxEntriesPerPrivateList, 500);
       final phone = await freshDevice('phone');
       final big = await phone.addLocalList('Huge', []);
       for (var i = 0; i <= maxEntriesPerPrivateList; i++) {
@@ -685,6 +687,32 @@ void main() {
       await phone.settle();
       await tablet.settle();
       expect(tablet.localLists().containsKey('Beasts'), isTrue);
+    });
+
+    test('a sign removed and saved again offline on one device, removed on '
+        'the other meanwhile, stays on both', () async {
+      await twoDevices();
+      // The phone, offline: removes cat and saves it again.
+      await phone.activate();
+      server.failBefore = (_) => true;
+      final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+      await w.removeVideo(video('cat'));
+      await w.addVideo(video('cat'));
+      expect(w.meta.pendingOps.map((o) => o.type), ['removeEntry', 'addEntry']);
+      server.failBefore = null;
+      // The tablet removes it meanwhile.
+      await tablet.activate();
+      await sharing.lists
+          .ownerForSourceKey('Animals_words')!
+          .removeVideo(video('cat'));
+      await tablet.settle();
+      expect(server.entryKeys(w.listId), ['dog']);
+      // The phone comes back: its re-save is the later intent.
+      await phone.settle();
+      expect(server.entryKeys(w.listId).toSet(), {'cat', 'dog'});
+      expect(phone.localLists()['Animals']!.toSet(), {'cat', 'dog'});
+      await tablet.settle();
+      expect(tablet.localLists()['Animals']!.toSet(), {'cat', 'dog'});
     });
 
     test('a reorder on one device reaches the other', () async {

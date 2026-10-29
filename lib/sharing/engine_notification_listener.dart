@@ -31,7 +31,20 @@ final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
 /// Returns the subscription; the app root owns it for the process
 /// lifetime (cancel only in tests).
 StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
-  return sharing.engineNotifications.listen((notification) {
+  // A "signed out, please sign in again" snackbar is stale once a session
+  // is back, however the person signed in (Settings, the share flow): it
+  // goes then, rather than sitting over a signed-in app.
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? sessionSnack;
+  final store = sharing.auth.store;
+  void onAuth() {
+    if (store.current != null && sessionSnack != null) {
+      sessionSnack?.close();
+      sessionSnack = null;
+    }
+  }
+
+  store.addListener(onAuth);
+  final sub = sharing.engineNotifications.listen((notification) {
     final messenger = rootScaffoldMessengerKey.currentState;
     // L10n comes from the navigator context — present whenever the app
     // is rendering, which is the only time a snackbar could show anyway.
@@ -40,7 +53,10 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
     final l = DictLibLocalizations.of(context)!;
     switch (notification) {
       case SyncNotification.sessionExpired:
-        messenger.showSnackBar(
+        // One is enough: a list's sync and the account's can both find
+        // the session over.
+        if (sessionSnack != null) return;
+        final shown = messenger.showSnackBar(
           SnackBar(
             content: Text(l.engineSessionExpiredSnack),
             action: SnackBarAction(
@@ -61,6 +77,12 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
             ),
           ),
         );
+        sessionSnack = shown;
+        unawaited(
+          shown.closed.then((_) {
+            if (identical(sessionSnack, shown)) sessionSnack = null;
+          }),
+        );
       case SyncNotification.removedAsEditor:
         showSnackVia(messenger, l.engineRemovedAsEditorSnack);
       case SyncNotification.snapshotCatchUp:
@@ -74,6 +96,7 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
         );
     }
   });
+  return sub;
 }
 
 /// The same, for account sync's one-shot events (the merge finished; the

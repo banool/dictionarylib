@@ -2392,7 +2392,7 @@ abstract class DictLibLocalizations {
   /// No description provided for @settingsSignInRowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync your lists and progress between your own devices, and share lists'**
+  /// **'Sync your lists and progress between your own devices, and share lists with others'**
   String get settingsSignInRowSubtitle;
 
   /// No description provided for @settingsSignedInWith.
@@ -2514,6 +2514,174 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Not synced: more than {limit} signs'**
   String listNotSyncedTooLarge(int limit);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Sync status'**
+  String get syncStatusTitle;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get syncStatusAccount;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} · {name}'**
+  String syncStatusAccountValue(String provider, String name);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out'**
+  String get syncStatusSignedOut;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get syncStatusStatus;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Last synced'**
+  String get syncStatusLastSynced;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get syncStatusNever;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get syncStatusLists;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} syncing'**
+  String syncStatusListsSyncing(int count);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} not syncing'**
+  String syncStatusListsNotSyncing(int count);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {reason}'**
+  String syncStatusListReason(String name, String reason);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'more than {limit} signs'**
+  String syncStatusReasonTooLarge(int limit);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'the account is full'**
+  String get syncStatusReasonListLimit;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'a name the account refused'**
+  String get syncStatusReasonRefused;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Followed lists'**
+  String get syncStatusFollowed;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to send'**
+  String get syncStatusPending;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{changes}, {answers}'**
+  String syncStatusPendingValue(String changes, String answers);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 list change} other{{count} list changes}}'**
+  String syncStatusListChanges(int count);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 revision answer} other{{count} revision answers}}'**
+  String syncStatusAnswers(int count);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing'**
+  String get syncStatusNothing;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Last problem'**
+  String get syncStatusProblem;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server'**
+  String get syncStatusProblemNetwork;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'The server is unavailable, trying again at {time}'**
+  String syncStatusProblemServer(String time);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'The server is unavailable'**
+  String get syncStatusProblemServerNoTime;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Paused by the server until {time}'**
+  String syncStatusProblemPaused(String time);
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Signed-in session expired'**
+  String get syncStatusProblemSessionExpired;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong; it will try again'**
+  String get syncStatusProblemOther;
+
+  /// Sync status sheet (Settings → Signed in with …).
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get syncStatusSyncNow;
 }
 
 class _DictLibLocalizationsDelegate

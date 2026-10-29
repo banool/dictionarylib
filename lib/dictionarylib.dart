@@ -46,5 +46,6 @@ export 'sharing/sync_api.dart';
 export 'sharing/sync_engine.dart';
 export 'sharing/synced_entry_list.dart';
 export 'sharing/synced_settings.dart';
+export 'sharing/sync_status_sheet.dart';
 
 export 'l10n/app_localizations.dart';

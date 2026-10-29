@@ -18,10 +18,10 @@ import 'l10n/app_localizations.dart';
 import 'page_settings_help_en.dart';
 import 'revision_history.dart';
 import 'theme.dart';
-import 'sharing/account_sync.dart';
 import 'sharing/auth/auth_store.dart';
 import 'sharing/auth/sign_in_dialog.dart';
 import 'sharing/sharing.dart';
+import 'sharing/sync_status_sheet.dart';
 import 'sharing/sync_api.dart';
 import 'top_level_scaffold.dart';
 import 'video_player_screen.dart';
@@ -82,33 +82,6 @@ class SettingsPageState extends State<SettingsPage> {
 
   void _onSharingChanged() {
     if (mounted) setState(() {});
-  }
-
-  /// "Syncing…", "Synced 3 minutes ago", "Waiting for a connection" or
-  /// "Sync is paused", from the account-sync controller.
-  String _accountSyncStatusLine(DictLibLocalizations l) {
-    final sync = sharing.accountSync;
-    switch (sync.status) {
-      case AccountSyncStatus.syncing:
-      case AccountSyncStatus.signedOut:
-        return l.accountSyncStatusSyncing;
-      case AccountSyncStatus.paused:
-        return l.accountSyncStatusPaused;
-      case AccountSyncStatus.waitingForConnection:
-        return l.accountSyncStatusWaiting;
-      case AccountSyncStatus.synced:
-        final at = sync.lastSyncAt;
-        // Signed in, first cycle not finished yet.
-        if (at == null) return l.accountSyncStatusSyncing;
-        final minutes =
-            (DateTime.now().millisecondsSinceEpoch ~/ 1000 - at) ~/ 60;
-        if (minutes < 1) return l.accountSyncStatusJustNow;
-        if (minutes < 60) return l.accountSyncStatusMinutesAgo(minutes);
-        if (minutes < 24 * 60) {
-          return l.accountSyncStatusHoursAgo(minutes ~/ 60);
-        }
-        return l.accountSyncStatusDaysAgo(minutes ~/ (24 * 60));
-    }
   }
 
   @override
@@ -264,9 +237,13 @@ class SettingsPageState extends State<SettingsPage> {
               },
             )
           else ...[
+            // Opens the sync status sheet (Daniel, 2026-10-29).
             HearthRow(
+              key: const ValueKey('settings.syncStatusRow'),
               title: l.settingsSignedInWith(session.provider.label(l)),
-              subtitle: _accountSyncStatusLine(l),
+              subtitle: accountSyncStatusText(l, sharing.accountSync),
+              trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+              onTap: () => showSyncStatusSheet(context),
             ),
             navRow(
               l.settingsSignOutRow,

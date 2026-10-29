@@ -594,8 +594,21 @@ class SyncEngine {
       _adoptSnapshot(list, snapshot);
       if (response.wasSnapshotCatchUp) _noteCatchUp(list);
     } else if (missedOps != null && missedOps.isNotEmpty) {
-      for (final op in missedOps) {
-        list.applyOpToSavedVideos(op.type, op.args);
+      // Other devices' ops, in server order with this batch's own (each at
+      // the seq it was applied at), so the result is the server's: a sign
+      // removed elsewhere before this device saved it again stays saved,
+      // where folding the others' ops in last would drop it here only.
+      final mine = {for (final o in batch) o.opId: o};
+      final steps = <(int, String, Map<String, dynamic>)>[
+        for (final op in missedOps) (op.seq, op.type, op.args),
+        for (final outcome in response.applied)
+          if (outcome.status != OpStatus.rejected &&
+              outcome.seq != null &&
+              mine[outcome.opId] != null)
+            (outcome.seq!, mine[outcome.opId]!.type, mine[outcome.opId]!.args),
+      ]..sort((a, b) => a.$1.compareTo(b.$1));
+      for (final (_, type, args) in steps) {
+        list.applyOpToSavedVideos(type, args);
       }
     }
     // 3. Re-apply this client's still-pending ops on top so the

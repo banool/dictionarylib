@@ -1382,7 +1382,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get settingsSignInRowSubtitle =>
-      'Sync your lists and progress between your own devices, and share lists';
+      'Sync your lists and progress between your own devices, and share lists with others';
 
   @override
   String settingsSignedInWith(String provider) {
@@ -1484,4 +1484,121 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String listNotSyncedTooLarge(int limit) {
     return 'Not synced: more than $limit signs';
   }
+
+  @override
+  String get syncStatusTitle => 'Sync status';
+
+  @override
+  String get syncStatusAccount => 'Account';
+
+  @override
+  String syncStatusAccountValue(String provider, String name) {
+    return '$provider · $name';
+  }
+
+  @override
+  String get syncStatusSignedOut => 'Signed out';
+
+  @override
+  String get syncStatusStatus => 'Status';
+
+  @override
+  String get syncStatusLastSynced => 'Last synced';
+
+  @override
+  String get syncStatusNever => 'Never';
+
+  @override
+  String get syncStatusLists => 'Lists';
+
+  @override
+  String syncStatusListsSyncing(int count) {
+    return '$count syncing';
+  }
+
+  @override
+  String syncStatusListsNotSyncing(int count) {
+    return '$count not syncing';
+  }
+
+  @override
+  String syncStatusListReason(String name, String reason) {
+    return '$name: $reason';
+  }
+
+  @override
+  String syncStatusReasonTooLarge(int limit) {
+    return 'more than $limit signs';
+  }
+
+  @override
+  String get syncStatusReasonListLimit => 'the account is full';
+
+  @override
+  String get syncStatusReasonRefused => 'a name the account refused';
+
+  @override
+  String get syncStatusFollowed => 'Followed lists';
+
+  @override
+  String get syncStatusPending => 'Waiting to send';
+
+  @override
+  String syncStatusPendingValue(String changes, String answers) {
+    return '$changes, $answers';
+  }
+
+  @override
+  String syncStatusListChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count list changes',
+      one: '1 list change',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncStatusAnswers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count revision answers',
+      one: '1 revision answer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncStatusNothing => 'Nothing';
+
+  @override
+  String get syncStatusProblem => 'Last problem';
+
+  @override
+  String get syncStatusProblemNetwork => 'Couldn\'t reach the server';
+
+  @override
+  String syncStatusProblemServer(String time) {
+    return 'The server is unavailable, trying again at $time';
+  }
+
+  @override
+  String get syncStatusProblemServerNoTime => 'The server is unavailable';
+
+  @override
+  String syncStatusProblemPaused(String time) {
+    return 'Paused by the server until $time';
+  }
+
+  @override
+  String get syncStatusProblemSessionExpired => 'Signed-in session expired';
+
+  @override
+  String get syncStatusProblemOther =>
+      'Something went wrong; it will try again';
+
+  @override
+  String get syncStatusSyncNow => 'Sync now';
 }
