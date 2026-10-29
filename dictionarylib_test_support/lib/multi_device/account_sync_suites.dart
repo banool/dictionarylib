@@ -1631,7 +1631,11 @@ void runDeletionDeletingDevice(MdSuiteConfig cfg) {
       timeout: const Duration(seconds: 40),
     );
     await _mdSettingsRowVisible(tester, mdL10n.settingsSignInRow);
-    // A new session finds an empty, new account.
+    // A new session finds an empty, new account. (Issued in a later
+    // second than the deletion: the Worker refuses sessions issued up to
+    // the second the account was deleted in, which sessions can't be told
+    // apart within.)
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
     final fresh = await MdOtherDevice.signIn(_mdDeleteUser);
     expect(await fresh.liveLists(), isEmpty);
     expect(await fresh.answers(), isEmpty);
