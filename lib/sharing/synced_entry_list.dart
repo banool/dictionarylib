@@ -258,11 +258,7 @@ class SyncedEntryList extends EntryList {
   /// and saved-videos set by reference.
   SyncedEntryList.owner({required this.meta, required EntryList source})
     : ownerSource = source,
-      super(
-        source.key,
-        source.savedVideos,
-        meta.role == ListRole.owner && !meta.orphaned,
-      );
+      super(source.key, source.savedVideos, meta.role == ListRole.owner);
 
   /// Editor-mode constructor. Independent local mirror, mutable.
   SyncedEntryList.editor({
@@ -314,9 +310,13 @@ class SyncedEntryList extends EntryList {
   String getName() => meta.displayName;
 
   @override
+  // An owner list is orphaned only while account sync waits for the
+  // account's verdict on it, and stays editable meanwhile (see
+  // SyncEngine._enqueueOp); an orphaned editor list is a read-only copy of
+  // a list its owner deleted.
   bool canBeEdited() =>
-      (meta.role == ListRole.owner || meta.role == ListRole.editor) &&
-      !meta.orphaned;
+      meta.role == ListRole.owner ||
+      (meta.role == ListRole.editor && !meta.orphaned);
 
   /// Add a saved video and enqueue the corresponding sync op. Direct
   /// mutations on the underlying source list (bypassing the wrapper)

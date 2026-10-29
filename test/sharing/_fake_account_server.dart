@@ -38,6 +38,10 @@ class FakeAccountServer {
   /// When set, account routes answer 503 UNAVAILABLE (the kill switch).
   bool accountSyncDisabled = false;
 
+  /// Called for each account op not seen before; return true to answer it
+  /// `rejected retry` (the list it needs unreachable for now, say).
+  bool Function(Map<String, dynamic> op)? answerRetry;
+
   int _clock = 1700000000;
   int _ids = 0;
 
@@ -686,6 +690,7 @@ class FakeAccountServer {
       'status': 'rejected',
       'reasonCode': code,
     };
+    if (answerRetry?.call(op) ?? false) return rej('retry');
     Map<String, dynamic>? result;
     final nextSeq = (acc['lastSeq'] as int) + 1;
     switch (type) {

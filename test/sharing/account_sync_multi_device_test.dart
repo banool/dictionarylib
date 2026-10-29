@@ -7,6 +7,11 @@
 ///   (cd ../dictionary_backend/workers && bunx wrangler dev --env dev --port 8790)
 ///   flutter test test/sharing/account_sync_multi_device_test.dart \
 ///     --dart-define=INTEGRATION_BASE_URL=http://localhost:8790
+///
+/// Run it on its own rather than in one `flutter test` with
+/// `multi_device_sync_test.dart`: files run in parallel, and that one's
+/// `tearDownAll` wipes every test user on the worker, lists included, which
+/// can land in the middle of a test here.
 library;
 
 import 'dart:convert';

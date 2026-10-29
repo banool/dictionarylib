@@ -597,6 +597,306 @@ void main() {
     });
   });
 
+  group('interrupted, offline and switched-off work', () {
+    int accountRequests() =>
+        server.log.where((l) => l == 'POST /v1/account/sync').length;
+
+    test('an op the account keeps answering retry waits, '
+        'rather than being sent again and again', () async {
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.addLocalList('Birds', ['owl']);
+      await phone.signIn('alice');
+      await phone.settle();
+      server.answerRetry = (op) => op['type'] == 'reorder';
+      await listsService.reorderLists(1, 3);
+      final before = accountRequests();
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      expect(accountRequests() - before, lessThan(4));
+      expect(
+        sharing.accountSync.state!.pendingOps.map((o) => o.type),
+        contains('reorder'),
+      );
+      server.answerRetry = null;
+      await phone.settle();
+      expect(sharing.accountSync.state!.pendingOps, isEmpty);
+    });
+
+    test('work done while the session has expired reaches the account '
+        'when the same person signs in again', () async {
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.addLocalList('Birds', ['owl']);
+      await phone.signIn('alice');
+      await phone.settle();
+      final birds = sharing.lists.ownerForSourceKey('Birds_words')!.listId;
+      // The session expires (the account answers 401).
+      server.tokens.remove(phone.token);
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      expect(sharing.auth.store.current, isNull);
+      // Meanwhile: a reorder and a delete.
+      await listsService.reorderLists(1, 0);
+      expect(
+        listsService.canDelete(
+          userEntryListManager.getEntryLists()['Birds_words']!,
+        ),
+        isTrue,
+      );
+      await listsService.deleteList(
+        userEntryListManager.getEntryLists()['Birds_words']!,
+      );
+      final order = userEntryListManager.getEntryLists().keys.toList();
+      await phone.signIn('alice');
+      await phone.settle();
+      expect(server.lists[birds]!['tombstoned'], isTrue);
+      expect(userEntryListManager.getEntryLists().keys.toList(), order);
+      final tablet = await freshDevice('tablet');
+      await tablet.signIn('alice');
+      await tablet.settle();
+      expect(tablet.localLists().keys, ['Animals', 'Favourites']);
+    });
+
+    test('a delete killed at any point never brings the list back', () async {
+      final setup = await freshDevice('setup');
+      await setup.addLocalList('Birds', ['owl']);
+      await setup.signIn('alice');
+      await setup.settle();
+      final birdsId = sharing.lists.ownerForSourceKey('Birds_words')!.listId;
+      setup.deactivate();
+      final initial = setup.prefs;
+      final token = setup.token!;
+
+      final snapshots = <FakeAccountServer>[];
+      final server0 = server.clone();
+      final original = TestDevice(server, 'original', prefs: initial)
+        ..token = token
+        ..userId = 'alice';
+      await original.activate(onWrite: () => snapshots.add(server.clone()));
+      await listsService.deleteList(
+        userEntryListManager.getEntryLists()['Birds_words']!,
+      );
+      await original.settle();
+      final writes = List.of(original.store!.writes);
+      final finalServer = server.clone();
+      original.deactivate();
+
+      for (var k = 0; k <= writes.length; k++) {
+        for (final serverAfter in [false, true]) {
+          final base = serverAfter
+              ? (k == writes.length ? finalServer : snapshots[k])
+              : (k == 0 ? server0 : snapshots[k - 1]);
+          final s = base.clone();
+          final label =
+              'killed after $k of ${writes.length} writes, '
+              'server ${serverAfter ? 'after' : 'before'}';
+          final d =
+              TestDevice(s, label, prefs: replayWrites(initial, writes, k))
+                ..token = token
+                ..userId = 'alice';
+          await d.settle(rounds: 6);
+          final live = s
+              .liveRows('alice')
+              .where((r) => r['name'] == 'Birds')
+              .toList();
+          final here = d.localLists().containsKey('Birds');
+          if (here) {
+            // The delete never started: the list is as it was.
+            expect(live, hasLength(1), reason: label);
+            expect(live.single['listId'], birdsId, reason: label);
+            expect(
+              sharing.lists.ownerForSourceKey('Birds_words')?.listId,
+              birdsId,
+              reason: label,
+            );
+          } else {
+            expect(live, isEmpty, reason: '$label: back on the account');
+          }
+          d.deactivate();
+        }
+      }
+    });
+
+    test('a list deleted while being linked goes from the account too, '
+        'even if the app dies before the link is forgotten', () async {
+      final phone = await freshDevice('phone');
+      await phone.signIn('alice');
+      await phone.settle();
+      // A new list whose create reaches the account, the answer lost.
+      server.loseResponse = (req) =>
+          req.url.path == '/v1/account/sync' &&
+          req.body.contains('"createList"');
+      await listsService.createList('Fish');
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      server.loseResponse = null;
+      expect(
+        server.liveRows('alice').where((r) => r['name'] == 'Fish'),
+        hasLength(1),
+      );
+      expect(sharing.lists.ownerForSourceKey('Fish_words'), isNull);
+      // The person deletes it and the app dies straight after the local
+      // delete.
+      await userEntryListManager.deleteEntryList('Fish_words');
+      phone.deactivate();
+      await phone.settle();
+      expect(
+        server.liveRows('alice').where((r) => r['name'] == 'Fish'),
+        isEmpty,
+      );
+      expect(phone.localLists().containsKey('Fish'), isFalse);
+    });
+
+    test('a sign-out killed at any point leaves every list once', () async {
+      final setup = await freshDevice('setup');
+      await setup.addLocalList('Animals', ['cat']);
+      await setup.addLocalList('Birds', ['owl']);
+      await setup.signIn('alice');
+      await setup.settle();
+      setup.deactivate();
+      final initial = setup.prefs;
+      final token = setup.token!;
+
+      final original = TestDevice(server, 'original', prefs: initial)
+        ..token = token
+        ..userId = 'alice';
+      await original.activate(onWrite: () {});
+      await sharing.signOut();
+      final writes = List.of(original.store!.writes);
+      original.deactivate();
+      expect(writes, isNotEmpty);
+
+      for (var k = 0; k <= writes.length; k++) {
+        final s = server.clone();
+        final label = 'killed after $k of ${writes.length} writes';
+        // Still signed in (the session goes last).
+        final d = TestDevice(s, label, prefs: replayWrites(initial, writes, k))
+          ..token = token
+          ..userId = 'alice';
+        await d.settle(rounds: 6);
+        expect(d.localLists().keys.toList()..sort(), [
+          'Animals',
+          'Birds',
+          'Favourites',
+        ], reason: label);
+        expect(s.liveRows('alice').map((r) => r['name']).toList()..sort(), [
+          'Animals',
+          'Birds',
+          'Favourites',
+        ], reason: '$label: account');
+        d.deactivate();
+      }
+    });
+
+    test(
+      'a row whose list has gone is checked, and the list linked anew',
+      () async {
+        final fishId = server.createAccountList(
+          'alice',
+          'Fish',
+          entries: [
+            ['eel', videoFor('eel')],
+          ],
+        );
+        server.purgeList(fishId);
+        final phone = await freshDevice('phone');
+        await phone.addLocalList('Fish', ['cod']);
+        await phone.signIn('alice');
+        await phone.settle(rounds: 6);
+        final live = server.liveRows('alice').where((r) => r['name'] == 'Fish');
+        expect(live, hasLength(1));
+        expect(live.single['listId'], isNot(fishId));
+        expect(phone.localLists()['Fish'], ['cod']);
+        expect(
+          sharing.lists.ownerForSourceKey('Fish_words')?.listId,
+          live.single['listId'],
+        );
+      },
+    );
+
+    test(
+      'a list kept here for its size syncs once it is small enough',
+      () async {
+        final phone = await freshDevice('phone');
+        final big = await phone.addLocalList('Huge', []);
+        for (var i = 0; i <= maxEntriesPerPrivateList; i++) {
+          big.savedVideos.add(video('w$i'));
+        }
+        await big.write();
+        await phone.signIn('alice');
+        await phone.settle();
+        expect(
+          sharing.accountSync.unsyncableReason('Huge_words'),
+          UnsyncableReason.tooLarge,
+        );
+        await big.removeVideo(video('w0'));
+        await phone.settle();
+        expect(sharing.accountSync.unsyncableReason('Huge_words'), isNull);
+        expect(sharing.lists.ownerForSourceKey('Huge_words'), isNotNull);
+      },
+    );
+
+    test(
+      'edits to a list waiting for the account\'s verdict are kept',
+      () async {
+        final phone = await freshDevice('phone');
+        await phone.addLocalList('Animals', ['cat']);
+        await phone.signIn('alice');
+        await phone.settle();
+        final id = sharing.lists.ownerForSourceKey('Animals_words')!.listId;
+        // Deleted on the server; the device finds out from the list (410)
+        // while the account can't be reached.
+        server.lists[id]!['tombstoned'] = true;
+        server.failBefore = (req) => req.url.path == '/v1/account/sync';
+        await sharing.engine.refreshList(id).catchError((_) {});
+        final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+        expect(w.meta.orphaned, isTrue);
+        await userEntryListManager.getEntryLists()['Animals_words']!.addVideo(
+          video('dog'),
+        );
+        server.failBefore = null;
+        await phone.settle();
+        // Gone from the account, kept here with the new sign.
+        expect(phone.localLists()['Animals'], ['cat', 'dog']);
+      },
+    );
+
+    test('with account sync switched off, a list shared the old way and '
+        'deleted on the server goes back to a plain list', () async {
+      final phone = await freshDevice('phone');
+      await sharedPreferences.setBool(KEY_ACCOUNT_SYNC_KNOB, false);
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.signIn('alice');
+      final w = await listsService.shareList(
+        sourceList: userEntryListManager.getEntryLists()['Animals_words']!,
+        displayName: 'Zoo',
+        sessionToken: phone.token!,
+      );
+      expect(sharing.accountSync.state, isNull);
+      server.lists[w.listId]!['tombstoned'] = true;
+      await sharing.engine.refreshList(w.listId).catchError((_) {});
+      expect(sharing.lists.ownerForSourceKey('Animals_words'), isNull);
+      expect(phone.localLists()['Animals'], ['cat']);
+    });
+
+    test('with account sync switched off, sharing a list already on the '
+        'account shares it rather than a copy', () async {
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.signIn('alice');
+      await phone.settle();
+      final w = sharing.lists.ownerForSourceKey('Animals_words')!;
+      final listsBefore = server.lists.length;
+      await sharedPreferences.setBool(KEY_ACCOUNT_SYNC_KNOB, false);
+      final shared = await listsService.shareList(
+        sourceList: userEntryListManager.getEntryLists()['Animals_words']!,
+        displayName: 'Zoo',
+        sessionToken: phone.token!,
+      );
+      expect(shared.listId, w.listId);
+      expect(server.lists.length, listsBefore);
+      expect(server.lists[w.listId]!['visibility'], 'shared');
+    });
+  });
+
   group('a kill at any point of the merge', () {
     test('resumes to the same lists, with nothing lost or doubled', () async {
       server.createAccountList(

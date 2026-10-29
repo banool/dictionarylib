@@ -687,7 +687,7 @@ Widget _buildEditModeList(
           final l = DictLibLocalizations.of(context)!;
           final everywhere =
               ownedShare != null ||
-              (sharing.accountSync.ownsLinks &&
+              (sharing.accountSync.queuesForAccount &&
                   sharing.accountSync.unsyncableReason(el.key) == null);
           final confirmed = await confirmAlert(
             context,

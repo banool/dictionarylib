@@ -51,6 +51,10 @@ class UnsyncableReason {
 
   /// The account is at its list limit.
   static const String listLimit = 'list_limit';
+
+  /// The account refused to make it (a name it won't take, say). Tried
+  /// again after a rename.
+  static const String refused = 'refused';
 }
 
 /// One local list on its way to being linked, keyed in
@@ -168,6 +172,13 @@ class AccountSyncState {
   /// if it completed.
   String? lastErrorKind;
 
+  /// A sign-out (or account switch) has started taking this device's links
+  /// away. Saved before the first wrapper goes, so a kill part way is
+  /// finished at the next cycle rather than read as lists that lost their
+  /// links (which, still signed in, would install the account's copies
+  /// beside them).
+  bool clearing;
+
   AccountSyncState({
     required this.userId,
     this.incarnation = '',
@@ -187,6 +198,7 @@ class AccountSyncState {
     List<String>? follows,
     List<String>? editorListIds,
     this.lastErrorKind,
+    this.clearing = false,
   }) : linking = linking ?? {},
        unsyncable = unsyncable ?? {},
        pendingOps = pendingOps ?? [],
@@ -219,6 +231,7 @@ class AccountSyncState {
     'follows': follows,
     'editorListIds': editorListIds,
     'lastErrorKind': lastErrorKind,
+    if (clearing) 'clearing': true,
   };
 
   /// Null for a blob from another layout version or one that can't be read.
@@ -287,6 +300,7 @@ class AccountSyncState {
       follows: strings(json['follows']),
       editorListIds: strings(json['editorListIds']),
       lastErrorKind: json['lastErrorKind'] as String?,
+      clearing: json['clearing'] == true,
     );
   }
 

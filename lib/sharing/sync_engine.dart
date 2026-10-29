@@ -108,9 +108,10 @@ enum SyncNotification {
 /// 410 (the list was deleted, so this is authoritative), false after
 /// [SyncEngine._notFoundOrphanThreshold] consecutive 404s (ambiguous). The
 /// account-sync controller installs one to decide what happens to the
-/// person's local copy; without one an owner list falls back to a plain
-/// local list, as before account sync.
-typedef OwnedListGoneHandler = Future<void> Function(
+/// person's local copy. It returns false when it doesn't (no account state
+/// on the device), and then, as without one, an owner list falls back to a
+/// plain local list, as before account sync.
+typedef OwnedListGoneHandler = Future<bool> Function(
   SyncedEntryList list, {
   required bool gone,
 });
@@ -259,7 +260,11 @@ class SyncEngine {
   ) async {
     final list = _manager.get(listId);
     if (list == null) return;
-    if (!_isEditableRole(list.meta.role) || list.meta.orphaned) return;
+    if (!_isEditableRole(list.meta.role)) return;
+    // An orphaned owner list is waiting for the account's verdict on it
+    // (account sync): edits still queue, and either sync once it is found
+    // live or count as unsent changes that keep it on this device.
+    if (list.meta.orphaned && list.meta.role != ListRole.owner) return;
     final op = PendingOp(
       opId: generateOpId(),
       type: type,
@@ -803,15 +808,20 @@ class SyncEngine {
     // pending ops it may need to tell whether the person loses anything.
     final goneHandler = onOwnedListGone;
     if (goneHandler != null && list.meta.role == ListRole.owner) {
-      _clearListState(list.listId);
-      printAndLog('SyncEngine: ${list.listId} $reason — owner list gone');
+      var handled = false;
       try {
-        await goneHandler(list, gone: gone);
+        handled = await goneHandler(list, gone: gone);
       } catch (e) {
         printAndLog('SyncEngine: onOwnedListGone ${list.listId} failed: $e');
+        // Leave it for the next sync to find again rather than drop it.
+        handled = true;
       }
-      sharing.bumpState();
-      return;
+      if (handled) {
+        _clearListState(list.listId);
+        printAndLog('SyncEngine: ${list.listId} $reason — owner list gone');
+        sharing.bumpState();
+        return;
+      }
     }
     // Pending ops are unrecoverable either way — the server has removed the
     // list, so there's no destination for them.

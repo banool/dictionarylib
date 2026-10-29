@@ -537,6 +537,97 @@ void main() {
     });
   });
 
+  group('the session expired, the server rewound, the queue cleared', () {
+    test('answers, random sessions and a reset made while the session has '
+        'expired reach the account when the same person signs in', () async {
+      final now = DateTime.now().microsecondsSinceEpoch;
+      final phone = await signedIn('phone');
+      server.tokens.remove(phone.token);
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      expect(sharing.auth.store.current, isNull);
+      await sharing.accountSync.recordAnswers([_answer('a', now - 1000)]);
+      await bumpRandomReviewCounter(3);
+      await phone.signIn('alice');
+      await phone.settle();
+      expect(serverAnswers().map((r) => r['m']), [_master('a')]);
+      expect(serverRandomTotal(), 3);
+
+      server.tokens.remove(phone.token);
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      await resetAsSettingsDoes(DateTime.now().microsecondsSinceEpoch);
+      await phone.signIn('alice');
+      await phone.settle();
+      expect(serverAnswers(), isEmpty);
+      expect(serverRandomTotal(), 0);
+    });
+
+    test(
+      'a server restored to an earlier point gets every answer again',
+      () async {
+        final phone = await signedIn('phone');
+        final earlier = server.clone();
+        await sharing.accountSync.recordAnswers([
+          _answer('a', 1000),
+          _answer('b', 2000),
+        ]);
+        await phone.settle();
+        expect(serverAnswers(), hasLength(2));
+        // Point-in-time recovery to before the answers.
+        server.accounts = earlier.accounts;
+        expect(serverAnswers(), isEmpty);
+        await phone.settle();
+        expect(serverAnswers(), hasLength(2));
+        expect(reviewHistory.read(), hasLength(2));
+        // A device signing in now gets them.
+        await signedIn('tablet');
+        expect(reviewHistory.read(), hasLength(2));
+      },
+    );
+
+    test('clearing the queue keeps answers the history lacks', () async {
+      await installPrefs({
+        KEY_STORED_REVIEWS: [encodeReview(_answer('a', 1))],
+        KEY_REVIEWS_UNSENT: [
+          encodeReview(_answer('a', 1)),
+          encodeReview(_answer('b', 2)),
+        ],
+      });
+      await reviewHistory.clearUnsent();
+      expect(reviewHistory.read().map((r) => r.master), [
+        _master('a'),
+        _master('b'),
+      ]);
+      expect(reviewHistory.unsentCount, 0);
+    });
+
+    test('signing out sends the answers still queued', () async {
+      final phone = await signedIn('phone');
+      server.failBefore = (_) => true;
+      await sharing.accountSync.recordAnswers([_answer('a', 1000)]);
+      await phone.settle();
+      server.failBefore = null;
+      expect(reviewHistory.unsentCount, 1);
+      await sharing.signOut();
+      expect(serverAnswers(), hasLength(1));
+      expect(reviewHistory.read(), hasLength(1));
+    });
+
+    test(
+      'more random-mode cards than one session holds go up whole, once',
+      () async {
+        final phone = await freshDevice('phone');
+        await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, 25000);
+        await phone.signIn('alice');
+        await phone.settle();
+        expect(serverRandomTotal(), 25000);
+        await sharing.signOut();
+        await phone.signIn('alice');
+        await phone.settle();
+        expect(serverRandomTotal(), 25000);
+      },
+    );
+  });
+
   group('a kill at any point of the merge and upload', () {
     test('the account ends with every answer, the random count and the '
         'settings, once', () async {

@@ -120,7 +120,7 @@ class ListsService {
   bool canDelete(EntryList list) {
     if (!list.canBeDeleted()) return false;
     final owned = ownedShareFor(list);
-    return owned == null || sharing.accountSync.ownsLinks;
+    return owned == null || sharing.accountSync.queuesForAccount;
   }
 
   /// Delete [list]. A linked list is deleted on every device (the
@@ -141,9 +141,15 @@ class ListsService {
     await sync.exclusive(() async {
       final wrapper = sharing.lists.ownerForSourceKey(key);
       if (wrapper != null) {
-        if (!sync.ownsLinks) {
+        if (!sync.queuesForAccount) {
           throw StateError('"$key" is shared; stop sharing it first');
         }
+        // The account's delete is queued first and the wrapper goes last:
+        // a kill in between leaves either the list and its link (the delete
+        // reaches the account, and the list then goes here as deleted
+        // elsewhere) or a wrapper whose list is gone (dropped at the next
+        // launch), never a local list without its link, which would link
+        // again and bring the list back everywhere.
         await sync.enqueue(
           AccountOp(
             opId: generateOpId(),
@@ -151,22 +157,17 @@ class ListsService {
             args: {'listId': wrapper.listId},
           ),
         );
-        await sharing.engine.dropOwned(wrapper.listId);
         await userEntryListManager.deleteEntryList(key);
+        await sharing.engine.dropOwned(wrapper.listId);
         await sync.noteDeletedLocally(key);
         return;
       }
-      final linkingTo = await sync.noteDeletedLocally(key);
-      if (linkingTo != null) {
-        await sync.enqueue(
-          AccountOp(
-            opId: generateOpId(),
-            type: 'delete',
-            args: {'listId': linkingTo},
-          ),
-        );
-      }
+      // Being linked: the list goes first, then its record (with the
+      // account's delete queued in the same save). A kill in between leaves
+      // a record whose list is gone, which the next cycle turns into the
+      // same delete.
       await userEntryListManager.deleteEntryList(key);
+      await sync.noteDeletedLocally(key, deleteOnAccount: true);
     });
     sharing.bumpState();
     unawaited(sync.kick(SyncReason.localChange));
@@ -206,7 +207,7 @@ class ListsService {
     userEntryListManager.reorder(prev, updated);
     await userEntryListManager.writeEntryListKeys();
     final sync = sharing.accountSync;
-    if (!sync.ownsLinks) return;
+    if (!sync.queuesForAccount) return;
     final ids = [
       for (final key in userEntryListManager.getEntryLists().keys)
         ?sharing.lists.ownerForSourceKey(key)?.listId,
@@ -238,6 +239,18 @@ class ListsService {
         ? sourceList.ownerSource ?? sourceList
         : sourceList;
     if (!sync.supported) {
+      // Account sync switched off by the knob. A list that is on the account
+      // already (private) is shared as itself, not made again.
+      final existing = sharing.lists.ownerForSourceKey(source.key);
+      if (existing != null) {
+        await sharing.engine.setOwnedVisibility(
+          existing.listId,
+          listVisibilityShared,
+          displayName: displayName,
+        );
+        sharing.bumpState();
+        return existing;
+      }
       final synced = await sharing.engine.createOwned(
         displayName: displayName,
         source: source,

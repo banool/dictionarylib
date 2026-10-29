@@ -90,8 +90,11 @@ class ReviewHistory {
   }
 
   /// Add every [incoming] answer that isn't stored yet (the same master,
-  /// combination and time). Returns how many were new.
-  Future<int> mergeRemote(List<Review> incoming) {
+  /// combination and time). Returns how many were new. With [notify] false
+  /// [version] isn't bumped; the caller calls [notifyChanged] once it has
+  /// merged everything (a sync can bring many pages, and each bump makes
+  /// the Revision page replay the whole history).
+  Future<int> mergeRemote(List<Review> incoming, {bool notify = true}) {
     if (incoming.isEmpty) return Future.value(0);
     return _lock.synchronized(() async {
       final stored =
@@ -113,10 +116,13 @@ class ReviewHistory {
         ...stored,
         ...added,
       ]);
-      _version.value++;
+      if (notify) _version.value++;
       return added.length;
     });
   }
+
+  /// Tell the pages showing the history that it changed.
+  void notifyChanged() => _version.value++;
 
   /// Drop every answer from before [tsUs] (microseconds): a reset of
   /// revision progress, here or on another device. Unsent answers from
@@ -166,17 +172,22 @@ class ReviewHistory {
   }
 
   /// The next batch to upload: up to [maxCount] unsent answers and about
-  /// [maxBytes] of request JSON, from the front of the queue. The op id is
+  /// [maxBytes] of request JSON, from the front of the queue after the
+  /// first [skip] (batches sent but not yet taken off). The op id is
   /// derived from the batch's lines, so a batch re-sent after a lost answer
   /// is a `duplicate`.
-  UploadBatch? nextUploadBatch({int maxCount = 500, int maxBytes = 40 * 1024}) {
+  UploadBatch? nextUploadBatch({
+    int skip = 0,
+    int maxCount = 500,
+    int maxBytes = 40 * 1024,
+  }) {
     final unsent =
         sharedPreferences.getStringList(KEY_REVIEWS_UNSENT) ?? const [];
-    if (unsent.isEmpty) return null;
+    if (unsent.length <= skip) return null;
     final lines = <String>[];
     final wire = <Map<String, dynamic>>[];
     var bytes = 0;
-    for (final line in unsent) {
+    for (final line in unsent.skip(skip)) {
       if (lines.length >= maxCount) break;
       Map<String, dynamic> json;
       try {
@@ -201,20 +212,22 @@ class ReviewHistory {
     );
   }
 
-  /// Take an acknowledged batch off the front of the queue.
-  Future<void> removeUploaded(UploadBatch batch) {
+  /// Take acknowledged answers ([lines], from the front of the queue) off
+  /// it.
+  Future<void> removeUploaded(List<String> lines) {
     return _lock.synchronized(() async {
       final unsent =
           sharedPreferences.getStringList(KEY_REVIEWS_UNSENT) ?? const [];
-      final n = batch.lines.length;
-      // The queue only grows at the back, so the batch is still its head.
-      if (unsent.length >= n && listEquals(unsent.sublist(0, n), batch.lines)) {
+      final n = lines.length;
+      // The queue only grows at the back, so these are usually its head (a
+      // reset in between may have taken some away).
+      if (unsent.length >= n && listEquals(unsent.sublist(0, n), lines)) {
         await sharedPreferences.setStringList(
           KEY_REVIEWS_UNSENT,
           unsent.sublist(n),
         );
       } else {
-        final remove = batch.lines.toSet();
+        final remove = lines.toSet();
         await sharedPreferences.setStringList(KEY_REVIEWS_UNSENT, [
           for (final l in unsent)
             if (!remove.contains(l)) l,
@@ -226,9 +239,31 @@ class ReviewHistory {
   int get unsentCount =>
       (sharedPreferences.getStringList(KEY_REVIEWS_UNSENT) ?? const []).length;
 
-  /// Forget the unsent queue (sign-out, another account).
-  Future<void> clearUnsent() =>
-      _lock.synchronized(() => sharedPreferences.remove(KEY_REVIEWS_UNSENT));
+  /// Forget the unsent queue (sign-out, another account). Answers in it
+  /// that aren't stored (a kill inside [appendLocal]) are stored first: the
+  /// history keeps every answer this device made.
+  Future<void> clearUnsent() {
+    return _lock.synchronized(() async {
+      final unsent = sharedPreferences.getStringList(KEY_REVIEWS_UNSENT);
+      if (unsent != null && unsent.isNotEmpty) {
+        final stored =
+            sharedPreferences.getStringList(KEY_STORED_REVIEWS) ?? const [];
+        final have = <String>{for (final l in stored) ?_identity(l)};
+        final missing = <String>[
+          for (final l in unsent)
+            if (_identity(l) case final id? when have.add(id)) l,
+        ];
+        if (missing.isNotEmpty) {
+          await sharedPreferences.setStringList(KEY_STORED_REVIEWS, [
+            ...stored,
+            ...missing,
+          ]);
+          _version.value++;
+        }
+      }
+      await sharedPreferences.remove(KEY_REVIEWS_UNSENT);
+    });
+  }
 
   /// `master + combination + time`: what makes two answers the same one.
   static String? _identity(String line) {

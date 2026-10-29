@@ -242,6 +242,19 @@ class AccountSyncController {
     return session != null && st != null && st.userId == sessionUserId(session);
   }
 
+  /// Account ops can be queued for the account this device's state belongs
+  /// to: there is a state, it isn't being cleared, and no other account is
+  /// signed in. Also true while the session has expired (the ops wait for
+  /// the same account to sign in again; another account's sign-in clears
+  /// them) and while the knob has account sync switched off, so nothing
+  /// done meanwhile is lost to the account.
+  bool get queuesForAccount {
+    final st = _state;
+    if (st == null || st.clearing) return false;
+    final session = _auth.store.current;
+    return session == null || st.userId == sessionUserId(session);
+  }
+
   /// A signed-in device where account sync may run: list creation records
   /// a link to make, and so on, even before the merge has finished.
   bool get isSignedInAndSupported => supported && _auth.store.current != null;
@@ -358,7 +371,10 @@ class AccountSyncController {
     sharing.bumpState();
     try {
       var st = _state;
-      if (st != null && st.userId != uid) {
+      if (st != null && (st.userId != uid || st.clearing)) {
+        // Another account, or a sign-out killed part way (finished here;
+        // the session it would have removed is still here, so the merge
+        // runs again and links the lists back by name).
         await _clearLinksLocally();
         st = null;
       }
@@ -421,40 +437,67 @@ class AccountSyncController {
   /// rest go on the next.
   static const int _maxReviewBatchesPerCycle = 40;
 
-  /// Step 6 of a cycle: send unsent answers in batches of up to 500 (and
-  /// ~40 KB), each an `addReviews` op whose id comes from its lines; a batch
-  /// leaves the queue only once the account has it (applied or duplicate).
+  /// Step 6 of a cycle: send the unsent answers.
   Future<void> _afterCycle() async {
     final session = _auth.store.current;
     if (session == null) return;
-    for (var i = 0; i < _maxReviewBatchesPerCycle; i++) {
-      if (_shouldYield) {
-        _again = true;
-        return;
-      }
-      final batch = reviewHistory.nextUploadBatch();
-      if (batch == null) return;
-      if (batch.wire.isEmpty) {
-        // Nothing in it could be read: it can never be accepted.
-        await reviewHistory.removeUploaded(batch);
-        continue;
-      }
-      final op = AccountOp(
-        opId: batch.opId,
-        type: 'addReviews',
-        args: {'reviews': batch.wire},
-      );
-      final resp = await _send(session, [op], sinceSeq: _noAnswers);
-      final out = resp.outcomeFor(op.opId);
-      if (out == null || out.shouldRetry) return;
-      if (!out.isDone) {
-        printAndLog(
-          'AccountSync: answers refused (${out.reasonCode}); dropping the batch',
-        );
-      }
-      await reviewHistory.removeUploaded(batch);
+    if (await _uploadAnswers(session, yieldable: true)) _again = true;
+  }
+
+  /// Acknowledged batches taken off the queue at once (each removal
+  /// rewrites the queue, and on Android the whole prefs file). A kill
+  /// before that sends those batches again, which the account finds to be
+  /// duplicates.
+  static const int _batchesPerQueueWrite = 10;
+
+  /// Send unsent answers in batches of up to 500 (and ~40 KB), each an
+  /// `addReviews` op whose id comes from its lines; a batch leaves the
+  /// queue only once the account has it (applied or duplicate). At most
+  /// [_maxReviewBatchesPerCycle] requests; returns true if answers are left
+  /// to send (or it stopped for a list operation, when [yieldable]).
+  Future<bool> _uploadAnswers(
+    AuthSession session, {
+    required bool yieldable,
+  }) async {
+    final done = <String>[];
+    var sent = 0;
+    Future<void> commit() async {
+      if (done.isEmpty) return;
+      await reviewHistory.removeUploaded(List.of(done));
+      done.clear();
+      sent = 0;
     }
-    _again = true;
+
+    try {
+      for (var i = 0; i < _maxReviewBatchesPerCycle; i++) {
+        if (yieldable && _shouldYield) return true;
+        final batch = reviewHistory.nextUploadBatch(skip: done.length);
+        if (batch == null) return false;
+        if (batch.wire.isNotEmpty) {
+          final op = AccountOp(
+            opId: batch.opId,
+            type: 'addReviews',
+            args: {'reviews': batch.wire},
+          );
+          final resp = await _send(session, [op], sinceSeq: _noAnswers);
+          final out = resp.outcomeFor(op.opId);
+          if (out == null || out.shouldRetry) return false;
+          if (!out.isDone) {
+            printAndLog(
+              'AccountSync: answers refused (${out.reasonCode}); '
+              'dropping the batch',
+            );
+          }
+        }
+        // (A batch none of which could be read can never be accepted: it
+        // leaves the queue unsent.)
+        done.addAll(batch.lines);
+        if (++sent >= _batchesPerQueueWrite) await commit();
+      }
+      return reviewHistory.nextUploadBatch(skip: done.length) != null;
+    } finally {
+      await commit();
+    }
   }
 
   /// Answers waiting to go up (for the UI).
@@ -464,26 +507,31 @@ class AccountSyncController {
   /// sync runs for the signed-in account, queue them for it and start a
   /// cycle to send them.
   Future<void> recordAnswers(List<Review> answers) async {
-    final queue = ownsLinks;
+    final queue = queuesForAccount;
     await reviewHistory.appendLocal(answers, queueForUpload: queue);
     if (queue && answers.isNotEmpty) {
       unawaited(kick(SyncReason.localChange));
     }
   }
 
-  /// Record [count] random-mode cards as one session (when account sync
-  /// runs for the signed-in account and its merge is done): an op with a
-  /// fresh id, so the account adds it once.
+  /// Whether a random-mode session ending now goes to the account as an op
+  /// of its own ([recordRandomSession]): once the merge is done. Before
+  /// that it is only in the device's counter, which the merge sends as one
+  /// session. Read and act on it without an await in between (see
+  /// `bumpRandomReviewCounter`).
+  bool get takesRandomSessions =>
+      queuesForAccount && (_state?.mergeDone ?? false);
+
+  /// Record [count] random-mode cards as one session: an op with a fresh
+  /// id, so the account adds it once. Only when [takesRandomSessions].
   Future<void> recordRandomSession(int count) async {
-    // Before the merge is done the session is in the device's counter,
-    // which the merge sends as one session.
-    if (count <= 0 || !ownsLinks || !(_state?.mergeDone ?? false)) return;
+    if (count <= 0 || !takesRandomSessions) return;
     await enqueue(
       AccountOp(
         opId: generateOpId(),
         type: 'randomSession',
         args: {
-          'count': count.clamp(1, 10000),
+          'count': count.clamp(1, _maxRandomSessionCount),
           'tsUs': DateTime.now().microsecondsSinceEpoch,
         },
       ),
@@ -510,7 +558,7 @@ class AccountSyncController {
   /// nothing more and covers a kill before the caller got to it.
   Future<void> recordReset(int tsUs) async {
     final st = _state;
-    if (st == null || !ownsLinks) return;
+    if (st == null || !queuesForAccount) return;
     st.pendingOps.removeWhere((o) => o.type == 'randomSession');
     st.pendingOps.add(
       AccountOp(
@@ -632,14 +680,23 @@ class AccountSyncController {
     // end in between: until the merge is done one goes into the counter
     // read here, afterwards it is an op of its own ([recordRandomSession]).
     final counter = sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
-    if (counter > 0) {
-      final first = sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
+    final first = sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
+    // In pieces of at most the account's per-session cap, each with an id
+    // of its own that is the same every time this install merges.
+    var left = counter;
+    for (var part = 0; left > 0; part++) {
+      final count = left < _maxRandomSessionCount
+          ? left
+          : _maxRandomSessionCount;
+      left -= count;
       _enqueue(
         AccountOp(
-          opId: 'random-initial-${getOrCreateClientId()}',
+          opId:
+              'random-initial-${getOrCreateClientId()}'
+              '${part == 0 ? '' : '-$part'}',
           type: 'randomSession',
           args: {
-            'count': counter.clamp(1, 10000),
+            'count': count,
             'tsUs': first != null
                 ? first * 1000000
                 : DateTime.now().microsecondsSinceEpoch,
@@ -658,6 +715,10 @@ class AccountSyncController {
   }
 
   int _storedAnswerCount() => reviewHistory.storedCount;
+
+  /// Most cards one `randomSession` op may count (`MAX_RANDOM_SESSION_COUNT`
+  /// in the worker).
+  static const int _maxRandomSessionCount = 10000;
 
   /// The account's settings and reset time as M1 read them (re-read on
   /// resume).
@@ -713,19 +774,32 @@ class AccountSyncController {
     required bool merging,
   }) async {
     final st = _st!;
-    // Drop records whose list has gone (deleted while linking) or that a
-    // finished link left behind (killed before the record was removed).
+    // Drop records whose list has gone (deleted while linking, the app
+    // killed before the record went: the account's copy is deleted too, as
+    // the delete would have done) or that a finished link left behind
+    // (killed before the record was removed).
     for (final key in st.linking.keys.toList()) {
       final rec = st.linking[key]!;
       final exists = userEntryListManager.getEntryLists().containsKey(key);
       if (rec.step != LinkStep.install && !exists) {
         st.linking.remove(key);
+        _queueDeleteFor(rec);
       } else if (_lists.ownerForSourceKey(key) != null) {
         st.linking.remove(key);
       }
     }
+    // Lists kept on this device for a reason that may have passed: too
+    // many signs (some removed since), or the account full (lists deleted
+    // since). They are tried again.
+    final liveOnAccount = st.directory.where((d) => d.isLive).length;
     for (final key in st.unsyncable.keys.toList()) {
-      if (!userEntryListManager.getEntryLists().containsKey(key)) {
+      final list = userEntryListManager.getEntryLists()[key];
+      final reason = st.unsyncable[key];
+      if (list == null ||
+          (reason == UnsyncableReason.tooLarge &&
+              list.savedVideos.length <= maxEntriesPerPrivateList) ||
+          (reason == UnsyncableReason.listLimit &&
+              liveOnAccount < maxListsPerAccount)) {
         st.unsyncable.remove(key);
       }
     }
@@ -916,12 +990,13 @@ class AccountSyncController {
           throw SyncException(SyncErrorKind.server, 'create to be retried');
         default:
           // A create the server will never take (a name it refuses, say):
-          // leave the list on this device rather than retry forever.
+          // leave the list on this device until it's renamed rather than
+          // retry forever.
           printAndLog(
             'AccountSync: create refused for $localKey: ${out.reason}',
           );
           st.linking.remove(localKey);
-          st.unsyncable[localKey] = UnsyncableReason.listLimit;
+          st.unsyncable[localKey] = UnsyncableReason.refused;
           await _save();
           return true;
       }
@@ -977,8 +1052,21 @@ class AccountSyncController {
           e.kind == SyncErrorKind.gone ||
           e.kind == SyncErrorKind.forbidden) {
         // The list it was to merge into is gone: start over with a create
-        // of its own on the next pass.
+        // of its own on the next pass, and have the account check the row
+        // (`unlink` marks it deleted if the list really is gone), or the
+        // next pass would match the same row again.
         st.linking.remove(localKey);
+        if (!st.pendingOps.any(
+          (o) => o.type == 'unlink' && o.args['listId'] == rec.listId,
+        )) {
+          _enqueue(
+            AccountOp(
+              opId: generateOpId(),
+              type: 'unlink',
+              args: {'listId': rec.listId},
+            ),
+          );
+        }
         await _save();
         return true;
       }
@@ -1342,7 +1430,22 @@ class AccountSyncController {
     return out;
   }
 
+  /// Answers arrived during this round trip and the pages haven't been told
+  /// (once, at its end).
+  bool _historyGrew = false;
+
   Future<void> _accountRoundTrip(AuthSession session) async {
+    try {
+      await _accountRoundTripPages(session);
+    } finally {
+      if (_historyGrew) {
+        _historyGrew = false;
+        reviewHistory.notifyChanged();
+      }
+    }
+  }
+
+  Future<void> _accountRoundTripPages(AuthSession session) async {
     // A setting changed here goes up in this request, so it is pending
     // before the account's values are applied (an incoming value never
     // overwrites a change this device hasn't sent).
@@ -1361,18 +1464,44 @@ class AccountSyncController {
         return;
       }
       if (resp.seq < st.sinceSeq && !staleCursorReset) {
-        // The server lost state relative to this device: read everything
-        // again from the start (answers already held dedupe).
+        // The server lost state relative to this device (restored to an
+        // earlier point): read everything again from the start (answers
+        // already held dedupe), and send every answer again, since the
+        // ones this device sent after that point are gone there. This
+        // response answered the old cursor, so its page isn't used.
         st.sinceSeq = 0;
         staleCursorReset = true;
         await _save();
+        await _applyResults(batch, resp);
+        await _save();
+        await reviewHistory.queueEverythingForUpload();
+        continue;
       }
       await _applyResults(batch, resp);
       await _applyAccountState(session, resp);
       await _applyRevisionPage(resp);
       st.sinceSeq = resp.nextSinceSeq;
       await _save();
-      if (!resp.hasMore && _takeBatch().isEmpty) return;
+      final left = _takeBatch();
+      if (!resp.hasMore && left.isEmpty) {
+        _retryOpsBackoff = 0;
+        return;
+      }
+      if (!resp.hasMore &&
+          batch.isNotEmpty &&
+          listEquals(
+            [for (final o in left) o.opId],
+            [for (final o in batch) o.opId],
+          )) {
+        // Nothing in the batch went through (each answered `retry`, the
+        // list it needs being unreachable for now, say): try again later
+        // rather than straight away, backing off.
+        _retryOpsBackoff = _retryOpsBackoff == 0
+            ? 30
+            : (_retryOpsBackoff * 2).clamp(30, 3600);
+        _scheduleRetry(_retryOpsBackoff);
+        return;
+      }
       if (_shouldYield) {
         _again = true;
         return;
@@ -1380,6 +1509,10 @@ class AccountSyncController {
     }
     _again = true;
   }
+
+  /// Seconds before ops the server keeps answering `retry` are sent again
+  /// (doubling, reset once the queue moves).
+  int _retryOpsBackoff = 0;
 
   /// Flush queued account ops without the rest of a cycle (app paused).
   Future<void> _flushAccountOps(AuthSession session) async {
@@ -1416,7 +1549,10 @@ class AccountSyncController {
       await _save();
     }
     final incoming = [for (final r in resp.reviews) ?reviewFromWire(r)];
-    if (incoming.isNotEmpty) await reviewHistory.mergeRemote(incoming);
+    if (incoming.isNotEmpty &&
+        await reviewHistory.mergeRemote(incoming, notify: false) > 0) {
+      _historyGrew = true;
+    }
     final pendingKeys = {
       for (final op in st.pendingOps)
         if (op.type == 'setSetting') op.args['key'] as String?,
@@ -1575,7 +1711,9 @@ class AccountSyncController {
     SyncedEntryList list, {
     required bool gone,
   }) async {
-    if (!isActive) return false;
+    // Without account state (signed out, or account sync never ran) the
+    // engine does what it did before account sync.
+    if (!queuesForAccount) return false;
     final st = _st!;
     list.meta.orphaned = true;
     await list.writeMeta();
@@ -1596,7 +1734,7 @@ class AccountSyncController {
   }
 
   void _onFollowed(String listId) {
-    if (!isActive) return;
+    if (!queuesForAccount || !(_state?.mergeDone ?? false)) return;
     unawaited(
       enqueue(
         AccountOp(
@@ -1609,7 +1747,7 @@ class AccountSyncController {
   }
 
   void _onUnfollowed(String listId) {
-    if (!isActive) return;
+    if (!queuesForAccount || !(_state?.mergeDone ?? false)) return;
     unawaited(
       enqueue(
         AccountOp(
@@ -1644,20 +1782,45 @@ class AccountSyncController {
     final rec = st.linking.remove(oldKey);
     if (rec != null) st.linking[newKey] = rec;
     final reason = st.unsyncable.remove(oldKey);
-    if (reason != null) st.unsyncable[newKey] = reason;
+    // A name the account refused is tried again under the new one.
+    if (reason != null && reason != UnsyncableReason.refused) {
+      st.unsyncable[newKey] = reason;
+    }
     await _save();
   }
 
-  /// A local list was deleted: forget its records. Returns the account
-  /// list id its link was heading for, if it was being linked, so the
-  /// caller can queue a `delete` for it. Call under [exclusive].
-  Future<String?> noteDeletedLocally(String localKey) async {
+  /// A local list was deleted: forget its records. With [deleteOnAccount],
+  /// the account list its link was heading for (if it was being linked) is
+  /// deleted too, queued in the same save. Call under [exclusive].
+  Future<void> noteDeletedLocally(
+    String localKey, {
+    bool deleteOnAccount = false,
+  }) async {
     final st = _state;
-    if (st == null) return null;
+    if (st == null) return;
     final rec = st.linking.remove(localKey);
     st.unsyncable.remove(localKey);
+    if (deleteOnAccount && rec != null) _queueDeleteFor(rec);
     await _save();
-    return rec?.listId;
+  }
+
+  /// Queue the account's `delete` of the list [rec] was linking to (the
+  /// person deleted the local list while it was being linked). If the
+  /// create never landed there is nothing to delete, and the account says
+  /// so.
+  void _queueDeleteFor(LinkingRecord rec) {
+    if (_st!.pendingOps.any(
+      (o) => o.type == 'delete' && o.args['listId'] == rec.listId,
+    )) {
+      return;
+    }
+    _enqueue(
+      AccountOp(
+        opId: generateOpId(),
+        type: 'delete',
+        args: {'listId': rec.listId},
+      ),
+    );
   }
 
   /// Run a cycle now and answer the owner wrapper of [localKey] if the list
@@ -1677,12 +1840,17 @@ class AccountSyncController {
   /// signs; subscriptions stay), and so do the account state and pending
   /// ops. Nothing on the server changes.
   Future<void> _clearLinksLocally() async {
+    final st = _state;
+    if (st != null && !st.clearing) {
+      st.clearing = true;
+      await _save();
+    }
     await _engine.clearAllPendingOps();
     await _lists.clearEditableLists();
+    await clearRevisionUploadQueue();
     await AccountSyncState.clear();
     _st = null;
     _stLoaded = true;
-    await clearRevisionUploadQueue();
   }
 
   /// The unsent-answers queue goes with the account state (the history
@@ -1707,7 +1875,15 @@ class AccountSyncController {
       final session = _auth.store.current;
       if (flush && session != null) {
         try {
-          await _flushAccountOps(session).timeout(const Duration(seconds: 10));
+          await () async {
+            await _flushAccountOps(session);
+            final st = _state;
+            if (st != null &&
+                st.mergeDone &&
+                st.userId == sessionUserId(session)) {
+              await _uploadAnswers(session, yieldable: false);
+            }
+          }().timeout(const Duration(seconds: 10));
         } catch (e) {
           printAndLog('AccountSync: sign-out flush failed: $e');
         }

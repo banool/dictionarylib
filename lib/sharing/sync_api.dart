@@ -72,6 +72,10 @@ const int maxEntriesPerList = 500;
 /// (`unsyncable: too_large`).
 const int maxEntriesPerPrivateList = 5000;
 
+/// Most live lists one account holds (`MAX_PRIVATE_LISTS_PER_USER` in the
+/// worker's `validation.ts`).
+const int maxListsPerAccount = 300;
+
 /// Mirror of the server's `MAX_ADD_ENTRIES_PER_OP`: videos per `addEntries`.
 const int maxAddEntriesPerOp = 200;
 

@@ -215,5 +215,27 @@ void applyIncomingSettings(
     // doesn't have are left out), and it must not read as a change to send
     // back, or two devices would whittle each other's selection down.
     st.settingsSynced[s.key] = settingWireValue(s.key) ?? s.value;
+    // A chosen list that is on the account but not yet on this device (its
+    // install still to come) is picked up by applying the value again later.
+    if (s.key == KEY_LISTS_TO_REVIEW && _awaitsInstall(st, s.value)) {
+      st.settingsSeen.remove(s.key);
+    }
   }
+}
+
+bool _awaitsInstall(AccountSyncState st, String wire) {
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(wire);
+  } catch (_) {
+    return false;
+  }
+  if (decoded is! List) return false;
+  for (final w in decoded.whereType<String>()) {
+    if (!w.startsWith('list:')) continue;
+    final id = w.substring(5);
+    if (sharing.lists.get(id) != null) continue;
+    if (st.directory.any((d) => d.listId == id && d.isLive)) return true;
+  }
+  return false;
 }

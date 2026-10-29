@@ -613,20 +613,27 @@ int? _dueGroup(DRCard card, DateTime now) {
 }
 
 /// Count [bumpAmount] random-mode cards on this device and, when account
-/// sync runs for the signed-in account, on the account as one session.
+/// sync has merged for the account, on the account as one session.
 Future<void> bumpRandomReviewCounter(int bumpAmount) async {
-  await sharing.accountSync.recordRandomSession(bumpAmount);
-  int current = sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
-  int updated = current + bumpAmount;
-  await sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, updated);
+  // Whether the account takes this session as an op of its own, and the
+  // counter's new value, are settled without an await in between
+  // (SharedPreferences updates its cache synchronously): the sign-in merge
+  // reads the counter and finishes in one synchronous step, so the session
+  // is counted once, either in the counter the merge sends or as an op.
+  final asOp = sharing.accountSync.takesRandomSessions;
+  final current = sharedPreferences.getInt(KEY_RANDOM_REVIEWS_COUNTER) ?? 0;
+  final updated = current + bumpAmount;
+  final writes = <Future<void>>[
+    sharedPreferences.setInt(KEY_RANDOM_REVIEWS_COUNTER, updated),
+    if (sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW) == null)
+      sharedPreferences.setInt(
+        KEY_FIRST_RANDOM_REVIEW,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      ),
+  ];
+  if (asOp) await sharing.accountSync.recordRandomSession(bumpAmount);
+  await Future.wait(writes);
   printAndLog(
     "Incremented random review counter by $bumpAmount ($current to $updated)",
   );
-  int? firstUnixtime = sharedPreferences.getInt(KEY_FIRST_RANDOM_REVIEW);
-  if (firstUnixtime == null) {
-    await sharedPreferences.setInt(
-      KEY_FIRST_RANDOM_REVIEW,
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    );
-  }
 }
