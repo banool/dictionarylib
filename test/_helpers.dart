@@ -161,10 +161,16 @@ const kTestSession = AuthSession(
 /// fresh manager. The returned [Sharing] starts out with a signed-in
 /// session at [kTestSession] so writes-that-require-auth don't need a
 /// separate setup step.
+///
+/// Account sync is switched off unless [accountSync] is set:
+/// these stubs answer only the routes a test expects, and the sharing they
+/// test works the way it does with the knob off. Account sync has its own
+/// in-memory server, in sharing/_fake_account_server.dart.
 List<http.Request> installFakeSharing(
   Future<http.Response> Function(http.Request) handle, {
   AuthSession session = kTestSession,
   Future<AppleSignInResult> Function(SharingAuthConfig)? appleSignIn,
+  bool accountSync = false,
 }) {
   final out = <http.Request>[];
   final client = MockClient((req) async {
@@ -186,6 +192,7 @@ List<http.Request> installFakeSharing(
     api: api,
     lists: lists,
     auth: auth,
+    accountSyncEnabled: accountSync,
   );
   return out;
 }

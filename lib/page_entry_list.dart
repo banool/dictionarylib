@@ -287,8 +287,10 @@ class EntryListPageState extends State<EntryListPage> {
   Future<void> _onSharePressed() => _runGuarded(() async {
     if (!sharing.isEnabled) return;
     SyncedEntryList? owned = listsService.ownedShareFor(widget.entryList);
-    final freshlyShared = owned == null;
-    if (owned == null) {
+    // A list on the account that isn't shared (private) is shared through
+    // the same dialog as a list on the device only.
+    final freshlyShared = owned == null || !owned.meta.isShared;
+    if (freshlyShared) {
       owned = await showShareDialog(
         context: context,
         sourceList: widget.entryList,
@@ -335,12 +337,14 @@ class EntryListPageState extends State<EntryListPage> {
     final owned = listsService.ownedShareFor(widget.entryList);
     if (owned == null) return;
     final l = DictLibLocalizations.of(context)!;
+    // The list stays on the person's devices (it goes private); before
+    // account sync has run here, stopping a share works the same way.
     final confirmed = await confirmAlert(
       context,
-      Text(l.unshareConfirmBody),
+      Text(l.stopSharingConfirmBody(owned.getName())),
       title: l.unshareConfirmTitle,
       onConfirm: () => retryWithFeedback(
-        () => listsService.unshareList(owned),
+        () => listsService.stopSharing(owned),
         onRetry: snackRetryFeedback(context),
       ),
       errorMessage: (e) => e is SyncException
@@ -414,10 +418,12 @@ class EntryListPageState extends State<EntryListPage> {
       fallbackBase: l.duplicateFallbackName,
     );
 
-    await userEntryListManager.createEntryList(localKey);
+    // A list of the person's own, made the same way as one from the create
+    // dialog (on a signed-in device it syncs to the account).
+    await listsService.createListWithKey(localKey);
     final copy = userEntryListManager.getEntryLists()[localKey]!;
     for (final v in videos) {
-      await copy.addVideo(v);
+      await listsService.writableFor(copy).addVideo(v);
     }
     if (mounted) {
       final messenger = ScaffoldMessenger.of(context);
@@ -466,7 +472,11 @@ class EntryListPageState extends State<EntryListPage> {
       final isSubscribed =
           list is SyncedEntryList && list.meta.role == ListRole.subscriber;
       final ownedShare = listsService.ownedShareFor(list);
-      isSharedList = list is SyncedEntryList || ownedShare != null;
+      // A list of the person's own on the account but not shared is shown
+      // like any list on the device.
+      isSharedList =
+          (list is SyncedEntryList && list.meta.role != ListRole.owner) ||
+          (ownedShare != null && ownedShare.meta.isShared);
 
       if (isSubscribed) {
         actions.add(
@@ -540,7 +550,7 @@ class EntryListPageState extends State<EntryListPage> {
             () async => _onSharePressed(),
           ),
         );
-        if (ownedShare != null) {
+        if (ownedShare != null && ownedShare.meta.isShared) {
           actions.add(
             buildActionButton(
               context,

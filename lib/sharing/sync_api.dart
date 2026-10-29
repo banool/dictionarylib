@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../l10n/app_localizations.dart';
 import '../saved_video.dart';
+import 'account_sync_api.dart';
 import 'sharing_config.dart';
 
 /// Schema version the client understands on incoming snapshots /
@@ -30,7 +31,7 @@ import 'sharing_config.dart';
 ///      pending-ops blob.
 ///   3. Wire schema — this `supportedSchemaVersion` (currently 3), mirrored
 ///      by the worker: the shape of payloads on the network.
-///   4. DO SQLite storage — `DO_SCHEMA_VERSION` (currently 2) in
+///   4. DO SQLite storage — `DO_SCHEMA_VERSION` (currently 3) in
 ///      `workers/src/list_do.ts` in the private backend repo: the Durable Object's on-disk tables.
 /// They share the word "version" and happen to overlap in number, but each
 /// migrates on its own schedule. Bumping one does NOT imply bumping the others.
@@ -61,11 +62,36 @@ final Set<String> reservedShareNamesLower = {
 bool isReservedShareName(String name) =>
     reservedShareNamesLower.contains(name.trim().toLowerCase());
 
-/// Mirror of the server's `MAX_ENTRIES` cap on entries per list. The
+/// Mirror of the server's `MAX_ENTRIES` cap on entries per shared list. The
 /// share dialog refuses to publish a list larger than this with a
-/// friendly message rather than letting the create call surface a
-/// generic 400.
+/// friendly message rather than letting the server surface a generic 400.
 const int maxEntriesPerList = 500;
+
+/// Mirror of the server's `MAX_ENTRIES_PRIVATE`: what a private (synced but
+/// not shared) list may hold. A list over it stays on the device only
+/// (`unsyncable: too_large`).
+const int maxEntriesPerPrivateList = 5000;
+
+/// Mirror of the server's `MAX_ADD_ENTRIES_PER_OP`: videos per `addEntries`.
+const int maxAddEntriesPerOp = 200;
+
+/// Header every request from a build with account sync carries. The worker
+/// reads it in one place: a `DELETE /v1/lists/:id` without it comes from a
+/// build that predates account sync and, for someone with an account
+/// directory, is carried out as "make private".
+const String syncCapabilitiesHeader = 'x-sync-capabilities';
+const String syncCapabilities = 'account-sync';
+
+/// Ceiling this client keeps a request body under when it packs ops into
+/// one request. The server's cap is [maxCreateBodyBytes] (64 KiB); the margin
+/// covers the envelope, so batching by count alone can't build a request
+/// the server refuses with 413 (a few `addEntries` ops of 200 videos, or
+/// `addReviews` ops of 500 answers, are each tens of kilobytes).
+const int maxBatchBodyBytes = 56 * 1024;
+
+/// UTF-8 size of [value] JSON-encoded. Used to pack ops into requests under
+/// [maxBatchBodyBytes].
+int encodedJsonBytes(Object? value) => utf8.encode(jsonEncode(value)).length;
 
 /// Mirror of the server's `MAX_LISTS_PER_USER` cap on lists a single
 /// user may own. Editor memberships on other people's lists don't count
@@ -176,13 +202,22 @@ const String _forbidReasonListLimit = 'list_limit';
 const String _forbidReasonNameRequired = 'name_required';
 
 /// Machine-readable `reasonCode` the server sets on a rejected
-/// `addEntry` op outcome when the list is already at
-/// [maxEntriesPerList]. Mirrors `OP_REJECT_REASON_LIST_FULL` in
-/// `workers/src/validation.ts` in the private backend repo.
+/// `addEntry` op outcome when the list is already at its cap. Mirrors
+/// `OP_REJECT_REASON_LIST_FULL` in `workers/src/validation.ts` in the
+/// private backend repo. An `addEntries` op that only partly fits is
+/// `applied` with this code (the videos that fit went in).
 ///
 /// Matched on instead of the human-readable `reason` prose, which is
 /// free text and may be reworded.
 const String opRejectedReasonListFull = 'list_full';
+
+/// `details.reason` on the 400 a flip to shared gets when the list holds
+/// more than [maxEntriesPerList]. Mirrors the worker's
+/// `INVALID_REASON_LIST_TOO_LARGE_TO_SHARE`.
+const String _invalidReasonListTooLargeToShare = 'list_too_large_to_share';
+
+/// `details.reason` on the 503 the account-sync kill switch answers.
+const String unavailableReasonAccountSyncDisabled = 'account_sync_disabled';
 
 /// Error envelope returned by the API.
 class SyncException implements Exception {
@@ -233,7 +268,20 @@ class SyncException implements Exception {
   bool get isTransient =>
       kind == SyncErrorKind.network ||
       kind == SyncErrorKind.server ||
-      kind == SyncErrorKind.rateLimited;
+      kind == SyncErrorKind.rateLimited ||
+      kind == SyncErrorKind.unavailable;
+
+  /// True if a flip to shared was refused because the list holds more
+  /// than [maxEntriesPerList] videos.
+  bool get isListTooLargeToShare =>
+      kind == SyncErrorKind.invalidBody &&
+      details?['reason'] == _invalidReasonListTooLargeToShare;
+
+  /// Seconds the server asked us to wait (`Retry-After`), if it said.
+  int? get retryAfterSeconds {
+    final raw = details?['retryAfter'];
+    return raw == null ? null : int.tryParse(raw.toString());
+  }
 
   /// True if this is the server telling us our sync cursor is ahead of
   /// its own op log — i.e. the server lost state relative to what this
@@ -279,6 +327,7 @@ class SyncException implements Exception {
       410 => SyncErrorKind.gone,
       413 => SyncErrorKind.payloadTooLarge,
       429 => SyncErrorKind.rateLimited,
+      503 when code == 'UNAVAILABLE' => SyncErrorKind.unavailable,
       _ =>
         resp.statusCode >= 500
             ? SyncErrorKind.server
@@ -327,6 +376,10 @@ enum SyncErrorKind {
 
   /// 5xx — server error.
   server,
+
+  /// 503 `UNAVAILABLE` — switched off on purpose (the account-sync kill
+  /// switch). Carries `details['reason']` and `details['retryAfter']`.
+  unavailable,
 
   /// Network failure / timeout / connection refused / DNS, etc.
   network,
@@ -528,6 +581,10 @@ class ListSnapshot {
   final int createdAt;
   final int updatedAt;
   final MembersBlock members;
+
+  /// `private` or `shared`. A server that predates account sync doesn't
+  /// send it, and every list it holds is shared.
+  final String visibility;
   ListSnapshot({
     required this.listId,
     required this.displayName,
@@ -537,6 +594,7 @@ class ListSnapshot {
     required this.createdAt,
     required this.updatedAt,
     required this.members,
+    this.visibility = listVisibilityShared,
   });
   factory ListSnapshot.fromJson(Map<String, dynamic> json) {
     _validateSchemaVersion(json);
@@ -549,9 +607,23 @@ class ListSnapshot {
       createdAt: json['createdAt'] as int,
       updatedAt: json['updatedAt'] as int,
       members: MembersBlock.fromJson(json['members'] as Map<String, dynamic>),
+      visibility: parseVisibility(json['visibility']),
     );
   }
 }
+
+/// A list only its owner's devices sync: no public snapshot, no editors.
+const String listVisibilityPrivate = 'private';
+
+/// A list published for followers and editors. Every list from before
+/// account sync is one.
+const String listVisibilityShared = 'shared';
+
+/// Read a `visibility` field: `private` when it says so, `shared` otherwise
+/// (absent on old servers, and unknown values are treated as the safe,
+/// already-public default).
+String parseVisibility(Object? raw) =>
+    raw == listVisibilityPrivate ? listVisibilityPrivate : listVisibilityShared;
 
 // -------- Op-log types --------
 
@@ -572,9 +644,10 @@ class OpOutcome {
   /// Human-readable rejection prose. For logs — match on [reasonCode].
   final String? reason;
 
-  /// Stable machine-readable rejection discriminator (currently only
+  /// Stable machine-readable discriminator (currently only
   /// [opRejectedReasonListFull]). Null on older servers that predate the
-  /// field, and on non-rejected outcomes.
+  /// field. Set on a rejection, and on an `addEntries` that was applied in
+  /// part because the list filled up.
   final String? reasonCode;
 
   const OpOutcome({
@@ -600,6 +673,10 @@ class OpOutcome {
   /// server's entry ceiling.
   bool get isListFullRejection =>
       status == OpStatus.rejected && reasonCode == opRejectedReasonListFull;
+
+  /// True when the list's cap kept some or all of this op's videos out:
+  /// a refused `addEntry`, or an `addEntries` applied in part.
+  bool get hitListFull => reasonCode == opRejectedReasonListFull;
 }
 
 /// Materialised op-log row returned in /sync `missedOps`.
@@ -664,6 +741,10 @@ class SyncResponse {
   /// its local name untouched.
   final String? displayName;
 
+  /// The list's current visibility, echoed like [displayName]. Null from a
+  /// server that predates account sync.
+  final String? visibility;
+
   SyncResponse({
     required this.appliedSeq,
     required this.applied,
@@ -672,6 +753,7 @@ class SyncResponse {
     required this.members,
     required this.wasSnapshotCatchUp,
     required this.displayName,
+    this.visibility,
   });
   factory SyncResponse.fromJson(Map<String, dynamic> json) {
     final snapshotRaw = json['snapshot'];
@@ -691,6 +773,9 @@ class SyncResponse {
       wasSnapshotCatchUp:
           json['wasSnapshotCatchUp'] as bool? ?? snapshot != null,
       displayName: json['displayName'] as String?,
+      visibility: json['visibility'] == null
+          ? null
+          : parseVisibility(json['visibility']),
     );
   }
 }
@@ -759,7 +844,10 @@ class SyncApi {
   Uri _listsUrl() => Uri.parse('${config.apiBaseUrl}/v1/lists');
   Uri _ownedListsUrl() => Uri.parse('${config.apiBaseUrl}/v1/my-lists');
 
-  Map<String, String> _baseHeaders() => {'x-app-id': config.appId};
+  Map<String, String> _baseHeaders() => {
+    'x-app-id': config.appId,
+    syncCapabilitiesHeader: syncCapabilities,
+  };
 
   /// Create a new list owned by the caller. The worker forwards this
   /// into the per-list DO, which writes the initial R2 snapshot.
@@ -977,6 +1065,85 @@ class SyncApi {
       headers: {..._baseHeaders(), 'authorization': 'Bearer $sessionToken'},
     );
     if (resp.statusCode == 204) return;
+    throw SyncException.fromResponse(resp);
+  }
+
+  /// `POST /v1/account/sync`: send up to 50 account [ops] and get the
+  /// directory, follows and settings back whole, plus the answers and
+  /// random sessions stored after [sinceSeq] (a page at a time; see
+  /// [AccountSyncResponse.hasMore]).
+  Future<AccountSyncResponse> accountSync({
+    required String clientId,
+    required int sinceSeq,
+    required List<AccountOp> ops,
+    required String sessionToken,
+  }) async {
+    final resp = await _request(
+      method: 'POST',
+      url: Uri.parse('${config.apiBaseUrl}/v1/account/sync'),
+      headers: {
+        ..._baseHeaders(),
+        'content-type': 'application/json',
+        'authorization': 'Bearer $sessionToken',
+        'x-client-id': clientId,
+      },
+      body: jsonEncode({
+        'clientId': clientId,
+        'sinceSeq': sinceSeq,
+        'ops': ops.map((o) => o.toJson()).toList(),
+      }),
+    );
+    if (resp.statusCode == 200) {
+      return AccountSyncResponse.fromJson(
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
+    }
+    throw SyncException.fromResponse(resp);
+  }
+
+  /// Owner-only: make a list private or shared (`PUT
+  /// /v1/lists/:id/visibility`). [displayName], when given, is applied with
+  /// a flip to shared (the share dialog's name). Returns the snapshot.
+  Future<ListSnapshot> setVisibility({
+    required String listId,
+    required String visibility,
+    String? displayName,
+    required String sessionToken,
+  }) async {
+    final resp = await _request(
+      method: 'PUT',
+      url: _listSubUrl(listId, 'visibility'),
+      headers: {
+        ..._baseHeaders(),
+        'content-type': 'application/json',
+        'authorization': 'Bearer $sessionToken',
+      },
+      body: jsonEncode({'visibility': visibility, 'displayName': ?displayName}),
+    );
+    if (resp.statusCode == 200) {
+      return ListSnapshot.fromJson(
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
+    }
+    throw SyncException.fromResponse(resp);
+  }
+
+  /// Owner-only: bring back a list deleted less than 30 days ago (`POST
+  /// /v1/lists/:id/restore`). It comes back private.
+  Future<ListSnapshot> restoreList({
+    required String listId,
+    required String sessionToken,
+  }) async {
+    final resp = await _request(
+      method: 'POST',
+      url: _listSubUrl(listId, 'restore'),
+      headers: {..._baseHeaders(), 'authorization': 'Bearer $sessionToken'},
+    );
+    if (resp.statusCode == 200) {
+      return ListSnapshot.fromJson(
+        jsonDecode(resp.body) as Map<String, dynamic>,
+      );
+    }
     throw SyncException.fromResponse(resp);
   }
 

@@ -115,7 +115,6 @@
     "shareErrorPayloadTooLarge": "එම වෙනස ඉතා විශාලයි. කුඩා කාණ්ඩයකින් නැවත උත්සාහ කරන්න.",
     "shareErrorRateLimited": "සෙමින් — ඉල්ලීම් ඉතා වැඩියි. මොහොතකින් නැවත උත්සාහ කරන්න.",
     "shareErrorServer": "සේවාදායකයේ ගැටලුවක් ඇත. පසුව නැවත උත්සාහ කරන්න.",
-    "unshareToDeleteTooltip": "මෙම ලැයිස්තුව මැකීමට පෙර එය බෙදා ගැනීම නවත්වන්න.",
     "shareTooManyEntriesTitle": "බෙදා ගැනීමට ලැයිස්තුව ඉතා විශාලයි",
     "shareTooManyEntriesBody": "මෙම ලැයිස්තුවේ ඇතුළත් කිරීම් {count}ක් ඇත, නමුත් බෙදාගත් ලැයිස්තු {max}කට සීමා වේ. සමහර ඇතුළත් කිරීම් ඉවත් කර නැවත උත්සාහ කරන්න.",
     "shareListTooLargeBody": "මෙම ලැයිස්තුව බෙදා ගැනීමට ඉතා විශාලයි. සමහර ඇතුළත් කිරීම් ඉවත් කර නැවත උත්සාහ කරන්න.",
@@ -134,7 +133,6 @@
     "qrCodeDialogClose": "වසන්න",
 
     "signInDialogTitle": "බෙදා ගැනීමට පුරනය වන්න",
-    "signInDialogBody": "ලැයිස්තුවක් බෙදා ගැනීමට ඔබ පුරනය විය යුතුය.",
     "signInLastUsedHint": "පසුගිය වර, ඔබ {provider} සමඟ පුරනය විය.",
     "signInWithApple": "Apple සමඟ දිගටම",
     "signInWithGoogle": "Google සමඟ දිගටම",
@@ -166,7 +164,6 @@
     "sharedListLandingNotFound": "මෙම බෙදාගත් ලැයිස්තුව නොපවතී හෝ එහි හිමිකරු විසින් මකා දමා ඇත.",
     "sharedListLandingTryAgain": "නැවත උත්සාහ කරන්න",
 
-    "unshareConfirmBody": "මෙම ලැයිස්තුව බෙදා ගැනීම නවත්වන්නද? දායකයින්ට තවදුරටත් එය දැකිය නොහැක.",
     "unshareConfirmTitle": "බෙදා ගැනීම නවත්වන්නද?",
     "unshareFailed": "බෙදා ගැනීම නැවැත්වීමට අසාර්ථක විය: {message}",
     "unsubscribeConfirmBody": "මෙම ලැයිස්තුවෙන් දායකත්වය ඉවත් කරන්නද?",
@@ -179,11 +176,7 @@
     "subscribedSyncFailedSnack": "සමමුහුර්ත වීම අසාර්ථක විය: {message}",
     "retryAttemptSnack": "එය අසාර්ථක විය — නැවත උත්සාහ කරමින් ({maxAttempts}න් {attempt} වැනි උත්සාහය)…",
     "subscribedCopyMenuItem": "අනුපිටපත් කරන්න",
-    "settingsSharing": "බෙදා ගැනීම",
-    "settingsSignIn": "ලැයිස්තු බෙදා ගැනීමට පුරනය වන්න",
-    "settingsSignOut": "පිටවන්න ({provider} සමඟ පුරනය වී ඇත)",
     "settingsSignOutConfirmTitle": "පිටවන්නද?",
-    "settingsSignOutConfirmBody": "මෙම උපාංගයේ:\n  • ඔබ බෙදා ගැනීමෙන් පිටව ඇත.\n  • ඔබ බෙදාගත් ලැයිස්තු මෙතැනින් කළමනාකරණය වීම නැවතේ — දේශීය ලැයිස්තු ඒවායේ ඇතුළත් කිරීම් රඳවා ගනී.\n\nඔබගේ බෙදාගත් ලැයිස්තු සේවාදායකයේ පවතී. ඒවා නැවත සංස්කරණය කිරීමට ඕනෑම උපාංගයකින් නැවත පුරනය වන්න.",
     "settingsDeleteAccount": "ගිණුම මකන්න",
     "settingsDeleteAccountConfirmTitle": "ගිණුම මකන්නද?",
     "settingsDeleteAccountConfirmButton": "ගිණුම මකන්න",
@@ -191,14 +184,6 @@
     "settingsDeleteAccountRunning": "ගිණුම මකමින්…",
     "settingsDeleteAccountFailed": "ඔබගේ ගිණුම මැකීමට නොහැකි විය: {message}",
 
-    "importEditableListsPromptTitle": "ඔබ කලින් බෙදාගත් ලැයිස්තු ආයාත කරන්නද?",
-    "importEditableListsPromptBody": "මෙම ගිණුමට සම්බන්ධ බෙදාගත් ලැයිස්තු — ඔබ සෑදූ ඒවා මෙන්ම ඔබ සංස්කාරකවරයෙකු ලෙස එක් කර ඇති ඒවාද — අප ලබාගෙන මෙම උපාංගයේ ස්ථාපනය කරමු. පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත; නම් ගැටුම්වලට සංඛ්‍යාත්මක ප්‍රත්‍යයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ඔබ සබැඳිව සිටින විට සංස්කරණ ස්වයංක්‍රීයව සමමුහුර්ත වේ.",
-    "importEditableListsActionImport": "ආයාත කරන්න",
-    "importEditableListsActionSkip": "මඟ හරින්න",
-    "importEditableListsRunning": "ඔබගේ බෙදාගත් ලැයිස්තු ආයාත කරමින්…",
-    "importEditableListsFailed": "ලැයිස්තු ආයාත කිරීමට නොහැකි විය: {message}",
-    "importEditableListsResultNone": "බෙදාගත් ලැයිස්තු හමු නොවීය.",
-    "importEditableListsResultDone": "ලැයිස්තු {total}කින් {imported}ක් ආයාත කරන ලදී.",
     "duplicateConfirmTitle": "ලැයිස්තුව අනුපිටපත් කරන්නද?",
     "duplicateConfirmBody": "මෙය ලැයිස්තුවේ පුද්ගලික, පෞද්ගලික පිටපතක් සාදයි. මුල් හිමිකරු තමන්ගේ ලැයිස්තුව සංස්කරණය කරන විට මෙය යාවත්කාලීන නොවේ.",
     "duplicateConfirmAction": "අනුපිටපත් කරන්න",
@@ -267,7 +252,6 @@
     "signInDialogContextInvite": "ආරාධනය පිළිගැනීමට පුරනය වන්න. එසේ කළ පසු ඔබට ලැයිස්තුව සංස්කරණය කළ හැක.",
     "signInDialogContextResume": "ඔබගේ පෝලිමේ ඇති සංස්කරණ තල්ලු කිරීමට නැවත පුරනය වන්න.",
 
-    "settingsSignOutConfirmBodyWithPending": "ඔබට ලැයිස්තු {count}ක නොසමමුහුර්ත සංස්කරණ ඇත. පිටවීමෙන් ඒවා සේවාදායකයට තල්ලු නොකරයි. ඔබට විශ්වාසද?",
 
     "overviewResumeSignInIdle": "ඔබගේ බෙදාගත් ලැයිස්තු උපාංග හරහා සමමුහුර්ත කිරීමට පුරනය වන්න.",
     "overviewResumeSignInWithPending": "ඔබට නොසමමුහුර්ත සංස්කරණ ඇත. ඒවා තල්ලු කිරීමට නැවත පුරනය වන්න.",
@@ -432,5 +416,93 @@
     "errorFallbackAdvisoriesTitle": "නිවේදන",
     "errorFallbackDetailsTitle": "තාක්ෂණික විස්තර",
     "errorFallbackCopyDetailsButton": "විස්තර පිටපත් කරන්න",
-    "errorFallbackDetailsCopiedSnack": "විස්තර පසුරු පුවරුවට පිටපත් විය"
+    "errorFallbackDetailsCopiedSnack": "විස්තර පසුරු පුවරුවට පිටපත් විය",
+    "settingsAccount": "ගිණුම",
+    "@settingsAccount": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "settingsAccountSignIn": "ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න",
+    "@settingsAccountSignIn": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "settingsSignedInWith": "{provider} සමඟ පුරනය වී ඇත",
+    "@settingsSignedInWith": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "settingsSignOutRow": "පිටවන්න",
+    "@settingsSignOutRow": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "settingsSignOutConfirmBodySync": "ඔබගේ ලැයිස්තු සහ ප්‍රගතිය මෙම උපාංගයේ රැඳී සිටින නමුත් සමමුහුර්ත වීම නවතී. දිගටම කරගෙන යාමට ඕනෑම උපාංගයක නැවත පුරනය වන්න.",
+    "@settingsSignOutConfirmBodySync": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusSyncing": "සමමුහුර්ත වෙමින්…",
+    "@accountSyncStatusSyncing": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusJustNow": "දැන් සමමුහුර්ත විය",
+    "@accountSyncStatusJustNow": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusMinutesAgo": "{count, plural, =1{මිනිත්තු 1කට පෙර සමමුහුර්ත විය} other{මිනිත්තු {count}කට පෙර සමමුහුර්ත විය}}",
+    "@accountSyncStatusMinutesAgo": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusHoursAgo": "{count, plural, =1{පැය 1කට පෙර සමමුහුර්ත විය} other{පැය {count}කට පෙර සමමුහුර්ත විය}}",
+    "@accountSyncStatusHoursAgo": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusDaysAgo": "{count, plural, =1{දින 1කට පෙර සමමුහුර්ත විය} other{දින {count}කට පෙර සමමුහුර්ත විය}}",
+    "@accountSyncStatusDaysAgo": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusWaiting": "සම්බන්ධතාවක් සඳහා රැඳී සිටිමින්",
+    "@accountSyncStatusWaiting": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncStatusPaused": "සමමුහුර්ත කිරීම නවතා ඇත",
+    "@accountSyncStatusPaused": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "listsSignInFooter": "ඔබගේ ලැයිස්තු ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.",
+    "@listsSignInFooter": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "signInDialogBodySync": "ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.",
+    "@signInDialogBodySync": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "shareSignInContextSync": "බෙදා ගැනීමට ගිණුමක් අවශ්‍යයි. පුරනය වීමෙන් ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ උපාංග අතර සමමුහුර්තව ද තබා ගනී.",
+    "@shareSignInContextSync": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncMergedSnack": "ඔබගේ ලැයිස්තු සහ ප්‍රගතිය දැන් සමමුහුර්ත වෙමින් පවතී.",
+    "@accountSyncMergedSnack": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "listDeleteEverywhereConfirm": "“{name}” ඔබගේ සියලු උපාංගවලින් මකන්නද?",
+    "@listDeleteEverywhereConfirm": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "stopSharingConfirmBody": "“{name}” බෙදා ගැනීම නවත්වන්නද? එය අනුගමනය කරන අයට ප්‍රවේශය අහිමි වේ. එය ඔබගේ උපාංගවල රැඳී පවතී.",
+    "@stopSharingConfirmBody": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncDeletedElsewhereKeptSnack": "“{name}” වෙනත් උපාංගයක මකා දමන ලදී. එයට ඔබ කළ නොයැවූ වෙනස්කම් මෙහි වෙනම ලැයිස්තුවක් ලෙස තබා ඇත.",
+    "@accountSyncDeletedElsewhereKeptSnack": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "accountSyncListTooLargeSnack": "“{name}” හි සංඥා {limit}කට වඩා ඇති බැවින්, එය මෙම උපාංගයේ පමණක් රැඳී පවතී.",
+    "@accountSyncListTooLargeSnack": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "enginePrivateListFullSnack": "මෙම ලැයිස්තුව පිරී ඇත (සංඥා {max}), එබැවින් ඔබගේ නවතම එකතු කිරීම් මෙම උපාංගයේ පමණක් රැඳී පවතී.",
+    "@enginePrivateListFullSnack": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
+    "listOnlyOnThisDevice": "මෙම උපාංගයේ පමණි",
+    "@listOnlyOnThisDevice": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    }
 }

@@ -155,6 +155,23 @@ Future<void> mdSignInAs(String userId, String displayName) async {
   );
 }
 
+/// Run account sync until the sign-in merge is done and nothing is left in
+/// the list or account queues: what a person waits for after signing in on
+/// a device (the merge replaced the old "import my lists" step). Fails the
+/// test if the merge hasn't finished after a few rounds.
+Future<void> mdWaitForAccountSync({int rounds = 4}) async {
+  for (var i = 0; i < rounds; i++) {
+    await sharing.accountSync.kick(SyncReason.pullToRefresh);
+    await sharing.engine.pushAllDirty();
+  }
+  await sharing.accountSync.kick(SyncReason.pullToRefresh);
+  expect(
+    sharing.accountSync.state?.mergeDone,
+    isTrue,
+    reason: 'the sign-in merge should have finished',
+  );
+}
+
 /// Poll [check] (which may do real IO) until it returns true, pumping the
 /// UI between samples so the app keeps running. Fails the test on timeout.
 Future<void> mdWaitFor(

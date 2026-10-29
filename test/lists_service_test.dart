@@ -1,7 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_list.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/lists_service.dart';
@@ -19,6 +18,10 @@ void main() {
     installFakeSecureStorage();
     SharedPreferences.setMockInitialValues({});
     sharedPreferences = await SharedPreferences.getInstance();
+    // installFakeSharing leaves account sync off, so these tests cover
+    // sharing as it works then (a list is shared as a new list, `POST
+    // /v1/lists`). With account sync on, sharing flips a linked list's
+    // visibility instead; that's in sharing/account_sync_test.dart.
     seedDictionary(['apple', 'banana', 'cherry']);
     userEntryListManager = UserEntryListManager.fromStartup();
     sharing = Sharing.disabled();
@@ -184,16 +187,14 @@ void main() {
     );
 
     test(
-      'mutating the source directly trips the owner-mode tripwire',
+      'mutating the source directly goes through its owner wrapper',
       () async {
         // The wrapper's [addEntry] override is the only enqueue path;
-        // direct mutation on the underlying source list bypasses it and
-        // would let the entries set drift out of sync with the server.
-        // [EntryList._assertNotOwnerShared] is a debug-mode tripwire
-        // designed to catch any new code path that re-introduces that
-        // bypass — a regression here would silently corrupt the synced
-        // mirror in production, so we want it to fail loudly during
-        // development.
+        // direct mutation on the underlying source list would bypass it
+        // and let the entries set drift out of sync with the server. Every
+        // UI path holds the wrapper, but account sync links lists in the
+        // background, so a caller can be holding the plain list from
+        // before: the plain list hands the mutation to the wrapper.
         installFakeSharing((req) async {
           if (req.method == 'POST' && req.url.path == '/v1/lists') {
             return stubCreateResponse(req);
@@ -208,13 +209,9 @@ void main() {
           sessionToken: 'fake-session-jwt',
         );
         final v = SavedVideo(entryKey: 'apple', mediaPath: videoFor('apple'));
-        expect(
-          () async => await source.addVideo(v),
-          throwsA(isA<AssertionError>()),
-        );
-        // No op enqueued either way — the assertion fires before the
-        // source's `entries.add`.
-        expect(synced.meta.pendingOps, isEmpty);
+        await source.addVideo(v);
+        expect(synced.meta.pendingOps.single.type, 'addEntry');
+        expect(source.savedVideos, contains(v));
       },
     );
   });
@@ -308,13 +305,22 @@ void main() {
     });
   });
 
-  group('unshareList', () {
-    test('deletes server-side and removes the local owner wrapper', () async {
+  group('stopSharing', () {
+    test('makes the list private and keeps it linked', () async {
       final requests = installFakeSharing((req) async {
         if (req.method == 'POST' && req.url.path == '/v1/lists') {
           return stubCreateResponse(req);
         }
-        if (req.method == 'DELETE') return http.Response('', 204);
+        if (req.method == 'PUT' && req.url.path.endsWith('/visibility')) {
+          return http.Response(
+            jsonEncode({
+              ...snapshotJson(listId: 'x', displayName: 'Cats'),
+              'listId': req.url.pathSegments[2],
+              'visibility': 'private',
+            }),
+            200,
+          );
+        }
         return http.Response('', 404);
       });
 
@@ -325,10 +331,13 @@ void main() {
         displayName: 'Cats',
         sessionToken: 'fake-session-jwt',
       );
-      await listsService.unshareList(synced);
-      expect(sharing.lists.get(synced.listId), isNull);
-      expect(requests.last.method, 'DELETE');
-      // The local source list is untouched (still in userEntryListManager).
+      await listsService.stopSharing(synced);
+      expect(requests.last.method, 'PUT');
+      expect(jsonDecode(requests.last.body), {'visibility': 'private'});
+      // Never a DELETE: the list stays, on the account and here.
+      expect(requests.where((r) => r.method == 'DELETE'), isEmpty);
+      expect(sharing.lists.get(synced.listId), same(synced));
+      expect(synced.meta.isShared, isFalse);
       expect(
         userEntryListManager.getEntryLists().containsKey('cats_words'),
         isTrue,
@@ -346,7 +355,16 @@ void main() {
         if (req.method == 'POST' && req.url.path == '/v1/lists') {
           return stubCreateResponse(req);
         }
-        if (req.method == 'DELETE') return http.Response('', 204);
+        if (req.method == 'PUT' && req.url.path.endsWith('/visibility')) {
+          return http.Response(
+            jsonEncode({
+              ...snapshotJson(listId: 'x', displayName: 'Tiny Tunks'),
+              'listId': req.url.pathSegments[2],
+              'visibility': 'private',
+            }),
+            200,
+          );
+        }
         return http.Response('', 404);
       });
     });
@@ -385,264 +403,23 @@ void main() {
       expect(cats.getName(), 'Big Cats');
     });
 
-    test('goes back to the local name once it is no longer shared', () async {
+    test('keeps the name it was shared under once it is no longer shared '
+        '(it stays a list on the account, which goes by that name)', () async {
       final favourites = userEntryListManager.getEntryLists()[kDefaultListKey]!;
       final owned = await listsService.shareList(
         sourceList: favourites,
         displayName: 'Tiny Tunks',
         sessionToken: 'fake-session-jwt',
       );
-      await listsService.unshareList(owned);
+      await listsService.stopSharing(owned);
 
-      expect(favourites.getName(), 'Favourites');
+      expect(favourites.getName(), 'Tiny Tunks');
     });
   });
 
-  group('importEditableLists', () {
-    test('imports owned + editor lists with the correct roles', () async {
-      installFakeSharing((req) async {
-        if (req.url.path == '/v1/my-lists') {
-          return http.Response(
-            jsonEncode({
-              'ownedListIds': ['ownedlist001'],
-              'editorListIds': ['editorlist01'],
-            }),
-            200,
-          );
-        }
-        if (req.url.path.endsWith('/state')) {
-          if (req.url.path.contains('ownedlist001')) {
-            return http.Response(
-              jsonEncode(
-                snapshotJson(
-                  listId: 'ownedlist001',
-                  displayName: 'Mine',
-                  entries: ['apple'],
-                  lastSeq: 3,
-                ),
-              ),
-              200,
-            );
-          }
-          return http.Response(
-            jsonEncode(
-              snapshotJson(
-                listId: 'editorlist01',
-                displayName: 'Editing',
-                entries: ['banana'],
-                lastSeq: 4,
-                members: {
-                  'owner': {'userId': 'apple:other', 'displayName': 'Other'},
-                  'editors': [
-                    {
-                      'userId': 'apple:test-user',
-                      'displayName': 'Test User',
-                      'addedAt': 1,
-                      'addedBy': 'apple:other',
-                    },
-                  ],
-                },
-              ),
-            ),
-            200,
-          );
-        }
-        return http.Response('', 404);
-      });
-
-      final result = await listsService.importEditableLists();
-      expect(result.imported, 2);
-      expect(result.skipped, 0);
-      expect(result.total, 2);
-
-      final owned = sharing.lists.get('ownedlist001');
-      expect(owned, isNotNull);
-      expect(owned!.meta.role, ListRole.owner);
-      expect(owned.savedVideos.map((sv) => sv.entryKey), ['apple']);
-
-      final edited = sharing.lists.get('editorlist01');
-      expect(edited, isNotNull);
-      expect(edited!.meta.role, ListRole.editor);
-      expect(edited.savedVideos.map((sv) => sv.entryKey), ['banana']);
-    });
-
-    test('skips lists already on the device', () async {
-      installFakeSharing((req) async {
-        if (req.url.path == '/v1/my-lists') {
-          return http.Response(
-            jsonEncode({
-              'ownedListIds': ['ownedlist001'],
-              'editorListIds': <String>[],
-            }),
-            200,
-          );
-        }
-        return http.Response('', 404);
-      });
-
-      // Pre-install the list. importEditableLists should skip it.
-      await userEntryListManager.createEntryList('mine_words');
-      final source = userEntryListManager.getEntryLists()['mine_words']!;
-      await sharing.lists.insert(
-        SyncedEntryList.owner(
-          meta: SyncedListMeta(
-            listId: 'ownedlist001',
-            displayName: 'Mine',
-            role: ListRole.owner,
-            lastKnownSeq: 1,
-            etag: null,
-            lastSyncedAt: 1,
-            serverUpdatedAt: 1,
-            orphaned: false,
-            sourceLocalKey: 'mine_words',
-          ),
-          source: source,
-        ),
-      );
-
-      final result = await listsService.importEditableLists();
-      expect(result.imported, 0);
-      expect(result.skipped, 1);
-    });
-  });
-
-  group('importEditableLists — local-name collision', () {
-    /// Multi-device convergence variant: a fresh device imports an
-    /// owned list whose displayName matches a local list the user
-    /// already had. The local user list must NOT be overwritten —
-    /// allocateLocalKey should suffix the imported list to "MyList 2"
-    /// (key "MyList_2_words") so both coexist.
-    test(
-      'imported owned list with a name-collision gets a suffixed local key',
-      () async {
-        installFakeSharing((req) async {
-          if (req.url.path == '/v1/my-lists') {
-            return http.Response(
-              jsonEncode({
-                'ownedListIds': ['ownedlist001'],
-                'editorListIds': <String>[],
-              }),
-              200,
-            );
-          }
-          if (req.url.path.endsWith('/state') &&
-              req.url.path.contains('ownedlist001')) {
-            return http.Response(
-              jsonEncode(
-                snapshotJson(
-                  listId: 'ownedlist001',
-                  displayName: 'MyList',
-                  entries: ['apple'],
-                  lastSeq: 3,
-                ),
-              ),
-              200,
-            );
-          }
-          return http.Response('', 404);
-        });
-
-        // Pre-existing local list with the same display name. Use the
-        // EntryList key shape the import path would produce (`MyList`
-        // → `MyList_words`) so the collision actually triggers.
-        await userEntryListManager.createEntryList('MyList_words');
-        final preExisting = userEntryListManager
-            .getEntryLists()['MyList_words']!;
-        final cherryVideo = SavedVideo(
-          entryKey: 'cherry',
-          mediaPath: videoFor('cherry'),
-        );
-        await preExisting.addVideo(cherryVideo);
-        final preExistingVideos = preExisting.savedVideos.toSet();
-
-        final result = await listsService.importEditableLists();
-        expect(result.imported, 1);
-
-        // The pre-existing local list is untouched.
-        expect(
-          preExisting.savedVideos.toSet(),
-          preExistingVideos,
-          reason: 'import must not overwrite an existing local list',
-        );
-
-        // The imported owner list got a new local key — "MyList 2" →
-        // "MyList_2_words" — that hosts the server's entries.
-        final suffixed = userEntryListManager.getEntryLists()['MyList_2_words'];
-        expect(
-          suffixed,
-          isNotNull,
-          reason: 'allocateLocalKey should suffix on name collision',
-        );
-        expect(
-          suffixed!.savedVideos.map((sv) => sv.entryKey),
-          contains('apple'),
-        );
-
-        // Both local lists still exist in the manager.
-        expect(
-          userEntryListManager.getEntryLists().keys,
-          containsAll(['MyList_words', 'MyList_2_words']),
-        );
-      },
-    );
-
-    /// A share can be called whatever its owner typed on another device,
-    /// including the one name whose storage key the app keeps a setting
-    /// under ("search for" lands on the search filter's "words" switch).
-    /// Such a list takes the suffix like any other clash; it must not be
-    /// stored over the setting, and it must not stop the lists after it
-    /// from arriving.
-    test('an imported list called "search for" gets a suffixed local key, '
-        'and the lists after it still arrive', () async {
-      installFakeSharing((req) async {
-        if (req.url.path == '/v1/my-lists') {
-          return http.Response(
-            jsonEncode({
-              'ownedListIds': ['ownedlist001', 'ownedlist002'],
-              'editorListIds': <String>[],
-            }),
-            200,
-          );
-        }
-        if (req.url.path.endsWith('/state')) {
-          final first = req.url.path.contains('ownedlist001');
-          return http.Response(
-            jsonEncode(
-              snapshotJson(
-                listId: first ? 'ownedlist001' : 'ownedlist002',
-                displayName: first ? 'search for' : 'Zoo',
-                entries: [first ? 'apple' : 'banana'],
-                lastSeq: 3,
-              ),
-            ),
-            200,
-          );
-        }
-        return http.Response('', 404);
-      });
-
-      final result = await listsService.importEditableLists();
-      expect(result.imported, 2);
-      expect(result.skipped, 0);
-
-      // Nothing was stored where the search filter's switch is read from.
-      expect(sharedPreferences.get(KEY_SEARCH_FOR_WORDS), isNull);
-      final lists = userEntryListManager.getEntryLists();
-      expect(lists.containsKey(KEY_SEARCH_FOR_WORDS), isFalse);
-
-      // The list arrived under the next free key, and still goes by the
-      // name it is shared under.
-      final imported = lists['search_for_2_words'];
-      expect(imported, isNotNull);
-      expect(imported!.savedVideos.map((sv) => sv.entryKey), ['apple']);
-      expect(imported.getName(), 'search for');
-
-      // So did the one after it.
-      expect(lists['Zoo_words']!.savedVideos.map((sv) => sv.entryKey), [
-        'banana',
-      ]);
-    });
-
+  // Bringing the account's lists onto a device (and their name clashes) is
+  // the sign-in merge's job now: sharing/account_sync_test.dart.
+  group('allocateLocalKey', () {
     test('a copy of a list called "search for" gets a suffixed key too', () {
       expect(
         listsService.allocateLocalKey(

@@ -451,15 +451,32 @@ class EntryList {
       LinkedHashSet<Entry>.from(groupedByEntry.keys);
 
   // -------- Mutation API --------
+  //
+  // On a list linked to the account (or shared) the mutation is handed to
+  // its owner wrapper, which queues the op for the server. Every UI path
+  // already mutates through the wrapper (see ListsService.writableFor), so
+  // this only catches a caller that held the plain list from before the
+  // link appeared (account sync links lists in the background); without
+  // it the change would stay on the device and the server never hear of it.
+
+  EntryList? _linkedWrapper() {
+    if (!sharing.isEnabled) return null;
+    final wrapper = sharing.lists.ownerForSourceKey(key);
+    return identical(wrapper, this) ? null : wrapper;
+  }
 
   /// Add a single saved video. No-op if already present.
   Future<void> addVideo(SavedVideo video) async {
+    final wrapper = _linkedWrapper();
+    if (wrapper != null) return wrapper.addVideo(video);
     _assertNotOwnerShared();
     if (!savedVideos.add(video)) return;
     await write();
   }
 
   Future<void> removeVideo(SavedVideo video) async {
+    final wrapper = _linkedWrapper();
+    if (wrapper != null) return wrapper.removeVideo(video);
     _assertNotOwnerShared();
     if (!savedVideos.remove(video)) return;
     await write();
@@ -468,6 +485,8 @@ class EntryList {
   /// Add every video of [entry] across its sub-entries. Used by the
   /// "save all of this entry" path and the legacy-list migration.
   Future<void> addAllVideosOfEntry(Entry entry) async {
+    final wrapper = _linkedWrapper();
+    if (wrapper != null) return wrapper.addAllVideosOfEntry(entry);
     _assertNotOwnerShared();
     var changed = false;
     for (final v in allVideosOf(entry)) {
@@ -479,6 +498,8 @@ class EntryList {
   /// Remove every video belonging to [entry]. Used by the list view's
   /// long-press "remove from list" affordance.
   Future<void> removeAllVideosOfEntry(Entry entry) async {
+    final wrapper = _linkedWrapper();
+    if (wrapper != null) return wrapper.removeAllVideosOfEntry(entry);
     _assertNotOwnerShared();
     final key = entry.getKey();
     final initial = savedVideos.length;
@@ -611,6 +632,23 @@ class UserEntryListManager implements EntryListManager {
       KEY_ENTRY_LIST_KEYS,
       _entryLists.keys.toList(),
     );
+  }
+
+  /// Put the lists in the order of [keys] (account sync brings the order
+  /// the person set on another device). Keys not in [keys] keep their
+  /// relative order after the rest; unknown keys are ignored. The caller
+  /// persists it with [writeEntryListKeys].
+  void setOrder(List<String> keys) {
+    // ignore: prefer_collection_literals — assigned to a LinkedHashMap field.
+    final next = LinkedHashMap<String, EntryList>();
+    for (final k in keys) {
+      final list = _entryLists[k];
+      if (list != null) next[k] = list;
+    }
+    for (final e in _entryLists.entries) {
+      next.putIfAbsent(e.key, () => e.value);
+    }
+    _entryLists = next;
   }
 
   // Given an item that moved from index prev to index current,

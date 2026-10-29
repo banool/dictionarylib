@@ -15,10 +15,9 @@ import 'flashcards_logic.dart';
 import 'globals.dart';
 import 'hearth.dart';
 import 'l10n/app_localizations.dart';
-import 'lists_service.dart';
 import 'page_settings_help_en.dart';
-import 'retry.dart';
 import 'theme.dart';
+import 'sharing/account_sync.dart';
 import 'sharing/auth/auth_store.dart';
 import 'sharing/auth/sign_in_dialog.dart';
 import 'sharing/sync_api.dart';
@@ -60,6 +59,33 @@ class SettingsPage extends StatefulWidget {
 
 class SettingsPageState extends State<SettingsPage> {
   bool checkingForNewData = false;
+
+  /// "Syncing…", "Synced 3 minutes ago", "Waiting for a connection" or
+  /// "Sync is paused", from the account-sync controller.
+  String _accountSyncStatusLine(DictLibLocalizations l) {
+    final sync = sharing.accountSync;
+    switch (sync.status) {
+      case AccountSyncStatus.syncing:
+      case AccountSyncStatus.signedOut:
+        return l.accountSyncStatusSyncing;
+      case AccountSyncStatus.paused:
+        return l.accountSyncStatusPaused;
+      case AccountSyncStatus.waitingForConnection:
+        return l.accountSyncStatusWaiting;
+      case AccountSyncStatus.synced:
+        final at = sync.lastSyncAt;
+        // Signed in, first cycle not finished yet.
+        if (at == null) return l.accountSyncStatusSyncing;
+        final minutes =
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000 - at) ~/ 60;
+        if (minutes < 1) return l.accountSyncStatusJustNow;
+        if (minutes < 60) return l.accountSyncStatusMinutesAgo(minutes);
+        if (minutes < 24 * 60) {
+          return l.accountSyncStatusHoursAgo(minutes ~/ 60);
+        }
+        return l.accountSyncStatusDaysAgo(minutes ~/ (24 * 60));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,43 +224,37 @@ class SettingsPageState extends State<SettingsPage> {
         ),
       ]),
       // Hidden on web and Android TV: there's no sign-in / account there.
+      // Signing in is syncing (no separate switch): the section says what
+      // it does, then how it's going.
       if (shareState.isEnabled && !kIsWeb && !isAndroidTv)
-        ...section(l.settingsSharing, [
+        ...section(l.settingsAccount, [
           if (session == null)
             navRow(
-              l.settingsSignIn,
+              l.settingsAccountSignIn,
               onTap: () async {
-                final result = await showSignInDialog(context);
-                if (result != null) {
-                  // Kick a sync fire-and-forget so any edits queued while
-                  // signed out drain immediately — same nudge the resume
-                  // banner and expiry-snack sign-in paths give.
-                  unawaited(sharing.engine.syncAll());
-                  if (context.mounted) await offerImportEditableLists(context);
-                }
+                // The sign-in itself kicks the first sync (the merge).
+                await showSignInDialog(context);
                 if (mounted) setState(() {});
               },
             )
           else ...[
-            // One row instead of a separate "Signed in with X" label row —
-            // the provider rides along in the sign-out button's own label.
+            // Rebuilt as cycles start and finish.
+            ListenableBuilder(
+              listenable: shareState,
+              builder: (context, _) => HearthRow(
+                title: l.settingsSignedInWith(session.provider.label(l)),
+                subtitle: _accountSyncStatusLine(l),
+              ),
+            ),
             navRow(
-              l.settingsSignOut(session.provider.label(l)),
+              l.settingsSignOutRow,
               onTap: () async {
-                final pendingLists = shareState.lists.editableLists
-                    .where((x) => x.meta.pendingOps.isNotEmpty)
-                    .toList();
-                final body = pendingLists.isNotEmpty
-                    ? l.settingsSignOutConfirmBodyWithPending(
-                        pendingLists.length,
-                      )
-                    : l.settingsSignOutConfirmBody;
                 // Pass [onConfirm] so the dialog keeps itself open with the
                 // built-in spinner while sign-out runs (it does a best-effort
-                // flush of queued edits first, so it isn't instant).
+                // flush of queued changes first, so it isn't instant).
                 final confirmed = await confirmAlert(
                   context,
-                  Text(body),
+                  Text(l.settingsSignOutConfirmBodySync),
                   title: l.settingsSignOutConfirmTitle,
                   onConfirm: () => shareState.signOut(),
                 );
@@ -728,111 +748,5 @@ Future<void> _setDefaultPlaybackSpeed(PlaybackSpeed speed) async {
   Analytics.track(
     'default_playback_speed_changed',
     props: {'speed': speed.name},
-  );
-}
-
-/// Prompt the user about pulling down any lists tied to their current
-/// signed-in account (owned, or editable via invite), then run the import
-/// + show a summary. Designed to be called right after sign-in completes
-/// (typically from the Settings sign-in flow on a fresh install).
-Future<void> offerImportEditableLists(BuildContext context) async {
-  final l = DictLibLocalizations.of(context)!;
-  final messenger = ScaffoldMessenger.of(context);
-
-  // Don't pop an import dialog at all unless the account actually has lists to
-  // pull down — a brand-new user signing in for the first time shouldn't be
-  // asked to import zero lists. We also gather the lists' names so the dialog
-  // can show exactly what will be pulled down. Snapshots are small (saved-video
-  // references, not the videos), so fetching them here is cheap. If the
-  // pre-check fails (offline, etc.) we skip the prompt silently rather than
-  // block the freshly-completed sign-in; the user can sign out and back in to
-  // retry once connectivity returns.
-  final session = sharing.auth.store.current;
-  if (session == null) return;
-  final names = <String>[];
-  try {
-    final userLists = await sharing.api.userLists(
-      sessionToken: session.sessionToken,
-    );
-    final ids = [...userLists.ownedListIds, ...userLists.editorListIds];
-    if (ids.isEmpty) return;
-    for (final id in ids) {
-      try {
-        final snapshot = await sharing.api.getState(
-          listId: id,
-          sessionToken: session.sessionToken,
-        );
-        if (snapshot.displayName.trim().isNotEmpty) {
-          names.add(snapshot.displayName);
-        }
-      } catch (_) {
-        // Skip a list we can't read; it just won't be listed (and the import
-        // will skip it too).
-      }
-    }
-  } catch (e) {
-    printAndLog(
-      'offerImportEditableLists: pre-check failed, skipping prompt: $e',
-    );
-    return;
-  }
-  if (names.isEmpty || !context.mounted) return;
-
-  // Capture the result via closure so we can format the snackbar after
-  // [runWithProgress] returns success.
-  ImportEditableListsResult? result;
-  final go = await confirmAlert(
-    context,
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(l.importEditableListsPromptBody),
-        const SizedBox(height: 12),
-        for (final name in names)
-          Padding(
-            padding: const EdgeInsets.only(top: 3),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('•  '),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    ),
-    title: l.importEditableListsPromptTitle,
-    confirmText: l.importEditableListsActionImport,
-    cancelText: l.importEditableListsActionSkip,
-  );
-  if (!go || !context.mounted) return;
-
-  final ok = await runWithProgress(
-    context: context,
-    message: l.importEditableListsRunning,
-    task: () => retryWithFeedback(
-      () async =>
-          result = await listsService.importEditableLists(context: context),
-      onRetry: snackRetryFeedback(context),
-    ),
-    errorMessage: (e) => e is SyncException
-        ? l.importEditableListsFailed(
-            localisedSyncErrorSimple(context, e, e.message),
-          )
-        : '$e',
-  );
-  if (!ok || result == null) return;
-  final r = result!;
-  showSnackVia(
-    messenger,
-    r.total == 0
-        ? l.importEditableListsResultNone
-        : l.importEditableListsResultDone(r.imported, r.total),
   );
 }

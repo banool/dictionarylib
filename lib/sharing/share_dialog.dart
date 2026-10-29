@@ -93,10 +93,13 @@ Future<SyncedEntryList?> showShareDialog({
     return null;
   }
 
-  // 2. Encoded create-body size. A list can sit under the entry cap and
-  // still blow the body cap if its entry keys / media paths are long, so
-  // the count check above isn't sufficient on its own.
-  if (estimateCreateBodyBytes(sourceList.savedVideos) > maxCreateBodyBytes) {
+  // 2. Encoded create-body size, for the old create-and-upload share (when
+  // account sync is off). A list can sit under the entry cap and still
+  // blow the body cap if its entry keys / media paths are long, so the
+  // count check above isn't sufficient on its own. With account sync the
+  // list is already on the account and only its flag flips.
+  if (!sharing.accountSync.supported &&
+      estimateCreateBodyBytes(sourceList.savedVideos) > maxCreateBodyBytes) {
     await _showLimitDialog(
       context,
       title: l.shareTooManyEntriesTitle,
@@ -105,10 +108,11 @@ Future<SyncedEntryList?> showShareDialog({
     return null;
   }
 
-  // 3. Lists owned by this user. Orphaned wrappers are excluded — the
-  // server has already 404/410'd those, so they aren't holding a slot.
+  // 3. Shared lists owned by this user. Orphaned wrappers are excluded —
+  // the server has already 404/410'd those, so they aren't holding a slot —
+  // and so are lists on the account that aren't shared.
   final liveOwned = sharing.lists.ownedLists
-      .where((owned) => !owned.meta.orphaned)
+      .where((owned) => !owned.meta.orphaned && owned.meta.isShared)
       .length;
   if (liveOwned >= maxListsPerUser) {
     await _showLimitDialog(
@@ -145,7 +149,10 @@ Future<SyncedEntryList?> showShareDialog({
             // pop the sign-in dialog and continue once they're back. Any
             // failure / cancel there (or an unmount across the gap) aborts
             // the share cleanly.
-            final session = await ensureSession(ctx);
+            final session = await ensureSession(
+              ctx,
+              contextMessage: l.shareSignInContextSync,
+            );
             if (session == null || !ctx.mounted) return;
 
             setLocal(() {
@@ -164,15 +171,33 @@ Future<SyncedEntryList?> showShareDialog({
                 onRetry: snackRetryFeedback(ctx),
               );
               if (ctx.mounted) Navigator.of(ctx).pop(synced);
+            } on ListNotSyncableException {
+              // A list too large to sync stays on this device, so it can't
+              // be shared either.
+              if (!ctx.mounted) return;
+              setLocal(() => submitting = false);
+              await _showLimitDialog(
+                ctx,
+                title: l.shareTooManyEntriesTitle,
+                body: l.accountSyncListTooLargeSnack(
+                  sourceList.getName(),
+                  maxEntriesPerPrivateList,
+                ),
+              );
             } on SyncException catch (e) {
               setLocal(() {
                 submitting = false;
-                generalError = localisedSyncError(
-                  ctx,
-                  e,
-                  notFoundMessage: e.message,
-                  unknownMessage: e.message,
-                );
+                generalError = e.isListTooLargeToShare
+                    ? l.shareTooManyEntriesBody(
+                        sourceList.savedVideos.length,
+                        maxEntriesPerList,
+                      )
+                    : localisedSyncError(
+                        ctx,
+                        e,
+                        notFoundMessage: e.message,
+                        unknownMessage: e.message,
+                      );
               });
             }
           }

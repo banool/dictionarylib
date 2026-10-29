@@ -64,10 +64,10 @@ void runSoloOwnerImports(MdSuiteConfig cfg) {
       sessionToken: sharing.auth.store.current!.sessionToken,
     );
 
-    // This device fetches their lists, as it does once they have signed in.
-    final result = await listsService.importEditableLists();
-    expect(result.imported, 1);
-    expect(result.skipped, 0);
+    // This device fetches their lists, as it does once they have signed in
+    // (the account reconciles a list shared the old way into its directory,
+    // and the merge brings it down).
+    await mdWaitForAccountSync();
 
     // It is here, not where the search setting lives, with its sign and
     // under its own name.

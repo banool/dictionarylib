@@ -89,6 +89,7 @@ class AuthApi {
             url,
             headers: {
               'x-app-id': _config.appId,
+              syncCapabilitiesHeader: syncCapabilities,
               'content-type': 'application/json',
             },
             body: jsonEncode(body),
@@ -136,6 +137,7 @@ class AuthApi {
             url,
             headers: {
               'x-app-id': _config.appId,
+              syncCapabilitiesHeader: syncCapabilities,
               'authorization': 'Bearer $sessionToken',
             },
           )

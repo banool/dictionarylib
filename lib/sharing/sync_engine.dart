@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
-
 import '../analytics.dart';
 import '../common.dart';
 import '../entry_list.dart';
@@ -17,10 +15,14 @@ import 'synced_entry_list.dart';
 /// to a serial chain, guaranteeing at most one body runs at a time for
 /// a given lock. Used by [SyncEngine] to serialise per-list flush /
 /// pull / mutation work — eliminating the inflight-bool + debounce-
-/// timer race that the prior state machine had.
-@visibleForTesting
+/// timer race that the prior state machine had — and by account sync
+/// for its one controller lock. Not re-entrant: a body that waits on its
+/// own lock never finishes.
 class AsyncLock {
-  Future<void> _last = Future.value();
+  // No future is made up front: one created where the lock was constructed
+  // (at start-up, or in a test's setUp) and awaited in another zone (a
+  // widget test's fake-async body) never resumes there.
+  Future<void>? _last;
 
   Future<T> synchronized<T>(Future<T> Function() body) {
     final prev = _last;
@@ -28,7 +30,7 @@ class AsyncLock {
     _last = completer.future;
     return () async {
       try {
-        await prev;
+        if (prev != null) await prev;
       } catch (_) {
         /* prior body errored; don't propagate to next */
       }
@@ -92,7 +94,23 @@ enum SyncNotification {
   /// mirror is knowingly ahead of the shared copy. Surfaced so the
   /// addition doesn't silently look like it worked.
   listFull,
+
+  /// As [listFull], for a list of the person's own that isn't shared
+  /// (synced to their devices only), whose cap is higher
+  /// ([maxEntriesPerPrivateList]).
+  listFullPrivate,
 }
+
+/// Called when the server says an owner list is gone: [gone] true for a
+/// 410 (the list was deleted, so this is authoritative), false after
+/// [SyncEngine._notFoundOrphanThreshold] consecutive 404s (ambiguous). The
+/// account-sync controller installs one to decide what happens to the
+/// person's local copy; without one an owner list falls back to a plain
+/// local list, as before account sync.
+typedef OwnedListGoneHandler = Future<void> Function(
+  SyncedEntryList list, {
+  required bool gone,
+});
 
 /// Push / pull engine for [SyncedEntryList]s.
 ///
@@ -159,6 +177,9 @@ class SyncEngine {
   /// that aren't easily expressed as state on the lists themselves.
   Stream<SyncNotification> get notifications => _notifications.stream;
 
+  /// Raise a notification from outside the engine (account sync's 401).
+  void emit(SyncNotification notification) => _notifications.add(notification);
+
   _PerListState _stateOf(String listId) =>
       _state.putIfAbsent(listId, _PerListState.new);
 
@@ -187,6 +208,15 @@ class SyncEngine {
   static const int _notFoundOrphanThreshold = 3;
 
   SyncEngine({required this._api, required this._manager, required this._auth});
+
+  /// See [OwnedListGoneHandler]. Set by the account-sync controller.
+  OwnedListGoneHandler? onOwnedListGone;
+
+  /// Called after the person follows a list on this device (a fresh
+  /// subscriber mirror) or stops following one, so account sync can record
+  /// it. Not called for follows that arrive from the account itself.
+  void Function(String listId)? onFollowed;
+  void Function(String listId)? onUnfollowed;
 
   void dispose() {
     for (final s in _state.values) {
@@ -412,12 +442,10 @@ class SyncEngine {
       }
 
       // Snapshot the queue. New ops added during the request go to the
-      // tail and will be picked up by the next flush iteration.
-      final fullQueueLen = list.meta.pendingOps.length;
-      final batchLen = fullQueueLen > _maxOpsPerBatch
-          ? _maxOpsPerBatch
-          : fullQueueLen;
-      final batch = list.meta.pendingOps.sublist(0, batchLen);
+      // tail and will be picked up by the next flush iteration. A batch is
+      // capped by count and by encoded size: a few `addEntries` ops of 200
+      // videos already approach the server's 64 KiB body cap.
+      final batch = _takeBatch(list.meta.pendingOps);
       final opsForWire = batch.map((o) => o.toJson()).toList();
 
       try {
@@ -447,6 +475,23 @@ class SyncEngine {
     });
   }
 
+  /// The head of [queue] that fits one request: at most [_maxOpsPerBatch]
+  /// ops and [maxBatchBodyBytes] encoded, but always at least one op so a
+  /// single large op still goes (the server answers 413 if it really is too
+  /// big, and the queue drops it rather than sticking).
+  static List<PendingOp> _takeBatch(List<PendingOp> queue) {
+    final out = <PendingOp>[];
+    var bytes = 64; // the envelope: lastKnownSeq, brackets
+    for (final op in queue) {
+      if (out.length >= _maxOpsPerBatch) break;
+      final size = encodedJsonBytes(op.toJson()) + 1;
+      if (out.isNotEmpty && bytes + size > maxBatchBodyBytes) break;
+      out.add(op);
+      bytes += size;
+    }
+    return out;
+  }
+
   /// Apply a /sync response: drop acked ops from the queue, fold in
   /// missedOps (or adopt snapshot), refresh members + cursor, persist
   /// in ack-order (entries first, then meta).
@@ -466,8 +511,9 @@ class SyncEngine {
           'SyncEngine: ${list.listId} op ${outcome.opId} rejected: '
           '${outcome.reason}',
         );
-        if (outcome.isListFullRejection) hitListFull = true;
       }
+      // Refused at the cap, or (addEntries) applied in part.
+      if (outcome.hitListFull) hitListFull = true;
     }
     list.meta.pendingOps.removeWhere((o) => ackedIds.contains(o.opId));
 
@@ -477,7 +523,13 @@ class SyncEngine {
     // both expected and actionable — "your list is full" — so it's the
     // one we surface. Fired once per batch however many ops were
     // refused, so filling a list doesn't spray snackbars.
-    if (hitListFull) _notifications.add(SyncNotification.listFull);
+    if (hitListFull) {
+      _notifications.add(
+        list.meta.role == ListRole.owner && !list.meta.isShared
+            ? SyncNotification.listFullPrivate
+            : SyncNotification.listFull,
+      );
+    }
 
     // 2. Fold in remote work.
     final snapshot = response.snapshot;
@@ -509,6 +561,11 @@ class SyncEngine {
     if (response.displayName != null) {
       list.meta.displayName = response.displayName!;
     }
+    // A share or stop-sharing from another of the owner's devices.
+    final visibility = response.visibility;
+    if (visibility != null && list.meta.role == ListRole.owner) {
+      list.meta.visibility = visibility;
+    }
 
     // 5. Persist in ack-order: entries first, then meta. Awaited so
     // we don't return until the new state is durable.
@@ -531,6 +588,9 @@ class SyncEngine {
     list.meta.serverUpdatedAt = snapshot.updatedAt;
     list.meta.cachedMembers = snapshot.members;
     list.meta.lastKnownSeq = snapshot.lastSeq;
+    if (list.meta.role == ListRole.owner) {
+      list.meta.visibility = snapshot.visibility;
+    }
     list.replaceEntriesFromServer(snapshot.entries);
   }
 
@@ -592,6 +652,7 @@ class SyncEngine {
       case SyncErrorKind.gone:
         await _handleNotFoundOrGone(list, e.kind, 'sync');
       case SyncErrorKind.rateLimited:
+      case SyncErrorKind.unavailable:
         _scheduleBackoffRetry(list, _parseRetryAfter(e.details?['retryAfter']));
       case SyncErrorKind.network:
       case SyncErrorKind.server:
@@ -683,7 +744,7 @@ class SyncEngine {
     String context,
   ) async {
     if (kind == SyncErrorKind.gone) {
-      await _markOrphaned(list, 'gone on $context');
+      await _markOrphaned(list, 'gone on $context', gone: true);
       return;
     }
     final state = _stateOf(list.listId);
@@ -730,7 +791,25 @@ class SyncEngine {
     });
   }
 
-  Future<void> _markOrphaned(SyncedEntryList list, String reason) async {
+  Future<void> _markOrphaned(
+    SyncedEntryList list,
+    String reason, {
+    bool gone = false,
+  }) async {
+    // An owner list under account sync: the controller decides, keeping the
+    // pending ops it may need to tell whether the person loses anything.
+    final goneHandler = onOwnedListGone;
+    if (goneHandler != null && list.meta.role == ListRole.owner) {
+      _clearListState(list.listId);
+      printAndLog('SyncEngine: ${list.listId} $reason — owner list gone');
+      try {
+        await goneHandler(list, gone: gone);
+      } catch (e) {
+        printAndLog('SyncEngine: onOwnedListGone ${list.listId} failed: $e');
+      }
+      sharing.bumpState();
+      return;
+    }
     // Pending ops are unrecoverable either way — the server has removed the
     // list, so there's no destination for them.
     list.meta.pendingOps.clear();
@@ -898,7 +977,13 @@ class SyncEngine {
   /// If a list with this id is already on the device:
   ///   - As an owner or editor → run a sync to catch any cross-device updates.
   ///   - As a subscriber → pull to refresh.
-  Future<SyncedEntryList?> subscribe(String listId) async {
+  ///
+  /// [fromAccount] is set when account sync installs a follow made on
+  /// another device, so [onFollowed] isn't told about it again.
+  Future<SyncedEntryList?> subscribe(
+    String listId, {
+    bool fromAccount = false,
+  }) async {
     // Fast path: already on the device. Defer to per-list sync — those
     // helpers take the per-list lock themselves, so re-entering through
     // `lock.synchronized` here would deadlock.
@@ -944,7 +1029,10 @@ class SyncEngine {
         savedVideos: _hydrateSavedVideos(remote.entries),
       );
       await _manager.insert(list);
-      Analytics.track('list_followed', props: {'role': 'viewer'});
+      if (!fromAccount) {
+        Analytics.track('list_followed', props: {'role': 'viewer'});
+        onFollowed?.call(remote.listId);
+      }
       return list;
     });
   }
@@ -1160,12 +1248,66 @@ class SyncEngine {
     }
   }
 
-  /// Subscriber stops following. Server-side state untouched.
-  Future<void> unsubscribe(String listId) async {
+  /// Subscriber stops following. Server-side state untouched (beyond the
+  /// account's own record of what it follows, via [onUnfollowed], unless
+  /// [fromAccount]: an unfollow made on another device).
+  Future<void> unsubscribe(String listId, {bool fromAccount = false}) async {
     final list = _manager.get(listId);
     if (list == null || list.meta.role != ListRole.subscriber) return;
     _clearListState(listId);
     await _manager.removeLocal(listId);
+    if (!fromAccount) onUnfollowed?.call(listId);
+  }
+
+  /// Drop the owner wrapper of [listId] (its local list stays, unlinked).
+  /// Under the list's lock, so an in-flight flush finishes first.
+  Future<void> dropOwned(String listId) {
+    return _stateOf(listId).lock.synchronized(() async {
+      final list = _manager.get(listId);
+      if (list == null || list.meta.role != ListRole.owner) return;
+      list.meta.pendingOps.clear();
+      await _manager.removeLocal(listId);
+      _clearListState(listId);
+      sharing.bumpState();
+    });
+  }
+
+  /// Owner-only: make a list private or shared (`PUT .../visibility`) and
+  /// adopt the server's answer: the visibility, the name ([displayName] is
+  /// applied with a flip to shared), the cursor and the members. Held under
+  /// the per-list lock like [renameOwned]. Throws [SyncException] on
+  /// failure.
+  Future<void> setOwnedVisibility(
+    String listId,
+    String visibility, {
+    String? displayName,
+  }) async {
+    final list = _manager.get(listId);
+    if (list == null || list.meta.role != ListRole.owner) {
+      throw StateError('setOwnedVisibility: $listId is not owner-role');
+    }
+    final session = _auth.store.current;
+    if (session == null) {
+      throw StateError('setOwnedVisibility: no current session');
+    }
+    await _stateOf(listId).lock.synchronized(() async {
+      final snapshot = await _api.setVisibility(
+        listId: listId,
+        visibility: visibility,
+        displayName: displayName,
+        sessionToken: session.sessionToken,
+      );
+      final current = _manager.get(listId);
+      if (current == null) return;
+      current.meta.visibility = snapshot.visibility;
+      current.meta.displayName = snapshot.displayName;
+      current.meta.serverUpdatedAt = snapshot.updatedAt;
+      current.meta.cachedMembers = snapshot.members;
+      // The cursor stays: the flip logged one op, which the next /sync
+      // returns in missedOps along with anything else since the cursor.
+      await current.writeMeta();
+      sharing.bumpState();
+    });
   }
 
   /// Drop every list's pending-op queue and cancel pending flushes.

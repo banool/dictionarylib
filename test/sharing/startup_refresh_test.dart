@@ -9,7 +9,6 @@ import 'package:dictionarylib/entry_loader.dart';
 import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/list_storage.dart';
-import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/sharing.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
@@ -250,7 +249,8 @@ void main() {
       // shared list), stop sharing, save another sign, restart.
       final share = sharing.lists.ownerForSourceKey(_key)!;
       await share.addVideo(_video('cherry'));
-      await listsService.unshareList(share);
+      // The wrapper goes (as when it stops syncing); the list stays.
+      await sharing.engine.dropOwned(share.listId);
       await userEntryListManager.getEntryLists()[_key]!.addVideo(_video('eel'));
 
       await installPrefs(prefsSnapshot());

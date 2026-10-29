@@ -359,31 +359,22 @@ void main() {
       });
     }
 
-    testWidgets('its status icon does not tell you to stop sharing before '
-        'deleting, since it can never be deleted', (tester) async {
+    testWidgets('before account sync has run here, a shared list has no '
+        'delete button (and nothing tells you to stop sharing first)', (
+      tester,
+    ) async {
       await _share('cats_words', 'Cat Signs');
       await _pumpListsPage(tester);
       await _enterEditMode(tester);
-
-      Finder statusButton(String name) => find.descendant(
-        of: find.ancestor(
-          of: find.text(name),
-          matching: find.byType(ReorderableDragStartListener),
-        ),
-        matching: find.byType(IconButton),
-      );
-      const message = 'Stop sharing this list before deleting it.';
-
-      // An ordinary shared list: unshare first, then it can be deleted.
-      final ordinary = tester.widget<IconButton>(statusButton('Cat Signs'));
-      expect(ordinary.tooltip, message);
-      expect(ordinary.onPressed, isNotNull);
-
-      final defaultList = tester.widget<IconButton>(statusButton('Tiny Tunks'));
-      expect(defaultList.tooltip, isNull);
-      expect(defaultList.onPressed, isNull);
-      // Neither has a delete button while shared.
+      // Neither the shared list nor the shared default list can be deleted
+      // from here: a share made the old way has to be unshared first, and
+      // the default list never can be. With account sync, a linked list is
+      // deleted everywhere (sharing/account_sync_test.dart).
       expect(find.byIcon(Icons.remove_circle), findsNothing);
+      expect(
+        find.byTooltip('Stop sharing this list before deleting it.'),
+        findsNothing,
+      );
     });
 
     testWidgets('it can still be dragged', (tester) async {

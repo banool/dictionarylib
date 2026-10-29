@@ -42,14 +42,9 @@ void runPhaseCOwnerConverges(MdSuiteConfig cfg) {
     await mdSetup();
     await mdSignInAs(mdOwnerUserId, mdOwnerName);
 
-    // Fresh install: nothing local yet. Recover from the server the way
-    // the post-sign-in import flow does.
-    final result = await listsService.importEditableLists();
-    expect(
-      result.imported,
-      greaterThanOrEqualTo(1),
-      reason: 'the owner should recover at least the shared list',
-    );
+    // Fresh install: nothing local yet. Signing in is syncing: the merge
+    // brings the account's lists down.
+    await mdWaitForAccountSync();
     final mirror = sharing.lists.editableLists
         .where((l) => l.meta.listId == mdListId)
         .toList();

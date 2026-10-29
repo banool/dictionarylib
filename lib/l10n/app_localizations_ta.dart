@@ -336,10 +336,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
       'சேவையகத்தில் சிக்கல் உள்ளது. பின்னர் மீண்டும் முயற்சிக்கவும்.';
 
   @override
-  String get unshareToDeleteTooltip =>
-      'இந்தப் பட்டியலை நீக்குவதற்கு முன் அதைப் பகிர்வதை நிறுத்துங்கள்.';
-
-  @override
   String get shareTooManyEntriesTitle => 'பகிர பட்டியல் மிகப் பெரியது';
 
   @override
@@ -391,10 +387,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
 
   @override
   String get signInDialogTitle => 'பகிர உள்நுழையவும்';
-
-  @override
-  String get signInDialogBody =>
-      'ஒரு பட்டியலைப் பகிர நீங்கள் உள்நுழைய வேண்டும்.';
 
   @override
   String signInLastUsedHint(String provider) {
@@ -494,10 +486,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get sharedListLandingTryAgain => 'மீண்டும் முயற்சிக்கவும்';
 
   @override
-  String get unshareConfirmBody =>
-      'இந்தப் பட்டியலைப் பகிர்வதை நிறுத்தவா? குழுசேர்ந்தவர்கள் இனி அதைப் பார்க்க முடியாது.';
-
-  @override
   String get unshareConfirmTitle => 'பகிர்வதை நிறுத்தவா?';
 
   @override
@@ -542,22 +530,7 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   String get subscribedCopyMenuItem => 'நகலெடு';
 
   @override
-  String get settingsSharing => 'பகிர்வு';
-
-  @override
-  String get settingsSignIn => 'பட்டியல்களைப் பகிர உள்நுழையவும்';
-
-  @override
-  String settingsSignOut(String provider) {
-    return 'வெளியேறு ($provider மூலம் உள்நுழைந்துள்ளீர்கள்)';
-  }
-
-  @override
   String get settingsSignOutConfirmTitle => 'வெளியேறவா?';
-
-  @override
-  String get settingsSignOutConfirmBody =>
-      'இந்தச் சாதனத்தில்:\n  • நீங்கள் பகிர்விலிருந்து வெளியேறியுள்ளீர்கள்.\n  • நீங்கள் பகிர்ந்த பட்டியல்கள் இங்கிருந்து நிர்வகிக்கப்படுவது நிறுத்தப்படும் — உள்ளூர் பட்டியல்கள் அவற்றின் உள்ளீடுகளைத் தக்க வைத்துக்கொள்கின்றன.\n\nஉங்கள் பகிரப்பட்ட பட்டியல்கள் சேவையகத்தில் இருக்கும். அவற்றை மீண்டும் திருத்த எந்தச் சாதனத்திலும் மீண்டும் உள்நுழையவும்.';
 
   @override
   String get settingsDeleteAccount => 'கணக்கை நீக்கு';
@@ -578,38 +551,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   @override
   String settingsDeleteAccountFailed(String message) {
     return 'உங்கள் கணக்கை நீக்க முடியவில்லை: $message';
-  }
-
-  @override
-  String get importEditableListsPromptTitle =>
-      'உங்கள் பகிரப்பட்ட பட்டியல்களை இறக்குமதி செய்யவா?';
-
-  @override
-  String get importEditableListsPromptBody =>
-      'இந்தக் கணக்குடன் தொடர்புடைய பகிரப்பட்ட பட்டியல்கள் அனைத்தையும் — நீங்கள் உருவாக்கியவை மற்றும் திருத்துநராகச் சேர்க்கப்பட்டவை ஆகிய இரண்டையும் — பெற்று, இந்தச் சாதனத்தில் நிறுவுவோம். ஏற்கனவே உள்ள உள்ளூர் பட்டியல்கள் தொடப்படாது; பெயர் மோதல்களுக்கு எண் பின்னொட்டு வழங்கப்படும் (உதா. \"Cats\" → \"Cats 2\"). நீங்கள் ஆன்லைனில் இருக்கும்போது திருத்தங்கள் தானாகவே ஒத்திசைக்கப்படும்.';
-
-  @override
-  String get importEditableListsActionImport => 'இறக்குமதி செய்';
-
-  @override
-  String get importEditableListsActionSkip => 'தவிர்';
-
-  @override
-  String get importEditableListsRunning =>
-      'உங்கள் பகிரப்பட்ட பட்டியல்களை இறக்குமதி செய்கிறது…';
-
-  @override
-  String importEditableListsFailed(String message) {
-    return 'பட்டியல்களை இறக்குமதி செய்ய முடியவில்லை: $message';
-  }
-
-  @override
-  String get importEditableListsResultNone =>
-      'பகிரப்பட்ட பட்டியல்கள் எதுவும் இல்லை.';
-
-  @override
-  String importEditableListsResultDone(int imported, int total) {
-    return '$total பட்டியல்களில் $imported இறக்குமதி செய்யப்பட்டது.';
   }
 
   @override
@@ -843,11 +784,6 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   @override
   String get signInDialogContextResume =>
       'உங்கள் வரிசையில் உள்ள திருத்தங்களைத் தள்ள மீண்டும் உள்நுழையவும்.';
-
-  @override
-  String settingsSignOutConfirmBodyWithPending(int count) {
-    return 'உங்களிடம் $count பட்டியல்களில் ஒத்திசைக்கப்படாத திருத்தங்கள் உள்ளன. வெளியேறுவது அவற்றைச் சேவையகத்திற்குத் தள்ளாது. நிச்சயமாகவா?';
-  }
 
   @override
   String get overviewResumeSignInIdle =>
@@ -1465,4 +1401,112 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   @override
   String get errorFallbackDetailsCopiedSnack =>
       'விவரங்கள் கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டன';
+
+  @override
+  String get settingsAccount => 'கணக்கு';
+
+  @override
+  String get settingsAccountSignIn =>
+      'உங்கள் பட்டியல்களையும் முன்னேற்றத்தையும் உங்கள் எல்லா சாதனங்களிலும் வைத்திருக்க உள்நுழையவும்';
+
+  @override
+  String settingsSignedInWith(String provider) {
+    return '$provider மூலம் உள்நுழைந்துள்ளீர்கள்';
+  }
+
+  @override
+  String get settingsSignOutRow => 'வெளியேறு';
+
+  @override
+  String get settingsSignOutConfirmBodySync =>
+      'உங்கள் பட்டியல்களும் முன்னேற்றமும் இந்தச் சாதனத்தில் இருக்கும், ஆனால் ஒத்திசைப்பது நின்றுவிடும். தொடர எந்தச் சாதனத்திலும் மீண்டும் உள்நுழையவும்.';
+
+  @override
+  String get accountSyncStatusSyncing => 'ஒத்திசைக்கிறது…';
+
+  @override
+  String get accountSyncStatusJustNow => 'இப்போதுதான் ஒத்திசைக்கப்பட்டது';
+
+  @override
+  String accountSyncStatusMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count நிமிடங்களுக்கு முன் ஒத்திசைக்கப்பட்டது',
+      one: '1 நிமிடத்திற்கு முன் ஒத்திசைக்கப்பட்டது',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountSyncStatusHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count மணிநேரங்களுக்கு முன் ஒத்திசைக்கப்பட்டது',
+      one: '1 மணிநேரத்திற்கு முன் ஒத்திசைக்கப்பட்டது',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountSyncStatusDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count நாட்களுக்கு முன் ஒத்திசைக்கப்பட்டது',
+      one: '1 நாளுக்கு முன் ஒத்திசைக்கப்பட்டது',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountSyncStatusWaiting => 'இணைப்புக்காகக் காத்திருக்கிறது';
+
+  @override
+  String get accountSyncStatusPaused => 'ஒத்திசைவு இடைநிறுத்தப்பட்டுள்ளது';
+
+  @override
+  String get listsSignInFooter =>
+      'உங்கள் பட்டியல்களை உங்கள் எல்லா சாதனங்களிலும் வைத்திருக்க உள்நுழையவும்.';
+
+  @override
+  String get signInDialogBodySync =>
+      'உங்கள் பட்டியல்களையும் முன்னேற்றத்தையும் உங்கள் எல்லா சாதனங்களிலும் வைத்திருக்க உள்நுழையவும்.';
+
+  @override
+  String get shareSignInContextSync =>
+      'பகிர்வதற்குக் கணக்கு தேவை. உள்நுழைவது உங்கள் பட்டியல்களையும் முன்னேற்றத்தையும் உங்கள் சாதனங்களுக்கு இடையே ஒத்திசைவாகவும் வைத்திருக்கும்.';
+
+  @override
+  String get accountSyncMergedSnack =>
+      'உங்கள் பட்டியல்களும் முன்னேற்றமும் இப்போது ஒத்திசைக்கப்படுகின்றன.';
+
+  @override
+  String listDeleteEverywhereConfirm(String name) {
+    return '“$name” ஐ உங்கள் எல்லா சாதனங்களிலிருந்தும் நீக்கவா?';
+  }
+
+  @override
+  String stopSharingConfirmBody(String name) {
+    return '“$name” ஐப் பகிர்வதை நிறுத்தவா? அதைப் பின்தொடர்பவர்கள் அணுகலை இழப்பார்கள். அது உங்கள் சாதனங்களில் இருக்கும்.';
+  }
+
+  @override
+  String accountSyncDeletedElsewhereKeptSnack(String name) {
+    return '“$name” வேறொரு சாதனத்தில் நீக்கப்பட்டது. அதில் நீங்கள் செய்த அனுப்பப்படாத மாற்றங்கள் இங்கே தனிப் பட்டியலாக வைக்கப்பட்டுள்ளன.';
+  }
+
+  @override
+  String accountSyncListTooLargeSnack(String name, int limit) {
+    return '“$name” இல் $limit க்கும் மேற்பட்ட சைகைகள் உள்ளன, எனவே அது இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.';
+  }
+
+  @override
+  String enginePrivateListFullSnack(int max) {
+    return 'இந்தப் பட்டியல் நிரம்பியுள்ளது ($max சைகைகள்), எனவே உங்கள் சமீபத்திய சேர்க்கைகள் இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.';
+  }
+
+  @override
+  String get listOnlyOnThisDevice => 'இந்தச் சாதனத்தில் மட்டும்';
 }

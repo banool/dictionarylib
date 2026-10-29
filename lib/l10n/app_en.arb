@@ -136,7 +136,6 @@
     "shareErrorPayloadTooLarge": "That change is too big. Try again with a smaller batch.",
     "shareErrorRateLimited": "Slow down — too many requests. Try again in a moment.",
     "shareErrorServer": "The server is having trouble. Try again later.",
-    "unshareToDeleteTooltip": "Stop sharing this list before deleting it.",
     "shareTooManyEntriesTitle": "List is too big to share",
     "shareTooManyEntriesBody": "This list has {count} entries, but shared lists are capped at {max}. Remove some entries and try again.",
     "@shareTooManyEntriesBody": {
@@ -171,7 +170,6 @@
     "qrCodeDialogClose": "Close",
 
     "signInDialogTitle": "Sign in to share",
-    "signInDialogBody": "To share a list you must sign in.",
     "signInLastUsedHint": "Last time, you signed in with {provider}.",
     "@signInLastUsedHint": {
         "placeholders": {
@@ -213,7 +211,6 @@
     "sharedListLandingNotFound": "This shared list doesn't exist or has been deleted by its owner.",
     "sharedListLandingTryAgain": "Try again",
 
-    "unshareConfirmBody": "Stop sharing this list? Subscribers will no longer be able to see it.",
     "unshareConfirmTitle": "Stop sharing?",
     "unshareFailed": "Failed to stop sharing: {message}",
     "@unshareFailed": {
@@ -248,16 +245,7 @@
     },
     "subscribedCopyMenuItem": "Duplicate",
 
-    "settingsSharing": "Sharing",
-    "settingsSignIn": "Sign in to share lists",
-    "settingsSignOut": "Sign out (signed in with {provider})",
-    "@settingsSignOut": {
-        "placeholders": {
-            "provider": { "type": "String" }
-        }
-    },
     "settingsSignOutConfirmTitle": "Sign out?",
-    "settingsSignOutConfirmBody": "On this device:\n  • You're signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.",
     "settingsDeleteAccount": "Delete account",
     "settingsDeleteAccountConfirmTitle": "Delete account?",
     "settingsDeleteAccountConfirmButton": "Delete account",
@@ -270,25 +258,6 @@
         }
     },
 
-    "importEditableListsPromptTitle": "Import your shared lists?",
-    "importEditableListsPromptBody": "We'll fetch any shared lists tied to this account — both the ones you created and the ones you've been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you're online.",
-    "importEditableListsActionImport": "Import",
-    "importEditableListsActionSkip": "Skip",
-    "importEditableListsRunning": "Importing your shared lists…",
-    "importEditableListsFailed": "Couldn't import lists: {message}",
-    "@importEditableListsFailed": {
-        "placeholders": {
-            "message": { "type": "String" }
-        }
-    },
-    "importEditableListsResultNone": "No shared lists found.",
-    "importEditableListsResultDone": "Imported {imported} of {total} list(s).",
-    "@importEditableListsResultDone": {
-        "placeholders": {
-            "imported": { "type": "int" },
-            "total": { "type": "int" }
-        }
-    },
     "duplicateConfirmTitle": "Duplicate list?",
     "duplicateConfirmBody": "This makes a personal, private copy of the list. It won't update when the original owner edits theirs.",
     "duplicateConfirmAction": "Duplicate",
@@ -447,12 +416,6 @@
     "signInDialogContextInvite": "Sign in to accept the invite. You'll be able to edit the list once you do.",
     "signInDialogContextResume": "Sign in again to push your queued edits.",
 
-    "settingsSignOutConfirmBodyWithPending": "You have unsynced edits on {count} list(s). Signing out won't push them to the server. Are you sure?",
-    "@settingsSignOutConfirmBodyWithPending": {
-        "placeholders": {
-            "count": { "type": "int" }
-        }
-    },
 
     "overviewResumeSignInIdle": "Sign in to sync your shared lists across devices.",
     "overviewResumeSignInWithPending": "You have unsynced edits. Sign in again to push them.",
@@ -670,5 +633,54 @@
     "errorFallbackAdvisoriesTitle": "Advisories",
     "errorFallbackDetailsTitle": "Technical details",
     "errorFallbackCopyDetailsButton": "Copy details",
-    "errorFallbackDetailsCopiedSnack": "Details copied to clipboard"
+    "errorFallbackDetailsCopiedSnack": "Details copied to clipboard",
+    "settingsAccount": "Account",
+    "settingsAccountSignIn": "Sign in to keep your lists and progress on all your devices",
+    "settingsSignedInWith": "Signed in with {provider}",
+    "@settingsSignedInWith": {
+        "placeholders": { "provider": { "type": "String" } }
+    },
+    "settingsSignOutRow": "Sign out",
+    "settingsSignOutConfirmBodySync": "Your lists and progress stay on this device but stop syncing. Sign in again on any device to keep going.",
+    "accountSyncStatusSyncing": "Syncing…",
+    "accountSyncStatusJustNow": "Synced just now",
+    "accountSyncStatusMinutesAgo": "{count, plural, =1{Synced 1 minute ago} other{Synced {count} minutes ago}}",
+    "@accountSyncStatusMinutesAgo": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "accountSyncStatusHoursAgo": "{count, plural, =1{Synced 1 hour ago} other{Synced {count} hours ago}}",
+    "@accountSyncStatusHoursAgo": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "accountSyncStatusDaysAgo": "{count, plural, =1{Synced 1 day ago} other{Synced {count} days ago}}",
+    "@accountSyncStatusDaysAgo": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "accountSyncStatusWaiting": "Waiting for a connection",
+    "accountSyncStatusPaused": "Sync is paused",
+    "listsSignInFooter": "Sign in to keep your lists on all your devices.",
+    "signInDialogBodySync": "Sign in to keep your lists and progress on all your devices.",
+    "shareSignInContextSync": "Sharing needs an account. Signing in also keeps your lists and progress in sync across your devices.",
+    "accountSyncMergedSnack": "Your lists and progress are now syncing.",
+    "listDeleteEverywhereConfirm": "Delete “{name}” from all your devices?",
+    "@listDeleteEverywhereConfirm": {
+        "placeholders": { "name": { "type": "String" } }
+    },
+    "stopSharingConfirmBody": "Stop sharing “{name}”? People following it lose access. It stays on your devices.",
+    "@stopSharingConfirmBody": {
+        "placeholders": { "name": { "type": "String" } }
+    },
+    "accountSyncDeletedElsewhereKeptSnack": "“{name}” was deleted on another device. Your unsent changes to it are kept here as a separate list.",
+    "@accountSyncDeletedElsewhereKeptSnack": {
+        "placeholders": { "name": { "type": "String" } }
+    },
+    "accountSyncListTooLargeSnack": "“{name}” has more than {limit} signs, so it stays on this device only.",
+    "@accountSyncListTooLargeSnack": {
+        "placeholders": { "name": { "type": "String" }, "limit": { "type": "int" } }
+    },
+    "enginePrivateListFullSnack": "This list is full ({max} signs), so your latest additions stay on this device only.",
+    "@enginePrivateListFullSnack": {
+        "placeholders": { "max": { "type": "int" } }
+    },
+    "listOnlyOnThisDevice": "Only on this device"
 }

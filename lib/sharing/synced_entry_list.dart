@@ -52,7 +52,9 @@ enum ListRole {
 }
 
 /// One place that maps a [SyncedListMeta]'s state to the icon every
-/// UI surface uses for that state.
+/// UI surface uses for that state. Only for lists that are shared (or
+/// followed / edited): a private list of the person's own is shown like any
+/// other list on the device, whatever its sync state.
 IconData iconForSharedList(SyncedListMeta meta) {
   if (meta.orphaned) return Icons.cloud_off;
   final hasPending = meta.pendingOps.isNotEmpty;
@@ -146,6 +148,17 @@ class SyncedListMeta {
   /// Cached members directory from the last /sync or /state response.
   MembersBlock? cachedMembers;
 
+  /// Owner lists only: `private` (synced to the owner's devices, not
+  /// published) or `shared`. Absent from metas written before account sync,
+  /// which were all shares, so it reads as `shared` then. Not a schema bump:
+  /// [fromJson] drops blobs whose version differs, so new fields are
+  /// optional with a default instead.
+  String visibility;
+
+  /// True for an owner list that is published to followers and editors.
+  /// "Shared by you" badges and the members page go by this.
+  bool get isShared => visibility == listVisibilityShared;
+
   SyncedListMeta({
     required this.listId,
     required this.displayName,
@@ -158,6 +171,7 @@ class SyncedListMeta {
     this.sourceLocalKey,
     List<PendingOp>? pendingOps,
     this.cachedMembers,
+    this.visibility = listVisibilityShared,
   }) : pendingOps = pendingOps ?? <PendingOp>[];
 
   Map<String, dynamic> toJson() => {
@@ -173,6 +187,7 @@ class SyncedListMeta {
     'sourceLocalKey': sourceLocalKey,
     'pendingOps': pendingOps.map((o) => o.toJson()).toList(),
     'cachedMembers': cachedMembers?.toJson(),
+    'visibility': visibility,
   };
 
   static SyncedListMeta? fromJson(Map<String, dynamic> json) {
@@ -215,6 +230,7 @@ class SyncedListMeta {
       cachedMembers: cachedMembersRaw == null
           ? null
           : MembersBlock.fromJson(cachedMembersRaw),
+      visibility: parseVisibility(json['visibility']),
     );
   }
 }
@@ -286,6 +302,7 @@ class SyncedEntryList extends EntryList {
         orphaned: false,
         sourceLocalKey: localKey,
         cachedMembers: snapshot.members,
+        visibility: snapshot.visibility,
       ),
       source: source,
     );
@@ -353,11 +370,20 @@ class SyncedEntryList extends EntryList {
 
   @override
   Widget getLeadingIcon({bool inEditMode = false}) {
+    // A private list of the person's own looks like any list on the device.
+    final source = ownerSource;
+    if (source != null && !meta.isShared) {
+      return source.getLeadingIcon(inEditMode: inEditMode);
+    }
     return Icon(iconForSharedList(meta));
   }
 
+  /// An owner list is deleted like the local list it wraps (everywhere,
+  /// through account sync), so the default list is the only one that
+  /// can't be. Editor and subscriber mirrors aren't deleted, they're left
+  /// or unfollowed.
   @override
-  bool canBeDeleted() => false;
+  bool canBeDeleted() => ownerSource?.canBeDeleted() ?? false;
 
   /// Persist meta + entries using the **ack order**: entries first,
   /// then meta. Use from [SyncEngine] after applying a /sync response.
@@ -403,8 +429,24 @@ class SyncedEntryList extends EntryList {
       case 'removeEntry':
         final video = _videoFromArgs(args);
         if (video != null) applyRemoteRemove(video);
+      case 'addEntries':
+        // Account sync's bulk add (private lists). Reaches here as one of
+        // this device's own pending ops; other devices' arrive from the
+        // server expanded into addEntry ops.
+        final raw = args['entries'];
+        if (raw is List) {
+          for (final item in raw) {
+            if (item is Map) {
+              final video = _videoFromArgs(Map<String, dynamic>.from(item));
+              if (video != null) applyRemoteAdd(video);
+            }
+          }
+        }
       case 'addEditor':
       case 'removeEditor':
+      case 'setVisibility':
+        // Membership and visibility live in the meta; the engine takes them
+        // from the members block and the echoed `visibility`.
         break;
       default:
         printAndLog('Synced list ${meta.listId}: unknown op type "$type"');
@@ -608,6 +650,15 @@ String getOrCreateClientId() {
 @visibleForTesting
 void resetClientIdCacheForTesting() {
   _cachedClientId = null;
+}
+
+/// Give this install a new client id (a restored backup must not share the
+/// original's; see install_marker.dart). Returns it once it's stored.
+Future<String> regenerateClientId() async {
+  final id = _generateRandomHexId(16);
+  _cachedClientId = id;
+  await sharedPreferences.setString(KEY_SHARED_CLIENT_ID, id);
+  return id;
 }
 
 String generateOpId() => _generateRandomHexId(16);

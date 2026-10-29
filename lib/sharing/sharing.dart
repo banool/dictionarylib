@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../common.dart';
+import 'account_sync.dart';
 import 'auth/auth_api.dart';
 import 'auth/auth_service.dart';
 import 'auth/auth_store.dart';
@@ -36,6 +37,10 @@ class Sharing with ChangeNotifier {
   final AuthService auth;
   final DeepLinkHandler deepLinks;
 
+  /// Account sync: all of a signed-in person's lists, follows and progress
+  /// on every device. Inert in [Sharing.disabled].
+  final AccountSyncController accountSync;
+
   /// True when the app actually wired sharing in (called
   /// [setupSharing]). False for the [Sharing.disabled] sentinel so
   /// UI gates can hide sharing surfaces without inspecting individual
@@ -57,11 +62,32 @@ class Sharing with ChangeNotifier {
     required this.auth,
     required this.deepLinks,
     this.isEnabled = true,
-  }) {
+    bool accountSyncEnabled = true,
+  }) : accountSync = AccountSyncController(
+         api: api,
+         auth: auth,
+         engine: engine,
+         lists: lists,
+         enabled: isEnabled && accountSyncEnabled,
+       ) {
     // Surface auth changes through the same [bumpState] channel as
     // sync changes — UI components only need to listen to [Sharing]
     // itself, not to AuthStore separately.
     auth.store.addListener(bumpState);
+    _lastSessionToken = auth.store.current?.sessionToken;
+    auth.store.addListener(_onAuthChanged);
+  }
+
+  String? _lastSessionToken;
+
+  /// Signing in is syncing (decision 1): a new session, whichever screen
+  /// signed in, starts a cycle at once (the merge, the first time).
+  void _onAuthChanged() {
+    final token = auth.store.current?.sessionToken;
+    if (token != null && token != _lastSessionToken) {
+      unawaited(accountSync.kick(SyncReason.signedIn));
+    }
+    _lastSessionToken = token;
   }
 
   /// Inert sentinel used as the initial value of `globals.sharing` so
@@ -132,12 +158,20 @@ class Sharing with ChangeNotifier {
   /// ([SyncEngine._handleSyncError]) which already protects the queue
   /// (it preserves pending ops across an expiry so the next sign-in
   /// by the same user resumes the flush).
+  ///
+  /// With account sync this also flushes the account's queued ops, then
+  /// drops the account state and the unsent-answers queue (section 5.9 of
+  /// the plan). Every local list keeps its signs and the revision history
+  /// stays; nothing on the server changes.
   Future<void> signOut() async {
     try {
       await engine.pushAllDirty().timeout(const Duration(seconds: 10));
     } catch (e) {
       printAndLog('Sharing.signOut: best-effort flush failed: $e');
     }
+    // Flushes the account queue (10 s at most), then clears pending ops,
+    // the owner and editor wrappers and the account state.
+    await accountSync.signOutLocally();
     await engine.clearAllPendingOps();
     await auth.signOut();
     // Drop account-bound list mirrors (owned + editor) so the next account to
@@ -159,7 +193,10 @@ class Sharing with ChangeNotifier {
     await engine.clearAllPendingOps();
     await auth.deleteAccount();
     // The owned + editor lists are gone on the server; drop their local
-    // mirrors. Subscriptions to other people's lists are anonymous and stay.
+    // mirrors and the account state (no flush: there's nothing to flush to).
+    // The local lists keep their signs. Subscriptions to other people's
+    // lists are anonymous and stay.
+    await accountSync.signOutLocally(flush: false);
     await lists.clearEditableLists();
     bumpState();
   }
@@ -198,7 +235,7 @@ class Sharing with ChangeNotifier {
   }
 
   void _installLifecycleObserver() {
-    final observer = _SharingLifecycleObserver(engine);
+    final observer = _SharingLifecycleObserver(engine, accountSync);
     _lifecycle = observer;
     WidgetsBinding.instance.addObserver(observer);
   }
@@ -216,6 +253,7 @@ class Sharing with ChangeNotifier {
     required AuthService auth,
     SyncEngine? engine,
     DeepLinkHandler? deepLinks,
+    bool accountSyncEnabled = true,
   }) {
     return Sharing._(
       config: config,
@@ -224,6 +262,7 @@ class Sharing with ChangeNotifier {
       engine: engine ?? SyncEngine(api: api, manager: lists, auth: auth),
       auth: auth,
       deepLinks: deepLinks ?? DeepLinkHandler(config: config),
+      accountSyncEnabled: accountSyncEnabled,
     );
   }
 
@@ -235,6 +274,8 @@ class Sharing with ChangeNotifier {
       _lifecycle = null;
     }
     auth.store.removeListener(bumpState);
+    auth.store.removeListener(_onAuthChanged);
+    accountSync.dispose();
     auth.dispose();
     engine.dispose();
     deepLinks.dispose();
@@ -244,7 +285,8 @@ class Sharing with ChangeNotifier {
 
 class _SharingLifecycleObserver with WidgetsBindingObserver {
   final SyncEngine _engine;
-  _SharingLifecycleObserver(this._engine);
+  final AccountSyncController _accountSync;
+  _SharingLifecycleObserver(this._engine, this._accountSync);
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -253,6 +295,9 @@ class _SharingLifecycleObserver with WidgetsBindingObserver {
       // pause. The engine awaits per-list locks internally so the
       // serialisation is correct even if we don't await here.
       unawaited(_engine.pushAllDirty());
+      unawaited(_accountSync.kick(SyncReason.paused));
+    } else if (state == AppLifecycleState.resumed) {
+      unawaited(_accountSync.kick(SyncReason.resumed));
     }
   }
 }

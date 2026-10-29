@@ -14,6 +14,7 @@ import 'common.dart';
 import 'entry_list.dart';
 import 'entry_loader.dart';
 import 'entry_types.dart';
+import 'sharing/install_marker.dart';
 import 'sharing/sharing.dart';
 import 'sharing/sharing_config.dart';
 import 'theme.dart';
@@ -233,6 +234,9 @@ Future<void> setupSharing(SharingConfig config) async {
     printAndLog("setupSharing called again, keeping the existing instance");
     return;
   }
+  // Before anything reads the client id: a restored backup gets one of its
+  // own (see install_marker.dart).
+  await checkInstallMarker();
   sharing = await Sharing.setup(config);
 }
 

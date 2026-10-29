@@ -330,10 +330,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
       'සේවාදායකයේ ගැටලුවක් ඇත. පසුව නැවත උත්සාහ කරන්න.';
 
   @override
-  String get unshareToDeleteTooltip =>
-      'මෙම ලැයිස්තුව මැකීමට පෙර එය බෙදා ගැනීම නවත්වන්න.';
-
-  @override
   String get shareTooManyEntriesTitle => 'බෙදා ගැනීමට ලැයිස්තුව ඉතා විශාලයි';
 
   @override
@@ -384,9 +380,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
 
   @override
   String get signInDialogTitle => 'බෙදා ගැනීමට පුරනය වන්න';
-
-  @override
-  String get signInDialogBody => 'ලැයිස්තුවක් බෙදා ගැනීමට ඔබ පුරනය විය යුතුය.';
 
   @override
   String signInLastUsedHint(String provider) {
@@ -485,10 +478,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get sharedListLandingTryAgain => 'නැවත උත්සාහ කරන්න';
 
   @override
-  String get unshareConfirmBody =>
-      'මෙම ලැයිස්තුව බෙදා ගැනීම නවත්වන්නද? දායකයින්ට තවදුරටත් එය දැකිය නොහැක.';
-
-  @override
   String get unshareConfirmTitle => 'බෙදා ගැනීම නවත්වන්නද?';
 
   @override
@@ -533,22 +522,7 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   String get subscribedCopyMenuItem => 'අනුපිටපත් කරන්න';
 
   @override
-  String get settingsSharing => 'බෙදා ගැනීම';
-
-  @override
-  String get settingsSignIn => 'ලැයිස්තු බෙදා ගැනීමට පුරනය වන්න';
-
-  @override
-  String settingsSignOut(String provider) {
-    return 'පිටවන්න ($provider සමඟ පුරනය වී ඇත)';
-  }
-
-  @override
   String get settingsSignOutConfirmTitle => 'පිටවන්නද?';
-
-  @override
-  String get settingsSignOutConfirmBody =>
-      'මෙම උපාංගයේ:\n  • ඔබ බෙදා ගැනීමෙන් පිටව ඇත.\n  • ඔබ බෙදාගත් ලැයිස්තු මෙතැනින් කළමනාකරණය වීම නැවතේ — දේශීය ලැයිස්තු ඒවායේ ඇතුළත් කිරීම් රඳවා ගනී.\n\nඔබගේ බෙදාගත් ලැයිස්තු සේවාදායකයේ පවතී. ඒවා නැවත සංස්කරණය කිරීමට ඕනෑම උපාංගයකින් නැවත පුරනය වන්න.';
 
   @override
   String get settingsDeleteAccount => 'ගිණුම මකන්න';
@@ -569,36 +543,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String settingsDeleteAccountFailed(String message) {
     return 'ඔබගේ ගිණුම මැකීමට නොහැකි විය: $message';
-  }
-
-  @override
-  String get importEditableListsPromptTitle =>
-      'ඔබ කලින් බෙදාගත් ලැයිස්තු ආයාත කරන්නද?';
-
-  @override
-  String get importEditableListsPromptBody =>
-      'මෙම ගිණුමට සම්බන්ධ බෙදාගත් ලැයිස්තු — ඔබ සෑදූ ඒවා මෙන්ම ඔබ සංස්කාරකවරයෙකු ලෙස එක් කර ඇති ඒවාද — අප ලබාගෙන මෙම උපාංගයේ ස්ථාපනය කරමු. පවතින දේශීය ලැයිස්තුවලට බලපෑමක් නැත; නම් ගැටුම්වලට සංඛ්‍යාත්මක ප්‍රත්‍යයක් ලැබේ (උදා. \"Cats\" → \"Cats 2\"). ඔබ සබැඳිව සිටින විට සංස්කරණ ස්වයංක්‍රීයව සමමුහුර්ත වේ.';
-
-  @override
-  String get importEditableListsActionImport => 'ආයාත කරන්න';
-
-  @override
-  String get importEditableListsActionSkip => 'මඟ හරින්න';
-
-  @override
-  String get importEditableListsRunning => 'ඔබගේ බෙදාගත් ලැයිස්තු ආයාත කරමින්…';
-
-  @override
-  String importEditableListsFailed(String message) {
-    return 'ලැයිස්තු ආයාත කිරීමට නොහැකි විය: $message';
-  }
-
-  @override
-  String get importEditableListsResultNone => 'බෙදාගත් ලැයිස්තු හමු නොවීය.';
-
-  @override
-  String importEditableListsResultDone(int imported, int total) {
-    return 'ලැයිස්තු $totalකින් $importedක් ආයාත කරන ලදී.';
   }
 
   @override
@@ -831,11 +775,6 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String get signInDialogContextResume =>
       'ඔබගේ පෝලිමේ ඇති සංස්කරණ තල්ලු කිරීමට නැවත පුරනය වන්න.';
-
-  @override
-  String settingsSignOutConfirmBodyWithPending(int count) {
-    return 'ඔබට ලැයිස්තු $countක නොසමමුහුර්ත සංස්කරණ ඇත. පිටවීමෙන් ඒවා සේවාදායකයට තල්ලු නොකරයි. ඔබට විශ්වාසද?';
-  }
 
   @override
   String get overviewResumeSignInIdle =>
@@ -1445,4 +1384,112 @@ class DictLibLocalizationsSi extends DictLibLocalizations {
   @override
   String get errorFallbackDetailsCopiedSnack =>
       'විස්තර පසුරු පුවරුවට පිටපත් විය';
+
+  @override
+  String get settingsAccount => 'ගිණුම';
+
+  @override
+  String get settingsAccountSignIn =>
+      'ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න';
+
+  @override
+  String settingsSignedInWith(String provider) {
+    return '$provider සමඟ පුරනය වී ඇත';
+  }
+
+  @override
+  String get settingsSignOutRow => 'පිටවන්න';
+
+  @override
+  String get settingsSignOutConfirmBodySync =>
+      'ඔබගේ ලැයිස්තු සහ ප්‍රගතිය මෙම උපාංගයේ රැඳී සිටින නමුත් සමමුහුර්ත වීම නවතී. දිගටම කරගෙන යාමට ඕනෑම උපාංගයක නැවත පුරනය වන්න.';
+
+  @override
+  String get accountSyncStatusSyncing => 'සමමුහුර්ත වෙමින්…';
+
+  @override
+  String get accountSyncStatusJustNow => 'දැන් සමමුහුර්ත විය';
+
+  @override
+  String accountSyncStatusMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'මිනිත්තු $countකට පෙර සමමුහුර්ත විය',
+      one: 'මිනිත්තු 1කට පෙර සමමුහුර්ත විය',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountSyncStatusHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'පැය $countකට පෙර සමමුහුර්ත විය',
+      one: 'පැය 1කට පෙර සමමුහුර්ත විය',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountSyncStatusDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'දින $countකට පෙර සමමුහුර්ත විය',
+      one: 'දින 1කට පෙර සමමුහුර්ත විය',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountSyncStatusWaiting => 'සම්බන්ධතාවක් සඳහා රැඳී සිටිමින්';
+
+  @override
+  String get accountSyncStatusPaused => 'සමමුහුර්ත කිරීම නවතා ඇත';
+
+  @override
+  String get listsSignInFooter =>
+      'ඔබගේ ලැයිස්තු ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.';
+
+  @override
+  String get signInDialogBodySync =>
+      'ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ සියලු උපාංගවල තබා ගැනීමට පුරනය වන්න.';
+
+  @override
+  String get shareSignInContextSync =>
+      'බෙදා ගැනීමට ගිණුමක් අවශ්‍යයි. පුරනය වීමෙන් ඔබගේ ලැයිස්තු සහ ප්‍රගතිය ඔබගේ උපාංග අතර සමමුහුර්තව ද තබා ගනී.';
+
+  @override
+  String get accountSyncMergedSnack =>
+      'ඔබගේ ලැයිස්තු සහ ප්‍රගතිය දැන් සමමුහුර්ත වෙමින් පවතී.';
+
+  @override
+  String listDeleteEverywhereConfirm(String name) {
+    return '“$name” ඔබගේ සියලු උපාංගවලින් මකන්නද?';
+  }
+
+  @override
+  String stopSharingConfirmBody(String name) {
+    return '“$name” බෙදා ගැනීම නවත්වන්නද? එය අනුගමනය කරන අයට ප්‍රවේශය අහිමි වේ. එය ඔබගේ උපාංගවල රැඳී පවතී.';
+  }
+
+  @override
+  String accountSyncDeletedElsewhereKeptSnack(String name) {
+    return '“$name” වෙනත් උපාංගයක මකා දමන ලදී. එයට ඔබ කළ නොයැවූ වෙනස්කම් මෙහි වෙනම ලැයිස්තුවක් ලෙස තබා ඇත.';
+  }
+
+  @override
+  String accountSyncListTooLargeSnack(String name, int limit) {
+    return '“$name” හි සංඥා $limitකට වඩා ඇති බැවින්, එය මෙම උපාංගයේ පමණක් රැඳී පවතී.';
+  }
+
+  @override
+  String enginePrivateListFullSnack(int max) {
+    return 'මෙම ලැයිස්තුව පිරී ඇත (සංඥා $max), එබැවින් ඔබගේ නවතම එකතු කිරීම් මෙම උපාංගයේ පමණක් රැඳී පවතී.';
+  }
+
+  @override
+  String get listOnlyOnThisDevice => 'මෙම උපාංගයේ පමණි';
 }

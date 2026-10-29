@@ -7,6 +7,8 @@ import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/hearth.dart';
 import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/retry.dart';
+import 'package:dictionarylib/sharing/account_sync.dart';
+import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
@@ -188,6 +190,9 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   Future<void> _refreshSynced() async {
     if (!sharing.isEnabled) return;
     Analytics.track('pull_to_refresh', props: {'scope': 'overview'});
+    // The account too: lists made, deleted or reordered on other devices.
+    // Its failures show in Settings rather than here.
+    unawaited(sharing.accountSync.kick(SyncReason.pullToRefresh));
     try {
       await retryWithFeedback(() async {
         // User-initiated pull-to-refresh: bypass the worker edge cache so
@@ -554,6 +559,9 @@ Widget _getUserLists(
   final tiles = <Widget>[];
   for (final el in listsService.myLists) {
     final owned = listsService.ownedShareFor(el);
+    // Only a list that's shared gets the share's icon and status; one that
+    // is on the account but private looks like any list on the device.
+    final shared = owned != null && owned.meta.isShared;
     // Navigate to the owner wrapper when the list is shared, so that
     // edits made from the list page go through [SyncedEntryList.addEntry]
     // / [removeEntry] (which both mutate the underlying entries set and
@@ -563,13 +571,13 @@ Widget _getUserLists(
     tiles.add(
       HearthListRow(
         key: ValueKey(el.key),
-        leading: owned != null
+        leading: shared
             ? Icon(iconForSharedList(owned.meta))
             : _unsharedListIcon(context, el),
-        // Owner-shared lists show the share's (renamable) display name.
+        // Linked lists show the account's (renamable) display name.
         title: (owned ?? el).getName(),
-        // Shared lists show their sync status; plain lists show a word count.
-        subtitle: owned != null
+        // Shared lists show their sync status; others show a word count.
+        subtitle: shared
             ? _formatOwnedStatus(context, owned)
             : _wordCount(context, el),
         onTap: () async {
@@ -580,6 +588,27 @@ Widget _getUserLists(
             ),
           );
         },
+      ),
+    );
+  }
+  // Signed out: one tappable line saying what signing in does. Nothing when
+  // signed in. Not on web or TV, where there's no sign-in.
+  if (sharing.isEnabled &&
+      sharing.auth.store.current == null &&
+      sharing.accountSync.supported) {
+    tiles.add(
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Align(
+          alignment: Alignment.center,
+          child: TextButton(
+            onPressed: () => showSignInDialog(context),
+            child: Text(
+              DictLibLocalizations.of(context)!.listsSignInFooter,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -621,10 +650,15 @@ Widget _unsharedListIcon(BuildContext context, EntryList el) {
   return el.getLeadingIcon();
 }
 
-/// A short "N words" subtitle for a list (counts distinct entries).
+/// A short "N words" subtitle for a list (counts distinct entries), with a
+/// note when a signed-in device keeps the list here only.
 String _wordCount(BuildContext context, EntryList el) {
-  return DictLibLocalizations.of(context)!
-      .listWordCount(el.uniqueEntries.length);
+  final l = DictLibLocalizations.of(context)!;
+  final count = l.listWordCount(el.uniqueEntries.length);
+  if (sharing.accountSync.unsyncableReason(el.key) != null) {
+    return '$count · ${l.listOnlyOnThisDevice}';
+  }
+  return count;
 }
 
 /// Edit-mode list — reorders, renames and deletes the local user lists.
@@ -636,13 +670,12 @@ Widget _buildEditModeList(
   var i = 0;
   for (final e in userEntryListManager.getEntryLists().entries) {
     final el = e.value;
-    // Owner-shared lists can't be deleted directly: the local list is the
-    // source of truth for the wrapper's entries, so dropping it would
-    // strand the wrapper pointing at a missing source and leave the
-    // server-side share unmanageable from this device. The user has to
-    // unshare first (from the list page's share dialog).
+    // Every list but the default can be deleted; a linked one is deleted
+    // on every device, and the confirmation says so. (Before account sync
+    // has run on this device, a list shared from it has to be unshared
+    // first, as before: then it shows its share status instead.)
     final ownedShare = listsService.ownedShareFor(el);
-    final canDelete = el.canBeDeleted() && ownedShare == null;
+    final canDelete = listsService.canDelete(el);
     final Widget? trailing;
     if (canDelete) {
       trailing = IconButton(
@@ -651,36 +684,29 @@ Widget _buildEditModeList(
           color: Theme.of(context).colorScheme.error,
         ),
         onPressed: () async {
+          final l = DictLibLocalizations.of(context)!;
+          final everywhere =
+              ownedShare != null ||
+              (sharing.accountSync.ownsLinks &&
+                  sharing.accountSync.unsyncableReason(el.key) == null);
           final confirmed = await confirmAlert(
             context,
-            Text(DictLibLocalizations.of(context)!.listConfirmListDelete),
+            Text(
+              everywhere
+                  ? l.listDeleteEverywhereConfirm((ownedShare ?? el).getName())
+                  : l.listConfirmListDelete,
+            ),
           );
           if (confirmed) {
-            await userEntryListManager.deleteEntryList(e.key);
+            await listsService.deleteList(el);
             setState(() {});
           }
         },
       );
-    } else if (ownedShare != null) {
-      // The default list can't be deleted even once it's unshared, so for
-      // it the icon is only the share's status, with nothing to explain.
-      final unshareFirst = el.canBeDeleted();
-      trailing = IconButton(
-        icon: Icon(
-          iconForSharedList(ownedShare.meta),
-          color: Theme.of(context).hintColor,
-        ),
-        tooltip: unshareFirst
-            ? DictLibLocalizations.of(context)!.unshareToDeleteTooltip
-            : null,
-        onPressed: unshareFirst
-            ? () {
-                showSnack(
-                  context,
-                  DictLibLocalizations.of(context)!.unshareToDeleteTooltip,
-                );
-              }
-            : null,
+    } else if (ownedShare != null && ownedShare.meta.isShared) {
+      trailing = Icon(
+        iconForSharedList(ownedShare.meta),
+        color: Theme.of(context).hintColor,
       );
     } else {
       trailing = null;
@@ -730,10 +756,9 @@ Widget _buildEditModeList(
     ),
     children: tiles,
     onReorder: (prev, updated) async {
-      setState(() {
-        userEntryListManager.reorder(prev, updated);
-      });
-      await userEntryListManager.writeEntryListKeys();
+      final done = listsService.reorderLists(prev, updated);
+      setState(() {});
+      await done;
     },
   );
 }
@@ -906,10 +931,7 @@ Future<bool> applyRenameListDialog(BuildContext context, EntryList list) {
   return _showRenameDialog(
     context,
     currentName: list.getName(),
-    onRename: (newName) async {
-      final newKey = EntryList.getKeyFromName(newName, rejectUnderscores: true);
-      await userEntryListManager.renameEntryList(list.key, newKey);
-    },
+    onRename: (newName) => listsService.renameList(list, newName),
   );
 }
 
@@ -954,12 +976,7 @@ Future<bool> applyCreateListDialog(BuildContext context) async {
   var confirmed = await confirmAlert(context, body, title: l.listNewList);
   if (confirmed) {
     try {
-      final key = EntryList.getKeyFromName(
-        controller.text,
-        rejectUnderscores: true,
-      );
-      await userEntryListManager.createEntryList(key);
-      Analytics.track('list_created', props: {'shared': false});
+      await listsService.createList(controller.text);
     } on EntryListNameException catch (e) {
       if (context.mounted) {
         showSnack(

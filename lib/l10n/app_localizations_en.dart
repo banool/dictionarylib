@@ -329,10 +329,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
       'The server is having trouble. Try again later.';
 
   @override
-  String get unshareToDeleteTooltip =>
-      'Stop sharing this list before deleting it.';
-
-  @override
   String get shareTooManyEntriesTitle => 'List is too big to share';
 
   @override
@@ -383,9 +379,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get signInDialogTitle => 'Sign in to share';
-
-  @override
-  String get signInDialogBody => 'To share a list you must sign in.';
 
   @override
   String signInLastUsedHint(String provider) {
@@ -481,10 +474,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get sharedListLandingTryAgain => 'Try again';
 
   @override
-  String get unshareConfirmBody =>
-      'Stop sharing this list? Subscribers will no longer be able to see it.';
-
-  @override
   String get unshareConfirmTitle => 'Stop sharing?';
 
   @override
@@ -529,22 +518,7 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   String get subscribedCopyMenuItem => 'Duplicate';
 
   @override
-  String get settingsSharing => 'Sharing';
-
-  @override
-  String get settingsSignIn => 'Sign in to share lists';
-
-  @override
-  String settingsSignOut(String provider) {
-    return 'Sign out (signed in with $provider)';
-  }
-
-  @override
   String get settingsSignOutConfirmTitle => 'Sign out?';
-
-  @override
-  String get settingsSignOutConfirmBody =>
-      'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.';
 
   @override
   String get settingsDeleteAccount => 'Delete account';
@@ -565,35 +539,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   @override
   String settingsDeleteAccountFailed(String message) {
     return 'Couldn\'t delete your account: $message';
-  }
-
-  @override
-  String get importEditableListsPromptTitle => 'Import your shared lists?';
-
-  @override
-  String get importEditableListsPromptBody =>
-      'We\'ll fetch any shared lists tied to this account — both the ones you created and the ones you\'ve been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you\'re online.';
-
-  @override
-  String get importEditableListsActionImport => 'Import';
-
-  @override
-  String get importEditableListsActionSkip => 'Skip';
-
-  @override
-  String get importEditableListsRunning => 'Importing your shared lists…';
-
-  @override
-  String importEditableListsFailed(String message) {
-    return 'Couldn\'t import lists: $message';
-  }
-
-  @override
-  String get importEditableListsResultNone => 'No shared lists found.';
-
-  @override
-  String importEditableListsResultDone(int imported, int total) {
-    return 'Imported $imported of $total list(s).';
   }
 
   @override
@@ -826,11 +771,6 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   @override
   String get signInDialogContextResume =>
       'Sign in again to push your queued edits.';
-
-  @override
-  String settingsSignOutConfirmBodyWithPending(int count) {
-    return 'You have unsynced edits on $count list(s). Signing out won\'t push them to the server. Are you sure?';
-  }
 
   @override
   String get overviewResumeSignInIdle =>
@@ -1433,4 +1373,112 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
 
   @override
   String get errorFallbackDetailsCopiedSnack => 'Details copied to clipboard';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get settingsAccountSignIn =>
+      'Sign in to keep your lists and progress on all your devices';
+
+  @override
+  String settingsSignedInWith(String provider) {
+    return 'Signed in with $provider';
+  }
+
+  @override
+  String get settingsSignOutRow => 'Sign out';
+
+  @override
+  String get settingsSignOutConfirmBodySync =>
+      'Your lists and progress stay on this device but stop syncing. Sign in again on any device to keep going.';
+
+  @override
+  String get accountSyncStatusSyncing => 'Syncing…';
+
+  @override
+  String get accountSyncStatusJustNow => 'Synced just now';
+
+  @override
+  String accountSyncStatusMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Synced $count minutes ago',
+      one: 'Synced 1 minute ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountSyncStatusHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Synced $count hours ago',
+      one: 'Synced 1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountSyncStatusDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Synced $count days ago',
+      one: 'Synced 1 day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountSyncStatusWaiting => 'Waiting for a connection';
+
+  @override
+  String get accountSyncStatusPaused => 'Sync is paused';
+
+  @override
+  String get listsSignInFooter =>
+      'Sign in to keep your lists on all your devices.';
+
+  @override
+  String get signInDialogBodySync =>
+      'Sign in to keep your lists and progress on all your devices.';
+
+  @override
+  String get shareSignInContextSync =>
+      'Sharing needs an account. Signing in also keeps your lists and progress in sync across your devices.';
+
+  @override
+  String get accountSyncMergedSnack =>
+      'Your lists and progress are now syncing.';
+
+  @override
+  String listDeleteEverywhereConfirm(String name) {
+    return 'Delete “$name” from all your devices?';
+  }
+
+  @override
+  String stopSharingConfirmBody(String name) {
+    return 'Stop sharing “$name”? People following it lose access. It stays on your devices.';
+  }
+
+  @override
+  String accountSyncDeletedElsewhereKeptSnack(String name) {
+    return '“$name” was deleted on another device. Your unsent changes to it are kept here as a separate list.';
+  }
+
+  @override
+  String accountSyncListTooLargeSnack(String name, int limit) {
+    return '“$name” has more than $limit signs, so it stays on this device only.';
+  }
+
+  @override
+  String enginePrivateListFullSnack(int max) {
+    return 'This list is full ($max signs), so your latest additions stay on this device only.';
+  }
+
+  @override
+  String get listOnlyOnThisDevice => 'Only on this device';
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
 
@@ -8,7 +7,8 @@ import 'entry_list.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
 import 'list_storage.dart';
-import 'saved_video.dart';
+import 'sharing/account_sync.dart';
+import 'sharing/account_sync_api.dart';
 import 'sharing/sync_api.dart';
 import 'sharing/synced_entry_list.dart';
 
@@ -83,14 +83,148 @@ class ListsService {
     return sharing.lists.ownerForSourceKey(list.key);
   }
 
-  /// Publish [sourceList] as a new shared list. The local list is
-  /// untouched (its entries become the initial set the server gets);
-  /// an owner-mode wrapper is created in the synced-list manager so
-  /// subsequent mutations through it enqueue sync ops.
-  ///
-  /// Requires the user to be signed in; pass the current
-  /// [AuthSession.sessionToken]. The "tap share → sign in if needed"
-  /// orchestration lives in the share dialog, not here.
+  /// The object to mutate for [list]: its owner wrapper when it's linked
+  /// to the account (so changes are queued for the server), the plain list
+  /// otherwise.
+  EntryList writableFor(EntryList list) => ownedShareFor(list) ?? list;
+
+  /// Create a list called [name] (validated as a user-typed name; throws
+  /// [EntryListNameException]). Returns its storage key.
+  Future<String> createList(String name) async {
+    final key = EntryList.getKeyFromName(name, rejectUnderscores: true);
+    await createListWithKey(key);
+    Analytics.track('list_created', props: {'shared': false});
+    return key;
+  }
+
+  /// Create a list under [key] (already free). On a signed-in device the
+  /// list and the record that it is to be linked are made in one step under
+  /// the account-sync lock, and a cycle links it shortly after; changes made
+  /// before then go to the plain list and are carried over by the link.
+  Future<void> createListWithKey(String key) async {
+    final sync = sharing.accountSync;
+    if (!sync.isSignedInAndSupported) {
+      await userEntryListManager.createEntryList(key);
+      return;
+    }
+    await sync.exclusive(() async {
+      await userEntryListManager.createEntryList(key);
+      await sync.noteCreatedLocally(key);
+    });
+    unawaited(sync.kick(SyncReason.localChange));
+  }
+
+  /// True if [list] can be deleted from this device: every list but the
+  /// default, and (before this device has synced with the account) not a
+  /// list shared from it, which has to be unshared first as before.
+  bool canDelete(EntryList list) {
+    if (!list.canBeDeleted()) return false;
+    final owned = ownedShareFor(list);
+    return owned == null || sharing.accountSync.ownsLinks;
+  }
+
+  /// Delete [list]. A linked list is deleted on every device (the
+  /// confirmation says so): the account's `delete` op is queued first, then
+  /// the wrapper and the local list go. A list still being linked is
+  /// deleted locally and a `delete` queued for the id its link chose (a
+  /// no-op on the server if the create never landed).
+  Future<void> deleteList(EntryList list) async {
+    final source = list is SyncedEntryList ? list.ownerSource : list;
+    if (source == null) {
+      throw StateError('only a list of your own can be deleted');
+    }
+    final key = source.key;
+    if (key == readDefaultListKey()) {
+      throw StateError('The default list cannot be deleted');
+    }
+    final sync = sharing.accountSync;
+    await sync.exclusive(() async {
+      final wrapper = sharing.lists.ownerForSourceKey(key);
+      if (wrapper != null) {
+        if (!sync.ownsLinks) {
+          throw StateError('"$key" is shared; stop sharing it first');
+        }
+        await sync.enqueue(
+          AccountOp(
+            opId: generateOpId(),
+            type: 'delete',
+            args: {'listId': wrapper.listId},
+          ),
+        );
+        await sharing.engine.dropOwned(wrapper.listId);
+        await userEntryListManager.deleteEntryList(key);
+        await sync.noteDeletedLocally(key);
+        return;
+      }
+      final linkingTo = await sync.noteDeletedLocally(key);
+      if (linkingTo != null) {
+        await sync.enqueue(
+          AccountOp(
+            opId: generateOpId(),
+            type: 'delete',
+            args: {'listId': linkingTo},
+          ),
+        );
+      }
+      await userEntryListManager.deleteEntryList(key);
+    });
+    sharing.bumpState();
+    unawaited(sync.kick(SyncReason.localChange));
+  }
+
+  /// Rename [list] to [newName]. A linked list is renamed on the server
+  /// (its local key never moves; every screen shows the server's name). Any
+  /// other list moves to the key for the new name, and a link in progress
+  /// moves with it.
+  Future<void> renameList(EntryList list, String newName) async {
+    final owned = ownedShareFor(list);
+    if (owned != null) {
+      await renameSharedList(owned, newName);
+      return;
+    }
+    final newKey = EntryList.getKeyFromName(newName, rejectUnderscores: true);
+    final oldKey = list.key;
+    final sync = sharing.accountSync;
+    var linkedMeanwhile = false;
+    await sync.exclusive(() async {
+      if (sharing.lists.ownerForSourceKey(oldKey) != null) {
+        linkedMeanwhile = true;
+        return;
+      }
+      await userEntryListManager.renameEntryList(oldKey, newKey);
+      await sync.noteKeyMoved(oldKey, newKey);
+    });
+    if (linkedMeanwhile) {
+      final linked = sharing.lists.ownerForSourceKey(oldKey);
+      if (linked != null) await renameSharedList(linked, newName);
+    }
+  }
+
+  /// Move the list at [prev] to [updated] in My Lists, and tell the account
+  /// (the order is the same on every device).
+  Future<void> reorderLists(int prev, int updated) async {
+    userEntryListManager.reorder(prev, updated);
+    await userEntryListManager.writeEntryListKeys();
+    final sync = sharing.accountSync;
+    if (!sync.ownsLinks) return;
+    final ids = [
+      for (final key in userEntryListManager.getEntryLists().keys)
+        ?sharing.lists.ownerForSourceKey(key)?.listId,
+    ];
+    if (ids.isEmpty) return;
+    await sync.enqueue(
+      AccountOp(opId: generateOpId(), type: 'reorder', args: {'listIds': ids}),
+    );
+    unawaited(sync.kick(SyncReason.localChange));
+  }
+
+  /// Share [sourceList] under [displayName]. With account sync the list is
+  /// linked first (running a cycle if it isn't yet) and then flipped to
+  /// shared (`PUT .../visibility`), keeping its id and everything on it. On
+  /// a device where account sync is switched off by the knob it is shared
+  /// the old way, as a new list (`POST /v1/lists`), which account sync finds
+  /// later through the owner index. Throws [SyncException] on failure and
+  /// [ListNotSyncableException] for a list that stays on this device.
   Future<SyncedEntryList> shareList({
     required EntryList sourceList,
     required String displayName,
@@ -99,24 +233,57 @@ class ListsService {
     if (!sharing.isEnabled) {
       throw StateError('sharing is not configured for this app');
     }
-    final synced = await sharing.engine.createOwned(
+    final sync = sharing.accountSync;
+    final source = sourceList is SyncedEntryList
+        ? sourceList.ownerSource ?? sourceList
+        : sourceList;
+    if (!sync.supported) {
+      final synced = await sharing.engine.createOwned(
+        displayName: displayName,
+        source: source,
+        sessionToken: sessionToken,
+      );
+      sharing.bumpState();
+      return synced;
+    }
+    final reason = sync.unsyncableReason(source.key);
+    if (reason != null) throw ListNotSyncableException(reason);
+    final wrapper = await sync.ensureLinked(source.key);
+    if (wrapper == null) {
+      throw SyncException(
+        SyncErrorKind.network,
+        'the list is not on your account yet',
+      );
+    }
+    await sharing.engine.setOwnedVisibility(
+      wrapper.listId,
+      listVisibilityShared,
       displayName: displayName,
-      source: sourceList,
-      sessionToken: sessionToken,
     );
+    Analytics.track('list_shared');
     sharing.bumpState();
-    return synced;
+    return wrapper;
   }
 
-  /// Owner-only: rename a shared list. Only the creator (owner role)
-  /// can rename; the new name propagates to editors (on their next
-  /// /sync) and subscribers (on their next R2 poll). The owner
-  /// wrapper's local display name is refreshed from the server's reply.
+  /// Stop sharing [list]: it goes private (`PUT .../visibility`), its
+  /// followers and editors lose it, and it stays on the person's devices.
+  Future<void> stopSharing(SyncedEntryList list) async {
+    if (!sharing.isEnabled) return;
+    if (list.meta.role != ListRole.owner) return;
+    await sharing.engine.setOwnedVisibility(list.listId, listVisibilityPrivate);
+    sharing.bumpState();
+  }
+
+  /// Owner-only: rename a linked list on the server. The new name
+  /// propagates to the owner's other devices and editors (on their next
+  /// /sync) and subscribers (on their next R2 poll). The owner wrapper's
+  /// local display name is refreshed from the server's reply.
   ///
   /// Validates [newName] with the same rules as a local list name
   /// (throwing [EntryListNameException] on empty / invalid / reserved)
   /// so the rename dialog can surface a localised message; the server
-  /// re-validates as a backstop. Throws [SyncException] on a network /
+  /// re-validates as a backstop. A shared list may not take a reserved name
+  /// (Favourites); a private one may. Throws [SyncException] on a network /
   /// server failure.
   Future<void> renameSharedList(SyncedEntryList owned, String newName) async {
     if (!sharing.isEnabled) {
@@ -128,11 +295,11 @@ class ListsService {
       throw StateError('only the owner can rename a shared list');
     }
     // Validate the name (throws on empty / too long). The derived key is
-    // discarded — shared lists are keyed by their server id, not a
-    // name-derived local key.
+    // discarded — linked lists keep their local key and go by the server's
+    // name.
     EntryList.getKeyFromName(newName);
     final name = newName.trim();
-    if (isReservedShareName(name)) {
+    if (owned.meta.isShared && isReservedShareName(name)) {
       throw EntryListNameException(EntryListNameError.reserved, name);
     }
     final session = sharing.auth.store.current;
@@ -140,16 +307,6 @@ class ListsService {
       throw StateError('renameSharedList: not signed in');
     }
     await sharing.engine.renameOwned(owned.listId, name, session.sessionToken);
-  }
-
-  /// Stop publishing a shared list. Deletes the server-side copy and
-  /// removes the local owner wrapper; the local list — which still
-  /// holds the entries — is untouched.
-  Future<void> unshareList(SyncedEntryList list) async {
-    if (!sharing.isEnabled) return;
-    if (list.meta.role != ListRole.owner) return;
-    await sharing.engine.unshare(list.listId);
-    sharing.bumpState();
   }
 
   /// Subscriber-only: force a refresh of [list] from the server now.
@@ -170,204 +327,11 @@ class ListsService {
   }
 
   /// Subscriber-only: stop following a list someone else owns. The local
-  /// mirror is removed.
+  /// mirror is removed (and, signed in, the account stops following it).
   Future<void> unsubscribeList(SyncedEntryList list) async {
     if (!sharing.isEnabled) return;
     if (list.meta.role != ListRole.subscriber) return;
     await sharing.engine.unsubscribe(list.listId);
-  }
-
-  /// Bootstrap flow for "I just signed in on a new device and want to
-  /// see my existing shared lists". Asks the server which lists the
-  /// current session owns + edits, fetches each one, and inserts it
-  /// locally — owned lists get a paired local [EntryList] so they
-  /// show up in "My lists"; edited lists install as editor-mode
-  /// mirrors directly.
-  ///
-  /// Idempotent — lists already on the device are skipped. Local user
-  /// lists are never overwritten; new ones get a numeric suffix on
-  /// name collision (`Animals`, `Animals 2`, …).
-  ///
-  /// Fetches run in parallel since each /state call is independent;
-  /// the apply phase is sequential so local-key allocation can avoid
-  /// collisions and `userEntryListManager` / `sharing.lists` mutations don't
-  /// interleave.
-  ///
-  /// [context] is used only to localise the fallback list name when the
-  /// server-supplied display name can't be turned into a valid local
-  /// storage key. Optional so test code can call this without a
-  /// widget tree; pass a real context from real callers.
-  Future<ImportEditableListsResult> importEditableLists({
-    BuildContext? context,
-  }) async {
-    if (!sharing.isEnabled) {
-      throw StateError('sharing is not configured for this app');
-    }
-    final session = sharing.auth.store.current;
-    if (session == null) {
-      throw StateError('importEditableLists: not signed in');
-    }
-    final userLists = await sharing.api.userLists(
-      sessionToken: session.sessionToken,
-    );
-    var imported = 0;
-    var skipped = 0;
-    final total =
-        userLists.ownedListIds.length + userLists.editorListIds.length;
-
-    // Pre-filter the already-present cases so we don't waste API calls
-    // on lists the device already has in the target role.
-    final ownedToFetch = <String>[];
-    for (final listId in userLists.ownedListIds) {
-      final existing = sharing.lists.get(listId);
-      if (existing != null && existing.meta.role == ListRole.owner) {
-        skipped++;
-      } else {
-        ownedToFetch.add(listId);
-      }
-    }
-    final editorToFetch = <String>[];
-    for (final listId in userLists.editorListIds) {
-      final existing = sharing.lists.get(listId);
-      if (existing != null &&
-          (existing.meta.role == ListRole.owner ||
-              existing.meta.role == ListRole.editor)) {
-        skipped++;
-      } else {
-        editorToFetch.add(listId);
-      }
-    }
-
-    // Fetch authoritative snapshots in parallel — each /state call is
-    // independent.
-    //
-    // Errors are split two ways:
-    //   - **Auth / network failures** (401, network) propagate as
-    //     [SyncException] so the caller can abort the whole import
-    //     rather than silently mis-classifying a token expiry as
-    //     "0 imported, N skipped" with no actionable signal.
-    //   - **Per-list failures** (404, 410, 403 on one specific list,
-    //     500) are recorded as a null snapshot and folded into the
-    //     skipped count, so a single broken list doesn't block the
-    //     others from importing.
-    Future<_FetchResult> fetch(String listId) async {
-      try {
-        final snapshot = await sharing.api.getState(
-          listId: listId,
-          sessionToken: session.sessionToken,
-        );
-        return _FetchResult(listId: listId, snapshot: snapshot);
-      } on SyncException catch (e) {
-        if (e.kind == SyncErrorKind.unauthorized ||
-            e.kind == SyncErrorKind.network) {
-          rethrow;
-        }
-        return _FetchResult(listId: listId, snapshot: null);
-      }
-    }
-
-    final ownedFutures = ownedToFetch.map(fetch).toList();
-    final editorFutures = editorToFetch.map(fetch).toList();
-    final ownedResults = await Future.wait(ownedFutures);
-    final editorResults = await Future.wait(editorFutures);
-
-    final nowSecs = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final importedListFallback = context == null
-        ? 'Imported list'
-        : DictLibLocalizations.of(context)?.importedListFallbackName ??
-              'Imported list';
-
-    for (final result in ownedResults) {
-      final snapshot = result.snapshot;
-      if (snapshot == null) {
-        skipped++;
-        continue;
-      }
-      final existing = sharing.lists.get(result.listId);
-      // Invariant established by the pre-filter above: any `existing` that
-      // reaches here is NOT already in the owner role (owner-role matches
-      // were skipped before we fetched). So reaching the reuse branch means
-      // we're re-homing a list the device tracked in some *other* role.
-      // Even so, never clobber a record that still has queued local ops —
-      // overwriting its entries here would silently drop those pending
-      // edits. Skip it (counted as skipped) and leave it for a normal /sync
-      // to reconcile.
-      if (existing != null && existing.meta.pendingOps.isNotEmpty) {
-        skipped++;
-        continue;
-      }
-      // Reuse an existing local source if we already have one for this
-      // listId (re-running the import after, say, a clear-then-restore
-      // shouldn't orphan the user's data). When [existing] points at a
-      // local list that's still in [userEntryListManager], we just
-      // overwrite the entries in place; otherwise allocate a fresh
-      // local key and create one.
-      String localKey;
-      EntryList local;
-      final reusableSourceKey = existing?.meta.sourceLocalKey;
-      final reusableSource = reusableSourceKey == null
-          ? null
-          : userEntryListManager.getEntryLists()[reusableSourceKey];
-      if (existing != null && reusableSource != null) {
-        await sharing.lists.removeLocal(result.listId);
-        localKey = reusableSourceKey!;
-        local = reusableSource;
-        local.savedVideos.clear();
-      } else {
-        if (existing != null) await sharing.lists.removeLocal(result.listId);
-        localKey = allocateLocalKey(
-          preferredName: snapshot.displayName,
-          fallbackBase: importedListFallback,
-        );
-        await userEntryListManager.createEntryList(localKey);
-        local = userEntryListManager.getEntryLists()[localKey]!;
-      }
-      local.savedVideos.addAll(snapshot.entries);
-      await local.write();
-      await sharing.lists.insert(
-        SyncedEntryList.ownerFromSnapshot(
-          snapshot: snapshot,
-          source: local,
-          localKey: localKey,
-          nowSecs: nowSecs,
-        ),
-      );
-      imported++;
-    }
-
-    for (final result in editorResults) {
-      final snapshot = result.snapshot;
-      if (snapshot == null) {
-        skipped++;
-        continue;
-      }
-      final existing = sharing.lists.get(result.listId);
-      if (existing != null) await sharing.lists.removeLocal(result.listId);
-      await sharing.lists.insert(
-        SyncedEntryList.editor(
-          meta: SyncedListMeta(
-            listId: snapshot.listId,
-            displayName: snapshot.displayName,
-            role: ListRole.editor,
-            lastKnownSeq: snapshot.lastSeq,
-            etag: null,
-            lastSyncedAt: nowSecs,
-            serverUpdatedAt: snapshot.updatedAt,
-            orphaned: false,
-            cachedMembers: snapshot.members,
-          ),
-          savedVideos: LinkedHashSet<SavedVideo>.from(snapshot.entries),
-        ),
-      );
-      imported++;
-    }
-
-    sharing.bumpState();
-    return ImportEditableListsResult(
-      imported: imported,
-      skipped: skipped,
-      total: total,
-    );
   }
 
   /// Allocate a local list key derived from a display name that's free in
@@ -415,25 +379,13 @@ class ListsService {
 /// pattern.
 ListsService get listsService => ListsService.instance;
 
-/// One row in [ListsService.importEditableLists]'s fetch phase. `snapshot`
-/// is null when the /state call failed — the apply phase treats null
-/// as a skip rather than aborting the whole import.
-class _FetchResult {
-  final String listId;
-  final ListSnapshot? snapshot;
-  const _FetchResult({required this.listId, required this.snapshot});
-}
-
-/// Outcome of [ListsService.importEditableLists].
-class ImportEditableListsResult {
-  final int imported;
-  final int skipped;
-  final int total;
-  const ImportEditableListsResult({
-    required this.imported,
-    required this.skipped,
-    required this.total,
-  });
+/// Thrown by [ListsService.shareList] for a list that stays on this device
+/// (see `UnsyncableReason`): too large to sync, say.
+class ListNotSyncableException implements Exception {
+  final String reason;
+  const ListNotSyncableException(this.reason);
+  @override
+  String toString() => 'ListNotSyncableException($reason)';
 }
 
 /// Convenience wrapper around [localisedSyncError] for callers whose
@@ -490,6 +442,7 @@ String localisedSyncError(
     case SyncErrorKind.rateLimited:
       return l.shareErrorRateLimited;
     case SyncErrorKind.server:
+    case SyncErrorKind.unavailable:
       return l.shareErrorServer;
     case SyncErrorKind.invalidBody:
     case SyncErrorKind.missingHeader:

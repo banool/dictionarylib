@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import '../common.dart';
 import '../dictionarylib.dart' show DictLibLocalizations;
 import '../globals.dart';
+import 'account_sync.dart';
 import 'auth/sign_in_dialog.dart';
-import 'sync_api.dart' show maxEntriesPerList;
+import 'sync_api.dart' show maxEntriesPerList, maxEntriesPerPrivateList;
 import 'sync_engine.dart';
 
 /// The app's one ScaffoldMessenger, attached by the consuming app to its
@@ -66,6 +67,34 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
         showSnackVia(messenger, l.engineSnapshotCatchUpSnack);
       case SyncNotification.listFull:
         showSnackVia(messenger, l.engineListFullSnack(maxEntriesPerList));
+      case SyncNotification.listFullPrivate:
+        showSnackVia(
+          messenger,
+          l.enginePrivateListFullSnack(maxEntriesPerPrivateList),
+        );
+    }
+  });
+}
+
+/// The same, for account sync's one-shot events (the merge finished, a
+/// list stays on this device, a list deleted elsewhere kept here). Install
+/// once from the app root, next to [installEngineNotificationSnackbars].
+StreamSubscription<AccountSyncNotice> installAccountSyncSnackbars() {
+  return sharing.accountSync.notices.listen((notice) {
+    final messenger = rootScaffoldMessengerKey.currentState;
+    final context = rootNavigatorKey.currentContext;
+    if (messenger == null || context == null || !context.mounted) return;
+    final l = DictLibLocalizations.of(context)!;
+    switch (notice) {
+      case MergeCompletedNotice():
+        showSnackVia(messenger, l.accountSyncMergedSnack);
+      case ListTooLargeNotice(:final name):
+        showSnackVia(
+          messenger,
+          l.accountSyncListTooLargeSnack(name, maxEntriesPerPrivateList),
+        );
+      case DeletedElsewhereKeptNotice(:final name):
+        showSnackVia(messenger, l.accountSyncDeletedElsewhereKeptSnack(name));
     }
   });
 }

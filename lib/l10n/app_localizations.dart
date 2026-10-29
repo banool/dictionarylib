@@ -691,12 +691,6 @@ abstract class DictLibLocalizations {
   /// **'The server is having trouble. Try again later.'**
   String get shareErrorServer;
 
-  /// No description provided for @unshareToDeleteTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop sharing this list before deleting it.'**
-  String get unshareToDeleteTooltip;
-
   /// No description provided for @shareTooManyEntriesTitle.
   ///
   /// In en, this message translates to:
@@ -786,12 +780,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Sign in to share'**
   String get signInDialogTitle;
-
-  /// No description provided for @signInDialogBody.
-  ///
-  /// In en, this message translates to:
-  /// **'To share a list you must sign in.'**
-  String get signInDialogBody;
 
   /// No description provided for @signInLastUsedHint.
   ///
@@ -961,12 +949,6 @@ abstract class DictLibLocalizations {
   /// **'Try again'**
   String get sharedListLandingTryAgain;
 
-  /// No description provided for @unshareConfirmBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop sharing this list? Subscribers will no longer be able to see it.'**
-  String get unshareConfirmBody;
-
   /// No description provided for @unshareConfirmTitle.
   ///
   /// In en, this message translates to:
@@ -1039,35 +1021,11 @@ abstract class DictLibLocalizations {
   /// **'Duplicate'**
   String get subscribedCopyMenuItem;
 
-  /// No description provided for @settingsSharing.
-  ///
-  /// In en, this message translates to:
-  /// **'Sharing'**
-  String get settingsSharing;
-
-  /// No description provided for @settingsSignIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in to share lists'**
-  String get settingsSignIn;
-
-  /// No description provided for @settingsSignOut.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign out (signed in with {provider})'**
-  String settingsSignOut(String provider);
-
   /// No description provided for @settingsSignOutConfirmTitle.
   ///
   /// In en, this message translates to:
   /// **'Sign out?'**
   String get settingsSignOutConfirmTitle;
-
-  /// No description provided for @settingsSignOutConfirmBody.
-  ///
-  /// In en, this message translates to:
-  /// **'On this device:\n  • You\'re signed out of sharing.\n  • Lists you shared stop being managed from here — the local lists themselves keep their entries.\n\nYour shared lists stay on the server. Sign back in on any device to edit them again.'**
-  String get settingsSignOutConfirmBody;
 
   /// No description provided for @settingsDeleteAccount.
   ///
@@ -1104,54 +1062,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t delete your account: {message}'**
   String settingsDeleteAccountFailed(String message);
-
-  /// No description provided for @importEditableListsPromptTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Import your shared lists?'**
-  String get importEditableListsPromptTitle;
-
-  /// No description provided for @importEditableListsPromptBody.
-  ///
-  /// In en, this message translates to:
-  /// **'We\'ll fetch any shared lists tied to this account — both the ones you created and the ones you\'ve been added to as an editor — and install them on this device. Existing local lists are untouched; name collisions get a numeric suffix (e.g. \"Cats\" → \"Cats 2\"). Edits sync automatically when you\'re online.'**
-  String get importEditableListsPromptBody;
-
-  /// No description provided for @importEditableListsActionImport.
-  ///
-  /// In en, this message translates to:
-  /// **'Import'**
-  String get importEditableListsActionImport;
-
-  /// No description provided for @importEditableListsActionSkip.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get importEditableListsActionSkip;
-
-  /// No description provided for @importEditableListsRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Importing your shared lists…'**
-  String get importEditableListsRunning;
-
-  /// No description provided for @importEditableListsFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t import lists: {message}'**
-  String importEditableListsFailed(String message);
-
-  /// No description provided for @importEditableListsResultNone.
-  ///
-  /// In en, this message translates to:
-  /// **'No shared lists found.'**
-  String get importEditableListsResultNone;
-
-  /// No description provided for @importEditableListsResultDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Imported {imported} of {total} list(s).'**
-  String importEditableListsResultDone(int imported, int total);
 
   /// No description provided for @duplicateConfirmTitle.
   ///
@@ -1512,12 +1422,6 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Sign in again to push your queued edits.'**
   String get signInDialogContextResume;
-
-  /// No description provided for @settingsSignOutConfirmBodyWithPending.
-  ///
-  /// In en, this message translates to:
-  /// **'You have unsynced edits on {count} list(s). Signing out won\'t push them to the server. Are you sure?'**
-  String settingsSignOutConfirmBodyWithPending(int count);
 
   /// No description provided for @overviewResumeSignInIdle.
   ///
@@ -2472,6 +2376,138 @@ abstract class DictLibLocalizations {
   /// In en, this message translates to:
   /// **'Details copied to clipboard'**
   String get errorFallbackDetailsCopiedSnack;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsAccountSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to keep your lists and progress on all your devices'**
+  String get settingsAccountSignIn;
+
+  /// No description provided for @settingsSignedInWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with {provider}'**
+  String settingsSignedInWith(String provider);
+
+  /// No description provided for @settingsSignOutRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get settingsSignOutRow;
+
+  /// No description provided for @settingsSignOutConfirmBodySync.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lists and progress stay on this device but stop syncing. Sign in again on any device to keep going.'**
+  String get settingsSignOutConfirmBodySync;
+
+  /// No description provided for @accountSyncStatusSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get accountSyncStatusSyncing;
+
+  /// No description provided for @accountSyncStatusJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced just now'**
+  String get accountSyncStatusJustNow;
+
+  /// No description provided for @accountSyncStatusMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Synced 1 minute ago} other{Synced {count} minutes ago}}'**
+  String accountSyncStatusMinutesAgo(int count);
+
+  /// No description provided for @accountSyncStatusHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Synced 1 hour ago} other{Synced {count} hours ago}}'**
+  String accountSyncStatusHoursAgo(int count);
+
+  /// No description provided for @accountSyncStatusDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Synced 1 day ago} other{Synced {count} days ago}}'**
+  String accountSyncStatusDaysAgo(int count);
+
+  /// No description provided for @accountSyncStatusWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a connection'**
+  String get accountSyncStatusWaiting;
+
+  /// No description provided for @accountSyncStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is paused'**
+  String get accountSyncStatusPaused;
+
+  /// No description provided for @listsSignInFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to keep your lists on all your devices.'**
+  String get listsSignInFooter;
+
+  /// No description provided for @signInDialogBodySync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to keep your lists and progress on all your devices.'**
+  String get signInDialogBodySync;
+
+  /// No description provided for @shareSignInContextSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing needs an account. Signing in also keeps your lists and progress in sync across your devices.'**
+  String get shareSignInContextSync;
+
+  /// No description provided for @accountSyncMergedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lists and progress are now syncing.'**
+  String get accountSyncMergedSnack;
+
+  /// No description provided for @listDeleteEverywhereConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}” from all your devices?'**
+  String listDeleteEverywhereConfirm(String name);
+
+  /// No description provided for @stopSharingConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing “{name}”? People following it lose access. It stays on your devices.'**
+  String stopSharingConfirmBody(String name);
+
+  /// No description provided for @accountSyncDeletedElsewhereKeptSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” was deleted on another device. Your unsent changes to it are kept here as a separate list.'**
+  String accountSyncDeletedElsewhereKeptSnack(String name);
+
+  /// No description provided for @accountSyncListTooLargeSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” has more than {limit} signs, so it stays on this device only.'**
+  String accountSyncListTooLargeSnack(String name, int limit);
+
+  /// No description provided for @enginePrivateListFullSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'This list is full ({max} signs), so your latest additions stay on this device only.'**
+  String enginePrivateListFullSnack(int max);
+
+  /// No description provided for @listOnlyOnThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on this device'**
+  String get listOnlyOnThisDevice;
 }
 
 class _DictLibLocalizationsDelegate

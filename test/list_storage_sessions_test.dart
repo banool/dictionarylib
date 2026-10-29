@@ -8,7 +8,6 @@ import 'package:dictionarylib/entry_types.dart';
 import 'package:dictionarylib/flashcards_logic.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/list_storage.dart';
-import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_search.dart' show getEntryTypes;
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/sharing.dart';
@@ -353,7 +352,8 @@ void main() {
 
       final share = sharing.lists.ownerForSourceKey(key)!;
       await share.addVideo(_video('cherry'));
-      await listsService.unshareList(share);
+      // The wrapper goes (as when it stops syncing); the list stays.
+      await sharing.engine.dropOwned(share.listId);
       await userEntryListManager.getEntryLists()[key]!.addVideo(_video('dog'));
 
       await installPrefs(prefsSnapshot());

@@ -1,4 +1,4 @@
-import 'dart:async' show Completer;
+import 'dart:async' show Completer, unawaited;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -166,6 +166,16 @@ Future<void> setupDictionaryApp(
     await httpReady;
     await Future.wait(config.extraStartupTasks.map((task) => task()));
   }();
+
+  // The account-sync knob (`enable_account_sync`, true unless the knob file
+  // says otherwise, so it can only switch the feature off). Read in the
+  // background and never waited for: readKnob caches the answer in prefs,
+  // which is where account sync looks, so this launch uses the last value
+  // seen and the next one picks up a change.
+  unawaited(() async {
+    await httpReady;
+    await readKnob(config.knobUrlBase, 'enable_account_sync', true);
+  }());
 
   // Force-upgrade check. Throws YankedVersionError only when the running
   // version is genuinely yanked (runDictionaryApp turns that into the

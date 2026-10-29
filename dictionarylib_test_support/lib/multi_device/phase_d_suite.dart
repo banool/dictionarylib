@@ -39,14 +39,10 @@ void runPhaseDEditorConverges(MdSuiteConfig cfg) {
     await mdSetup();
     await mdSignInAs(mdEditorUserId, mdEditorName);
 
-    // Fresh install: recover the editor membership from the server. This
-    // must work without the (already consumed) invite token.
-    final result = await listsService.importEditableLists();
-    expect(
-      result.imported,
-      greaterThanOrEqualTo(1),
-      reason: 'the editor should recover their editable list',
-    );
+    // Fresh install: the sign-in merge recovers the editor membership from
+    // the server. This must work without the (already consumed) invite
+    // token.
+    await mdWaitForAccountSync();
     final mirror = sharing.lists.editableLists
         .where((l) => l.meta.listId == mdListId)
         .toList();

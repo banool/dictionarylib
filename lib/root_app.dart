@@ -20,6 +20,7 @@ import 'saved_video.dart';
 import 'sharing/deep_link_handler.dart';
 import 'sharing/engine_notification_listener.dart';
 import 'sharing/shared_list_landing_page.dart';
+import 'sharing/account_sync.dart' show AccountSyncNotice, SyncReason;
 import 'sharing/sync_engine.dart' show SyncNotification;
 import 'startup_loading.dart' show applyPersistedThemePrefs;
 import 'theme.dart';
@@ -214,6 +215,8 @@ class _DictRootAppState extends State<DictRootApp> {
 
   StreamSubscription<SharePayload>? _deepLinkSub;
   StreamSubscription<SyncNotification>? _engineNotificationSub;
+  StreamSubscription<AccountSyncNotice>? _accountSyncNoticeSub;
+  Timer? _accountSyncStartupTimer;
 
   late final GoRouter router;
 
@@ -269,6 +272,14 @@ class _DictRootAppState extends State<DictRootApp> {
     // a broadcast stream, so events without a live listener are lost.
     if (sharing.isEnabled) {
       _engineNotificationSub = installEngineNotificationSnackbars();
+      _accountSyncNoticeSub = installAccountSyncSnackbars();
+      // Account sync's first cycle of the run, a few seconds after the
+      // first frame so it never competes with start-up.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _accountSyncStartupTimer = Timer(const Duration(seconds: 3), () {
+          unawaited(sharing.accountSync.kick(SyncReason.startup));
+        });
+      });
     }
   }
 
@@ -276,6 +287,8 @@ class _DictRootAppState extends State<DictRootApp> {
   void dispose() {
     _deepLinkSub?.cancel();
     _engineNotificationSub?.cancel();
+    _accountSyncNoticeSub?.cancel();
+    _accountSyncStartupTimer?.cancel();
     super.dispose();
   }
 
