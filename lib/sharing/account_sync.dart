@@ -159,6 +159,15 @@ class AccountSyncController {
   /// A cycle is running (its network awaits can be pre-empted).
   bool _inCycle = false;
 
+  /// The session [signOutLocally] signed out. The store still holds it for
+  /// a moment afterwards (until the caller's `auth.signOut()`), and a cycle
+  /// in that moment (the one the sign-out pre-empted runs again at once)
+  /// would see no account state and start a merge, putting back links and
+  /// lists the sign-out had just taken away. Cycles don't run for it. By
+  /// identity, not token: signing straight back in can mint an identical
+  /// token (same person, same second), but it is a new session.
+  AuthSession? _signedOutSession;
+
   /// The cycle's network awaits in flight, as [_net] wraps them.
   final Set<Completer<Object?>> _preemptible = {};
 
@@ -422,6 +431,7 @@ class AccountSyncController {
     if (!supported) return;
     final session = _auth.store.current;
     if (session == null) return;
+    if (identical(session, _signedOutSession)) return;
     final uid = sessionUserId(session);
     if (uid.isEmpty) return;
 
@@ -2089,6 +2099,7 @@ class AccountSyncController {
   Future<PartingFlush?> signOutLocally({bool flush = true}) {
     return exclusive(() async {
       final session = _auth.store.current;
+      _signedOutSession = session;
       final parting = flush && session != null
           ? _capturePartingFlush(session)
           : null;

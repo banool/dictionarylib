@@ -342,6 +342,59 @@ void main() {
       ]);
     });
 
+    test('signing out while the first merge waits on the network leaves '
+        'nothing of the account behind', () async {
+      // A list on the account that the merge would install here.
+      server.createAccountList(
+        'alice',
+        'Shared elsewhere',
+        entries: [
+          ['dog', videoFor('dog')],
+        ],
+        visibility: 'shared',
+      );
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      server.net.blackhole();
+      await phone.signIn('alice');
+      while (server.net.held == 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      await sharing.signOut();
+      // The held requests go through now, the signed-out session's with
+      // them.
+      server.net.up();
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      await sharing.engine.pushAllDirty();
+      expect(sharing.auth.store.current, isNull);
+      expect(sharing.accountSync.state, isNull);
+      expect(sharedPreferences.getString(KEY_ACCOUNT_SYNC_STATE), isNull);
+      expect(sharing.lists.editableLists, isEmpty);
+      expect(phone.localLists().keys, ['Favourites', 'Animals']);
+    });
+
+    test('signing straight back in syncs, even with an identical token (the '
+        'Worker can mint one: same person, same second)', () async {
+      final phone = TestDevice(
+        server,
+        'phone',
+        mintToken: (u) async {
+          server.tokens['same-token'] = u;
+          return 'same-token';
+        },
+      );
+      await phone.activate();
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.signIn('alice');
+      await phone.settle();
+      await sharing.signOut();
+      expect(sharing.lists.ownedLists, isEmpty);
+      await phone.signIn('alice');
+      await phone.settle();
+      expect(sharing.accountSync.state?.mergeDone, isTrue);
+      expect(sharing.lists.ownerForSourceKey('Animals_words'), isNotNull);
+    });
+
     test(
       'another account signing in starts again and merges into it',
       () async {
