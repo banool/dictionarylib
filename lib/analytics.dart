@@ -88,6 +88,13 @@ class Analytics {
   /// to avoid attaching the observer at all when analytics is off.
   static bool get isEnabled => _enabled;
 
+  /// Whether the person is signed in (account sync), read as each event is
+  /// recorded and sent as the `signed_in` property. Sharing sets it once it is
+  /// up, so `app_opened` (recorded before that) never carries it and every
+  /// later event does; "share of sessions signed in" is read from those. A
+  /// boolean across everyone identifies nobody.
+  static bool Function()? signedInProvider;
+
   /// Initialise with the app's public Aptabase app key (format
   /// `A-REG-0000000000`). An empty key — the default the apps ship until one is
   /// configured, and what every test uses — makes this a permanent no-op, so no
@@ -149,6 +156,8 @@ class Analytics {
     };
     final model = _deviceModel;
     if (model != null) merged['device_model'] = model;
+    final signedIn = signedInProvider;
+    if (signedIn != null) merged['signed_in'] = signedIn() ? 'true' : 'false';
     if (props != null) {
       props.forEach((key, value) {
         if (value == null) return;

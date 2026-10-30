@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../analytics.dart';
 import 'account_sync.dart';
 import 'auth/auth_api.dart';
 import 'auth/auth_service.dart';
@@ -75,6 +76,11 @@ class Sharing with ChangeNotifier {
     auth.store.addListener(bumpState);
     _lastSessionToken = auth.store.current?.sessionToken;
     auth.store.addListener(_onAuthChanged);
+    // Every event from here on says whether the person is signed in (the
+    // adoption figure for account sync).
+    if (isEnabled) {
+      Analytics.signedInProvider = () => auth.store.current != null;
+    }
   }
 
   String? _lastSessionToken;

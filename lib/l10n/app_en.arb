@@ -667,6 +667,10 @@
     "@listDeleteEverywhereConfirm": {
         "placeholders": { "name": { "type": "String" } }
     },
+    "listDeleteSharedEverywhereConfirm": "Delete “{name}” from all your devices? People following it lose access.",
+    "@listDeleteSharedEverywhereConfirm": {
+        "placeholders": { "name": { "type": "String" } }
+    },
     "stopSharingConfirmBody": "Stop sharing “{name}”? People following it lose access. It stays on your devices.",
     "@stopSharingConfirmBody": {
         "placeholders": { "name": { "type": "String" } }

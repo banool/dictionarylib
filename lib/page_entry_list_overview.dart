@@ -688,10 +688,14 @@ Widget _buildEditModeList(
               ownedShare != null ||
               (sharing.accountSync.queuesForAccount &&
                   sharing.accountSync.unsyncableReason(el.key) == null);
+          // A shared list goes for its followers and editors too.
+          final shared = ownedShare != null && ownedShare.meta.isShared;
           final confirmed = await confirmAlert(
             context,
             Text(
-              everywhere
+              shared
+                  ? l.listDeleteSharedEverywhereConfirm(ownedShare.getName())
+                  : everywhere
                   ? l.listDeleteEverywhereConfirm((ownedShare ?? el).getName())
                   : l.listConfirmListDelete,
             ),

@@ -1463,6 +1463,11 @@ class DictLibLocalizationsEn extends DictLibLocalizations {
   }
 
   @override
+  String listDeleteSharedEverywhereConfirm(String name) {
+    return 'Delete “$name” from all your devices? People following it lose access.';
+  }
+
+  @override
   String stopSharingConfirmBody(String name) {
     return 'Stop sharing “$name”? People following it lose access. It stays on your devices.';
   }

@@ -495,6 +495,10 @@
     "@listDeleteEverywhereConfirm": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
     },
+    "listDeleteSharedEverywhereConfirm": "“{name}” ඔබගේ සියලු උපාංගවලින් මකන්නද? එය අනුගමනය කරන අයට ප්‍රවේශය අහිමි වේ.",
+    "@listDeleteSharedEverywhereConfirm": {
+        "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."
+    },
     "stopSharingConfirmBody": "“{name}” බෙදා ගැනීම නවත්වන්නද? එය අනුගමනය කරන අයට ප්‍රවේශය අහිමි වේ. එය ඔබගේ උපාංගවල රැඳී පවතී.",
     "@stopSharingConfirmBody": {
         "description": "Machine translation (account sync, 2026-10); to be reviewed by a native speaker."

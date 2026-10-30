@@ -2485,6 +2485,12 @@ abstract class DictLibLocalizations {
   /// **'Delete “{name}” from all your devices?'**
   String listDeleteEverywhereConfirm(String name);
 
+  /// No description provided for @listDeleteSharedEverywhereConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}” from all your devices? People following it lose access.'**
+  String listDeleteSharedEverywhereConfirm(String name);
+
   /// No description provided for @stopSharingConfirmBody.
   ///
   /// In en, this message translates to:

@@ -1491,6 +1491,11 @@ class DictLibLocalizationsTa extends DictLibLocalizations {
   }
 
   @override
+  String listDeleteSharedEverywhereConfirm(String name) {
+    return '“$name” ஐ உங்கள் எல்லா சாதனங்களிலிருந்தும் நீக்கவா? அதைப் பின்தொடர்பவர்கள் அணுகலை இழப்பார்கள்.';
+  }
+
+  @override
   String stopSharingConfirmBody(String name) {
     return '“$name” ஐப் பகிர்வதை நிறுத்தவா? அதைப் பின்தொடர்பவர்கள் அணுகலை இழப்பார்கள். அது உங்கள் சாதனங்களில் இருக்கும்.';
   }
