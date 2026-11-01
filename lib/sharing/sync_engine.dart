@@ -433,32 +433,65 @@ class SyncEngine {
   /// so each subscriber pull bypasses the worker's edge cache; the
   /// background app-open/resume callers leave it false to stay on the
   /// cached path.
-  Future<List<SyncException>> syncAll({bool forceFresh = false}) async {
+  Future<List<SyncException>> syncAll({bool forceFresh = false}) {
+    return syncLists([
+      for (final l in _manager.editableLists) l.listId,
+      for (final l in _manager.subscribedLists) l.listId,
+    ], forceFresh: forceFresh);
+  }
+
+  /// Most list requests in flight at once from [syncAll] and [syncLists]. A
+  /// person with many lists would otherwise open them all together, which
+  /// the API's per-IP guard (300 requests per 10 s) reads as abuse.
+  static const int _maxConcurrentListSyncs = 4;
+
+  /// Sync only [listIds]: editable lists through /sync (pushing anything
+  /// pending, pulling the rest), subscribed lists from R2, at most
+  /// [_maxConcurrentListSyncs] at a time. Ids the device doesn't have are
+  /// skipped. What the account cycle runs between full syncs, for the lists
+  /// the account says moved; [syncAll] is this for every list.
+  Future<List<SyncException>> syncLists(
+    Iterable<String> listIds, {
+    bool forceFresh = false,
+  }) async {
     final failures = <SyncException>[];
     void recordFailure(String label, Object e) {
       printAndLog('SyncEngine: $label failed: $e');
       if (e is SyncException) failures.add(e);
     }
 
-    final futures = <Future<void>>[];
-    for (final l in _manager.editableLists) {
-      futures.add(
-        _flushAndDrain(
-          l.listId,
-          rethrowOnError: true,
-        ).catchError((e) => recordFailure('sync editable ${l.listId}', e)),
-      );
+    final tasks = <Future<void> Function()>[];
+    for (final id in listIds) {
+      final l = _manager.get(id);
+      if (l == null) continue;
+      if (_isEditableRole(l.meta.role)) {
+        tasks.add(
+          () => _flushAndDrain(
+            id,
+            rethrowOnError: true,
+          ).catchError((e) => recordFailure('sync editable $id', e)),
+        );
+      } else if (l.meta.role == ListRole.subscriber) {
+        tasks.add(
+          () => _pullSubscribed(
+            id,
+            rethrowOnError: true,
+            forceFresh: forceFresh,
+          ).catchError((e) => recordFailure('pull sub $id', e)),
+        );
+      }
     }
-    for (final l in _manager.subscribedLists) {
-      futures.add(
-        _pullSubscribed(
-          l.listId,
-          rethrowOnError: true,
-          forceFresh: forceFresh,
-        ).catchError((e) => recordFailure('pull sub ${l.listId}', e)),
-      );
+    var next = 0;
+    Future<void> worker() async {
+      while (next < tasks.length) {
+        await tasks[next++]();
+      }
     }
-    await Future.wait(futures);
+
+    await Future.wait([
+      for (var i = 0; i < _maxConcurrentListSyncs && i < tasks.length; i++)
+        worker(),
+    ]);
     return failures;
   }
 

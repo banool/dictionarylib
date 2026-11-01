@@ -149,6 +149,12 @@ class AccountSyncState {
   /// Unix seconds of the last complete cycle.
   int? lastSyncAt;
 
+  /// Unix seconds of the last cycle that synced every list (a full sync:
+  /// pull to refresh, the cycle after the merge, or the first cycle of a
+  /// launch or resume after `AccountSyncController` finds it due). Between
+  /// full syncs a cycle syncs only the lists the account says moved.
+  int? lastFullSyncAt;
+
   /// Unix seconds before which background cycles don't run (kill switch,
   /// rate limiting). A pull-to-refresh ignores it.
   int? pausedUntil;
@@ -200,6 +206,7 @@ class AccountSyncState {
     Map<String, int>? followsGone,
     this.randomTotal = 0,
     this.lastSyncAt,
+    this.lastFullSyncAt,
     this.pausedUntil,
     this.lastResetTsUs = 0,
     Map<String, String>? settingsSynced,
@@ -234,6 +241,7 @@ class AccountSyncState {
     'followsGone': followsGone,
     'randomTotal': randomTotal,
     'lastSyncAt': lastSyncAt,
+    'lastFullSyncAt': lastFullSyncAt,
     'pausedUntil': pausedUntil,
     'lastResetTsUs': lastResetTsUs,
     'settingsSynced': settingsSynced,
@@ -301,6 +309,7 @@ class AccountSyncState {
       followsGone: followsGone,
       randomTotal: json['randomTotal'] as int? ?? 0,
       lastSyncAt: json['lastSyncAt'] as int?,
+      lastFullSyncAt: json['lastFullSyncAt'] as int?,
       pausedUntil: json['pausedUntil'] as int?,
       lastResetTsUs: json['lastResetTsUs'] as int? ?? 0,
       settingsSynced: stringMap(json['settingsSynced']),

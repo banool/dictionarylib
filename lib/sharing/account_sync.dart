@@ -470,39 +470,60 @@ class AccountSyncController {
         _stLoaded = true;
         await _save();
       }
+      var mergedNow = false;
       if (!st.mergeDone) {
         final finished = await _runMerge(session);
         if (!finished) {
           _again = true;
           return;
         }
+        mergedNow = true;
       }
       if (_shouldYield) {
         _again = true;
         return;
       }
-      // Lists first, through the engine (its own per-list locks).
-      await _net(_engine.syncAll());
+      // This device's changes first, through the engine (its own per-list
+      // locks): the lists it has edited go up, so the account's answer and
+      // the seq comparison below see them.
+      await _net(_engine.pushAllDirty());
       if (_shouldYield) {
         _again = true;
         return;
       }
       await _accountRoundTrip(session);
-      if (_shouldYield) {
+      if (_shouldYield || !(_st?.mergeDone ?? false)) {
+        // (The account was deleted and made again: the next cycle merges.)
         _again = true;
         return;
       }
       _linkedThisCycle = false;
       await _linkLocalLists(session, merging: false);
-      if (_linkedThisCycle) await _net(_engine.syncAll());
-      await _afterCycle();
-      final cur = _st;
-      if (cur != null) {
-        cur.lastSyncAt = _now();
-        cur.lastErrorKind = null;
-        cur.pausedUntil = null;
-        await _save();
+      if (_linkedThisCycle) await _net(_engine.pushAllDirty());
+      if (_shouldYield) {
+        _again = true;
+        return;
       }
+      // Other devices' changes. A full sync (every list) on a pull to
+      // refresh, after the merge, and every few hours; otherwise only the
+      // lists the account says moved, so a save or a resume on an account
+      // with many lists is a request or two, not one per list.
+      final cur = _st!;
+      if (mergedNow) {
+        // The merge fetched every list's state: nothing to pull.
+        cur.lastFullSyncAt = _now();
+      } else if (_fullSyncDue(reason, cur)) {
+        await _net(_engine.syncAll());
+        cur.lastFullSyncAt = _now();
+      } else {
+        final ids = _listsToSync(reason);
+        if (ids.isNotEmpty) await _net(_engine.syncLists(ids));
+      }
+      await _afterCycle();
+      cur.lastSyncAt = _now();
+      cur.lastErrorKind = null;
+      cur.pausedUntil = null;
+      await _save();
       _backoffSeconds = 0;
       if (_retryOpsBackoff == 0) {
         // Nothing failed: no retry is due (and none holds back changes).
@@ -526,6 +547,60 @@ class AccountSyncController {
       _syncing = false;
       sharing.bumpState();
     }
+  }
+
+  /// How long a device goes between full syncs (every list, whether or not
+  /// the account says it moved): the safety net for a list change the
+  /// account was never told about (the list's report to it is best effort).
+  static const int _fullSyncIntervalSeconds = 6 * 3600;
+
+  /// Whether this cycle syncs every list: always on a pull to refresh and
+  /// a sign-in; on a launch or a resume once [_fullSyncIntervalSeconds] have
+  /// passed since the last; never on a local change or a retry, which sync
+  /// only the lists the account says moved ([_listsToSync]).
+  bool _fullSyncDue(SyncReason reason, AccountSyncState st) {
+    switch (reason) {
+      case SyncReason.pullToRefresh:
+      case SyncReason.signedIn:
+        return true;
+      case SyncReason.startup:
+      case SyncReason.resumed:
+        final last = st.lastFullSyncAt;
+        return last == null || _now() - last >= _fullSyncIntervalSeconds;
+      case SyncReason.localChange:
+      case SyncReason.retry:
+      case SyncReason.paused:
+        return false;
+    }
+  }
+
+  /// The lists a cycle that isn't a full sync pulls: the owner lists whose
+  /// seq on the account is past the one this device holds (another device
+  /// or an editor changed them), and on a launch or a resume the editor and
+  /// followed lists too, whose changes don't reach the account.
+  List<String> _listsToSync(SyncReason reason) {
+    final st = _st!;
+    final ids = <String>[];
+    for (final w in _lists.ownedLists) {
+      if (w.meta.orphaned) continue;
+      final row = st.rowFor(w.listId);
+      final seq = row?.listSeq;
+      if (row != null &&
+          row.isLive &&
+          seq != null &&
+          seq > w.meta.lastKnownSeq) {
+        ids.add(w.listId);
+      }
+    }
+    if (reason == SyncReason.startup || reason == SyncReason.resumed) {
+      for (final l in _lists.editorLists) {
+        ids.add(l.listId);
+      }
+      for (final l in _lists.subscribedLists) {
+        ids.add(l.listId);
+      }
+    }
+    return ids;
   }
 
   /// Most answer batches uploaded per cycle (each its own request); the

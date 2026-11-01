@@ -70,9 +70,11 @@ StreamSubscription<SyncNotification> installEngineNotificationSnackbars() {
                   contextMessage: DictLibLocalizations.of(dialogContext)!
                       .signInDialogContextResume,
                 );
-                // Pages repaint via their `sharing.addListener` hooks once
-                // the sync lands; nothing page-specific to do here.
-                if (session != null) unawaited(sharing.engine.syncAll());
+                // The sign-in itself starts the account cycle (every list,
+                // the first time); this only sends what was queued while
+                // signed out straight away. Pages repaint via their
+                // `sharing.addListener` hooks once the sync lands.
+                if (session != null) unawaited(sharing.engine.pushAllDirty());
               },
             ),
           ),

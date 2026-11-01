@@ -34,6 +34,9 @@ class FakeAccountServer {
 
   /// Called before a request is handled; return true to fail it with a
   /// network error (nothing reaches the server).
+  /// Every request answers 503 (the server down, as against the network).
+  bool serverError = false;
+
   bool Function(http.Request req)? failBefore;
 
   /// Called after a request was handled; return true to lose the response
@@ -126,6 +129,7 @@ class FakeAccountServer {
         _route(req);
         throw http.ClientException('response lost', req.url);
     }
+    if (serverError) return _err(503, 'INTERNAL', 'down');
     if (failBefore?.call(req) ?? false) {
       throw http.ClientException('fake network failure', req.url);
     }
@@ -1063,6 +1067,9 @@ class FakeAccountServer {
             'state': r['state'],
             'deletedAt': r['deletedAt'],
             'deletedClientTs': r['deletedClientTs'],
+            // As the real account DO hears it from the list after every
+            // change; here read off the list, so never stale.
+            'listSeq': lists[r['listId']]?['lastSeq'] ?? 0,
           },
       ],
       'follows': acc['follows'],

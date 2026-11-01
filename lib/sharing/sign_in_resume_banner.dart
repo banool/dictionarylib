@@ -65,12 +65,13 @@ class _SignInResumeBannerState extends State<SignInResumeBanner> {
               context,
               contextMessage: l.signInDialogContextResume,
             );
-            // Kick a sync fire-and-forget on success; the banner
+            // The sign-in itself starts the account cycle; this sends
+            // what was queued while signed out straight away. The banner
             // listens for the auth state change via `Sharing`'s
             // bumpState (which the auth store forwards through), so
             // we don't need a local setState here — the rebuild
             // propagates automatically.
-            if (session != null) unawaited(sharing.engine.syncAll());
+            if (session != null) unawaited(sharing.engine.pushAllDirty());
             if (mounted) setState(() {});
           },
           child: Text(l.overviewResumeSignInButton),

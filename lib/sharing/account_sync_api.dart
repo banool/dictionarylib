@@ -180,6 +180,12 @@ class DirectoryRow {
   /// Unsent edits here newer than this restore the list (section 5.5).
   final int? deletedClientTs;
 
+  /// The list's `last_seq` as the account last heard it from the list (the
+  /// list reports every change it applies, best effort). A device syncs a
+  /// list between full syncs only when this is past the seq it holds. Null
+  /// from a server that doesn't send it.
+  final int? listSeq;
+
   const DirectoryRow({
     required this.listId,
     required this.position,
@@ -189,6 +195,7 @@ class DirectoryRow {
     required this.state,
     this.deletedAt,
     this.deletedClientTs,
+    this.listSeq,
   });
 
   bool get isLive => state == directoryStateLive;
@@ -203,6 +210,7 @@ class DirectoryRow {
     state: json['state'] as String? ?? directoryStateLive,
     deletedAt: json['deletedAt'] as int?,
     deletedClientTs: json['deletedClientTs'] as int?,
+    listSeq: json['listSeq'] as int?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -214,6 +222,7 @@ class DirectoryRow {
     'state': state,
     'deletedAt': deletedAt,
     'deletedClientTs': deletedClientTs,
+    'listSeq': listSeq,
   };
 }
 

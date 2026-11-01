@@ -1495,4 +1495,134 @@ void main() {
       }
     });
   });
+
+  // Between full syncs a cycle syncs only the lists the account says moved
+  // (their seq on the account is past the one the device holds) and the
+  // lists the device changed; a full sync (every list) runs on a pull to
+  // refresh, after the merge, and on a launch or resume every six hours.
+  group('light cycles', () {
+    int syncsOf(String listId) =>
+        server.log.where((l) => l == 'POST /v1/lists/$listId/sync').length;
+    int accountSyncs() =>
+        server.log.where((l) => l == 'POST /v1/account/sync').length;
+
+    Future<TestDevice> phoneWithThreeLists() async {
+      final phone = await freshDevice('phone');
+      await phone.addLocalList('Animals', ['cat']);
+      await phone.addLocalList('Birds', ['owl']);
+      await phone.addLocalList('Fish', ['cod']);
+      await phone.signIn('alice');
+      await phone.settle();
+      return phone;
+    }
+
+    test('a change here syncs the list it touched and no other', () async {
+      await phoneWithThreeLists();
+      final animals = sharing.lists.ownerForSourceKey('Animals_words')!;
+      final birds = sharing.lists.ownerForSourceKey('Birds_words')!;
+      final fish = sharing.lists.ownerForSourceKey('Fish_words')!;
+      server.log.clear();
+      await animals.addVideo(video('dog'));
+      await sharing.accountSync.kick(SyncReason.retry);
+      expect(syncsOf(animals.listId), 1);
+      expect(syncsOf(birds.listId), 0);
+      expect(syncsOf(fish.listId), 0);
+      expect(accountSyncs(), 1);
+      expect(server.entryKeys(animals.listId), containsAll(['cat', 'dog']));
+    });
+
+    test(
+      'a list changed on another device is synced, the others are not',
+      () async {
+        final phone = await phoneWithThreeLists();
+        final birdsId = sharing.lists.ownerForSourceKey('Birds_words')!.listId;
+        final animalsId = sharing.lists
+            .ownerForSourceKey('Animals_words')!
+            .listId;
+        final tablet = TestDevice(server, 'tablet');
+        await tablet.signIn('alice');
+        await tablet.settle();
+        await sharing.lists.get(birdsId)!.addVideo(video('wren'));
+        await tablet.settle();
+        await phone.activate();
+        server.log.clear();
+        await sharing.accountSync.kick(SyncReason.retry);
+        expect(syncsOf(birdsId), 1);
+        expect(syncsOf(animalsId), 0);
+        expect(
+          userEntryListManager.getEntryLists()['Birds_words']!.savedVideos.map(
+            (v) => v.entryKey,
+          ),
+          containsAll(['owl', 'wren']),
+        );
+      },
+    );
+
+    test(
+      'a launch syncs every list once six hours have passed, not before',
+      () async {
+        await phoneWithThreeLists();
+        final ids = [for (final w in sharing.lists.ownedLists) w.listId];
+        expect(ids.length, 4, reason: 'three lists and Favourites');
+        server.log.clear();
+        await sharing.accountSync.kick(SyncReason.startup);
+        for (final id in ids) {
+          expect(
+            syncsOf(id),
+            0,
+            reason: 'the sign-in merge fetched everything',
+          );
+        }
+        expect(accountSyncs(), 1);
+        debugSyncClockOffsetSeconds = 7 * 3600;
+        await sharing.accountSync.kick(SyncReason.startup);
+        for (final id in ids) {
+          expect(syncsOf(id), 1);
+        }
+        server.log.clear();
+        await sharing.accountSync.kick(SyncReason.resumed);
+        for (final id in ids) {
+          expect(syncsOf(id), 0, reason: 'a full sync just ran');
+        }
+      },
+    );
+
+    test(
+      'a resume pulls followed lists but not own lists that did not move',
+      () async {
+        await phoneWithThreeLists();
+        final sharedId = server.createAccountList(
+          'bob',
+          'From Bob',
+          visibility: 'shared',
+          entries: [
+            ['x', videoFor('x')],
+          ],
+        );
+        await sharing.engine.subscribe(sharedId);
+        final own = [for (final w in sharing.lists.ownedLists) w.listId];
+        server.log.clear();
+        await sharing.accountSync.kick(SyncReason.resumed);
+        expect(
+          server.log
+              .where((l) => l.startsWith('GET /v1/lists/$sharedId'))
+              .length,
+          1,
+        );
+        for (final id in own) {
+          expect(syncsOf(id), 0);
+        }
+      },
+    );
+
+    test('a pull to refresh syncs every list', () async {
+      await phoneWithThreeLists();
+      final ids = [for (final w in sharing.lists.ownedLists) w.listId];
+      server.log.clear();
+      await sharing.accountSync.kick(SyncReason.pullToRefresh);
+      for (final id in ids) {
+        expect(syncsOf(id), 1);
+      }
+    });
+  });
 }

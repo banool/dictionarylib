@@ -67,12 +67,20 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     _takeNewlyAddedList();
     newlyAddedSharedListId.addListener(_takeNewlyAddedList);
     if (sharing.isEnabled) {
-      // Fire-and-forget refresh of all synced lists on open.
-      unawaited(
-        sharing.engine.syncAll().then((_) {
-          if (mounted) setState(() {});
-        }),
-      );
+      // Fire-and-forget refresh on open: the followed and edited lists
+      // through the engine, and (signed in) a light account cycle for the
+      // person's own lists, rather than a request per list. After the
+      // frame: a cycle tells Sharing's listeners it has started, and this
+      // runs inside a build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(sharing.accountSync.kick(SyncReason.resumed));
+        unawaited(
+          sharing.engine.syncLists(_listsNotOnTheAccount()).then((_) {
+            if (mounted) setState(() {});
+          }),
+        );
+      });
       WidgetsBinding.instance.addObserver(this);
       // React to engine + auth changes (e.g. a /sync flush completes,
       // or a sign-out drops the session) so the unsynced banner reflects
@@ -145,12 +153,21 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
     return idx;
   }
 
+  /// The lists whose changes don't come through the account: followed and
+  /// edited ones (which also work signed out). The person's own lists are
+  /// the account cycle's (it syncs the ones the account says moved).
+  List<String> _listsNotOnTheAccount() => [
+    for (final l in sharing.lists.subscribedLists) l.listId,
+    for (final l in sharing.lists.editorLists) l.listId,
+  ];
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!sharing.isEnabled) return;
     if (state == AppLifecycleState.resumed) {
+      // (Sharing's own lifecycle observer runs the account cycle.)
       unawaited(
-        sharing.engine.syncAll().then((_) {
+        sharing.engine.syncLists(_listsNotOnTheAccount()).then((_) {
           if (mounted) setState(() {});
         }),
       );
@@ -190,14 +207,18 @@ class EntryListsOverviewPageState extends State<EntryListsOverviewPage>
   Future<void> _refreshSynced() async {
     if (!sharing.isEnabled) return;
     Analytics.track('pull_to_refresh', props: {'scope': 'overview'});
-    // The account too: lists made, deleted or reordered on other devices.
-    // Its failures show in Settings rather than here.
+    // The account cycle syncs every list of the person's own (a pull to
+    // refresh is a full sync) and takes in lists made, deleted or reordered
+    // on other devices; its failures show in Settings rather than here.
     unawaited(sharing.accountSync.kick(SyncReason.pullToRefresh));
     try {
       await retryWithFeedback(() async {
         // User-initiated pull-to-refresh: bypass the worker edge cache so
         // a just-made change shows up immediately (see SyncApi.getList).
-        final failures = await sharing.engine.syncAll(forceFresh: true);
+        final failures = await sharing.engine.syncLists(
+          _listsNotOnTheAccount(),
+          forceFresh: true,
+        );
         if (failures.isNotEmpty) throw failures.first;
       }, onRetry: snackRetryFeedback(context));
     } on SyncException catch (e) {

@@ -174,7 +174,7 @@ void main() {
   testWidgets('the server failing: when it will try again', (tester) async {
     await signedIn(tester);
     await tester.runAsync(() async {
-      server.net.flaky(1.0);
+      server.serverError = true;
       await sharing.accountSync.kick(SyncReason.pullToRefresh);
     });
     await pumpSheet(tester);
