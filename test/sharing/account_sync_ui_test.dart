@@ -9,13 +9,15 @@ import 'package:dictionarylib/sharing/sync_status_sheet.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
 import 'package:dictionarylib/sharing/engine_notification_listener.dart';
 import 'package:dictionarylib/top_level_scaffold.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../_helpers.dart';
 import '_account_sync_harness.dart';
 import '_fake_account_server.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// Account sync as the person sees it outside My lists: Settings keeping up
 /// with a sign-in made elsewhere, and the save sheet showing a list that is
@@ -24,7 +26,7 @@ void main() {
   setUpAll(installFakeSecureStorage);
 
   Widget app(Widget home) => MaterialApp(
-    localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+    localizationsDelegates: dictLibLocalizationsDelegates,
     supportedLocales: DictLibLocalizations.supportedLocales,
     home: home,
   );
@@ -62,7 +64,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
       ),
     );
@@ -112,7 +114,7 @@ void main() {
       MaterialApp(
         navigatorKey: rootNavigatorKey,
         scaffoldMessengerKey: rootScaffoldMessengerKey,
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         home: const Scaffold(body: SizedBox.shrink()),
       ),

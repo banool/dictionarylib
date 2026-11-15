@@ -13,7 +13,7 @@ import 'package:dictionarylib/sharing/sharing.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:dictionarylib/top_level_scaffold.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -21,6 +21,8 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// Install a signed-OUT [sharing] singleton (no current session) with a
 /// stubbed HTTP client. The landing-page invite flow needs a session-less
@@ -57,7 +59,7 @@ void main() {
   });
 
   Widget wrap() => MaterialApp(
-    localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+    localizationsDelegates: dictLibLocalizationsDelegates,
     supportedLocales: DictLibLocalizations.supportedLocales,
     home: SharedListLandingPage(
       listId: 'list000001',
@@ -147,7 +149,7 @@ void main() {
   });
 
   Widget wrapSubscribe() => MaterialApp(
-    localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+    localizationsDelegates: dictLibLocalizationsDelegates,
     supportedLocales: DictLibLocalizations.supportedLocales,
     home: SharedListLandingPage(
       listId: 'list000001',
@@ -334,7 +336,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
       ),
     );

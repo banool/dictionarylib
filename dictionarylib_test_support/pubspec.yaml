@@ -6,7 +6,7 @@ publish_to: none
 version: 0.0.1
 
 environment:
-  sdk: ">=3.13.0 <4.0.0"
+  sdk: ">=3.14.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -25,6 +25,7 @@ dependencies:
   go_router:
   http:
   media_kit:
+  material_ui: ^1.11.0
   shared_preferences:
 
 dev_dependencies:

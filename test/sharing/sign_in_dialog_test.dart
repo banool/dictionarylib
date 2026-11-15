@@ -7,12 +7,14 @@ import 'package:dictionarylib/sharing/auth/apple_sign_in.dart';
 import 'package:dictionarylib/sharing/auth/auth_store.dart';
 import 'package:dictionarylib/sharing/auth/sign_in_dialog.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// Test harness that exposes its [BuildContext] so the test body can
 /// invoke [showSignInDialog] directly — same approach
@@ -61,7 +63,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         home: _CaptureContext(
           onReady: (ctx) {
@@ -121,7 +123,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           key: ValueKey(platform),
-          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          localizationsDelegates: dictLibLocalizationsDelegates,
           supportedLocales: DictLibLocalizations.supportedLocales,
           home: _CaptureContext(
             onReady: (ctx) {
@@ -186,7 +188,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           key: ValueKey(providerName),
-          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          localizationsDelegates: dictLibLocalizationsDelegates,
           supportedLocales: DictLibLocalizations.supportedLocales,
           home: _CaptureContext(
             onReady: (ctx) {

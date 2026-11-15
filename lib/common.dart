@@ -5,7 +5,7 @@ import 'package:edit_distance/edit_distance.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'entry_list.dart';
 import 'entry_types.dart';

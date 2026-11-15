@@ -2,7 +2,8 @@ import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/entry_loader.dart';
 import 'package:dictionarylib/error_fallback.dart';
 import 'package:dictionarylib/globals.dart';
-import 'package:flutter/material.dart';
+import 'package:dictionarylib/theme.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,6 +29,7 @@ Future<void> pumpErrorFallback(
       onRetry: onRetry ?? () {},
     ),
   );
+  await tester.runAsync(themeFontsLoaded);
   await tester.pumpAndSettle();
 }
 

@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'material_ui_setup.dart';
+
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -97,7 +100,7 @@ class _AdvisoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final sheet = MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+    final sheet = MarkdownStyleSheet.fromTheme(legacyThemeOf(context)).copyWith(
       p: tt.bodyLarge?.copyWith(height: 1.6, color: cs.onSurfaceVariant),
       a: TextStyle(color: cs.primary, decoration: TextDecoration.underline),
       code: TextStyle(

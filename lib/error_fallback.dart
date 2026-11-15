@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +12,7 @@ import 'globals.dart';
 import 'l10n/app_localizations.dart';
 import 'page_settings.dart';
 import 'startup_loading.dart';
+import 'material_ui_setup.dart';
 
 /// Shown when app startup fails (see runDictionaryApp). Replaces the whole
 /// app: it is its own MaterialApp, with the same interim theme/locale
@@ -127,7 +128,8 @@ class _ErrorFallbackState extends State<ErrorFallback> {
     return MaterialApp(
       title: widget.appName,
       debugShowCheckedModeBanner: false,
-      localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+      localizationsDelegates: dictLibLocalizationsDelegates,
+      builder: (context, child) => legacyMaterialBridge(child!),
       supportedLocales: LANGUAGE_CODE_TO_LOCALE.values,
       locale: startupScreenLocaleOverride(),
       themeMode: startupScreenThemeMode(),

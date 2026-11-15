@@ -9,7 +9,7 @@ import 'package:dictionarylib/revision.dart';
 import 'package:dictionarylib/theme.dart' show constrainContentWidth;
 import 'package:dictionarylib/video_player_screen.dart';
 import 'package:dolphinsr/dolphinsr.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'tv_focus.dart';
 

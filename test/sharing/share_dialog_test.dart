@@ -6,12 +6,14 @@ import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// Tiny harness that just opens the subscribe dialog when first shown.
 class _OpenSubscribeDialog extends StatefulWidget {
@@ -53,7 +55,7 @@ void main() {
   testWidgets('cancelling the subscribe dialog does not throw', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         home: const _OpenSubscribeDialog(),
       ),
@@ -108,7 +110,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          localizationsDelegates: dictLibLocalizationsDelegates,
           supportedLocales: DictLibLocalizations.supportedLocales,
           home: const _OpenSubscribeDialog(),
         ),
@@ -186,7 +188,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         home: const _OpenSubscribeDialog(),
       ),

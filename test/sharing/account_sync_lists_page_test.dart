@@ -4,13 +4,15 @@ import 'package:dictionarylib/l10n/app_localizations.dart';
 import 'package:dictionarylib/page_entry_list_overview.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/top_level_scaffold.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../_helpers.dart';
 import '_account_sync_harness.dart';
 import '_fake_account_server.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// My lists while signed in with account sync: a list too large to sync
 /// says so on its row, quietly, for as long as it is too large (no
@@ -56,7 +58,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
       ),
     );
@@ -108,7 +110,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
       ),
     );

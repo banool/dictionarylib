@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A scroll behavior that also treats a **mouse** as a drag device. Flutter
 /// web disables mouse-drag scrolling by default, which leaves a PageView /

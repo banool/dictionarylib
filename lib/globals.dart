@@ -2,7 +2,7 @@ import 'dart:async' show unawaited;
 import 'dart:io' show HttpClient, HttpOverrides, SecurityContext, Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http_proxy/http_proxy.dart';
 import 'package:shared_preferences/shared_preferences.dart';

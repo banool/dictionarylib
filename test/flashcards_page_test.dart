@@ -8,12 +8,14 @@ import 'package:dictionarylib/page_flashcards.dart';
 import 'package:dictionarylib/revision.dart';
 import 'package:dictionarylib/saved_video.dart';
 import 'package:dolphinsr/dolphinsr.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// A revision session, driven through the real page: which cards it shows,
 /// when it ends, and what it stores.
@@ -126,7 +128,7 @@ Future<void> _startSession(
   ]);
   await tester.pumpWidget(
     MaterialApp(
-      localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+      localizationsDelegates: dictLibLocalizationsDelegates,
       supportedLocales: DictLibLocalizations.supportedLocales,
       home: FlashcardsPage(
         di: di ?? _dolphin(words, stored),

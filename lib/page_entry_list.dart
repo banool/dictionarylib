@@ -15,7 +15,7 @@ import 'package:dictionarylib/sharing/sign_in_resume_banner.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:dictionarylib/theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 

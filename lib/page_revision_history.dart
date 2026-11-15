@@ -10,7 +10,7 @@ import 'package:dictionarylib/revision_history.dart';
 import 'package:dictionarylib/sharing/sharing.dart' show Sharing;
 import 'package:dictionarylib/theme.dart' show kRadiusBox, kRadiusCard;
 import 'package:dolphinsr/dolphinsr.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 class RevisionHistoryPage extends StatefulWidget {

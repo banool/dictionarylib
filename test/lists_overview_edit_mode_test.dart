@@ -8,13 +8,15 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/page_entry_list_overview.dart';
 import 'package:dictionarylib/top_level_scaffold.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// The Lists page's edit mode, and in particular how it treats the default
 /// list (the one that starts out as "Favourites"). It is an ordinary list
@@ -41,7 +43,7 @@ Future<void> _pumpListsPage(WidgetTester tester) async {
   await tester.pumpWidget(
     MaterialApp.router(
       routerConfig: router,
-      localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+      localizationsDelegates: dictLibLocalizationsDelegates,
       supportedLocales: DictLibLocalizations.supportedLocales,
     ),
   );

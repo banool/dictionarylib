@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
 import 'analytics.dart';
@@ -9,7 +9,6 @@ import 'common.dart';
 import 'entry_list.dart';
 import 'entry_types.dart';
 import 'globals.dart';
-import 'l10n/app_localizations.dart';
 import 'page_entry_list.dart';
 import 'page_entry_list_overview.dart';
 import 'page_flashcards_landing.dart';
@@ -27,6 +26,7 @@ import 'theme.dart';
 import 'tv_focus.dart';
 import 'top_level_scaffold.dart'
     show LISTS_ROUTE, REVISION_ROUTE, SEARCH_ROUTE, SETTINGS_ROUTE;
+import 'material_ui_setup.dart';
 
 // Debug-only launch overrides for testing a specific screen / theme without
 // hand-editing app code (and risking leaving the edit in). They're set via
@@ -480,8 +480,7 @@ class _DictRootAppState extends State<DictRootApp> {
                     widget.config.appTitle?.call(locale) ??
                     widget.config.appName,
                 scaffoldMessengerKey: rootScaffoldMessengerKey,
-                localizationsDelegates:
-                    DictLibLocalizations.localizationsDelegates,
+                localizationsDelegates: dictLibLocalizationsDelegates,
                 supportedLocales: LANGUAGE_CODE_TO_LOCALE.values,
                 locale: locale,
                 debugShowCheckedModeBanner: false,
@@ -489,8 +488,10 @@ class _DictRootAppState extends State<DictRootApp> {
                 // layouts don't read as tiny on a 13" panel; phones are
                 // untouched. See kLargeScreenTextScale. The focus ring makes
                 // D-pad / keyboard focus visible (Android TV); see tv_focus.
-                builder: (context, child) => FocusRingOverlay(
-                  child: largeScreenTextScaleBuilder(context, child),
+                builder: (context, child) => legacyMaterialBridge(
+                  FocusRingOverlay(
+                    child: largeScreenTextScaleBuilder(context, child),
+                  ),
                 ),
                 themeMode: themeMode,
                 theme: buildAppTheme(

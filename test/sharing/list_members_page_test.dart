@@ -11,7 +11,7 @@ import 'package:dictionarylib/sharing/list_members_page.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:dictionarylib/top_level_scaffold.dart' show LISTS_ROUTE;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -19,6 +19,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 void main() {
   setUp(() async {
@@ -65,7 +67,7 @@ void main() {
   }
 
   Widget wrap(SyncedEntryList list) => MaterialApp(
-    localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+    localizationsDelegates: dictLibLocalizationsDelegates,
     supportedLocales: DictLibLocalizations.supportedLocales,
     home: ListMembersPage(list: list),
   );
@@ -192,7 +194,7 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp.router(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         routerConfig: router,
       ),

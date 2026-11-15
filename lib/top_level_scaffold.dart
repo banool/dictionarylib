@@ -2,7 +2,7 @@ import 'package:dictionarylib/common.dart';
 import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/theme.dart';
 import 'package:dictionarylib/tv_focus.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;

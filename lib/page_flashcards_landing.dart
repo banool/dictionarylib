@@ -12,7 +12,7 @@ import 'package:dictionarylib/revision.dart';
 import 'package:dictionarylib/revision_history.dart';
 import 'package:dolphinsr/dolphinsr.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:dictionarylib/dictionarylib.dart' show DictLibLocalizations;
 
 import 'hearth.dart';

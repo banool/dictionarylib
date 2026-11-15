@@ -7,8 +7,9 @@
 //
 // See `Auslan Dictionary - Hearth` design handoff for the Hearth tokens.
 
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show CupertinoPageTransitionsBuilder;
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// The visual style of the app. Persisted by name (see `KEY_THEME_VARIANT`) so
@@ -48,6 +49,12 @@ AppThemeVariant appThemeVariantFromName(String? name) {
   }
   return kDefaultThemeVariant;
 }
+
+/// Completes once the theme's bundled fonts have loaded. A widget test that
+/// pumps a themed app awaits it inside `tester.runAsync`: since Flutter 3.50
+/// the engine's fontsChange message for those fonts otherwise arrives after
+/// the test has torn down, which fails it with a frame still scheduled.
+Future<void> themeFontsLoaded() => GoogleFonts.pendingFonts();
 
 /// Build the [ThemeData] for the given [variant] and [brightness].
 ///

@@ -10,7 +10,7 @@ import 'package:dictionarylib/globals.dart';
 import 'package:dictionarylib/page_entry_list_overview.dart'
     show KEY_LISTS_OVERVIEW_TAB_INDEX;
 import 'package:dictionarylib/revision.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';

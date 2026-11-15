@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_bootstrap.dart';
 import 'common.dart';
@@ -8,6 +8,7 @@ import 'entry_types.dart';
 import 'globals.dart';
 import 'l10n/app_localizations.dart';
 import 'theme.dart';
+import 'material_ui_setup.dart';
 
 /// The theme/locale treatment shared by the interim startup screens (the
 /// loading screen and ErrorFallback), which render outside the real app and
@@ -88,7 +89,8 @@ class StartupLoadingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+      localizationsDelegates: dictLibLocalizationsDelegates,
+      builder: (context, child) => legacyMaterialBridge(child!),
       supportedLocales: LANGUAGE_CODE_TO_LOCALE.values,
       locale: startupScreenLocaleOverride(),
       themeMode: startupScreenThemeMode(),

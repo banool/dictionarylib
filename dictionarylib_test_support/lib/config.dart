@@ -1,6 +1,6 @@
 import 'package:dictionarylib/entry_loader.dart';
 import 'package:dictionarylib/common.dart' show NavigateToEntryPageFn;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Everything app-specific the single-device suites need. Each app defines one
 /// of these in `integration_test/test_config.dart` and hands it to the

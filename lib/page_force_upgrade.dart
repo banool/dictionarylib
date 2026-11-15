@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:store_redirect/store_redirect.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'material_ui_setup.dart';
+
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:http/http.dart' as http;
 
@@ -120,6 +123,7 @@ class ForceUpgradePage extends StatelessWidget {
     return MaterialApp(
       title: "Update",
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => legacyMaterialBridge(child!),
       home: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(40),

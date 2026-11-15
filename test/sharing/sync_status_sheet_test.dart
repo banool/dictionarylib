@@ -8,12 +8,14 @@ import 'package:dictionarylib/sharing/account_sync_state.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/sync_status_sheet.dart';
 import 'package:dolphinsr/dolphinsr.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../_helpers.dart';
 import '_account_sync_harness.dart';
 import '_fake_account_server.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// The sync status sheet (Settings → "Signed in with …"), in each state it
 /// can be in, and its Sync now button.
@@ -49,7 +51,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         home: const Scaffold(body: SyncStatusSheet()),
       ),
@@ -242,7 +244,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: locale,
-          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          localizationsDelegates: dictLibLocalizationsDelegates,
           supportedLocales: DictLibLocalizations.supportedLocales,
           home: const Scaffold(body: SyncStatusSheet()),
         ),

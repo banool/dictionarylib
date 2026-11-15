@@ -29,7 +29,7 @@ import 'package:dictionarylib/dictionarylib.dart';
 import 'package:dictionarylib/l10n/app_localizations_en.dart';
 import 'package:dictionarylib/sharing/engine_notification_listener.dart'
     show rootScaffoldMessengerKey;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 

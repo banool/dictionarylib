@@ -8,13 +8,15 @@ import 'package:dictionarylib/page_entry_list.dart';
 import 'package:dictionarylib/page_entry_list_overview.dart';
 import 'package:dictionarylib/sharing/account_sync.dart';
 import 'package:dictionarylib/top_level_scaffold.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../_helpers.dart';
 import '_account_sync_harness.dart';
 import '_fake_account_server.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// The lists pages with the network a black hole and a sync cycle stuck
 /// in it: what the person does shows at once, without the clock moving
@@ -92,7 +94,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         routerConfig: router,
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
       ),
     );
@@ -178,7 +180,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+        localizationsDelegates: dictLibLocalizationsDelegates,
         supportedLocales: DictLibLocalizations.supportedLocales,
         home: EntryListPage(
           entryList: animals,

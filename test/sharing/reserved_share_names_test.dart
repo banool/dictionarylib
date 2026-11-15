@@ -6,12 +6,14 @@ import 'package:dictionarylib/lists_service.dart';
 import 'package:dictionarylib/sharing/share_dialog.dart';
 import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../_helpers.dart';
+
+import 'package:dictionarylib/material_ui_setup.dart';
 
 /// A list on the device can be called anything, "Favourites" included —
 /// it's what the default list is called until it's renamed. A *shared*
@@ -119,7 +121,7 @@ void main() {
     Future<void> pumpDialog(WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: DictLibLocalizations.localizationsDelegates,
+          localizationsDelegates: dictLibLocalizationsDelegates,
           supportedLocales: DictLibLocalizations.supportedLocales,
           home: const _ShareDefaultList(),
         ),

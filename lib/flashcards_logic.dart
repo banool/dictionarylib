@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:dolphinsr/dolphinsr.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Re-exported so consumers (the apps, dictionarylib_test_support) can use the
 // review Rating enum without depending on dolphinsr themselves.

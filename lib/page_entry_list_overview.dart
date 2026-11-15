@@ -15,7 +15,7 @@ import 'package:dictionarylib/sharing/sync_api.dart';
 import 'package:dictionarylib/sharing/synced_entry_list.dart';
 import 'package:dictionarylib/web_limitations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:dictionarylib/dictionarylib.dart'
     show DictLibLocalizations, getEntryListOverviewHelpPageEn;
 
@@ -779,8 +779,13 @@ Widget _buildEditModeList(
       ),
     ),
     children: tiles,
-    onReorder: (prev, updated) async {
-      final done = listsService.reorderLists(prev, updated);
+    onReorderItem: (prev, updated) async {
+      // onReorderItem counts the new index after the moved list is taken
+      // out; reorderLists counts it before, as the old onReorder did.
+      final done = listsService.reorderLists(
+        prev,
+        updated > prev ? updated + 1 : updated,
+      );
       setState(() {});
       await done;
     },
